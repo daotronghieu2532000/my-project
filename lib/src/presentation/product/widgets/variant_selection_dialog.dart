@@ -290,60 +290,60 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
               children: [
                  // Chỉ hiển thị nút Mua ngay nếu actionType là 'buyNow' hoặc null
                  if (widget.actionType == null || widget.actionType == 'buyNow')
-                   Expanded(
-                     child: ElevatedButton(
-                       onPressed: () {
-                         if (_selectedVariant != null) {
-                           Navigator.pop(context);
-                           widget.onBuyNow(_selectedVariant!, _quantity);
-                         }
-                       },
-                       style: ElevatedButton.styleFrom(
-                         backgroundColor: Colors.red,
-                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                         shape: RoundedRectangleBorder(
-                           borderRadius: BorderRadius.circular(8),
-                         ),
+                 Expanded(
+                   child: ElevatedButton(
+                     onPressed: () {
+                       if (_selectedVariant != null) {
+                         Navigator.pop(context);
+                         widget.onBuyNow(_selectedVariant!, _quantity);
+                       }
+                     },
+                     style: ElevatedButton.styleFrom(
+                       backgroundColor: Colors.red,
+                       foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                       shape: RoundedRectangleBorder(
+                         borderRadius: BorderRadius.circular(8),
                        ),
-                       child: const Text(
-                        'Mua ngay',
-                         style: TextStyle(
-                           fontSize: 13,
-                           fontWeight: FontWeight.w600,
-                         ),
+                     ),
+                     child: const Text(
+                      'Mua ngay',
+                       style: TextStyle(
+                         fontSize: 13,
+                         fontWeight: FontWeight.w600,
                        ),
                      ),
                    ),
+                 ),
                  // Khoảng cách giữa 2 nút (chỉ hiển thị khi có cả 2 nút)
                  if (widget.actionType == null) const SizedBox(width: 6),
                  // Chỉ hiển thị nút Thêm vào giỏ nếu actionType là 'addToCart' hoặc null
                  if (widget.actionType == null || widget.actionType == 'addToCart')
-                   Expanded(
-                     child: OutlinedButton(
-                       onPressed: () {
-                         if (_selectedVariant != null) {
-                           Navigator.pop(context);
-                           widget.onAddToCart(_selectedVariant!, _quantity);
-                         }
-                       },
-                       style: OutlinedButton.styleFrom(
-                         foregroundColor: Colors.red,
-                         side: const BorderSide(color: Colors.red),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                         shape: RoundedRectangleBorder(
-                           borderRadius: BorderRadius.circular(8),
-                         ),
+                 Expanded(
+                   child: OutlinedButton(
+                     onPressed: () {
+                       if (_selectedVariant != null) {
+                         Navigator.pop(context);
+                         widget.onAddToCart(_selectedVariant!, _quantity);
+                       }
+                     },
+                     style: OutlinedButton.styleFrom(
+                       foregroundColor: Colors.red,
+                       side: const BorderSide(color: Colors.red),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                       shape: RoundedRectangleBorder(
+                         borderRadius: BorderRadius.circular(8),
                        ),
-                        child: const Text(
-                          'Thêm vào giỏ',
-                           style: TextStyle(
-                             fontSize: 13,
-                           fontWeight: FontWeight.w600,
-                         ),
+                     ),
+                      child: const Text(
+                        'Thêm vào giỏ',
+                         style: TextStyle(
+                           fontSize: 13,
+                         fontWeight: FontWeight.w600,
                        ),
                      ),
                    ),
+                 ),
               ],
             ),
           ),

@@ -24,7 +24,6 @@ class CheckoutScreen extends StatefulWidget {
 
 class _CheckoutScreenState extends State<CheckoutScreen> {
   String selectedPaymentMethod = 'cod'; // Chỉ hỗ trợ COD
-  bool agreeToTerms = false;
   bool _isProcessingOrder = false; // Flag để prevent double submission
   final cart_service.CartService _cartService = cart_service.CartService();
   final ApiService _api = ApiService();
@@ -73,14 +72,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 12),
           const PaymentDetailsSection(),
           const SizedBox(height: 12),
-          TermsSection(
-            agreeToTerms: agreeToTerms,
-            onTermsChanged: (value) {
-              setState(() {
-                agreeToTerms = value ?? false;
-              });
-            },
-          ),
+          const TermsSection(),
           const SizedBox(height: 100),
         ],
       ),
@@ -90,13 +82,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         onOrder: () async {
           // Prevent double submission
           if (_isProcessingOrder) {
-            return;
-          }
-          
-          if (!agreeToTerms) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Vui lòng đồng ý với điều khoản')),
-            );
             return;
           }
           

@@ -291,27 +291,27 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
                 ...List.generate(
                   _products.length + (_isLoadingMore && _currentPage < _totalPages ? 1 : 0),
                   (index) {
-                    if (index == _products.length) {
-                      // Loading more indicator
-                      return const Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      );
-                    }
+          if (index == _products.length) {
+            // Loading more indicator
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
 
-                    final product = _products[index];
+          final product = _products[index];
                     return Column(
                       children: [
                         FavoriteProductCard(
-                          product: product,
-                          onRemove: () => _removeProduct(product.id),
+            product: product,
+            onRemove: () => _removeProduct(product.id),
                         ),
                         if (index < _products.length - 1) const Divider(height: 1),
                       ],
-                    );
-                  },
+          );
+        },
                 ),
               ],
             ),
@@ -331,13 +331,13 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
                       Expanded(
                         child: Container(
                           height: 1.5,
-                          color: Colors.black87,
+                          color: Colors.grey.withOpacity(0.3),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: const Text(
-                          'Có thể bạn sẽ thích',
+                          'Sản phẩm giành cho bạn',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -348,7 +348,7 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
                       Expanded(
                         child: Container(
                           height: 1.5,
-                          color: Colors.black87,
+                          color: Colors.grey.withOpacity(0.3),
                         ),
                       ),
                     ],

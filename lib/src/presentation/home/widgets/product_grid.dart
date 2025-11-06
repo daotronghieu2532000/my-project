@@ -87,6 +87,7 @@ class _ProductGridState extends State<ProductGrid> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (widget.title.isNotEmpty)
         Padding(
           padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
           child: Text(
@@ -158,7 +159,7 @@ class _ProductGridState extends State<ProductGrid> {
     final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       child: Wrap(
         spacing: 8, // Khoảng cách ngang giữa các card
         runSpacing: 8, // Khoảng cách dọc giữa các hàng

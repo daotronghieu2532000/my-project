@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 
 class TermsSection extends StatelessWidget {
-  final bool agreeToTerms;
-  final ValueChanged<bool?> onTermsChanged;
-  
   const TermsSection({
     super.key,
-    required this.agreeToTerms,
-    required this.onTermsChanged,
   });
 
   void _showTermsDialog(BuildContext context) {
@@ -348,14 +343,6 @@ class TermsSection extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
-        children: [
-          Checkbox(
-            value: agreeToTerms,
-            onChanged: onTermsChanged,
-            activeColor: Colors.red,
-          ),
-          Expanded(
             child: RichText(
               text: TextSpan(
                 style: const TextStyle(color: Colors.black, fontSize: 14),
@@ -395,9 +382,6 @@ class TermsSection extends StatelessWidget {
                   const TextSpan(text: ' của chúng tôi.'),
                 ],
               ),
-            ),
-          ),
-        ],
       ),
     );
   }

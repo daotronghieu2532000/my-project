@@ -337,13 +337,13 @@ class _PurchasedProductsScreenState extends State<PurchasedProductsScreen> {
                       Expanded(
                         child: Container(
                           height: 1.5,
-                          color: Colors.black87,
+                          color: Colors.grey.withOpacity(0.3),
                         ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: const Text(
-                          'Có thể bạn sẽ thích',
+                          'Sản phẩm giành cho bạn',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -354,7 +354,7 @@ class _PurchasedProductsScreenState extends State<PurchasedProductsScreen> {
                       Expanded(
                         child: Container(
                           height: 1.5,
-                          color: Colors.black87,
+                          color: Colors.grey.withOpacity(0.3),
                         ),
                       ),
                     ],

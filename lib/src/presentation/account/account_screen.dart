@@ -44,12 +44,12 @@ class AccountScreen extends StatelessWidget {
           const SectionHeader(title: 'Danh mục '),
           ActionList(
             items: const [
-              ActionItem(Icons.receipt_long_outlined, 'Tất cả đơn hàng'),
+            ActionItem(Icons.receipt_long_outlined, 'Tất cả đơn hàng'),
               ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
-              ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
-              ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
-              // ActionItem(Icons.star_border, 'Lịch sử đánh giá'),
-              ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
+            ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
+            ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
+            // ActionItem(Icons.star_border, 'Lịch sử đánh giá'),
+            ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
             ],
           ),
           // const SizedBox(height: 12),
@@ -71,26 +71,26 @@ class AccountScreen extends StatelessWidget {
                       Expanded(
                         child: Container(
                           height: 1.5,
-                          color: Colors.black87,
-                        ),
+                          color: Colors.grey.withOpacity(0.3),
+                    ),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: const Text(
-                          'Có thể bạn sẽ thích',
-                          style: TextStyle(
-                            fontSize: 16,
+                          'Sản phẩm giành cho bạn',
+                    style: TextStyle(
+                      fontSize: 16,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
+              ),
+            ),
+          ),
                       Expanded(
                         child: Container(
                           height: 1.5,
-                          color: Colors.black87,
-                        ),
-                      ),
+                          color: Colors.grey.withOpacity(0.3),
+                  ),
+                ),
                     ],
                   ),
                 ),

@@ -325,7 +325,7 @@ class _OrdersListState extends State<_OrdersList> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
                     child: Row(
                       children: [
                         Expanded(
@@ -337,7 +337,7 @@ class _OrdersListState extends State<_OrdersList> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: const Text(
-                            'Có thể bạn sẽ thích',
+                            'Sản phẩm giành cho bạn',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -363,70 +363,76 @@ class _OrdersListState extends State<_OrdersList> {
       );
     }
     
-    // 80% đơn hàng, 20% gợi ý
-    return Column(
-      children: [
-        Expanded(
-          flex: 8,
-          child: RefreshIndicator(
+    // Cả trang có thể cuộn được - đơn hàng và gợi ý trong cùng một ListView
+    return RefreshIndicator(
       onRefresh: () => _load(refresh: true),
-      child: ListView.separated(
+      child: ListView(
         controller: _scrollController,
-        itemCount: _orders.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        children: [
+          // Div chứa đơn hàng - có thể tăng chiều cao khi có đơn hàng mới
+          Padding(
         padding: const EdgeInsets.all(12),
-        itemBuilder: (context, index) {
+            child: Column(
+              children: [
+                ...List.generate(
+                  _orders.length,
+                  (index) {
           final o = _orders[index] as Map<String, dynamic>;
-          return _buildOrderCard(o);
-        },
-      ),
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Container(
-            color: Colors.white,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
-                    child: Row(
+                    return Column(
                       children: [
-                        Expanded(
-                          child: Container(
-                            height: 1.5,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: const Text(
-                            'Có thể bạn sẽ thích',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Container(
-                            height: 1.5,
-                            color: Colors.black87,
-                          ),
-                        ),
+                        _buildOrderCard(o),
+                        if (index < _orders.length - 1) const SizedBox(height: 8),
                       ],
-                    ),
-                  ),
-                  ProductGrid(title: ''),
-                ],
-              ),
+                    );
+        },
+                ),
+              ],
             ),
           ),
-        ),
-      ],
+          // Div nhúng Gợi ý tới bạn ở dưới - trồng lên nhau, KHÔNG có padding để ProductGrid nhận đúng width
+          Container(
+            width: double.infinity,
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 1.5,
+                          color: Colors.grey.withOpacity(0.3),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: const Text(
+                          'Sản phẩm giành cho bạn',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1.5,
+                          color: Colors.grey.withOpacity(0.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ProductGrid(title: ''),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

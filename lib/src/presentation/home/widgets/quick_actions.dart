@@ -6,10 +6,14 @@ import '../../orders/orders_screen.dart';
 
 class QuickActions extends StatelessWidget {
   final List<QAItem> items = const [
-     QAItem('assets/images/icons/flash-sale1.png', Color.fromARGB(255, 182, 182, 182), 'FLASH SALE'),
-     QAItem('assets/images/icons/freeship8.png', Color.fromARGB(255, 182, 182, 182), 'FREESHIP'),
-     QAItem('assets/images/icons/coupon.png', Color.fromARGB(255, 182, 182, 182), 'VOUCHER'),
-     QAItem('assets/images/icons/package.png', Color.fromARGB(255, 182, 182, 182), 'ĐƠN HÀNG'),
+    //  QAItem('assets/images/icons/flash-sale1.png', Color.fromARGB(255, 182, 182, 182), 'FLASH SALE'),
+    //  QAItem('assets/images/icons/freeship8.png', Color.fromARGB(255, 182, 182, 182), 'FREESHIP'),
+    //  QAItem('assets/images/icons/coupon.png', Color.fromARGB(255, 182, 182, 182), 'VOUCHER'),
+    //  QAItem('assets/images/icons/package.png', Color.fromARGB(255, 182, 182, 182), 'ĐƠN HÀNG'),
+      QAItem('assets/images/icons/flash-sale1.png', Color.fromARGB(255, 255, 0, 0), 'FLASH SALE'),
+     QAItem('assets/images/icons/freeship8.png', Color.fromARGB(255, 255, 0, 0), 'FREESHIP'),
+     QAItem('assets/images/icons/coupon.png', Color.fromARGB(255, 255, 0, 0), 'VOUCHER'),
+     QAItem('assets/images/icons/package.png', Color.fromARGB(255, 255, 0, 0), 'ĐƠN HÀNG'),
   ];
 
   const QuickActions({super.key});
