@@ -361,17 +361,17 @@ class _OrdersListState extends State<_OrdersList> {
         Expanded(
           flex: 8,
           child: RefreshIndicator(
-            onRefresh: () => _load(refresh: true),
-            child: ListView.separated(
-              controller: _scrollController,
-              itemCount: _orders.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              padding: const EdgeInsets.all(12),
-              itemBuilder: (context, index) {
-                final o = _orders[index] as Map<String, dynamic>;
-                return _buildOrderCard(o);
-              },
-            ),
+      onRefresh: () => _load(refresh: true),
+      child: ListView.separated(
+        controller: _scrollController,
+        itemCount: _orders.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        padding: const EdgeInsets.all(12),
+        itemBuilder: (context, index) {
+          final o = _orders[index] as Map<String, dynamic>;
+          return _buildOrderCard(o);
+        },
+      ),
           ),
         ),
         Expanded(

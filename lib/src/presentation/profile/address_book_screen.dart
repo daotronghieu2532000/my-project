@@ -416,17 +416,17 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                 // List địa chỉ
                 Expanded(
                   child: ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemBuilder: (context, index) {
-                      final a = _addresses[index];
-                      final isDefault = (a['active']?.toString() ?? '0') == '1';
-                      return Container(
+              padding: const EdgeInsets.all(16),
+              itemBuilder: (context, index) {
+                final a = _addresses[index];
+                final isDefault = (a['active']?.toString() ?? '0') == '1';
+                return Container(
                         margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(color: const Color(0xFFEAEAEA)),
-                        ),
+                  ),
                         child: Stack(
                           children: [
                             Padding(
@@ -464,53 +464,53 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                                     style: const TextStyle(
                                       fontSize: 14,
                                       color: Colors.black87,
-                                    ),
-                                  ),
+                              ),
+                            ),
                                   const SizedBox(height: 8),
                                   // Badge mặc định hoặc nút đặt mặc định - căn phải
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
-                                      if (isDefault)
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
+                            if (isDefault)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
                                             color: Colors.white,
                                             borderRadius: BorderRadius.circular(4),
                                             border: Border.all(color: const Color(0xFFF5222D), width: 1),
-                                          ),
-                                          child: const Text(
-                                            'Mặc định',
+                                ),
+                                child: const Text(
+                                  'Mặc định',
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: Color(0xFFF5222D),
                                               fontWeight: FontWeight.w500,
                                             ),
-                                          ),
-                                        )
-                                      else
-                                        TextButton(
-                                          onPressed: () {
-                                            final dynamic rawId = a['id'];
-                                            final int id = rawId is int ? rawId : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
-                                            if (id > 0) _setDefault(id);
-                                          },
-                                          style: TextButton.styleFrom(
+                                ),
+                              )
+                            else
+                              TextButton(
+                                onPressed: () {
+                                  final dynamic rawId = a['id'];
+                                  final int id = rawId is int ? rawId : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
+                                  if (id > 0) _setDefault(id);
+                                },
+                                style: TextButton.styleFrom(
                                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                             minimumSize: Size.zero,
                                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          ),
-                                          child: const Text(
-                                            'Đặt mặc định',
+                                ),
+                                child: const Text(
+                                  'Đặt mặc định',
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: Color(0xFFF5222D),
                                               fontWeight: FontWeight.w500,
                                             ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                                 ],
                               ),
                             ),
@@ -520,14 +520,14 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                               right: 8,
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
-                                children: [
+                            children: [
                                   IconButton(
                                     icon: const Icon(Icons.edit, size: 18, color: Colors.black54),
-                                    onPressed: () async => await _showEditAddressDialog(a),
+                              onPressed: () async => await _showEditAddressDialog(a),
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     tooltip: 'Sửa',
-                                  ),
+                            ),
                                   const SizedBox(width: 4),
                                   IconButton(
                                     icon: Icon(
@@ -546,12 +546,12 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                               ),
                             ),
                           ],
-                        ),
-                      );
-                    },
-                    separatorBuilder: (context, index) => const SizedBox(height: 0),
-                    itemCount: _addresses.length,
                   ),
+                );
+              },
+              separatorBuilder: (context, index) => const SizedBox(height: 0),
+              itemCount: _addresses.length,
+            ),
                 ),
                 // Nút Thêm Địa Chỉ Mới
                 Container(
@@ -560,7 +560,7 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _showAddAddressDialog,
+        onPressed: _showAddAddressDialog,
                       icon: const Icon(Icons.add, color: Colors.white),
                       label: const Text(
                         'Thêm Địa Chỉ Mới',
@@ -582,7 +582,7 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                   ),
                 ),
               ],
-            ),
+      ),
     );
   }
 

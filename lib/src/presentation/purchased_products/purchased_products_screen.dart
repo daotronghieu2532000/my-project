@@ -5,6 +5,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/cart_service.dart';
 import '../cart/cart_screen.dart';
+import '../home/widgets/product_grid.dart';
 
 class PurchasedProductsScreen extends StatefulWidget {
   const PurchasedProductsScreen({super.key});
@@ -286,26 +287,76 @@ class _PurchasedProductsScreenState extends State<PurchasedProductsScreen> {
 
     return RefreshIndicator(
       onRefresh: _refresh,
-      child: ListView.separated(
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        itemCount: _products.length + (_isLoadingMore && _currentPage < _totalPages ? 1 : 0),
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          if (index == _products.length) {
-            // Loading more indicator
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
+        children: [
+          // Danh sách sản phẩm đã mua
+          ...List.generate(
+            _products.length + (_isLoadingMore && _currentPage < _totalPages ? 1 : 0),
+            (index) {
+              if (index == _products.length) {
+                // Loading more indicator
+                return const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                );
+              }
 
-          final product = _products[index];
-          return PurchasedProductCard(
-            product: product,
-          );
-        },
+              final product = _products[index];
+              return Column(
+                children: [
+                  PurchasedProductCard(
+                    product: product,
+                  ),
+                  if (index < _products.length - 1) const Divider(height: 1),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 24),
+          // Gợi ý tới bạn section
+          Container(
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: const Text(
+                          'Có thể bạn sẽ thích',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                ProductGrid(title: ''),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
