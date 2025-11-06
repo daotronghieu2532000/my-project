@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'widgets/quick_actions.dart';
 import 'widgets/flash_sale_section.dart';
 import 'widgets/product_grid.dart';
-import 'widgets/mobile_banner_slider.dart';
 import 'widgets/partner_banner_slider.dart';
 import 'widgets/featured_brands_slider.dart';
 import '../common/widgets/go_top_button.dart';
@@ -133,8 +132,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: _scrollController,
                       padding: EdgeInsets.zero,
                       children: [
-                        // Mobile Banner - Full width, 160px height
-                        MobileBannerSlider(key: ValueKey('mobile_banner_$_refreshKey')),
+                        // Partner Banner - Full width, 160px height (thay thế banner mobile)
+                        PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
                         const SizedBox(height: 8),
                         
                         // Quick actions
@@ -142,10 +141,6 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white,
                           child: const QuickActions(),
                         ),
-                        const SizedBox(height: 8),
-                        
-                        // Partner Banner - Below quick actions, 160px height
-                        PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
                         const SizedBox(height: 8),
                         
                         // Flash Sale section

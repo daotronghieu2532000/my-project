@@ -106,11 +106,11 @@ class _OrdersScreenState extends State<OrdersScreen>
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     indicatorPadding: const EdgeInsets.symmetric(horizontal: 8),
                     tabs: [
-                      _OrderTab(icon: Icons.receipt_long, label: 'Chờ xác nhận', count: _counts[0]),
-                      _OrderTab(icon: Icons.store_mall_directory, label: 'Chờ lấy hàng', count: _counts[1]),
-                      _OrderTab(icon: Icons.local_shipping, label: 'Chờ giao hàng', count: _counts[2]),
-                      _OrderTab(icon: Icons.reviews, label: 'Đánh giá', count: _counts[3]),
-                      _OrderTab(icon: Icons.cancel, label: 'Đã hủy', count: _counts[4]),
+                      _OrderTab(iconPath: 'assets/images/icons/pending-order.png', label: 'Chờ xác nhận', count: _counts[0]),
+                      _OrderTab(iconPath: 'assets/images/icons/pickup1.png', label: 'Chờ lấy hàng', count: _counts[1]),
+                      _OrderTab(iconPath: 'assets/images/icons/shipping1.png', label: 'Chờ giao hàng', count: _counts[2]),
+                      _OrderTab(iconPath: 'assets/images/icons/rating.png', label: 'Đánh giá', count: _counts[3]),
+                      _OrderTab(iconPath: 'assets/images/icons/cancel1.png', label: 'Đã hủy', count: _counts[4]),
                     ],
                   ),
                   // Gradient fade effect để chỉ ra có thể cuộn
@@ -162,10 +162,10 @@ class _OrdersScreenState extends State<OrdersScreen>
 }
 
 class _OrderTab extends StatelessWidget {
-  final IconData icon;
+  final String iconPath;
   final String label;
   final int? count;
-  const _OrderTab({required this.icon, required this.label, this.count});
+  const _OrderTab({required this.iconPath, required this.label, this.count});
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +180,15 @@ class _OrderTab extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, size: 24),
+                Image.asset(
+                  iconPath,
+                  width: 30,
+                  height: 30,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.error, size: 30);
+                  },
+                ),
                 if (hasCount)
                   Positioned(
                     right: -8,

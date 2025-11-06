@@ -7,6 +7,7 @@ import '../../purchased_products/purchased_products_screen.dart';
 import '../app_rating_screen.dart';
 import '../app_report_screen.dart';
 import '../support_center_screen.dart';
+import '../all_orders_account_screen.dart';
 
 class ActionRow extends StatelessWidget {
   final IconData icon;
@@ -59,7 +60,12 @@ class ActionRow extends StatelessWidget {
   void _handleNavigation(BuildContext context) {
     switch (title) {
       case 'Tất cả đơn hàng':
-        Navigator.pushNamed(context, '/orders');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const AllOrdersAccountScreen(),
+          ),
+        );
         break;
       case 'Thông tin cá nhân':
         Navigator.pushNamed(context, '/profile/edit');

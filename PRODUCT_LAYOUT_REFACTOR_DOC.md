@@ -624,3 +624,4 @@ Refactor này đạt được:
 
 **Lưu ý:** Pattern này có thể áp dụng cho bất kỳ danh sách sản phẩm nào trong app.
 
+

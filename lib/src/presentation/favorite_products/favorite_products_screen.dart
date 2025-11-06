@@ -278,43 +278,51 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
       );
     }
 
+    // Cả trang có thể cuộn được - sản phẩm và gợi ý trong cùng một ListView
     return RefreshIndicator(
       onRefresh: _refresh,
       child: ListView(
-        padding: const EdgeInsets.all(16),
         children: [
-          // Danh sách sản phẩm yêu thích
-          ...List.generate(
-            _products.length + (_isLoadingMore && _currentPage < _totalPages ? 1 : 0),
-            (index) {
-              if (index == _products.length) {
-                // Loading more indicator
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
+          // Div chứa sản phẩm yêu thích - có thể tăng chiều cao khi có sản phẩm mới
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 4),
+            child: Column(
+              children: [
+                ...List.generate(
+                  _products.length + (_isLoadingMore && _currentPage < _totalPages ? 1 : 0),
+                  (index) {
+                    if (index == _products.length) {
+                      // Loading more indicator
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
 
-              final product = _products[index];
-              return Column(
-                children: [
-                  FavoriteProductCard(
-                    product: product,
-                    onRemove: () => _removeProduct(product.id),
-                  ),
-                  if (index < _products.length - 1) const Divider(height: 1),
-                ],
-              );
-            },
+                    final product = _products[index];
+                    return Column(
+                      children: [
+                        FavoriteProductCard(
+                          product: product,
+                          onRemove: () => _removeProduct(product.id),
+                        ),
+                        if (index < _products.length - 1) const Divider(height: 1),
+                      ],
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
-          // Gợi ý tới bạn section
+          // Div nhúng Gợi ý tới bạn ở dưới - trồng lên nhau, KHÔNG có padding để ProductGrid nhận đúng width
           Container(
+            width: double.infinity,
             color: Colors.white,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Padding(
                   padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),

@@ -259,25 +259,25 @@ class _HeaderCardState extends State<HeaderCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     StatusItem(
-                      icon: Icons.receipt_long,
+                      iconPath: 'assets/images/icons/pending-order.png',
                       label: 'Chờ xác nhận',
                       count: _counts['cho_xac_nhan'] ?? 0,
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 0))),
                     ),
                     StatusItem(
-                      icon: Icons.store_mall_directory,
+                      iconPath: 'assets/images/icons/pickup1.png',
                       label: 'Chờ lấy hàng',
                       count: _counts['cho_lay_hang'] ?? 0,
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 1))),
                     ),
                     StatusItem(
-                      icon: Icons.local_shipping,
+                      iconPath: 'assets/images/icons/shipping1.png',
                       label: 'Chờ giao hàng',
                       count: _counts['cho_giao_hang'] ?? 0,
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 2))),
                     ),
                     StatusItem(
-                      icon: Icons.reviews,
+                      iconPath: 'assets/images/icons/rating.png',
                       label: 'Đánh giá',
                       count: _counts['danh_gia'] ?? 0,
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 3))),
@@ -293,28 +293,28 @@ class _HeaderCardState extends State<HeaderCard> {
                       child: Row(
                         children: [
                           StatusItem(
-                            icon: Icons.receipt_long,
+                            iconPath: 'assets/images/icons/pending-order.png',
                             label: 'Chờ xác nhận',
                             count: _counts['cho_xac_nhan'] ?? 0,
                             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 0))),
                           ),
                           const SizedBox(width: 12),
                           StatusItem(
-                            icon: Icons.store_mall_directory,
+                            iconPath: 'assets/images/icons/pickup1.png',
                             label: 'Chờ lấy hàng',
                             count: _counts['cho_lay_hang'] ?? 0,
                             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 1))),
                           ),
                           const SizedBox(width: 12),
                           StatusItem(
-                            icon: Icons.local_shipping,
+                            iconPath: 'assets/images/icons/shipping1.png',
                             label: 'Chờ giao hàng',
                             count: _counts['cho_giao_hang'] ?? 0,
                             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 2))),
                           ),
                           const SizedBox(width: 12),
                           StatusItem(
-                            icon: Icons.reviews,
+                            iconPath: 'assets/images/icons/rating.png',
                             label: 'Đánh giá',
                             count: _counts['danh_gia'] ?? 0,
                             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _OrdersShortcut(index: 3))),

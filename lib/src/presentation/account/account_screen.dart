@@ -10,7 +10,6 @@ import '../home/widgets/product_grid.dart';
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,14 +42,16 @@ class AccountScreen extends StatelessWidget {
           HeaderCard(),
           const SizedBox(height: 12),
           const SectionHeader(title: 'Danh mục '),
-          ActionList(items: const [
-            ActionItem(Icons.receipt_long_outlined, 'Tất cả đơn hàng'),
-            ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
-            ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
-             ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
-            // ActionItem(Icons.star_border, 'Lịch sử đánh giá'),
-            ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
-          ]),
+          ActionList(
+            items: const [
+              ActionItem(Icons.receipt_long_outlined, 'Tất cả đơn hàng'),
+              ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
+              ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
+              ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
+              // ActionItem(Icons.star_border, 'Lịch sử đánh giá'),
+              ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
+            ],
+          ),
           // const SizedBox(height: 12),
           // const SectionHeader(title: 'Cá nhân'),
           // ActionList(items: const [

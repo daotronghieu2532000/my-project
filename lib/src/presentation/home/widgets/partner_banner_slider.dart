@@ -145,12 +145,12 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
 
   @override
   Widget build(BuildContext context) {
-    // Tính toán kích thước banner với tỉ lệ 3:1 (width:height = 3:1)
-    // Banner sẽ thấp hơn, phù hợp cho banner đối tác
+  
     final screenWidth = MediaQuery.of(context).size.width;
-    // Height = width / 3 để đạt tỉ lệ 3:1
-    // Giới hạn height tối thiểu 100px và tối đa 150px để phù hợp với các màn hình
+    
     final bannerHeight = (screenWidth / 3).clamp(100.0, 150.0);
+
+    // const double bannerHeight = 170.0;
     
     if (_isLoading) {
       return Container(

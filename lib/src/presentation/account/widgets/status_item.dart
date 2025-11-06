@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class StatusItem extends StatelessWidget {
-  final IconData icon;
+  final String iconPath;
   final String label;
   final int count;
   final VoidCallback? onTap;
-  const StatusItem({super.key, required this.icon, required this.label, this.count = 0, this.onTap});
+  const StatusItem({super.key, required this.iconPath, required this.label, this.count = 0, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,15 @@ class StatusItem extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
+                Image.asset(
+                  iconPath,
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(Icons.error, color: Theme.of(context).colorScheme.primary, size: 28);
+                  },
+                ),
                 if (count > 0)
                   Positioned(
                     right: -8,
