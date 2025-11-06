@@ -22,8 +22,8 @@ class StatusItem extends StatelessWidget {
               children: [
                 Image.asset(
                   iconPath,
-                  width: 28,
-                  height: 28,
+                  width: 38,
+                  height: 38,
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     return Icon(Icons.error, color: Theme.of(context).colorScheme.primary, size: 28);

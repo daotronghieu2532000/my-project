@@ -5,12 +5,14 @@ class SimplePurchaseDialog extends StatefulWidget {
   final ProductDetail product;
   final Function(ProductDetail, int) onBuyNow;
   final Function(ProductDetail, int) onAddToCart;
+  final String? actionType; // 'buyNow' hoặc 'addToCart', null thì hiển thị cả 2
 
   const SimplePurchaseDialog({
     super.key,
     required this.product,
     required this.onBuyNow,
     required this.onAddToCart,
+    this.actionType,
   });
 
   @override
@@ -217,53 +219,58 @@ class _SimplePurchaseDialogState extends State<SimplePurchaseDialog> {
             padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
             child: Row(
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onBuyNow(widget.product, _quantity);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                // Chỉ hiển thị nút Mua ngay nếu actionType là 'buyNow' hoặc null
+                if (widget.actionType == null || widget.actionType == 'buyNow')
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onBuyNow(widget.product, _quantity);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Mua ngay',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      widget.onAddToCart(widget.product, _quantity);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red),
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text(
-                      'Thêm vào giỏ',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
+                      child: const Text(
+                        'Mua ngay',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                // Khoảng cách giữa 2 nút (chỉ hiển thị khi có cả 2 nút)
+                if (widget.actionType == null) const SizedBox(width: 6),
+                // Chỉ hiển thị nút Thêm vào giỏ nếu actionType là 'addToCart' hoặc null
+                if (widget.actionType == null || widget.actionType == 'addToCart')
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        widget.onAddToCart(widget.product, _quantity);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        'Thêm vào giỏ',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

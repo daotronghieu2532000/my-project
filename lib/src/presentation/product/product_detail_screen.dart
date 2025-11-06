@@ -355,7 +355,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
 
-  void _showPurchaseDialog() {
+  void _showPurchaseDialog({String? actionType}) {
     if (_productDetail == null) return;
     
     showModalBottomSheet(
@@ -370,6 +370,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             selectedVariant: _selectedVariant,
             onBuyNow: _handleBuyNow,
             onAddToCart: _handleAddToCart,
+            actionType: actionType,
           );
         } else {
           // Nếu không có biến thể, hiển thị dialog đơn giản
@@ -377,6 +378,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             product: _productDetail!,
             onBuyNow: _handleBuyNowSimple,
             onAddToCart: _handleAddToCartSimple,
+            actionType: actionType,
           );
         }
       },
@@ -690,8 +692,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         price: price,
         shopId: int.tryParse(_productDetail?.shopId ?? '0'),
         onChat: _navigateToChat,
-        onBuyNow: _showPurchaseDialog,
-        onAddToCart: _showPurchaseDialog,
+        onBuyNow: () => _showPurchaseDialog(actionType: 'buyNow'),
+        onAddToCart: () => _showPurchaseDialog(actionType: 'addToCart'),
       ),
       body: Stack(
         children: [

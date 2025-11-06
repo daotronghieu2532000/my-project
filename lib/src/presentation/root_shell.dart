@@ -76,7 +76,8 @@ class _RootShellState extends State<RootShell> {
     required BuildContext context,
   }) {
     final bool selected = _currentIndex == index;
-    final Color color = selected ? Colors.red : Colors.grey;
+    final Color iconColor = selected ? Colors.red : Colors.black;
+    final Color textColor = selected ? Colors.red : Colors.black;
     final screenWidth = MediaQuery.of(context).size.width;
     
     // Breakpoints: width >= 380: 11px, width >= 320: 10px, width < 320: ẩn text
@@ -91,13 +92,13 @@ class _RootShellState extends State<RootShell> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: color, size: 20),
+              Icon(icon, color: iconColor.withOpacity(0.7), size: 24),
               if (showText) ...[
               const SizedBox(height: 3),
               Text(
                 label,
                 style: TextStyle(
-                  color: color, 
+                  color: textColor, 
                     fontSize: fontSize,
                   fontWeight: FontWeight.w500,
                   height: 1.0,
@@ -175,8 +176,8 @@ class _RootShellState extends State<RootShell> {
                                   children: [
                                     const Icon(
                                       Icons.shopping_cart_outlined,
-                                      color: Colors.grey,
-                                      size: 20,
+                                      color: Colors.red,
+                                      size: 24,
                                     ),
                                     if (_cart.itemCount > 0)
                                       Positioned(
@@ -218,7 +219,7 @@ class _RootShellState extends State<RootShell> {
                                         Text(
                                   'Giỏ hàng',
                                   style: TextStyle(
-                                    color: Colors.grey,
+                                    color: Colors.black,
                                             fontSize: fontSize,
                                     height: 1.0,
                                     fontWeight: FontWeight.w500,
@@ -330,7 +331,7 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> {
                           Stack(
                             clipBehavior: Clip.none,
                             children: [
-                              const Icon(Icons.shopping_cart_outlined, color: Colors.grey, size: 20),
+                              const Icon(Icons.shopping_cart_outlined, color: Colors.red, size: 24),
                               if (_cart.itemCount > 0)
                                 Positioned(
                                   top: -4,
@@ -365,7 +366,7 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                           const SizedBox(height: 2),
-                                  Text('Giỏ hàng', style: TextStyle(color: Colors.grey, fontSize: fontSize, height: 1.0, fontWeight: FontWeight.w500)),
+                                  Text('Giỏ hàng', style: TextStyle(color: Colors.black, fontSize: fontSize, height: 1.0, fontWeight: FontWeight.w500)),
                                 ],
                               ) : const SizedBox.shrink();
                             },
@@ -406,10 +407,10 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.grey, size: 20),
+              Icon(icon, color: Colors.black.withOpacity(0.7), size: 24),
               if (showText) ...[
               const SizedBox(height: 3),
-                Text(label, style: TextStyle(color: Colors.grey, fontSize: fontSize, fontWeight: FontWeight.w500, height: 1.0)),
+                Text(label, style: TextStyle(color: Colors.black, fontSize: fontSize, fontWeight: FontWeight.w500, height: 1.0)),
               ],
             ],
           ),

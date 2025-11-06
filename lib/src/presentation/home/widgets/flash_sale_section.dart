@@ -317,7 +317,7 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
     final estimatedInfoHeight = screenWidth < 360 ? 90 : 100;
     final cardHeight = imageHeight + estimatedInfoHeight;
 
-    return SizedBox(
+          return SizedBox(
       height: cardHeight,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,

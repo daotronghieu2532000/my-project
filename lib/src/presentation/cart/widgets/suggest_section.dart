@@ -122,10 +122,10 @@ class _SuggestSectionState extends State<SuggestSection> {
               return SizedBox(
                 width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
                 child: ProductCardHorizontal(
-                  product: product,
+              product: product,
                   index: _suggestions.indexOf(product),
                 ),
-              );
+            );
             }).toList(),
           ),
         ),
