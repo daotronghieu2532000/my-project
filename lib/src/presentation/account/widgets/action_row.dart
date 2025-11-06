@@ -3,6 +3,7 @@ import '../../favorite_products/favorite_products_screen.dart';
 import '../../orders/orders_screen.dart';
 import '../../profile/address_book_screen.dart';
 import '../../voucher/voucher_screen.dart';
+import '../../purchased_products/purchased_products_screen.dart';
 import '../app_rating_screen.dart';
 import '../app_report_screen.dart';
 import '../support_center_screen.dart';
@@ -36,6 +37,8 @@ class ActionRow extends StatelessWidget {
         return Colors.orange;
       case 'Sản phẩm yêu thích':
         return Colors.red;
+      case 'Sản phẩm đã mua':
+        return Colors.blue;
       case 'Sổ địa chỉ':
         return Colors.green;
       case 'Mã giảm giá':
@@ -66,6 +69,14 @@ class ActionRow extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (context) => const FavoriteProductsScreen(),
+          ),
+        );
+        break;
+      case 'Sản phẩm đã mua':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const PurchasedProductsScreen(),
           ),
         );
         break;

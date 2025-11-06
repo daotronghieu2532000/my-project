@@ -396,7 +396,11 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Text(
               widget.shopName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             Text(
               _isConnected ? 'Socket.io Connected' : 'Connecting...',

@@ -6,10 +6,10 @@ import '../../orders/orders_screen.dart';
 
 class QuickActions extends StatelessWidget {
   final List<QAItem> items = const [
-    QAItem(Icons.flash_on, 'Flash Sale'),
-    QAItem(Icons.local_shipping, 'Freeship'),
-    QAItem(Icons.confirmation_number_outlined, 'Voucher'),
-    QAItem(Icons.receipt_long_outlined, 'Đơn hàng'),
+     QAItem('assets/images/icons/flash-sale1.png', Color.fromARGB(255, 182, 182, 182), 'FLASH SALE'),
+     QAItem('assets/images/icons/freeship8.png', Color.fromARGB(255, 182, 182, 182), 'FREESHIP'),
+     QAItem('assets/images/icons/coupon.png', Color.fromARGB(255, 182, 182, 182), 'VOUCHER'),
+     QAItem('assets/images/icons/package.png', Color.fromARGB(255, 182, 182, 182), 'ĐƠN HÀNG'),
   ];
 
   const QuickActions({super.key});
@@ -53,18 +53,45 @@ class QuickActions extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.white,
-                    child: Icon(items[i].icon, color: Colors.red),
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: items[i].iconColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: items[i].iconColor.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Image.asset(
+                        items[i].imagePath,
+                        fit: BoxFit.contain,
+                        width: 40,
+                        height: 40,
+                        errorBuilder: (context, error, stackTrace) {
+                          print('❌ Error loading image: ${items[i].imagePath}');
+                          print('Error: $error');
+                          return Icon(
+                            Icons.error_outline,
+                            color: items[i].iconColor,
+                            size: 24,
+                          );
+                        },
+                      ),
+                    ),
                   ),
-
+                  const SizedBox(height: 6),
                   Text(
                     items[i].label,
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
+                      fontSize: 12,
                       height: 1.0,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -76,7 +103,8 @@ class QuickActions extends StatelessWidget {
 }
 
 class QAItem {
-  final IconData icon;
+  final String imagePath;
+  final Color iconColor;
   final String label;
-  const QAItem(this.icon, this.label);
+  const QAItem(this.imagePath, this.iconColor, this.label);
 }

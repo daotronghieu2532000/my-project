@@ -98,24 +98,36 @@ class _SuggestSectionState extends State<SuggestSection> {
       return const SizedBox.shrink();
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tính toán width: (screenWidth - padding ListView - padding Wrap - spacing giữa 2 cột) / 2
+    // ListView padding: 12px mỗi bên = 24px
+    // Wrap padding: 4px mỗi bên = 8px
+    // Spacing giữa 2 cột: 8px
+    // Tổng: 24 + 8 + 8 = 40
+    final cardWidth = (screenWidth - 40) / 2;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8),
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           child: Text('Có thể bạn cũng thích', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         ),
-        ListView.builder(
-          physics: const NeverScrollableScrollPhysics(),
-          shrinkWrap: true,
-          itemBuilder: (context, index) {
-            final product = _suggestions[index];
-            return ProductCardHorizontal(
-              product: product,
-              index: index,
-            );
-          },
-          itemCount: _suggestions.length,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Wrap(
+            spacing: 8, // Khoảng cách ngang giữa các card
+            runSpacing: 8, // Khoảng cách dọc giữa các hàng
+            children: _suggestions.map((product) {
+              return SizedBox(
+                width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+                child: ProductCardHorizontal(
+                  product: product,
+                  index: _suggestions.indexOf(product),
+                ),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );

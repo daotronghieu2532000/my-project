@@ -122,7 +122,14 @@ class _AppRatingScreenState extends State<AppRatingScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Đánh giá ứng dụng', style: TextStyle(fontSize: 16)),
+        title: const Text(
+          'Đánh giá ứng dụng',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(

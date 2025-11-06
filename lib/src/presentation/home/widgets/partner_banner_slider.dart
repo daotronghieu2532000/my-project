@@ -145,9 +145,16 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
 
   @override
   Widget build(BuildContext context) {
+    // Tính toán kích thước banner với tỉ lệ 3:1 (width:height = 3:1)
+    // Banner sẽ thấp hơn, phù hợp cho banner đối tác
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Height = width / 3 để đạt tỉ lệ 3:1
+    // Giới hạn height tối thiểu 100px và tối đa 150px để phù hợp với các màn hình
+    final bannerHeight = (screenWidth / 3).clamp(100.0, 150.0);
+    
     if (_isLoading) {
       return Container(
-        height: 160,
+        height: bannerHeight,
         width: double.infinity,
         color: Colors.grey[200],
         child: const Center(
@@ -161,7 +168,7 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
     }
 
     return SizedBox(
-      height: 160,
+      height: bannerHeight,
       width: double.infinity,
       child: Stack(
         children: [
@@ -173,9 +180,8 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
                 onTap: () => _handleBannerTap(banner),
                 child: Container(
                   width: double.infinity,
-                  height: 160,
+                  height: bannerHeight,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
@@ -185,7 +191,7 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.zero,
                     child: Image.network(
                       banner.image,
                       fit: BoxFit.cover,
@@ -214,7 +220,7 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
               );
             },
             options: CarouselOptions(
-              height: 160,
+              height: bannerHeight,
               viewportFraction: 1.0,
               autoPlay: _banners.length > 1,
               autoPlayInterval: const Duration(seconds: 4),

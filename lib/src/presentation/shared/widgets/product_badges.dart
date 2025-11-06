@@ -2,18 +2,20 @@ import 'package:flutter/material.dart';
 
 class ProductBadge extends StatelessWidget {
   final String text;
+  final IconData? icon;
   final Color backgroundColor;
-  final Color textColor;
-  final double fontSize;
+  final Color iconColor;
+  final double iconSize;
   final EdgeInsets padding;
 
   const ProductBadge({
     super.key,
     required this.text,
+    this.icon,
     this.backgroundColor = Colors.red,
-    this.textColor = Colors.white,
-    this.fontSize = 10,
-    this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    this.iconColor = Colors.white,
+    this.iconSize = 9,
+    this.padding = const EdgeInsets.all(3),
   });
 
   @override
@@ -24,13 +26,10 @@ class ProductBadge extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: textColor,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w600,
-        ),
+      child: Icon(
+        icon ?? Icons.info,
+        size: iconSize,
+        color: iconColor,
       ),
     );
   }
@@ -39,15 +38,15 @@ class ProductBadge extends StatelessWidget {
 class ProductBadgesRow extends StatelessWidget {
   final List<String> badges;
   final double spacing;
-  final double fontSize;
+  final double iconSize;
   final EdgeInsets padding;
 
   const ProductBadgesRow({
     super.key,
     required this.badges,
     this.spacing = 4,
-    this.fontSize = 10,
-    this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    this.iconSize = 9,
+    this.padding = const EdgeInsets.all(3),
   });
 
   @override
@@ -59,32 +58,41 @@ class ProductBadgesRow extends StatelessWidget {
       runSpacing: spacing,
       children: badges.map((badge) {
         Color backgroundColor;
-        Color textColor = Colors.white;
+        IconData icon;
 
-        // Xác định màu sắc dựa trên loại badge
+        // Xác định màu sắc và icon dựa trên loại badge
         if (badge.contains('%') || badge.contains('Giảm')) {
           backgroundColor = Colors.red;
+          icon = Icons.local_offer;
         } else if (badge == 'Voucher') {
           backgroundColor = Colors.orange;
+          icon = Icons.local_offer;
         } else if (badge.contains('Freeship') || badge.contains('ship')) {
           backgroundColor = Colors.green;
+          icon = Icons.local_shipping;
         } else if (badge == 'Flash Sale' || badge == 'FLASH SALE') {
           backgroundColor = Colors.purple;
+          icon = Icons.flash_on;
         } else if (badge == 'Bán chạy' || badge == 'BÁN CHẠY') {
           backgroundColor = Colors.blue;
+          icon = Icons.trending_up;
         } else if (badge == 'Nổi bật' || badge == 'NỔI BẬT') {
           backgroundColor = Colors.indigo;
+          icon = Icons.star;
         } else if (badge == 'Chính hãng') {
           backgroundColor = const Color.fromARGB(255, 0, 140, 255);
+          icon = Icons.verified;
         } else {
           backgroundColor = Colors.grey;
+          icon = Icons.info;
         }
 
         return ProductBadge(
           text: badge,
+          icon: icon,
           backgroundColor: backgroundColor,
-          textColor: textColor,
-          fontSize: fontSize,
+          iconColor: Colors.white,
+          iconSize: iconSize,
           padding: padding,
         );
       }).toList(),
@@ -150,9 +158,8 @@ class ProductBadgeWithIcon extends StatelessWidget {
   final String text;
   final IconData? icon;
   final Color backgroundColor;
-  final Color textColor;
   final Color iconColor;
-  final double fontSize;
+  final double iconSize;
   final EdgeInsets padding;
 
   const ProductBadgeWithIcon({
@@ -160,44 +167,25 @@ class ProductBadgeWithIcon extends StatelessWidget {
     required this.text,
     this.icon,
     this.backgroundColor = Colors.red,
-    this.textColor = Colors.white,
     this.iconColor = Colors.white,
-    this.fontSize = 10,
-    this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    this.iconSize = 9,
+    this.padding = const EdgeInsets.all(3),
   });
 
   @override
   Widget build(BuildContext context) {
+    if (icon == null) return const SizedBox.shrink();
+    
     return Container(
       padding: padding,
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(4),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Icon(
+      child: Icon(
               icon,
-              size: fontSize,
+        size: iconSize,
               color: iconColor,
-            ),
-            const SizedBox(width: 2),
-          ],
-          Flexible(
-            child: Text(
-              text,
-              style: TextStyle(
-                color: textColor,
-                fontSize: fontSize,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -206,15 +194,15 @@ class ProductBadgeWithIcon extends StatelessWidget {
 class ProductBadgesRowNoDiscount extends StatelessWidget {
   final List<String> badges;
   final double spacing;
-  final double fontSize;
+  final double iconSize;
   final EdgeInsets padding;
 
   const ProductBadgesRowNoDiscount({
     super.key,
     required this.badges,
     this.spacing = 4,
-    this.fontSize = 10,
-    this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    this.iconSize = 9,
+    this.padding = const EdgeInsets.all(3),
   });
 
   @override
@@ -230,9 +218,8 @@ class ProductBadgesRowNoDiscount extends StatelessWidget {
       spacing: spacing,
       runSpacing: spacing,
       alignment: WrapAlignment.start,
-      children: filteredBadges.take(4).map((badge) { // Giới hạn tối đa 3 badges để tránh overflow
+      children: filteredBadges.take(4).map((badge) { // Giới hạn tối đa 4 badges để tránh overflow
         Color backgroundColor;
-        Color textColor = Colors.white;
         IconData? icon;
 
         // Xác định màu sắc và icon dựa trên loại badge
@@ -280,9 +267,8 @@ class ProductBadgesRowNoDiscount extends StatelessWidget {
           text: badge,
           icon: icon,
           backgroundColor: backgroundColor,
-          textColor: textColor,
-          iconColor: textColor,
-          fontSize: fontSize,
+          iconColor: Colors.white,
+          iconSize: iconSize,
           padding: padding,
         );
       }).toList(),
@@ -352,7 +338,7 @@ class ProductIconsRow extends StatelessWidget {
   final String? freeshipIcon;
   final String? chinhhangIcon;
   final double spacing;
-  final double fontSize;
+  final double iconSize;
   final EdgeInsets padding;
 
   const ProductIconsRow({
@@ -361,8 +347,8 @@ class ProductIconsRow extends StatelessWidget {
     this.freeshipIcon,
     this.chinhhangIcon,
     this.spacing = 4,
-    this.fontSize = 10,
-    this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    this.iconSize = 9,
+    this.padding = const EdgeInsets.all(3),
   });
 
   @override
@@ -414,8 +400,8 @@ class ProductIconsRow extends StatelessWidget {
       text: text,
       icon: icon,
       backgroundColor: backgroundColor,
-      textColor: Colors.white,
-      fontSize: fontSize,
+      iconColor: Colors.white,
+      iconSize: iconSize,
       padding: padding,
     );
   }

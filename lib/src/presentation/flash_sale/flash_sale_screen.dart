@@ -909,8 +909,8 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
         title: const Text(
           'Flash Sale',
           style: TextStyle(
+            fontSize: 16,
             color: Colors.black,
-            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),

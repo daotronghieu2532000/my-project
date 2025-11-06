@@ -11,6 +11,7 @@ import '../models/product_suggest.dart';
 import '../models/product_detail.dart';
 import '../models/related_product.dart';
 import '../models/banner.dart';
+import '../models/brand.dart';
 import '../models/shop_detail.dart';
 
 class ApiService {
@@ -2252,6 +2253,7 @@ class ApiService {
     required String keyword,
     int page = 1,
     int limit = 50, // Tăng từ 10 lên 50
+    int? userId, // Thêm userId để lưu search behavior
   }) async {
     try {
       // URL encode keyword để xử lý tiếng Việt
@@ -2259,7 +2261,14 @@ class ApiService {
       print('🔍 Original keyword: "$keyword"');
       print('🔍 Encoded keyword: "$encodedKeyword"');
       
-      final response = await get('/search_products?keyword=$encodedKeyword&page=$page&limit=$limit');
+      // Xây dựng endpoint với userId nếu có
+      String endpoint = '/search_products?keyword=$encodedKeyword&page=$page&limit=$limit';
+      if (userId != null && userId > 0) {
+        endpoint += '&user_id=$userId';
+        print('👤 Search with user_id: $userId');
+      }
+      
+      final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -3584,6 +3593,65 @@ class ApiService {
       }
     } catch (e) {
       print('❌ Lỗi khi lấy banners: $e');
+      return null;
+    }
+    
+    return null;
+  }
+
+  // =============== FEATURED BRANDS ===============
+  Future<List<Brand>?> getFeaturedBrands({
+    int page = 1,
+    int limit = 20,
+    int shopId = 0,
+    String sort = 'order',
+    bool getAll = false,
+  }) async {
+    try {
+      String endpoint = '/featured_brands?';
+      
+      if (getAll) {
+        endpoint += 'all=1';
+      } else {
+        endpoint += 'page=$page&limit=$limit';
+      }
+      
+      if (shopId > 0) {
+        endpoint += '&shop_id=$shopId';
+      }
+      
+      if (sort != 'order') {
+        endpoint += '&sort=$sort';
+      }
+      
+      print('🔍 Featured Brands API Endpoint: $endpoint');
+      
+      final response = await get(endpoint);
+      
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true && data['data'] != null) {
+          final brandsData = data['data']['brands'] as List<dynamic>?;
+          
+          if (brandsData != null) {
+            final brands = brandsData
+                .map((brand) => Brand.fromJson(brand as Map<String, dynamic>))
+                .toList();
+            
+            print('✅ Lấy featured brands thành công: ${brands.length} brands');
+            return brands;
+          }
+        } else {
+          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
+          return null;
+        }
+      } else {
+        print('❌ HTTP Error: ${response?.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Lỗi khi lấy featured brands: $e');
       return null;
     }
     

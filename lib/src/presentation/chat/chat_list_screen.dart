@@ -211,9 +211,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
         title: const Text(
           'Tin nhắn',
           style: TextStyle(
+            fontSize: 16,
             color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w600,
           ),
         ),
         leading: IconButton(

@@ -4,6 +4,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../root_shell.dart';
 import 'order_detail_screen.dart';
+import '../home/widgets/product_grid.dart';
 
 class OrdersScreen extends StatefulWidget {
   final int initialIndex;
@@ -84,7 +85,14 @@ class _OrdersScreenState extends State<OrdersScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đơn hàng của tôi'),
+        title: const Text(
+          'Tất cả đơn hàng',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(80),
             child: SizedBox(
@@ -137,7 +145,7 @@ class _OrdersScreenState extends State<OrdersScreen>
         ),
       ),
       body: _userId == null
-          ? _LoggedOutView()
+          ? const _LoggedOutView()
           : TabBarView(
               controller: _tabController,
               children: [
@@ -293,21 +301,124 @@ class _OrdersListState extends State<_OrdersList> {
     if (_loading) {
       return const Center(child: CircularProgressIndicator());
     }
+    
     if (_orders.isEmpty) {
-      return const Center(child: Text('Chưa có đơn hàng'));
+      // 60% empty state, 40% gợi ý - cùng cuộn trong một ScrollView
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.6,
+              child: _EmptyOrderState(),
+            ),
+            Container(
+              color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 1.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: const Text(
+                            'Có thể bạn sẽ thích',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 1.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ProductGrid(title: ''),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
     }
-    return RefreshIndicator(
-      onRefresh: () => _load(refresh: true),
-      child: ListView.separated(
-        controller: _scrollController,
-        itemCount: _orders.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        padding: const EdgeInsets.all(12),
-        itemBuilder: (context, index) {
-          final o = _orders[index] as Map<String, dynamic>;
-          return _buildOrderCard(o);
-        },
-      ),
+    
+    // 80% đơn hàng, 20% gợi ý
+    return Column(
+      children: [
+        Expanded(
+          flex: 8,
+          child: RefreshIndicator(
+            onRefresh: () => _load(refresh: true),
+            child: ListView.separated(
+              controller: _scrollController,
+              itemCount: _orders.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              padding: const EdgeInsets.all(12),
+              itemBuilder: (context, index) {
+                final o = _orders[index] as Map<String, dynamic>;
+                return _buildOrderCard(o);
+              },
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Container(
+            color: Colors.white,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 1.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: const Text(
+                            'Có thể bạn sẽ thích',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            height: 1.5,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ProductGrid(title: ''),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -608,7 +719,219 @@ class _OrdersListState extends State<_OrdersList> {
   }
 }
 
+class _EmptyOrderState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon clipboard với checklist
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE3F2FD),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Clipboard background
+                  Container(
+                    width: 55,
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFDD835),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Stack(
+                      children: [
+                        // Clip ở trên
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 14,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFB0BEC5),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(8),
+                                topRight: Radius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Paper
+                        Positioned(
+                          top: 10,
+                          left: 3,
+                          right: 3,
+                          bottom: 3,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(5.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Checkmarks
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF66BB6A),
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          size: 6,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Container(
+                                        width: 14,
+                                        height: 1.5,
+                                        color: const Color(0xFFE0F2F7),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF66BB6A),
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          size: 6,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Container(
+                                        width: 14,
+                                        height: 1.5,
+                                        color: const Color(0xFFE0F2F7),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF66BB6A),
+                                          borderRadius: BorderRadius.circular(2),
+                                        ),
+                                        child: const Icon(
+                                          Icons.check,
+                                          size: 6,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 3),
+                                      Container(
+                                        width: 14,
+                                        height: 1.5,
+                                        color: const Color(0xFFE0F2F7),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Pencil
+                  Positioned(
+                    right: 5,
+                    top: 12,
+                    child: Transform.rotate(
+                      angle: -0.3,
+                      child: Container(
+                        width: 20,
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF5350),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              left: 0,
+                              top: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 4,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFB3E5FC),
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(2),
+                                    bottomLeft: Radius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              bottom: 0,
+                              child: Container(
+                                width: 3,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF607D8B),
+                                  borderRadius: const BorderRadius.only(
+                                    topRight: Radius.circular(2),
+                                    bottomRight: Radius.circular(2),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              'Bạn chưa có đơn hàng nào cả',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _LoggedOutView extends StatelessWidget {
+  const _LoggedOutView();
+  
   @override
   Widget build(BuildContext context) {
     return Stack(

@@ -42,9 +42,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Thanh toán'),
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Thanh toán',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       ),
       body: ListView(
         padding: const EdgeInsets.all(12),

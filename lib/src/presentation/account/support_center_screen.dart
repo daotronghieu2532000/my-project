@@ -100,8 +100,12 @@ class _SupportCenterScreenState extends State<SupportCenterScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text(
-          'Trung tâm hỗ trợ',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          'Trung tâm trợ giúp',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,

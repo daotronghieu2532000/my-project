@@ -215,7 +215,7 @@ class CategoryProductCardHorizontal extends StatelessWidget {
                                   voucherIcon: product['voucher_icon'] as String?,
                                   freeshipIcon: product['freeship_icon'] as String?,
                                   chinhhangIcon: product['chinhhang_icon'] as String?,
-                                  fontSize: 9,
+                                  iconSize: 9,
                                   padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0),
                                 ),
                               ],

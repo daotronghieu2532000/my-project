@@ -208,7 +208,14 @@ class _AppReportScreenState extends State<AppReportScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Báo lỗi', style: TextStyle(fontSize: 16)),
+        title: const Text(
+          'Báo lỗi cho chúng tôi',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(

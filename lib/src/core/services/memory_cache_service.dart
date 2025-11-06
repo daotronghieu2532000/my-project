@@ -179,6 +179,7 @@ class CacheKeys {
   static const String homeFlashSale = 'home_flash_sale';
   static const String homePartnerBanners = 'home_partner_banners';
   static const String homeSuggestions = 'home_suggestions';
+  static const String homeFeaturedBrands = 'home_featured_brands';
   
   // Product cache keys
   static const String productDetail = 'product_detail';

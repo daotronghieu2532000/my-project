@@ -203,7 +203,7 @@ class _ProductCardVerticalState extends State<ProductCardVertical> {
                       if (widget.badges != null && widget.badges!.isNotEmpty)
                         ProductBadgesRow(
                           badges: widget.badges!,
-                          fontSize: 8,
+                          iconSize: 8,
                           padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
                         ),
                       const SizedBox(height: 4),

@@ -385,143 +385,204 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sổ địa chỉ')),
+      appBar: AppBar(
+        title: const Text(
+          'Địa chỉ của Tôi',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      backgroundColor: const Color(0xFFF6F7FB),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (context, index) {
-                final a = _addresses[index];
-                final isDefault = (a['active']?.toString() ?? '0') == '1';
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0,2))],
+          : Column(
+              children: [
+                // Section Header
+                Container(
+                  color: const Color(0xFFEDEFF3),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  width: double.infinity,
+                  child: const Text(
+                    'Địa chỉ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
                   ),
-                  child: Padding(
+                ),
+                // List địa chỉ
+                Expanded(
+                  child: ListView.separated(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Header với tên và nút mặc định
-                        Row(
+                    itemBuilder: (context, index) {
+                      final a = _addresses[index];
+                      final isDefault = (a['active']?.toString() ?? '0') == '1';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFEAEAEA)),
+                        ),
+                        child: Stack(
                           children: [
-                            Expanded(
+                            Padding(
+                              padding: const EdgeInsets.all(16),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // Tên và số điện thoại cùng dòng
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          '${a['ho_ten']?.toString() ?? ''} | ${a['dien_thoai']?.toString() ?? ''}',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Địa chỉ chi tiết
                                   Text(
-                                    a['ho_ten']?.toString() ?? '',
-                                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                    a['dia_chi']?.toString() ?? '',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    a['dien_thoai']?.toString() ?? '',
-                                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                    '${a['ten_xa'] ?? ''}, ${a['ten_huyen'] ?? ''}, ${a['ten_tinh'] ?? ''}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Badge mặc định hoặc nút đặt mặc định - căn phải
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      if (isDefault)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: const Color(0xFFF5222D), width: 1),
+                                          ),
+                                          child: const Text(
+                                            'Mặc định',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFFF5222D),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        TextButton(
+                                          onPressed: () {
+                                            final dynamic rawId = a['id'];
+                                            final int id = rawId is int ? rawId : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
+                                            if (id > 0) _setDefault(id);
+                                          },
+                                          style: TextButton.styleFrom(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          child: const Text(
+                                            'Đặt mặc định',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Color(0xFFF5222D),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-                            if (isDefault)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                                ),
-                                child: const Text(
-                                  'Mặc định',
-                                  style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.w500),
-                                ),
-                              )
-                            else
-                              TextButton(
-                                onPressed: () {
-                                  final dynamic rawId = a['id'];
-                                  final int id = rawId is int ? rawId : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
-                                  if (id > 0) _setDefault(id);
-                                },
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  backgroundColor: Colors.red.withOpacity(0.1),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                ),
-                                child: const Text(
-                                  'Đặt mặc định',
-                                  style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w500),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        // Địa chỉ chi tiết
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                a['dia_chi']?.toString() ?? '',
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${a['ten_xa'] ?? ''}, ${a['ten_huyen'] ?? ''}, ${a['ten_tinh'] ?? ''}',
-                                style: const TextStyle(fontSize: 14, color: Colors.grey),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Nút hành động
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton.icon(
-                              onPressed: () async => await _showEditAddressDialog(a),
-                              icon: const Icon(Icons.edit, size: 16, color: Colors.blue),
-                              label: const Text('Sửa', style: TextStyle(color: Colors.blue, fontSize: 14)),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            TextButton.icon(
-                              onPressed: isDefault ? null : () async => await _showDeleteConfirmDialog(a),
-                              icon: Icon(Icons.delete, size: 16, color: isDefault ? Colors.grey : Colors.red),
-                              label: Text(
-                                'Xóa', 
-                                style: TextStyle(
-                                  color: isDefault ? Colors.grey : Colors.red, 
-                                  fontSize: 14
-                                )
-                              ),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            // Nút sửa/xóa ở góc phải
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, size: 18, color: Colors.black54),
+                                    onPressed: () async => await _showEditAddressDialog(a),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    tooltip: 'Sửa',
+                                  ),
+                                  const SizedBox(width: 4),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: isDefault ? Colors.grey : Colors.black54,
+                                    ),
+                                    onPressed: isDefault
+                                        ? null
+                                        : () async => await _showDeleteConfirmDialog(a),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    tooltip: 'Xóa',
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ],
+                      );
+                    },
+                    separatorBuilder: (context, index) => const SizedBox(height: 0),
+                    itemCount: _addresses.length,
+                  ),
+                ),
+                // Nút Thêm Địa Chỉ Mới
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.white,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _showAddAddressDialog,
+                      icon: const Icon(Icons.add, color: Colors.white),
+                      label: const Text(
+                        'Thêm Địa Chỉ Mới',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF5222D),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        elevation: 0,
+                      ),
                     ),
                   ),
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(height: 0),
-              itemCount: _addresses.length,
+                ),
+              ],
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddAddressDialog,
-        backgroundColor: Colors.red,
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 

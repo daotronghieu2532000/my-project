@@ -57,6 +57,12 @@ dependencies:
   # Local Notifications (hiển thị khi app ở foreground)
   flutter_local_notifications: ^17.2.1
 
+  # Font Awesome icons - icon đẹp, hiện đại
+  font_awesome_flutter: ^10.7.0
+  
+  # Google Fonts - font Inter mềm mại, đẹp như Shopee
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -83,6 +89,7 @@ flutter:
   assets:
     - lib/src/core/assets/images/
     - assets/images/
+    - assets/images/icons/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

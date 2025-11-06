@@ -31,21 +31,22 @@ class _VoucherScreenState extends State<VoucherScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Voucher',
+          'Mã giảm giá',
           style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: Colors.red,
-        foregroundColor: Colors.white,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
+          indicatorColor: const Color(0xFFF5222D),
           indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          labelColor: const Color(0xFFF5222D),
+          unselectedLabelColor: Colors.grey,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,

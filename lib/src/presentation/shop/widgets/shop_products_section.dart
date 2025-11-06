@@ -371,7 +371,7 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
                                 voucherIcon: product.voucherIcon.isNotEmpty ? product.voucherIcon : null,
                                 freeshipIcon: product.freeshipIcon.isNotEmpty ? product.freeshipIcon : null,
                                 chinhhangIcon: product.chinhhangIcon.isNotEmpty ? product.chinhhangIcon : null,
-                                fontSize: 9,
+                                iconSize: 9,
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                               ),
                             ],

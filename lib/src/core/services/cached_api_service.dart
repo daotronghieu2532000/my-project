@@ -3,6 +3,7 @@ import 'api_service.dart';
 import 'affiliate_service.dart';
 import 'memory_cache_service.dart';
 import '../models/product_detail.dart';
+import '../models/product_suggest.dart';
 import '../models/voucher.dart';
 import '../models/shop_detail.dart';
 
@@ -251,34 +252,105 @@ class CachedApiService {
     }
   }
 
-  /// Lấy sản phẩm gợi ý cho trang chủ với cache
-  Future<List<Map<String, dynamic>>> getHomeSuggestions({
-    int limit = 20,
+  /// Lấy thương hiệu nổi bật cho trang chủ với cache
+  Future<List<Map<String, dynamic>>> getHomeFeaturedBrands({
     bool forceRefresh = false,
     Duration? cacheDuration,
   }) async {
-    final cacheKey = MemoryCacheService.createKey(CacheKeys.homeSuggestions, {'limit': limit});
+    const cacheKey = CacheKeys.homeFeaturedBrands;
     
     // Kiểm tra cache trước
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('💡 Using cached home suggestions');
+        print('🏷️ Using cached featured brands');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching home suggestions from API...');
-      final suggestions = await _apiService.getProductSuggests(limit: limit);
+      print('🌐 Fetching featured brands from API...');
+      final brands = await _apiService.getFeaturedBrands(
+        getAll: true, // Lấy tất cả thương hiệu
+        sort: 'order',
+      );
+      
+      // Convert Brand to Map
+      final brandsData = brands?.map((brand) => brand.toJson()).toList() ?? [];
+      
+      // Lưu vào cache
+      _cache.set(cacheKey, brandsData, duration: cacheDuration ?? _longCacheDuration);
+      
+      print('✅ Featured brands cached successfully');
+      return brandsData;
+    } catch (e) {
+      print('❌ Error fetching featured brands: $e');
+      
+      // Fallback về cache cũ nếu có
+      final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+      if (cachedData != null) {
+        print('🔄 Using stale cache for featured brands');
+        return cachedData;
+      }
+      
+      rethrow;
+    }
+  }
+
+  /// Lấy sản phẩm gợi ý cho trang chủ với cache
+  /// Hỗ trợ personalized suggestions dựa trên userId (nếu có)
+  Future<List<Map<String, dynamic>>> getHomeSuggestions({
+    int limit = 20,
+    bool forceRefresh = false,
+    Duration? cacheDuration,
+    int? userId, // Thêm userId để hỗ trợ personalized suggestions
+  }) async {
+    // Cache key bao gồm userId để phân biệt cache cho từng user
+    final cacheKey = MemoryCacheService.createKey(
+      CacheKeys.homeSuggestions, 
+      {
+        'limit': limit,
+        if (userId != null) 'userId': userId,
+      }
+    );
+    
+    // Kiểm tra cache trước
+    if (!forceRefresh && _cache.has(cacheKey)) {
+      final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
+      if (cachedData != null) {
+        print('💡 Using cached home suggestions${userId != null ? " for user $userId" : ""}');
+        return cachedData;
+      }
+    }
+
+    try {
+      print('🌐 Fetching home suggestions from API${userId != null ? " (personalized for user $userId)" : ""}...');
+      
+      // Nếu có userId, sử dụng personalized suggestions (user_based)
+      // Nếu không có userId, sử dụng home_suggest như cũ
+      List<ProductSuggest>? suggestions;
+      
+      if (userId != null) {
+        print('🔍 Gọi API với type=user_based và user_id=$userId');
+        suggestions = await _apiService.getProductSuggestions(
+          type: 'user_based',
+          userId: userId,
+          limit: limit,
+        );
+        print('📦 API trả về ${suggestions?.length ?? 0} sản phẩm cho user $userId');
+      } else {
+        print('🔍 Gọi API với type=home_suggest (user chưa đăng nhập)');
+        suggestions = await _apiService.getProductSuggests(limit: limit);
+        print('📦 API trả về ${suggestions?.length ?? 0} sản phẩm gợi ý chung');
+      }
       
       // Convert ProductSuggest to Map
-      final suggestionsData = suggestions?.map((suggestion) => suggestion.toJson()).toList() ?? [];
+      final suggestionsData = (suggestions ?? []).map((suggestion) => suggestion.toJson()).toList();
       
       // Lưu vào cache
       _cache.set(cacheKey, suggestionsData, duration: cacheDuration ?? _defaultCacheDuration);
       
-      print('✅ Home suggestions cached successfully');
+      print('✅ Home suggestions cached successfully${userId != null ? " (personalized)" : ""}');
       return suggestionsData;
     } catch (e) {
       print('❌ Error fetching home suggestions: $e');
@@ -937,7 +1009,10 @@ class CachedApiService {
     int limit = 50,
     bool forceRefresh = false,
     Duration? cacheDuration,
+    int? userId, // Thêm userId để lưu search behavior
   }) async {
+    // Cache key không bao gồm userId vì search results giống nhau cho mọi user
+    // Nhưng API sẽ lưu search behavior riêng cho từng user
     final cacheKey = MemoryCacheService.createKey(CacheKeys.searchProducts, {
       'keyword': keyword,
       'page': page,
@@ -955,10 +1030,15 @@ class CachedApiService {
 
     try {
       print('🌐 Fetching search results from API for keyword: "$keyword" (page $page)...');
+      if (userId != null) {
+        print('👤 Search with user_id: $userId - will save search behavior');
+      }
+      
       final result = await _apiService.searchProducts(
         keyword: keyword,
         page: page,
         limit: limit,
+        userId: userId,
       );
       
       // Lưu vào cache với thời gian ngắn vì search results thay đổi thường xuyên

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'product_card_horizontal.dart';
 import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/models/product_suggest.dart';
 
 class ProductGrid extends StatefulWidget {
@@ -13,10 +14,10 @@ class ProductGrid extends StatefulWidget {
 
 class _ProductGridState extends State<ProductGrid> {
   final CachedApiService _cachedApiService = CachedApiService();
+  final AuthService _authService = AuthService();
   List<ProductSuggest> _products = [];
   bool _isLoading = true;
   String? _error;
-  bool _expanded = false; // Hiển thị 10 mặc định, mở rộng để xem thêm
 
   @override
   void initState() {
@@ -32,8 +33,26 @@ class _ProductGridState extends State<ProductGrid> {
         _error = null;
       });
 
-      // Sử dụng cached API service
-      final suggestionsData = await _cachedApiService.getHomeSuggestions(limit: 100);
+      // Lấy userId từ AuthService (user đã đăng nhập) để sử dụng personalized suggestions
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
+      if (userId != null) {
+        print('👤 Đang tải gợi ý cá nhân hóa cho user_id: $userId');
+      } else {
+        print('👤 User chưa đăng nhập - sử dụng gợi ý chung');
+      }
+      
+      // Sử dụng cached API service với userId (nếu có)
+      // Nếu có userId, sẽ gọi API với type='user_based' để lấy gợi ý dựa trên hành vi
+      final suggestionsData = await _cachedApiService.getHomeSuggestions(
+        limit: 100,
+        userId: userId,
+      );
+      
+      if (userId != null) {
+        print('📦 Đã nhận ${suggestionsData.length} sản phẩm gợi ý cá nhân hóa');
+      }
       
       if (mounted && suggestionsData.isNotEmpty) {
         // Convert Map to ProductSuggest
@@ -69,8 +88,15 @@ class _ProductGridState extends State<ProductGrid> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Text(widget.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+          child: Text(
+            widget.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
         ),
         _buildProductsList(),
       ],
@@ -125,43 +151,29 @@ class _ProductGridState extends State<ProductGrid> {
       );
     }
 
-    // Xác định số lượng item hiển thị theo trạng thái thu gọn/mở rộng
-    final int visibleCount = _expanded
-        ? _products.length
-        : (_products.length > 20 ? 20 : _products.length); // Tăng từ 10 lên 20
+    // Hiển thị dạng Wrap 2 cột - mỗi card tự co giãn theo nội dung
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
+    // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
+    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ...List.generate(
-          visibleCount,
-          (index) {
-            final product = _products[index];
-            return ProductCardHorizontal(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      child: Wrap(
+        spacing: 8, // Khoảng cách ngang giữa các card
+        runSpacing: 8, // Khoảng cách dọc giữa các hàng
+        children: _products.asMap().entries.map((entry) {
+          final index = entry.key;
+          final product = entry.value;
+          return SizedBox(
+            width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+            child: ProductCardHorizontal(
               product: product,
               index: index,
-            );
-          },
-        ),
-        if (_products.length > 20) // Tăng từ 10 lên 20
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _expanded = !_expanded;
-                  });
-                },
-                icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-                label: Text(_expanded ? 'Ẩn bớt' : 'Xem thêm'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.red,
-                ),
-              ),
             ),
+          );
+        }).toList(),
           ),
-      ],
     );
   }
 }

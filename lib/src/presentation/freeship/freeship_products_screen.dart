@@ -103,8 +103,8 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         title: const Text(
           'Miễn phí ship',
           style: TextStyle(
-            color: Color(0xFF333333),
-            fontSize: 18,
+            fontSize: 16,
+            color: Colors.black,
             fontWeight: FontWeight.w600,
             height: 1.2,
           ),
@@ -254,18 +254,11 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         // Panel lọc
         if (_showFilters) _buildFilterPanel(),
 
-        // Danh sách sản phẩm
+        // Danh sách sản phẩm - Wrap 2 cột
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: displayedProducts.length,
-            itemBuilder: (context, index) {
-              final product = displayedProducts[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: FreeShipProductCardHorizontal(product: product),
-              );
-            },
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: _buildProductsGrid(displayedProducts),
           ),
         ),
       ],
@@ -313,6 +306,24 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
     }
 
     return filtered;
+  }
+
+  Widget _buildProductsGrid(List<FreeShipProduct> products) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
+    // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
+    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
+
+    return Wrap(
+      spacing: 8, // Khoảng cách ngang giữa các card
+      runSpacing: 8, // Khoảng cách dọc giữa các hàng
+      children: products.map((product) {
+        return SizedBox(
+          width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+          child: FreeShipProductCardHorizontal(product: product),
+        );
+      }).toList(),
+    );
   }
 
   // Panel lọc

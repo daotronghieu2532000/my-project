@@ -124,20 +124,21 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.red,
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
         ),
         title: Text(
           'Sản phẩm yêu thích${_totalFavorites > 0 ? ' ($_totalFavorites)' : ''}',
           style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
+            fontSize: 16,
+            color: Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         centerTitle: true,
         actions: [
           // Cart button with realtime badge

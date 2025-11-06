@@ -137,7 +137,16 @@ class _CategoryScreenState extends State<CategoryScreen>
       tabIndex: 1, // Category tab
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Danh mục sản phẩm'),
+          title: const Text(
+            'Danh mục sản phẩm',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.black,
           // Ẩn icon giỏ hàng góc phải theo yêu cầu
         ),
         body: _isLoading 

@@ -329,7 +329,7 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
                           voucherIcon: widget.product.voucherIcon,
                           freeshipIcon: widget.product.freeshipIcon,
                           chinhhangIcon: widget.product.chinhhangIcon,
-                          fontSize: 9,
+                          iconSize: 9,
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                         ),
                         const SizedBox(height: 6),

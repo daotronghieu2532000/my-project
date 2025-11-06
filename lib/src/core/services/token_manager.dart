@@ -42,14 +42,25 @@ class TokenManager {
   }
 
   /// Lấy userId từ token
+  /// LƯU Ý: Method này KHÔNG hoạt động đúng với logic của dự án!
+  /// Token trong TokenManager là API token (không có user_id), không phải user token.
+  /// Để lấy user_id, nên dùng AuthService.getCurrentUser()?.userId thay vì method này.
+  /// 
+  /// @deprecated Sử dụng AuthService.getCurrentUser()?.userId thay vì method này
   Future<int?> getUserId() async {
     try {
       final token = await getToken();
-      if (token == null) return null;
+      if (token == null) {
+        print('⚠️ Token is null - user chưa đăng nhập');
+        return null;
+      }
       
       // Decode JWT payload
       final parts = token.split('.');
-      if (parts.length != 3) return null;
+      if (parts.length != 3) {
+        print('⚠️ Token không đúng format (không phải JWT)');
+        return null;
+      }
       
       // Decode payload (part 1)
       final payload = parts[1];
@@ -58,9 +69,44 @@ class TokenManager {
       
       final decodedBytes = base64Url.decode(paddedPayload);
       final decodedPayload = utf8.decode(decodedBytes);
-      final payloadMap = json.decode(decodedPayload);
+      final payloadMap = json.decode(decodedPayload) as Map<String, dynamic>;
       
-      return payloadMap['user_id'] as int?;
+      // Debug: In ra toàn bộ payload để kiểm tra
+      print('🔍 JWT Payload: $payloadMap');
+      
+      // Thử lấy user_id từ nhiều vị trí có thể
+      int? userId;
+      
+      // Thử 1: payloadMap['user_id'] (trực tiếp)
+      if (payloadMap.containsKey('user_id')) {
+        final val = payloadMap['user_id'];
+        if (val is int) {
+          userId = val;
+        } else if (val is String) {
+          userId = int.tryParse(val);
+        }
+      }
+      
+      // Thử 2: payloadMap['data']['user_id'] (nested trong data)
+      if (userId == null && payloadMap.containsKey('data')) {
+        final data = payloadMap['data'];
+        if (data is Map<String, dynamic> && data.containsKey('user_id')) {
+          final val = data['user_id'];
+          if (val is int) {
+            userId = val;
+          } else if (val is String) {
+            userId = int.tryParse(val);
+          }
+        }
+      }
+      
+      if (userId != null) {
+        print('✅ Lấy được userId từ token: $userId');
+      } else {
+        print('⚠️ Không tìm thấy user_id trong token payload');
+      }
+      
+      return userId;
     } catch (e) {
       print('❌ Lỗi khi decode userId từ token: $e');
       return null;

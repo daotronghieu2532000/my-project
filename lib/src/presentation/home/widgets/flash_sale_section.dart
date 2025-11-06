@@ -21,7 +21,6 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
   List<FlashSaleDeal> _deals = [];
   bool _isLoading = true;
   String? _error;
-  bool _expanded = false; // Hiển thị 10 sản phẩm mặc định, mở rộng để xem thêm
 
   @override
   void initState() {
@@ -306,44 +305,37 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
       return '${h.toString().padLeft(2, '0')} : ${m.toString().padLeft(2, '0')} : ${sec.toString().padLeft(2, '0')}';
     })();
 
-    // Xác định số lượng item hiển thị theo trạng thái thu gọn/mở rộng
-    final int visibleCount = _expanded
-        ? deduplicatedProducts.length
-        : (deduplicatedProducts.length > 10 ? 10 : deduplicatedProducts.length);
+    // Tính toán chiều cao cho horizontal scroll - responsive
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tính toán width: (screenWidth - padding left/right - spacing giữa cards) / 2
+    // Padding ListView: 4px mỗi bên = 8px, spacing (margin right): 8px
+    // Width = (screenWidth - 8 - 8) / 2 = (screenWidth - 16) / 2
+    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
+    final imageHeight = cardWidth * 1.0; // Ảnh vuông
+    // Chiều cao phần thông tin tự động (mainAxisSize.min) - đã giảm padding
+    // Tên: ~28px, Giá+Badge: ~20px, Rating/Progress: ~16px, Padding: 8px, Spacing: ~10px
+    final estimatedInfoHeight = screenWidth < 360 ? 90 : 100;
+    final cardHeight = imageHeight + estimatedInfoHeight;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ...List.generate(
-          visibleCount,
-          (index) {
-            final product = deduplicatedProducts[index];
-            return FlashSaleProductCardHorizontal(
+    return SizedBox(
+      height: cardHeight,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: deduplicatedProducts.length,
+        itemBuilder: (context, index) {
+          final product = deduplicatedProducts[index];
+          return Container(
+            width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+            margin: const EdgeInsets.only(right: 8), // Spacing giữa các card
+            child: FlashSaleProductCardHorizontal(
               product: product,
               index: index,
               countdownText: slotCountdown,
-            );
-          },
-        ),
-        if (deduplicatedProducts.length > 10)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 1), // Giảm từ 2 xuống 1 để giảm thêm khoảng trống
-            child: Center(
-              child: TextButton.icon(
-                onPressed: () {
-                  setState(() {
-                    _expanded = !_expanded;
-                  });
-                },
-                icon: Icon(_expanded ? Icons.expand_less : Icons.expand_more),
-                label: Text(_expanded ? 'Ẩn bớt' : 'Xem thêm'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.red,
-                ),
-              ),
             ),
-          ),
-      ],
+          );
+        },
+      ),
     );
   }
 
@@ -412,18 +404,18 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              'Giảm giá sốc, đừng bỏ lỡ!',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[700],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 12),
+          //   child: Text(
+          //     'Giảm giá sốc, đừng bỏ lỡ!',
+          //     style: TextStyle(
+          //       fontSize: 16,
+          //       color: Colors.grey[700],
+          //       fontWeight: FontWeight.w500,
+          //     ),
+          //   ),
+          // ),
+          // const SizedBox(height: 12),
           // Hiển thị sản phẩm theo dạng dọc
           _buildProductsList(),
           const SizedBox(height: 12),

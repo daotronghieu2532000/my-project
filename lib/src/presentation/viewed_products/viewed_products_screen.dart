@@ -19,8 +19,8 @@ class ViewedProductsScreen extends StatelessWidget {
         title: const Text(
           'Đã xem',
           style: TextStyle(
+            fontSize: 16,
             color: Colors.white,
-            fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
         ),

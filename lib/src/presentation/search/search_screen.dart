@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/cached_api_service.dart';
+import '../../core/services/auth_service.dart';
 import '../../core/models/search_result.dart';
 import '../../core/utils/format_utils.dart';
 import 'widgets/search_product_card_horizontal.dart';
@@ -20,6 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
   final ScrollController _scrollController = ScrollController();
   final ApiService _apiService = ApiService();
   final CachedApiService _cachedApiService = CachedApiService();
+  final AuthService _authService = AuthService();
 
   SearchResult? _searchResult;
   bool _isSearching = false;
@@ -113,11 +115,20 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       final page = isLoadMore ? _currentPage + 1 : 1;
       
+      // Lấy userId để lưu search behavior
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
+      if (userId != null) {
+        print('👤 Search with user_id: $userId for keyword: "$keyword"');
+      }
+      
       // Sử dụng cached API service cho search products
       final result = await _cachedApiService.searchProductsCached(
         keyword: keyword,
         page: page,
         limit: _itemsPerPage,
+        userId: userId,
       );
       
       // Nếu cache không có data, fallback về ApiService
@@ -128,6 +139,7 @@ class _SearchScreenState extends State<SearchScreen> {
           keyword: keyword,
           page: page,
           limit: _itemsPerPage,
+          userId: userId,
         );
       } else {
         print('🔍 Using cached search results');
@@ -140,6 +152,13 @@ class _SearchScreenState extends State<SearchScreen> {
         print(
           '🔍 Search result: ${searchResultObj.products.length} products, total: ${searchResultObj.pagination.total}',
         );
+        
+        // Nếu user đã đăng nhập và search thành công, clear cache của personalized suggestions
+        // để khi quay về trang chủ, sẽ thấy gợi ý mới dựa trên search keywords
+        if (userId != null && !isLoadMore) {
+          print('🔄 Clearing personalized suggestions cache after search...');
+          _cachedApiService.clearCachePattern('home_suggestions');
+        }
 
         setState(() {
           if (isLoadMore && _searchResult != null) {
@@ -605,24 +624,12 @@ class _SearchScreenState extends State<SearchScreen> {
         ),
         // Panel lọc
         if (_showFilters) _buildFilterPanel(),
-        // Danh sách sản phẩm
+        // Danh sách sản phẩm - Wrap 2 cột
         Expanded(
-          child: ListView.builder(
+          child: SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _getDisplayedProducts().length + (_isSearching ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Hiển thị loading indicator ở cuối danh sách khi đang load more
-              if (index == _getDisplayedProducts().length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              final product = _getDisplayedProducts()[index];
-              return SearchProductCardHorizontal(product: product);
-            },
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: _buildProductsGrid(),
           ),
         ),
       ],
@@ -860,6 +867,35 @@ class _SearchScreenState extends State<SearchScreen> {
         break;
     }
     return items;
+  }
+
+  Widget _buildProductsGrid() {
+    final displayedProducts = _getDisplayedProducts();
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
+    // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
+    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
+
+    return Column(
+      children: [
+        Wrap(
+          spacing: 8, // Khoảng cách ngang giữa các card
+          runSpacing: 8, // Khoảng cách dọc giữa các hàng
+          children: displayedProducts.map((product) {
+            return SizedBox(
+              width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+              child: SearchProductCardHorizontal(product: product),
+            );
+          }).toList(),
+        ),
+        // Loading indicator khi đang search
+        if (_isSearching)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+      ],
+    );
   }
 
   void _showPriceFilter() async {

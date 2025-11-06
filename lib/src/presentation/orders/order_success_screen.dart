@@ -152,8 +152,9 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
         title: const Text(
           'Đặt hàng thành công',
           style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
             fontWeight: FontWeight.w600,
-            fontSize: 18,
           ),
         ),
         backgroundColor: Colors.white,

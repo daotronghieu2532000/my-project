@@ -6,9 +6,11 @@ import 'widgets/flash_sale_section.dart';
 import 'widgets/product_grid.dart';
 import 'widgets/mobile_banner_slider.dart';
 import 'widgets/partner_banner_slider.dart';
+import 'widgets/featured_brands_slider.dart';
 import '../common/widgets/go_top_button.dart';
 import '../../core/widgets/scroll_preservation_wrapper.dart';
 import '../../core/services/cached_api_service.dart';
+import '../../core/services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final CachedApiService _cachedApiService = CachedApiService();
+  final AuthService _authService = AuthService();
   bool _isPreloading = true;
   int _refreshKey = 0; // Key để trigger reload các widget con
 
@@ -34,11 +37,16 @@ class _HomeScreenState extends State<HomeScreen> {
       // Preload tất cả dữ liệu cần thiết cho trang chủ
       print('🚀 Preloading home data...');
       
+      // Lấy userId từ AuthService (user đã đăng nhập) để preload personalized suggestions
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
       await Future.wait([
         _cachedApiService.getHomeBanners(),
         _cachedApiService.getHomeFlashSale(),
         _cachedApiService.getHomePartnerBanners(),
-        _cachedApiService.getHomeSuggestions(limit: 100),
+        _cachedApiService.getHomeFeaturedBrands(),
+        _cachedApiService.getHomeSuggestions(limit: 100, userId: userId),
       ]);
       
       print('✅ Home data preloaded successfully');
@@ -65,11 +73,16 @@ class _HomeScreenState extends State<HomeScreen> {
       // Clear cache và load lại dữ liệu
       _cachedApiService.clearCachePattern('home_');
       
+      // Lấy userId từ AuthService (user đã đăng nhập) để refresh personalized suggestions
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
       await Future.wait([
         _cachedApiService.getHomeBanners(forceRefresh: true),
         _cachedApiService.getHomeFlashSale(forceRefresh: true),
         _cachedApiService.getHomePartnerBanners(forceRefresh: true),
-        _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true),
+        _cachedApiService.getHomeFeaturedBrands(forceRefresh: true),
+        _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true, userId: userId),
       ]);
       
       print('✅ Home data refreshed successfully');
@@ -120,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: _scrollController,
                       padding: EdgeInsets.zero,
                       children: [
-                        // Mobile Banner - Full width, 295px height
+                        // Mobile Banner - Full width, 160px height
                         MobileBannerSlider(key: ValueKey('mobile_banner_$_refreshKey')),
                         const SizedBox(height: 8),
                         
@@ -131,18 +144,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 8),
                         
-                        // Flash Sale section
-                        FlashSaleSection(key: ValueKey('flash_sale_$_refreshKey')),
-                        const SizedBox(height: 8),
-                        
-                        // Partner Banner - Below flash sale, 160px height
+                        // Partner Banner - Below quick actions, 160px height
                         PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
                         const SizedBox(height: 8),
+                        
+                        // Flash Sale section
+                        FlashSaleSection(key: ValueKey('flash_sale_$_refreshKey')),
+                        const SizedBox(height: 4),
+                        
+                        // Featured Brands slider
+                        FeaturedBrandsSlider(key: ValueKey('featured_brands_$_refreshKey')),
                         
                         // Suggested products grid
                         Container(
                           color: Colors.white,
-                          child: ProductGrid(key: ValueKey('product_grid_$_refreshKey'), title: 'Gợi ý cho bạn'),
+                          child: ProductGrid(key: ValueKey('product_grid_$_refreshKey'), title: 'GỢI Ý TỚI BẠN '),
                         ),
                       ],
                     ),

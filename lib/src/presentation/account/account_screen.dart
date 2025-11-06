@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'widgets/header_card.dart';
 import 'widgets/section_header.dart';
 import 'widgets/action_list.dart';
-import 'widgets/logout_confirmation_dialog.dart';
 import 'models/action_item.dart';
-import '../../core/services/auth_service.dart';
-import '../../core/services/app_initialization_service.dart';
 import '../root_shell.dart';
+import 'settings_screen.dart';
+import '../home/widgets/product_grid.dart';
 
 class AccountScreen extends StatelessWidget {
   const AccountScreen({super.key});
@@ -17,126 +16,84 @@ class AccountScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
       appBar: AppBar(
-        title: const Text('Tài khoản của tôi'),
+        title: const Text(
+          'Tài khoản của tôi',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: ListView(
         children: [
           HeaderCard(),
           const SizedBox(height: 12),
-          const SectionHeader(title: 'Tài khoản'),
+          const SectionHeader(title: 'Danh mục '),
           ActionList(items: const [
-            ActionItem(Icons.manage_accounts_outlined, 'Thông tin cá nhân'),
             ActionItem(Icons.receipt_long_outlined, 'Tất cả đơn hàng'),
-            // ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
+            ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
             ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
-          ]),
-          const SizedBox(height: 12),
-          const SectionHeader(title: 'Cá nhân'),
-          ActionList(items: const [
-            ActionItem(Icons.location_on_outlined, 'Sổ địa chỉ'),
-            ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
+             ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
             // ActionItem(Icons.star_border, 'Lịch sử đánh giá'),
             ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
           ]),
-          const SizedBox(height: 12),
-          const SectionHeader(title: 'Hỗ trợ'),
-          ActionList(items: const [
-            ActionItem(Icons.headset_mic_outlined, 'Trung tâm trợ giúp'),
-            ActionItem(Icons.bug_report_outlined, 'Báo lỗi cho chúng tôi'),
-            ActionItem(Icons.star_outline, 'Đánh giá ứng dụng'),
-          ]),
+          // const SizedBox(height: 12),
+          // const SectionHeader(title: 'Cá nhân'),
+          // ActionList(items: const [
+           
+          // ]),
           const SizedBox(height: 24),
-          // Logout Button
+          // Gợi ý tới bạn section
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            child: ElevatedButton(
-              onPressed: () async {
-                final authService = AuthService();
-                final isLoggedIn = await authService.isLoggedIn();
-                
-                if (isLoggedIn) {
-                  // Show confirmation dialog
-                  final shouldLogout = await LogoutConfirmationDialog.show(context);
-                  
-                  if (shouldLogout == true) {
-                    // CRITICAL: Sử dụng logoutCompletely để đảm bảo logout hoàn toàn
-                    await authService.logoutCompletely();
-                    
-                    // Reset app initialization state
-                    AppInitializationService().resetInitialization();
-                    
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Đã đăng xuất '),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      
-                      // Quay về trang chủ và refresh toàn bộ navigation stack
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const RootShell(initialIndex: 0),
-                        ),
-                        (route) => false,
-                      );
-                    }
-                  }
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Bạn chưa đăng nhập'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                elevation: 0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.logout, size: 20),
-                  SizedBox(width: 8),
-                  Text(
-                    'Đăng xuất',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          // App Version Info
-          Center(
+            color: Colors.white,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'App version V3.4.34',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: const Text(
+                          'Có thể bạn sẽ thích',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1.5,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Last updated 10.08.2025',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
+                ProductGrid(title: ''),
               ],
             ),
           ),

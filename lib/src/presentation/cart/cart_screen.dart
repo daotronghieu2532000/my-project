@@ -93,11 +93,20 @@ class _CartScreenState extends State<CartScreen> {
       appBar: AppBar(
         title: Row(
           children: [
-            const Text('Giỏ hàng '),
+            const Text(
+              'Giỏ hàng',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             const SizedBox(width: 4),
             CounterBubble(count: _cartService.itemCount),
           ],
         ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
         actions: [
           TextButton(
             onPressed: () {

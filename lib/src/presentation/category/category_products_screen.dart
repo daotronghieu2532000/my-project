@@ -398,24 +398,12 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         ),
         // Panel lọc
         if (_showFilters) _buildFilterPanel(),
-        // Danh sách sản phẩm
+        // Danh sách sản phẩm - Wrap 2 cột
         Expanded(
-          child: ListView.builder(
+          child: SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _filteredSorted().length + (_isLoadingMore ? 1 : 0),
-            itemBuilder: (context, index) {
-              // Hiển thị loading indicator ở cuối danh sách khi đang load more
-              if (index == _filteredSorted().length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(child: CircularProgressIndicator()),
-                );
-              }
-              
-              final product = _filteredSorted()[index];
-              return CategoryProductCardHorizontal(product: product);
-            },
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: _buildProductsGrid(),
           ),
         ),
       ],
@@ -571,6 +559,35 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildProductsGrid() {
+    final filteredProducts = _filteredSorted();
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
+    // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
+    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
+
+    return Column(
+      children: [
+        Wrap(
+          spacing: 8, // Khoảng cách ngang giữa các card
+          runSpacing: 8, // Khoảng cách dọc giữa các hàng
+          children: filteredProducts.map((product) {
+            return SizedBox(
+              width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+              child: CategoryProductCardHorizontal(product: product),
+            );
+          }).toList(),
+        ),
+        // Loading indicator khi đang load more
+        if (_isLoadingMore)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+      ],
     );
   }
 

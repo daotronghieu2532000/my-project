@@ -148,7 +148,7 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Container(
-        height: 295,
+        height: 160,
         width: double.infinity,
         color: Colors.grey[200],
         child: const Center(
@@ -162,7 +162,7 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
     }
 
     return SizedBox(
-      height: 295,
+      height: 160,
       width: double.infinity,
       child: Stack(
         children: [
@@ -174,9 +174,8 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
                 onTap: () => _handleBannerTap(banner),
                 child: Container(
                   width: double.infinity,
-                  height: 295,
+                  height: 160,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
                     boxShadow: [
                       BoxShadow(
                         color: Colors.black.withValues(alpha: 0.1),
@@ -186,7 +185,7 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
                     ],
                   ),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.zero,
                       child: CachedNetworkImage(
                         imageUrl: banner.image,
                         fit: BoxFit.cover,
@@ -209,7 +208,7 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
               );
             },
             options: CarouselOptions(
-              height: 295,
+              height: 160,
               viewportFraction: 1.0,
               autoPlay: _banners.length > 1,
               autoPlayInterval: const Duration(seconds: 3),

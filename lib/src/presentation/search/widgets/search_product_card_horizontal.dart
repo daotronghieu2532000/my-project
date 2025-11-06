@@ -205,7 +205,7 @@ class SearchProductCardHorizontal extends StatelessWidget {
                                 voucherIcon: product.voucherIcon,
                                 freeshipIcon: product.freeshipIcon,
                                 chinhhangIcon: product.chinhhangIcon,
-                                fontSize: 9,
+                                iconSize: 9,
                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                               ),
                             ],
