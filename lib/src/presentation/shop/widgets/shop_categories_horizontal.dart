@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/shop_detail.dart';
 import '../../../core/services/cached_api_service.dart';
+import '../shop_category_products_screen.dart';
 
 class ShopCategoriesHorizontal extends StatefulWidget {
   final int shopId;
@@ -70,7 +71,7 @@ class _ShopCategoriesHorizontalState extends State<ShopCategoriesHorizontal> {
     }
 
     return SizedBox(
-      height: 96, // Giảm từ 100 xuống 96 để tránh overflow
+      height: 120, // Tăng chiều cao để chứa ảnh + tên + số lượng sản phẩm
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -88,56 +89,131 @@ class _ShopCategoriesHorizontalState extends State<ShopCategoriesHorizontal> {
   }
 
   Widget _buildCategoryCard(ShopCategory category) {
-    return Column(
-      mainAxisSize: MainAxisSize.min, // Giảm chiều cao để tránh overflow
-      children: [
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
+    return InkWell(
+      onTap: () => _navigateToCategoryProducts(category),
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: 80,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Ảnh category
+            Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: category.image.isNotEmpty
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        category.image,
+                        width: 70,
+                        height: 70,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          width: 70,
+                          height: 70,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(
+                            Icons.category,
+                            size: 30,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: 70,
+                            height: 70,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[100],
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        },
+                      ),
+                    )
+                  : Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.category,
+                        size: 30,
+                        color: Colors.grey,
+                      ),
+                    ),
+            ),
+            const SizedBox(height: 4),
+            // Tên category - wrap trong Flexible để tránh overflow
+            Flexible(
+              child: Text(
+                category.title,
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // Số lượng sản phẩm
+            if (category.productCount > 0) ...[
+              const SizedBox(height: 2),
+              Text(
+                '${category.productCount} sản phẩm',
+                style: TextStyle(
+                  fontSize: 9,
+                  color: Colors.grey[600],
+                  height: 1.0,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
-          child: category.image.isNotEmpty
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    category.image,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.category,
-                      size: 30,
-                      color: Colors.grey,
-                    ),
-                  ),
-                )
-              : const Icon(
-                  Icons.category,
-                  size: 30,
-                  color: Colors.grey,
-                ),
+          ],
         ),
-        const SizedBox(height: 2), // Giảm từ 4 xuống 2
-        Flexible( // Wrap Text trong Flexible để tránh overflow
-          child: Text(
-            category.title,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+      ),
+    );
+  }
+
+  void _navigateToCategoryProducts(ShopCategory category) {
+    // Navigate to shop products section with category filter
+    // Tạm thời navigate đến tab "Sản phẩm" với category filter
+    // TODO: Tạo màn hình riêng hoặc thêm categoryId vào ShopProductsSection
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ShopCategoryProductsScreen(
+          shopId: widget.shopId,
+          categoryId: category.id,
+          categoryName: category.title,
         ),
-      ],
+      ),
     );
   }
 }

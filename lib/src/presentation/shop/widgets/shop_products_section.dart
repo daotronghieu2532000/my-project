@@ -13,11 +13,13 @@ import '../../../core/services/cached_api_service.dart';
 
 class ShopProductsSection extends StatefulWidget {
   final int shopId;
+  final int? categoryId;
   final Function(ShopProduct) onProductTap;
 
   const ShopProductsSection({
     super.key,
     required this.shopId,
+    this.categoryId,
     required this.onProductTap,
   });
 
@@ -72,6 +74,7 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     try {
       final result = await _cachedApiService.getShopProductsPaginatedCached(
         shopId: widget.shopId,
+        categoryId: widget.categoryId?.toString(),
         page: loadMore ? _currentPage + 1 : 1,
         limit: 50,
       );

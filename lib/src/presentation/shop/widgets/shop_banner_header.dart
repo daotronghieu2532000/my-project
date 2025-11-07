@@ -17,14 +17,15 @@ class ShopBannerHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Banner image - dính lên đỉnh trang
+        // Banner image - dính lên đỉnh trang, giữ tỷ lệ ảnh 480x160
         Container(
           height: 200,
           width: double.infinity,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/images/banner-shop.jpg'),
-              fit: BoxFit.cover,
+              image: AssetImage('assets/images/banner-shop2.png'),
+              fit: BoxFit.fitWidth, // Giữ tỷ lệ ảnh, không phóng to
+              alignment: Alignment.topCenter, // Căn lên trên
             ),
           ),
         ),

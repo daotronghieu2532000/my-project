@@ -464,6 +464,7 @@ class ShopCategory {
   final List<int> socdoCategoryIds;
   final String socdoCategoryName;
   final String categoryUrl;
+  final int productCount;
 
   const ShopCategory({
     required this.id,
@@ -482,6 +483,7 @@ class ShopCategory {
     required this.socdoCategoryIds,
     required this.socdoCategoryName,
     required this.categoryUrl,
+    required this.productCount,
   });
 
   factory ShopCategory.fromJson(Map<String, dynamic> json) {
@@ -502,6 +504,7 @@ class ShopCategory {
       socdoCategoryIds: (json['socdo_category_ids'] as List?)?.cast<int>() ?? [],
       socdoCategoryName: json['socdo_category_name'] as String? ?? '',
       categoryUrl: json['category_url'] as String? ?? '',
+      productCount: json['product_count'] as int? ?? 0,
     );
   }
 }

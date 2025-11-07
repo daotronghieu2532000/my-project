@@ -7,6 +7,8 @@ import 'widgets/product_grid.dart';
 import 'widgets/partner_banner_slider.dart';
 import 'widgets/featured_brands_slider.dart';
 import 'widgets/popup_banner_widget.dart';
+import 'widgets/service_guarantees.dart';
+// import 'widgets/dedication_section.dart'; // Tận tâm - Tận tình - Tận tụy
 import '../common/widgets/go_top_button.dart';
 import '../../core/widgets/scroll_preservation_wrapper.dart';
 import '../../core/services/cached_api_service.dart';
@@ -169,6 +171,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         // Partner Banner - Full width, 160px height (thay thế banner mobile)
                         PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
+                        
+                        // Service Guarantees - Trả hàng 15 ngày, Chính hãng 100%, Giao miễn phí
+                        const ServiceGuarantees(),
                         const SizedBox(height: 8),
                         
                         // Quick actions
@@ -177,6 +182,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: const QuickActions(),
                         ),
                         const SizedBox(height: 8),
+                        
+                        // Dedication Section - Tận tâm - Tận tình - Tận tụy
+                        // "Tận tâm" (icon: fire.png)
+                        // "Tận tình" (icon: handshake.png)
+                        // "Tận tụy" (icon: heart.png)
+                        // const DedicationSection(),
                         
                         // Flash Sale section
                         FlashSaleSection(key: ValueKey('flash_sale_$_refreshKey')),
