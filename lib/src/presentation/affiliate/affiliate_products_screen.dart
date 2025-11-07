@@ -1148,6 +1148,8 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
                 });
               },
               onSubmitted: (_) {
+                // Ẩn bàn phím sau khi submit tìm kiếm
+                FocusScope.of(context).unfocus();
                 print('🔍 [SEARCH] Manual search submitted for: "$_searchQuery"');
                 _loadProducts(refresh: true);
               },

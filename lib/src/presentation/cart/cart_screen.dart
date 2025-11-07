@@ -114,9 +114,7 @@ class _CartScreenState extends State<CartScreen> {
                 _isEditMode = !_isEditMode;
                 if (!_isEditMode) {
                   // Reset all selections when exiting edit mode
-                  for (final item in _cartService.items) {
-                    item.isSelected = true;
-                  }
+                  _cartService.setAllItemsSelection(true);
                 }
               });
             }, 
@@ -148,11 +146,8 @@ class _CartScreenState extends State<CartScreen> {
           : BottomCheckoutBar(
               selectAll: selectAll,
               onToggleAll: (v) {
-                setState(() {
-                  for (final item in _cartService.items) {
-                    item.isSelected = v;
-                  }
-                });
+                _cartService.setAllItemsSelection(v);
+                setState(() {});
               },
               totalPrice: totalPrice,
               selectedCount: selectedCount,

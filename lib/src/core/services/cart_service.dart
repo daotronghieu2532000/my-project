@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'voucher_service.dart';
+import 'auth_service.dart';
 
 class CartItem {
   final int id;
@@ -68,6 +71,7 @@ class CartItem {
       'shopId': shopId,
       'shopName': shopName,
       'addedAt': addedAt.toIso8601String(),
+      'isSelected': isSelected,
     };
   }
 
@@ -83,6 +87,7 @@ class CartItem {
       shopId: json['shopId'],
       shopName: json['shopName'],
       addedAt: DateTime.parse(json['addedAt']),
+      isSelected: json['isSelected'] ?? true, // Default true nếu không có
     );
   }
 }
@@ -90,9 +95,49 @@ class CartItem {
 class CartService extends ChangeNotifier {
   static final CartService _instance = CartService._internal();
   factory CartService() => _instance;
-  CartService._internal();
+  CartService._internal() {
+    // Khởi tạo giỏ hàng (async sẽ được gọi sau)
+    _initializeCart();
+  }
 
   final List<CartItem> _items = [];
+  final AuthService _authService = AuthService();
+  static const String _cartKeyPrefix = 'cart_items_';
+  bool _isLoading = false; // Flag để tránh lưu khi đang load
+  int? _currentUserId; // User ID hiện tại để theo dõi thay đổi user
+  bool _isInitialized = false; // Flag để đảm bảo chỉ init một lần
+  
+  // Khởi tạo giỏ hàng và load theo user hiện tại
+  Future<void> _initializeCart() async {
+    if (_isInitialized) return;
+    _isInitialized = true;
+    
+    await _loadCart();
+    // Lắng nghe thay đổi user để load giỏ hàng mới
+    _authService.addAuthStateListener(_onAuthStateChanged);
+  }
+  
+  // Xử lý khi user đăng nhập/đăng xuất
+  Future<void> _onAuthStateChanged() async {
+    final currentUser = await _authService.getCurrentUser();
+    final newUserId = currentUser?.userId;
+    
+    // Nếu user thay đổi, lưu giỏ hàng cũ và load giỏ hàng mới
+    if (_currentUserId != newUserId) {
+      // Lưu giỏ hàng cũ trước khi chuyển user
+      if (_currentUserId != null && _items.isNotEmpty) {
+        await _saveCartForUser(_currentUserId!);
+      }
+      
+      // Clear giỏ hàng hiện tại
+      _items.clear();
+      _currentUserId = newUserId;
+      
+      // Load giỏ hàng của user mới
+      await _loadCart();
+      notifyListeners();
+    }
+  }
 
   List<CartItem> get items => List.unmodifiable(_items);
 
@@ -151,6 +196,7 @@ class CartService extends ChangeNotifier {
     }
     
     notifyListeners();
+    _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
 
   // Remove item from cart
@@ -169,6 +215,7 @@ class CartService extends ChangeNotifier {
     _validateAndClearVouchers(shopId);
     
     notifyListeners();
+    _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
 
   // Update item quantity
@@ -185,6 +232,7 @@ class CartService extends ChangeNotifier {
     if (index != -1) {
       _items[index] = _items[index].copyWith(quantity: quantity);
       notifyListeners();
+      _saveCart(); // Lưu giỏ hàng sau khi thay đổi
     }
   }
 
@@ -199,6 +247,7 @@ class CartService extends ChangeNotifier {
     
     _items.clear();
     notifyListeners();
+    _saveCart(); // Lưu giỏ hàng sau khi xóa (để xóa dữ liệu đã lưu)
   }
 
   // Clear items by shop
@@ -208,6 +257,7 @@ class CartService extends ChangeNotifier {
     final voucherService = VoucherService();
     voucherService.cancelVoucher(shopId);
     notifyListeners();
+    _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
 
   // Remove specific item by CartItem object
@@ -222,6 +272,7 @@ class CartService extends ChangeNotifier {
     _validateAndClearVouchers(shopId);
     
     notifyListeners();
+    _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
   
   // Validate vouchers and clear if products no longer match
@@ -280,6 +331,7 @@ class CartService extends ChangeNotifier {
     }
     
     notifyListeners();
+    _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
 
   // Update item price and oldPrice
@@ -296,7 +348,110 @@ class CartService extends ChangeNotifier {
         oldPrice: newOldPrice,
       );
       notifyListeners();
+      _saveCart(); // Lưu giỏ hàng sau khi thay đổi
     }
+  }
+
+  // Toggle item selection
+  void toggleItemSelection(int itemId, {String? variant}) {
+    final index = _items.indexWhere(
+      (item) => item.id == itemId && item.variant == variant,
+    );
+
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(
+        isSelected: !_items[index].isSelected,
+      );
+      notifyListeners();
+      _saveCart(); // Lưu giỏ hàng sau khi thay đổi
+    }
+  }
+
+  // Set all items selection
+  void setAllItemsSelection(bool isSelected) {
+    for (int i = 0; i < _items.length; i++) {
+      _items[i] = _items[i].copyWith(isSelected: isSelected);
+    }
+    notifyListeners();
+    _saveCart(); // Lưu giỏ hàng sau khi thay đổi
+  }
+
+  // Lưu giỏ hàng vào SharedPreferences
+  Future<void> _saveCart() async {
+    if (_isLoading) return; // Không lưu khi đang load
+    
+    // Lấy user hiện tại để lưu theo userId
+    final currentUser = await _authService.getCurrentUser();
+    final userId = currentUser?.userId;
+    
+    if (userId != null) {
+      await _saveCartForUser(userId);
+      _currentUserId = userId;
+    } else {
+      // Nếu chưa đăng nhập, lưu vào giỏ hàng guest
+      await _saveCartForUser(null);
+    }
+  }
+  
+  // Lưu giỏ hàng cho user cụ thể
+  Future<void> _saveCartForUser(int? userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartKey = userId != null ? '$_cartKeyPrefix$userId' : '${_cartKeyPrefix}guest';
+      final cartJson = _items.map((item) => item.toJson()).toList();
+      await prefs.setString(cartKey, jsonEncode(cartJson));
+    } catch (e) {
+      print('❌ Lỗi khi lưu giỏ hàng: $e');
+    }
+  }
+
+  // Load giỏ hàng từ SharedPreferences
+  Future<void> _loadCart() async {
+    _isLoading = true; // Đánh dấu đang load để tránh lưu
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final currentUser = await _authService.getCurrentUser();
+      final userId = currentUser?.userId;
+      
+      // Xác định key để load
+      final cartKey = userId != null ? '$_cartKeyPrefix$userId' : '${_cartKeyPrefix}guest';
+      final cartJsonString = prefs.getString(cartKey);
+      
+      if (cartJsonString != null && cartJsonString.isNotEmpty) {
+        final cartJson = jsonDecode(cartJsonString) as List<dynamic>;
+        _items.clear();
+        _items.addAll(
+          cartJson.map((json) => CartItem.fromJson(json as Map<String, dynamic>)).toList(),
+        );
+        _currentUserId = userId;
+        notifyListeners();
+      } else {
+        // Nếu không có giỏ hàng cho user này, clear items
+        _items.clear();
+        _currentUserId = userId;
+      }
+    } catch (e) {
+      print('❌ Lỗi khi load giỏ hàng: $e');
+    } finally {
+      _isLoading = false; // Hoàn tất load
+    }
+  }
+  
+  // Load giỏ hàng khi user đăng nhập (gọi từ bên ngoài)
+  Future<void> loadCartForUser() async {
+    await _loadCart();
+  }
+  
+  // Clear giỏ hàng khi user đăng xuất
+  Future<void> clearCartOnLogout() async {
+    // Lưu giỏ hàng hiện tại trước khi clear (nếu có user)
+    if (_currentUserId != null && _items.isNotEmpty) {
+      await _saveCartForUser(_currentUserId!);
+    }
+    
+    _items.clear();
+    _currentUserId = null;
+    notifyListeners();
   }
 
   // Check if item is in cart

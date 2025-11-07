@@ -173,6 +173,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     int originalShipFee = ship.lastFee; // Phí ship gốc
     int finalShipFee = ship.lastFee; // Phí ship cuối (sẽ được tính lại)
     
+    // Map để lưu shipping_provider cho từng shop
+    Map<int, String> shopShippingProviders = {};
+    
     // Gọi API shipping_quote để lấy thông tin freeship cho tất cả items
     try {
       final shippingItems = items.map((item) => {
@@ -223,6 +226,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             }
           }
         }
+        
+        // ✅ Lấy warehouse_shipping_details để map provider cho từng shop
+        final warehouseShipping = shippingQuote['data']?['warehouse_shipping'] as Map<String, dynamic>?;
+        if (warehouseShipping != null) {
+          final warehouseDetails = warehouseShipping['warehouse_details'] as List<dynamic>?;
+          if (warehouseDetails != null) {
+            for (final detail in warehouseDetails) {
+              final detailMap = detail as Map<String, dynamic>?;
+              if (detailMap != null) {
+                final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
+                final provider = detailMap['provider']?.toString() ?? '';
+                if (shopId > 0 && provider.isNotEmpty) {
+                  shopShippingProviders[shopId] = provider;
+                }
+              }
+            }
+          }
+        }
       }
     } catch (e) {
       // Nếu có lỗi khi gọi shipping_quote, sử dụng ship fee gốc
@@ -232,6 +253,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // Đảm bảo ship support không vượt quá ship fee gốc
     shipSupport = shipSupport.clamp(0, ship.lastFee);
     finalShipFee = finalShipFee.clamp(0, ship.lastFee);
+    
+    // ✅ Thêm shipping_provider vào mỗi item dựa trên shop_id
+    final itemsWithProvider = items.map((item) {
+      final shopId = item['shop'] as int? ?? 0;
+      final provider = shopShippingProviders[shopId] ?? ship.provider ?? '';
+      return {
+        ...item,
+        'shipping_provider': provider, // ✅ Thêm shipping_provider vào mỗi item
+      };
+    }).toList();
     
     // final grandTotal = totalGoods + finalShipFee - shopDiscount - platformDiscount;
     
@@ -244,7 +275,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       tinh: int.tryParse('${addr['tinh'] ?? 0}') ?? 0,
       huyen: int.tryParse('${addr['huyen'] ?? 0}') ?? 0,
       xa: int.tryParse('${addr['xa'] ?? 0}'),
-      sanpham: items.cast<Map<String, dynamic>>(),
+      sanpham: itemsWithProvider.cast<Map<String, dynamic>>(), // ✅ Sử dụng itemsWithProvider
       thanhtoan: selectedPaymentMethod.toUpperCase(),
       ghiChu: '',
       coupon: couponCode,
@@ -252,7 +283,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       voucherTmdt: platformDiscount, // ✅ Platform discount
       phiShip: originalShipFee,     // ✅ Phí ship gốc (giống website)
       shipSupport: shipSupport,      // ✅ Hỗ trợ ship từ freeship
-      shippingProvider: ship.provider,
+      shippingProvider: ship.provider, // ✅ Vẫn giữ để tương thích, nhưng sẽ bị override bởi provider trong items
     );
     
     if (res?['success'] == true) {

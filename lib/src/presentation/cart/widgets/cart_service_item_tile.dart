@@ -34,7 +34,8 @@ class CartServiceItemTile extends StatelessWidget {
             value: item.isSelected,
             activeColor: Colors.red,
             onChanged: (v) {
-              item.isSelected = v ?? false;
+              final cartService = CartService();
+              cartService.toggleItemSelection(item.id, variant: item.variant);
               onChanged();
             },
           ),

@@ -60,8 +60,12 @@ class CartServiceShopSection extends StatelessWidget {
                   value: items.every((item) => item.isSelected),
                   activeColor: Colors.red,
                   onChanged: (v) {
+                    final cartService = CartService();
                     for (final item in items) {
-                      item.isSelected = v ?? false;
+                      // Chỉ toggle nếu giá trị khác với giá trị mong muốn
+                      if (item.isSelected != (v ?? false)) {
+                        cartService.toggleItemSelection(item.id, variant: item.variant);
+                      }
                     }
                     onChanged();
                   },

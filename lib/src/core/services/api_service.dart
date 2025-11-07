@@ -11,6 +11,7 @@ import '../models/product_suggest.dart';
 import '../models/product_detail.dart';
 import '../models/related_product.dart';
 import '../models/banner.dart';
+import '../models/popup_banner.dart';
 import '../models/brand.dart';
 import '../models/shop_detail.dart';
 
@@ -515,10 +516,12 @@ class ApiService {
             try { print('🐞 shipping_quote debug: ${jsonEncode(d['debug'])}'); } catch (_) {}
           }
           return {
+            'success': true,
             'fee': bestSimple['fee'] ?? 0,
             'provider': bestSimple['provider']?.toString() ?? '',
             'eta_text': bestSimple['eta_text']?.toString() ?? '',
             // kèm theo dữ liệu chi tiết để debug nếu cần
+            'data': d, // ✅ Trả về toàn bộ data để có thể truy cập warehouse_shipping
             'quotes': d['quotes'],
             'input': d['input'],
             'best': d['best'],
@@ -3593,6 +3596,43 @@ class ApiService {
       }
     } catch (e) {
       print('❌ Lỗi khi lấy banners: $e');
+      return null;
+    }
+    
+    return null;
+  }
+
+  /// Lấy popup banner hiển thị trên app
+  Future<PopupBanner?> getPopupBanner() async {
+    try {
+      String endpoint = '/popup_banners';
+      
+      print('🔍 Popup Banner API Endpoint: $endpoint');
+      
+      final response = await get(endpoint);
+      
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true && data['data'] != null) {
+          final popupData = data['data'] as Map<String, dynamic>?;
+          
+          if (popupData != null) {
+            final popupBanner = PopupBanner.fromJson(popupData);
+            
+            print('✅ Lấy popup banner thành công: ${popupBanner.title}');
+            return popupBanner;
+          }
+        } else {
+          print('ℹ️ Không có popup banner nào: ${data['message'] ?? 'Unknown'}');
+          return null;
+        }
+      } else {
+        print('❌ HTTP Error: ${response?.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Lỗi khi lấy popup banner: $e');
       return null;
     }
     

@@ -6,10 +6,13 @@ import 'widgets/flash_sale_section.dart';
 import 'widgets/product_grid.dart';
 import 'widgets/partner_banner_slider.dart';
 import 'widgets/featured_brands_slider.dart';
+import 'widgets/popup_banner_widget.dart';
 import '../common/widgets/go_top_button.dart';
 import '../../core/widgets/scroll_preservation_wrapper.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/api_service.dart';
+import '../../core/models/popup_banner.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,13 +25,42 @@ class _HomeScreenState extends State<HomeScreen> {
   final ScrollController _scrollController = ScrollController();
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
+  final ApiService _apiService = ApiService();
   bool _isPreloading = true;
   int _refreshKey = 0; // Key để trigger reload các widget con
+  PopupBanner? _popupBanner;
+  bool _showPopup = false;
 
   @override
   void initState() {
     super.initState();
     _preloadData();
+    _loadPopupBanner();
+  }
+  
+  Future<void> _loadPopupBanner() async {
+    try {
+      print('🔍 Loading popup banner...');
+      final popupBanner = await _apiService.getPopupBanner();
+      
+      if (mounted && popupBanner != null) {
+        setState(() {
+          _popupBanner = popupBanner;
+          _showPopup = true;
+        });
+        print('✅ Popup banner loaded: ${popupBanner.title}');
+      } else {
+        print('ℹ️ No popup banner to display');
+      }
+    } catch (e) {
+      print('❌ Error loading popup banner: $e');
+    }
+  }
+  
+  void _closePopup() {
+    setState(() {
+      _showPopup = false;
+    });
   }
 
   Future<void> _preloadData() async {
@@ -85,6 +117,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ]);
       
       print('✅ Home data refreshed successfully');
+      
+      // Reload popup banner khi refresh
+      _loadPopupBanner();
       
       // Trigger reload các widget con bằng cách thay đổi refreshKey
       if (mounted) {
@@ -166,6 +201,12 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollController: _scrollController,
               showAfterScrollDistance: 1000.0, // Khoảng 2.5 màn hình
             ),
+            // Popup Banner
+            if (_showPopup && _popupBanner != null)
+              PopupBannerWidget(
+                popupBanner: _popupBanner!,
+                onClose: _closePopup,
+              ),
           ],
         ),
       ),

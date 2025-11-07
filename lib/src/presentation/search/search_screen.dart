@@ -201,10 +201,14 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _onSearchSubmitted(String keyword) {
+    // Ẩn bàn phím sau khi submit tìm kiếm
+    FocusScope.of(context).unfocus();
     _performSearch(keyword);
   }
 
   void _onKeywordTapped(String keyword) {
+    // Ẩn bàn phím khi tap vào từ khóa
+    FocusScope.of(context).unfocus();
     _searchController.text = keyword;
     _performSearch(keyword);
   }

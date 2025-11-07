@@ -74,69 +74,69 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                 return Container(
                   width: double.infinity,
                   height: imageWidth * 1.0, // Ảnh vuông - chiều cao = chiều rộng
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F6FB),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF4F6FB),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(8),
                       topRight: Radius.circular(8),
                     ),
-                  ),
-                  child: Stack(
-                    children: [
-                      ClipRRect(
+                    ),
+                    child: Stack(
+                      children: [
+                        ClipRRect(
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
                         ),
-                        child: product.imageUrl != null
-                            ? Image.network(
-                                product.imageUrl!,
+                          child: product.imageUrl != null
+                              ? Image.network(
+                                  product.imageUrl!,
                                 width: double.infinity,
                                 height: double.infinity,
-                                fit: BoxFit.cover,
+                                  fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(imageWidth),
-                              )
+                                )
                             : _buildPlaceholderImage(imageWidth),
-                      ),
+                        ),
                       // Flash sale icon (góc trái trên) - ưu tiên hiển thị trước
-                      if (_isFlashSale(product))
-                        Positioned(
-                          top: 4,
-                          left: 4,
-                          child: Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Colors.orange.shade700, Colors.red.shade700],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.red.withOpacity(0.4),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
+                        if (_isFlashSale(product))
+                          Positioned(
+                            top: 4,
+                            left: 4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.orange.shade700, Colors.red.shade700],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
                                 ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.local_fire_department,
-                              color: Colors.white,
-                              size: 16,
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.red.withOpacity(0.4),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.local_fire_department,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
-                        ),
                       // Discount badge (nổi lên trên ảnh góc phải)
-                      if (product.oldPrice != null && product.oldPrice! > product.price)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: _isFlashSale(product) ? Colors.orange : Colors.red,
-                              borderRadius: BorderRadius.circular(4),
+                        if (product.oldPrice != null && product.oldPrice! > product.price)
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _isFlashSale(product) ? Colors.orange : Colors.red,
+                                borderRadius: BorderRadius.circular(4),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.2),
@@ -144,16 +144,16 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                            ),
-                            child: Text(
-                              _isFlashSale(product) ? 'SALE' : '${((product.oldPrice! - product.price) / product.oldPrice! * 100).round()}%',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
+                              ),
+                              child: Text(
+                                _isFlashSale(product) ? 'SALE' : '${((product.oldPrice! - product.price) / product.oldPrice! * 100).round()}%',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                          ),
                         ),
                       // Icon giỏ hàng position nổi trên ảnh (góc dưới bên phải)
                       Positioned(
@@ -172,9 +172,9 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                                   color: Colors.red.withOpacity(0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
+                          ),
+                      ],
+                    ),
                             child: const Icon(
                               Icons.add_shopping_cart,
                               size: 18,
@@ -191,32 +191,32 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
             // Box dưới: Thông tin sản phẩm - chỉ có padding bottom, left, right, tự co giãn
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 4), // Giảm padding bottom
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min, // Tự co giãn theo nội dung
-                children: [
-                  Text(
-                    product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                            children: [
+                              Text(
+                                product.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: screenWidth < 360 ? 12 : 14,
-                      fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w500,
                       height: 1.2,
-                    ),
-                  ),
+                                ),
+                              ),
                   const SizedBox(height: 4),
                   // Giá và badges cùng hàng
-                  Row(
-                    children: [
+                              Row(
+                                children: [
                       Flexible(
                         child: Text(
-                          FormatUtils.formatCurrency(product.price),
+                                    FormatUtils.formatCurrency(product.price),
                           style: TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.bold,
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
                             fontSize: screenWidth < 360 ? 14 : 16,
-                          ),
+                                    ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -248,38 +248,38 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                               icon: Icons.verified,
                               color: const Color.fromARGB(255, 0, 140, 255),
                               size: screenWidth < 360 ? 8 : 10,
-                            ),
-                          ],
-                        ],
-                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                     ],
                   ),
                   // Rating and sold with fake data
                   const SizedBox(height: 3),
-                  Row(
-                    children: [
+                              Row(
+                                children: [
                       Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
-                      const SizedBox(width: 2),
+                                  const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                          '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                                    '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  // Badge kho ở đáy box
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ),
+                            ],
+                          ),
+                          // Badge kho ở đáy box
                   const SizedBox(height: 3),
                   ProductLocationBadge(
-                    locationText: null,
-                    provinceName: product.provinceName,
+                                locationText: null,
+                                provinceName: product.provinceName,
                     fontSize: screenWidth < 360 ? 8 : 9,
-                    iconColor: Colors.black,
-                    textColor: Colors.black,
+                                iconColor: Colors.black,
+                                textColor: Colors.black,
                   ),
                 ],
               ),

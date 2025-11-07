@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../../../core/models/shop_detail.dart';
+import '../../../core/services/cached_api_service.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
@@ -10,27 +11,25 @@ import '../../cart/cart_screen.dart';
 import '../../checkout/checkout_screen.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/services/cart_service.dart';
-import '../../../core/services/cached_api_service.dart';
-import '../../shared/widgets/product_badges.dart';
-import 'shop_section_wrapper.dart';
 
-class ShopFlashSalesSection extends StatefulWidget {
+class ShopFlashSalesTabs extends StatefulWidget {
   final int shopId;
 
-  const ShopFlashSalesSection({
+  const ShopFlashSalesTabs({
     super.key,
     required this.shopId,
   });
 
   @override
-  State<ShopFlashSalesSection> createState() => _ShopFlashSalesSectionState();
+  State<ShopFlashSalesTabs> createState() => _ShopFlashSalesTabsState();
 }
 
-class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
+class _ShopFlashSalesTabsState extends State<ShopFlashSalesTabs>
+    with SingleTickerProviderStateMixin {
   final CachedApiService _cachedApiService = CachedApiService();
+  late TabController _tabController;
   late Timer _timer;
   final Map<int, Duration> _timeLeftMap = {};
-  final Map<int, bool> _expandedMap = {};
   
   List<ShopFlashSale> _flashSales = [];
   bool _isLoading = true;
@@ -43,6 +42,15 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _updateTimers();
     });
+  }
+
+  @override
+  void dispose() {
+    if (_flashSales.isNotEmpty) {
+      _tabController.dispose();
+    }
+    _timer.cancel();
+    super.dispose();
   }
 
   Future<void> _loadFlashSales() async {
@@ -63,6 +71,13 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
           _flashSales = flashSales;
           _isLoading = false;
         });
+        
+        if (flashSales.isNotEmpty) {
+          _tabController = TabController(
+            length: flashSales.length,
+            vsync: this,
+          );
+        }
         
         _initializeTimers();
       }
@@ -103,145 +118,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
     }
   }
 
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ShopSectionWrapper(
-      isLoading: _isLoading,
-      error: _error,
-      emptyMessage: 'Shop chưa có flash sale nào',
-      emptyIcon: Icons.flash_on_outlined,
-      onRetry: _loadFlashSales,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(8),
-        itemCount: _flashSales.length,
-        itemBuilder: (context, index) {
-          final flashSale = _flashSales[index];
-          return _buildFlashSaleCard(flashSale, context);
-        },
-      ),
-    );
-  }
-
-  Widget _buildFlashSaleCard(ShopFlashSale flashSale, BuildContext context) {
-    final timeLeft = _timeLeftMap[flashSale.id] ?? const Duration();
-    final isActive = timeLeft.inSeconds > 0;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.red[400]!, Colors.red[600]!],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.flash_on, color: Colors.white, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    flashSale.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                // Small countdown on the right
-                if (isActive) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                      _formatTime(timeLeft),
-                    style: const TextStyle(
-                      color: Colors.white,
-                        fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                // Expand/Collapse button
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _expandedMap[flashSale.id] = !(_expandedMap[flashSale.id] ?? true);
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      (_expandedMap[flashSale.id] ?? true) ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Animated content
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            height: (_expandedMap[flashSale.id] ?? true) ? null : 0,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 300),
-              opacity: (_expandedMap[flashSale.id] ?? true) ? 1.0 : 0.0,
-              child: Column(
-                children: [
-                  // Danh sách sản phẩm - cuộn ngang như flash sale trang chủ
-                  if (flashSale.subProducts.isNotEmpty) ...[
-                    const Divider(height: 1),
-                    _buildFlashSaleProductsList(flashSale, context),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   String _formatTime(Duration duration) {
     final days = duration.inDays;
     final hours = duration.inHours % 24;
@@ -259,8 +135,155 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
     }
   }
 
-  Widget _buildFlashSaleProductsList(ShopFlashSale flashSale, BuildContext context) {
-    // Lọc và chuẩn bị danh sách sản phẩm
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(_error!, style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadFlashSales,
+              child: const Text('Thử lại'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_flashSales.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    // Nếu chỉ có 1 flash sale, hiển thị trực tiếp không cần tabs
+    if (_flashSales.length == 1) {
+      return ShopFlashSaleProductsList(
+        flashSale: _flashSales[0],
+        shopId: widget.shopId,
+      );
+    }
+
+    // Nếu có nhiều flash sale, hiển thị dạng tabs
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Tab bar - căn trái, gọn vào góc màn hình
+        Container(
+          color: Colors.white,
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            padding: const EdgeInsets.only(left: 0),
+            labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+            tabAlignment: TabAlignment.start,
+            labelColor: Colors.red,
+            unselectedLabelColor: Colors.grey,
+            indicatorColor: Colors.red,
+            tabs: _flashSales.map((flashSale) {
+              final timeLeft = _timeLeftMap[flashSale.id] ?? const Duration();
+              final isActive = timeLeft.inSeconds > 0;
+              return Tab(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        flashSale.title,
+                        style: const TextStyle(fontSize: 14),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (isActive) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _formatTime(timeLeft),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        // Tab content - sử dụng SizedBox với chiều cao động thay vì cố định
+        Builder(
+          builder: (context) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final cardWidth = (screenWidth - 16) / 2;
+            final imageHeight = cardWidth * 1.0;
+            final estimatedInfoHeight = screenWidth < 360 ? 100 : 106;
+            final cardHeight = imageHeight + estimatedInfoHeight;
+            
+            return SizedBox(
+              height: cardHeight, // Chiều cao động dựa trên card height
+              child: TabBarView(
+                controller: _tabController,
+                children: _flashSales.map((flashSale) {
+                  return ShopFlashSaleProductsList(
+                    flashSale: flashSale,
+                    shopId: widget.shopId,
+                  );
+                }).toList(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+// Widget riêng để hiển thị flash sale products list
+class ShopFlashSaleProductsList extends StatelessWidget {
+  final ShopFlashSale flashSale;
+  final int shopId;
+
+  const ShopFlashSaleProductsList({
+    super.key,
+    required this.flashSale,
+    required this.shopId,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Sử dụng ShopFlashSalesSection để hiển thị sản phẩm
+    // Tạo một instance tạm để sử dụng logic
+    return _FlashSaleProductsListHelper(flashSale: flashSale);
+  }
+}
+
+// Helper widget để hiển thị flash sale products list
+class _FlashSaleProductsListHelper extends StatelessWidget {
+  final ShopFlashSale flashSale;
+
+  const _FlashSaleProductsListHelper({
+    required this.flashSale,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Copy logic từ ShopFlashSalesSection._buildFlashSaleProductsList
     final products = <Map<String, dynamic>>[];
     
     for (var entry in flashSale.subProducts.entries) {
@@ -284,7 +307,7 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
       return const SizedBox.shrink();
     }
     
-    // Tính toán chiều cao cho horizontal scroll - responsive
+    // Tính toán chiều cao cho horizontal scroll - giống flash_sale_section.dart
     final screenWidth = MediaQuery.of(context).size.width;
     // Tính toán width: (screenWidth - padding left/right - spacing giữa cards) / 2
     // Padding ListView: 4px mỗi bên = 8px, spacing (margin right): 8px
@@ -309,39 +332,45 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
           return Container(
             width: cardWidth, // Width cố định cho 2 cột
             margin: const EdgeInsets.only(right: 8), // Spacing giữa các card
-            child: _buildFlashSaleProductCard(
+            child: _FlashSaleProductCardHelper(
               productId: product['productId'] as int,
               productInfo: product['productInfo'] as Map<String, dynamic>,
               variant: product['variant'] as Map<String, dynamic>,
-              context: context,
             ),
           );
         },
       ),
     );
   }
+}
 
-  Widget _buildFlashSaleProductCard({
-    required int productId,
-    required Map<String, dynamic> productInfo,
-    required Map<String, dynamic> variant,
-    required BuildContext context,
-  }) {
+// Helper widget để hiển thị flash sale product card
+class _FlashSaleProductCardHelper extends StatelessWidget {
+  final int productId;
+  final Map<String, dynamic> productInfo;
+  final Map<String, dynamic> variant;
+
+  const _FlashSaleProductCardHelper({
+    required this.productId,
+    required this.productInfo,
+    required this.variant,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Copy logic từ ShopFlashSalesSection._buildFlashSaleProductCard
     final price = int.tryParse(variant['gia']?.toString() ?? '0') ?? 0;
     final oldPrice = int.tryParse(variant['gia_cu']?.toString() ?? '0') ?? 0;
     final discountPercent = oldPrice > 0 && price < oldPrice 
         ? ((oldPrice - price) / oldPrice * 100).round() 
         : 0;
     
-    // Get product info
     final productName = productInfo['name'] as String? ?? 'Sản phẩm #$productId';
     final productImage = productInfo['image'] as String? ?? '';
     final voucherIcon = productInfo['voucher_icon'] as String? ?? '';
     final freeshipIcon = productInfo['freeship_icon'] as String? ?? '';
     final chinhhangIcon = productInfo['chinhhang_icon'] as String? ?? '';
-    final provinceName = productInfo['province_name'] as String? ?? '';
     
-    // Generate fake data
     final fakeData = _generateFakeData(productId, price);
     final screenWidth = MediaQuery.of(context).size.width;
     
@@ -358,40 +387,39 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
         ],
       ),
       child: InkWell(
-      onTap: () {
-    Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailScreen(
-              productId: productId,
-              title: productName,
-              image: productImage,
-              price: price,
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(
+                productId: productId,
+                title: productName,
+                image: productImage,
+                price: price,
+              ),
             ),
-          ),
-        );
-      },
-          borderRadius: BorderRadius.circular(8),
+          );
+        },
+        borderRadius: BorderRadius.circular(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Quan trọng: tự co giãn theo nội dung
-        children: [
-            // Box trên: Ảnh sản phẩm + Label giảm giá
+          mainAxisSize: MainAxisSize.min, // Tự co giãn theo nội dung
+          children: [
             LayoutBuilder(
               builder: (context, constraints) {
                 final imageWidth = constraints.maxWidth;
                 return Container(
                   width: double.infinity,
-                  height: imageWidth * 1.0, // Ảnh vuông
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FB),
+                  height: imageWidth * 1.0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FB),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(8),
                       topRight: Radius.circular(8),
-                      ),
                     ),
+                  ),
                   child: Stack(
-              children: [
+                    children: [
                       ClipRRect(
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
@@ -406,8 +434,7 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                                 errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(imageWidth),
                               )
                             : _buildPlaceholderImage(imageWidth),
-                ),
-                      // Flash sale badge (góc trái trên)
+                      ),
                       Positioned(
                         top: 4,
                         left: 4,
@@ -424,40 +451,38 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                             children: [
                               Icon(Icons.flash_on, size: 12, color: Colors.white),
                               SizedBox(width: 2),
-                    Text(
+                              Text(
                                 'FLASH',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 9,
                                   fontWeight: FontWeight.bold,
                                 ),
-                    ),
-                  ],
-                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      // Discount badge (góc phải trên)
-                    if (discountPercent > 0)
+                      if (discountPercent > 0)
                         Positioned(
                           top: 4,
                           right: 4,
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
                               '$discountPercent%',
-                          style: const TextStyle(
-                            color: Colors.white,
+                              style: const TextStyle(
+                                color: Colors.white,
                                 fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                        ),
-                      // Cart icon (góc dưới bên phải)
                       Positioned(
                         bottom: 4,
                         right: 4,
@@ -466,7 +491,7 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                           child: Container(
                             width: 32,
                             height: 32,
-                        decoration: BoxDecoration(
+                            decoration: BoxDecoration(
                               color: Colors.red,
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
@@ -480,7 +505,7 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                             child: const Icon(
                               Icons.add_shopping_cart,
                               size: 18,
-                            color: Colors.white,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -490,7 +515,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                 );
               },
             ),
-            // Box dưới: Thông tin sản phẩm
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
               child: Column(
@@ -508,7 +532,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  // Giá và badges cùng hàng
                   Row(
                     children: [
                       Flexible(
@@ -523,7 +546,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                         ),
                       ),
                       const SizedBox(width: 4),
-                      // Badges chỉ icon
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -555,8 +577,8 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                       ),
                     ],
                   ),
-                  // Rating and sold
                   const SizedBox(height: 3), // Giảm từ 4 xuống 3
+                  // Rating and sold with fake data (giống flash_sale_product_card_horizontal.dart)
                   Row(
                     children: [
                       Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
@@ -573,22 +595,11 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                       ),
                     ],
                   ),
-                  // Location badge - chỉ hiển thị nếu có
-                  if (provinceName.isNotEmpty) ...[
-                    const SizedBox(height: 3), // Giảm từ 3 xuống 3 (giữ nguyên)
-                    ProductLocationBadge(
-                      locationText: null,
-                      provinceName: provinceName,
-                      fontSize: screenWidth < 360 ? 8 : 9,
-                      iconColor: Colors.black,
-                      textColor: Colors.black,
-                    ),
-                  ],
                 ],
               ),
             ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -608,7 +619,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
     );
   }
 
-  // Widget badge chỉ hiển thị icon
   Widget _buildIconOnlyBadge({
     required IconData icon,
     required Color color,
@@ -628,7 +638,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
     );
   }
 
-  // Helper function to generate fake rating and sold data
   Map<String, dynamic> _generateFakeData(int productId, int price) {
     final random = Random(productId);
     final isExpensive = price >= 1000000;
@@ -650,7 +659,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
 
   void _showPurchaseDialog(BuildContext context, int productId) async {
     try {
-      // Dùng cache cho chi tiết sản phẩm để thống nhất với các nơi khác
       final productDetail = await CachedApiService().getProductDetailCached(productId);
       final parentContext = Navigator.of(context).context;
       
@@ -677,7 +685,7 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                   });
                 },
               );
-    } else {
+            } else {
               return SimplePurchaseDialog(
                 product: productDetail,
                 onBuyNow: (product, quantity) {
@@ -844,3 +852,4 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
     }
   }
 }
+

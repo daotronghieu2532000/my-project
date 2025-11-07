@@ -4,12 +4,10 @@ import '../../core/services/cached_api_service.dart';
 import '../../core/models/shop_detail.dart';
 import '../product/product_detail_screen.dart';
 import '../cart/cart_screen.dart';
-import 'widgets/shop_info_header.dart';
+import 'widgets/shop_banner_header.dart';
+import 'widgets/shop_tab_content.dart';
 import 'widgets/shop_products_section.dart';
-import 'widgets/shop_flash_sales_section.dart';
-import 'widgets/shop_vouchers_section.dart';
 import 'widgets/shop_warehouses_section.dart';
-import 'widgets/shop_categories_section.dart';
 
 class ShopDetailScreen extends StatefulWidget {
   final int? shopId;
@@ -41,7 +39,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
     _loadShopDetail();
   }
 
@@ -159,49 +157,35 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(shopInfo.name),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        actions: [
-          IconButton(
-            onPressed: () {
+      body: Column(
+        children: [
+          // Shop Banner Header với thông tin đè lên - dính lên đỉnh trang
+          ShopBannerHeader(
+            shopInfo: shopInfo,
+            onBack: () => Navigator.pop(context),
+            onCart: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const CartScreen()),
               );
             },
-            icon: const Icon(Icons.shopping_cart),
-            tooltip: 'Giỏ hàng',
           ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Shop Info Header
-          ShopInfoHeader(shopInfo: shopInfo),
           
-          // Tab Bar
+          // Tab Bar - full width, không scrollable
           Container(
             color: Colors.white,
             child: SizedBox(
               height: 48,
               child: TabBar(
                 controller: _tabController,
-                isScrollable: true,
-                padding: const EdgeInsets.only(left: 0),
-                labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                tabAlignment: TabAlignment.start,
+                isScrollable: false, // Không scrollable để full width
                 labelColor: Colors.red,
                 unselectedLabelColor: Colors.grey,
                 indicatorColor: Colors.red,
                 tabs: const [
+                  Tab(text: 'Shop'),
                   Tab(text: 'Sản phẩm'),
-                  Tab(text: 'Flash Sale'),
-                  Tab(text: 'Voucher'),
                   Tab(text: 'Kho hàng'),
-                  Tab(text: 'Danh mục'),
                 ],
               ),
             ),
@@ -212,29 +196,19 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
+                // Shop tab - chứa Voucher, Flash Sale, Danh mục
+                ShopTabContent(
+                  shopId: widget.shopId ?? shopInfo.shopId,
+                ),
+                
                 // Sản phẩm
                 ShopProductsSection(
                   shopId: widget.shopId ?? shopInfo.shopId,
                   onProductTap: _navigateToProduct,
                 ),
                 
-                // Flash Sale
-                ShopFlashSalesSection(
-                  shopId: widget.shopId ?? shopInfo.shopId,
-                ),
-                
-                // Voucher
-                ShopVouchersSection(
-                  shopId: widget.shopId ?? shopInfo.shopId,
-                ),
-                
                 // Kho hàng
                 ShopWarehousesSection(
-                  shopId: widget.shopId ?? shopInfo.shopId,
-                ),
-                
-                // Danh mục
-                ShopCategoriesSection(
                   shopId: widget.shopId ?? shopInfo.shopId,
                 ),
               ],
