@@ -3616,9 +3616,16 @@ class ApiService {
   }
 
   /// Lấy popup banner hiển thị trên app
-  Future<PopupBanner?> getPopupBanner() async {
+  /// [excludeIds]: Danh sách ID của banner đã hiển thị (để luân phiên banner)
+  Future<PopupBanner?> getPopupBanner({List<int>? excludeIds}) async {
     try {
       String endpoint = '/popup_banners';
+      
+      // Thêm tham số exclude_id nếu có (có thể là danh sách comma-separated)
+      if (excludeIds != null && excludeIds.isNotEmpty) {
+        final excludeIdsString = excludeIds.join(',');
+        endpoint += '?exclude_id=$excludeIdsString';
+      }
       
       print('🔍 Popup Banner API Endpoint: $endpoint');
       

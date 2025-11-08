@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
   import 'widgets/home_app_bar.dart';
 import 'widgets/quick_actions.dart';
 import 'widgets/flash_sale_section.dart';
@@ -43,14 +44,54 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadPopupBanner() async {
     try {
       print('🔍 Loading popup banner...');
-      final popupBanner = await _apiService.getPopupBanner();
+      
+      // Lấy danh sách banner ID đã hiển thị từ SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final displayedBannerIdsString = prefs.getString('displayed_popup_banner_ids');
+      List<int> displayedBannerIds = [];
+      
+      if (displayedBannerIdsString != null && displayedBannerIdsString.isNotEmpty) {
+        displayedBannerIds = displayedBannerIdsString
+            .split(',')
+            .map((id) => int.tryParse(id.trim()))
+            .where((id) => id != null)
+            .cast<int>()
+            .toList();
+      }
+      
+      print('🔍 Displayed banner IDs: $displayedBannerIds');
+      
+      // Gọi API với danh sách banner đã hiển thị để loại trừ tất cả
+      PopupBanner? popupBanner = await _apiService.getPopupBanner(
+        excludeIds: displayedBannerIds.isNotEmpty ? displayedBannerIds : null,
+      );
+      
+      // Nếu không có banner mới (đã hiển thị hết), reset danh sách và lấy banner đầu tiên
+      if (popupBanner == null || displayedBannerIds.contains(popupBanner.id)) {
+        print('ℹ️ All banners have been displayed, resetting...');
+        displayedBannerIds.clear();
+        popupBanner = await _apiService.getPopupBanner(excludeIds: null);
+      }
       
       if (mounted && popupBanner != null) {
         setState(() {
           _popupBanner = popupBanner;
           _showPopup = true;
         });
-        print('✅ Popup banner loaded: ${popupBanner.title}');
+        
+        // Thêm banner ID mới vào danh sách đã hiển thị
+        if (!displayedBannerIds.contains(popupBanner.id)) {
+          displayedBannerIds.add(popupBanner.id);
+        }
+        
+        // Lưu danh sách banner ID đã hiển thị vào SharedPreferences
+        await prefs.setString(
+          'displayed_popup_banner_ids',
+          displayedBannerIds.join(','),
+        );
+        
+        print('✅ Popup banner loaded: ${popupBanner.title} (ID: ${popupBanner.id})');
+        print('🔍 Updated displayed banner IDs: $displayedBannerIds');
       } else {
         print('ℹ️ No popup banner to display');
       }
