@@ -5,12 +5,14 @@ class ShopBannerHeader extends StatelessWidget {
   final ShopInfo shopInfo;
   final VoidCallback? onBack;
   final VoidCallback? onCart;
+  final VoidCallback? onChat;
 
   const ShopBannerHeader({
     super.key,
     required this.shopInfo,
     this.onBack,
     this.onCart,
+    this.onChat,
   });
 
   @override
@@ -58,10 +60,21 @@ class ShopBannerHeader extends StatelessWidget {
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   iconSize: 24,
                 ),
-                IconButton(
-                  onPressed: onCart,
-                  icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                  iconSize: 24,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (onChat != null)
+                      IconButton(
+                        onPressed: onChat,
+                        icon: const Icon(Icons.chat, color: Colors.white),
+                        iconSize: 24,
+                      ),
+                    IconButton(
+                      onPressed: onCart,
+                      icon: const Icon(Icons.shopping_cart, color: Colors.white),
+                      iconSize: 24,
+                    ),
+                  ],
                 ),
               ],
             ),

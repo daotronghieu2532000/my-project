@@ -145,7 +145,7 @@ class LocalNotificationService {
     print('📤 [DEBUG] Showing notification - ID: $id, Title: $title');
     print('📤 [DEBUG] Payload (raw): $payload');
     print('📤 [DEBUG] Payload (JSON): $payloadJson');
-    
+
     await _notifications.show(
       id,
       title,

@@ -4,6 +4,7 @@ import '../../core/services/cached_api_service.dart';
 import '../../core/models/shop_detail.dart';
 import '../product/product_detail_screen.dart';
 import '../cart/cart_screen.dart';
+import '../chat/chat_screen.dart';
 import 'widgets/shop_banner_header.dart';
 import 'widgets/shop_tab_content.dart';
 import 'widgets/shop_products_section.dart';
@@ -163,6 +164,18 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
           ShopBannerHeader(
             shopInfo: shopInfo,
             onBack: () => Navigator.pop(context),
+            onChat: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ChatScreen(
+                    shopId: widget.shopId ?? shopInfo.shopId,
+                    shopName: widget.shopName ?? shopInfo.name,
+                    shopAvatar: widget.shopAvatar ?? shopInfo.avatarUrl,
+                  ),
+                ),
+              );
+            },
             onCart: () {
               Navigator.push(
                 context,

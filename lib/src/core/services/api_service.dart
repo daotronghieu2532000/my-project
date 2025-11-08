@@ -3639,6 +3639,50 @@ class ApiService {
     return null;
   }
 
+  /// Tăng click_count khi user click vào popup banner
+  Future<bool> incrementPopupBannerClick({required int popupId}) async {
+    try {
+      String endpoint = '/popup_banners';
+      
+      print('🔍 Popup Banner Click API Endpoint: $endpoint, popup_id: $popupId');
+      
+      final response = await post(endpoint, body: {
+        'popup_id': popupId,
+      });
+      
+      if (response != null) {
+        print('📥 Response status: ${response.statusCode}');
+        print('📥 Response body: ${response.body}');
+        
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          
+          if (data['success'] == true) {
+            print('✅ Tăng click_count thành công: ${data['data']?['click_count'] ?? 'N/A'}');
+            return true;
+          } else {
+            print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown'}');
+            if (data['debug'] != null) {
+              print('🔍 Debug info: ${data['debug']}');
+            }
+            return false;
+          }
+        } else {
+          print('❌ HTTP Error: ${response.statusCode}');
+          print('❌ Response body: ${response.body}');
+          return false;
+        }
+      } else {
+        print('❌ Response is null');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      print('❌ Lỗi khi tăng click_count: $e');
+      print('❌ Stack trace: $stackTrace');
+      return false;
+    }
+  }
+
   // =============== FEATURED BRANDS ===============
   Future<List<Brand>?> getFeaturedBrands({
     int page = 1,

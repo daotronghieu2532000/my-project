@@ -4,6 +4,7 @@ import '../../core/services/chat_service.dart';
 import '../../core/services/socketio_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/models/chat.dart';
+import '../shop/shop_detail_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final int shopId;
@@ -38,6 +39,22 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _error;
   String? _phien;
   bool _isConnected = false;
+  String? _searchQuery;
+  List<ChatMessage> _filteredMessages = [];
+  bool _isSearching = false;
+  final TextEditingController _searchController = TextEditingController();
+  
+  // ✅ Mẫu chat tiêu biểu
+  final List<String> _quickReplies = [
+    'Xin chào',
+    'Cảm ơn bạn',
+    'Sản phẩm còn hàng không?',
+    'Giá bao nhiêu?',
+    'Có ship không?',
+    'Tôi muốn đặt hàng',
+    'Có thể tư vấn thêm không?',
+    'Sản phẩm có bảo hành không?',
+  ];
 
   @override
   void initState() {
@@ -112,6 +129,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _socketIOService.disconnect();
     _messageController.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -223,22 +241,30 @@ class _ChatScreenState extends State<ChatScreen> {
     // Set up Socket.io callbacks
     _socketIOService.onConnected = () {
       print('🔌 [Socket.io] Connected successfully');
-      if (mounted) {
-        setState(() { _isConnected = true; });
-      }
+      if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
+      setState(() { _isConnected = true; });
+      // ✅ Dừng polling khi Socket.IO đã connect (realtime)
+      _stopPolling();
+      print('✅ [ChatScreen] Stopped polling - using Socket.IO realtime');
     };
 
     _socketIOService.onDisconnected = () {
       print('🔌 [Socket.io] Disconnected');
-      if (mounted) {
-        setState(() { _isConnected = false; });
-      }
+      if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
+      setState(() { _isConnected = false; });
+      // ✅ Start polling lại khi Socket.IO disconnect (fallback)
+      _startPolling();
+      print('🔄 [ChatScreen] Started polling - Socket.IO disconnected');
     };
 
     _socketIOService.onError = (error) {
       print('❌ [Socket.io] Error: $error');
-      if (mounted) {
-        setState(() { _isConnected = false; });
+      if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
+      setState(() { _isConnected = false; });
+      // ✅ Start polling khi Socket.IO có lỗi (fallback)
+      if (!_socketIOService.isConnected) {
+        _startPolling();
+        print('🔄 [ChatScreen] Started polling - Socket.IO error');
       }
     };
 
@@ -251,8 +277,14 @@ class _ChatScreenState extends State<ChatScreen> {
     print('🔌 [Socket.io] Connecting to phien: $_phien');
     _socketIOService.connect(_phien!);
     
-    // Start polling as backup
-    _startPolling();
+    // ✅ Chỉ start polling nếu Socket.IO chưa connect (fallback)
+    // Polling sẽ tự động dừng khi Socket.IO connect thành công
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && !_socketIOService.isConnected) {
+        _startPolling();
+        print('🔄 [ChatScreen] Started polling - Socket.IO not connected yet');
+      }
+    });
   }
 
   void _handleSocketIOMessage(Map<String, dynamic> message) {
@@ -264,9 +296,16 @@ class _ChatScreenState extends State<ChatScreen> {
     print('🔄 [ChatScreen] _handleNewMessage called with: $message');
     
     // Socket.io có thể gửi message trực tiếp hoặc trong 'message' field
-    final messageData = message['message'] ?? message;
-    if (messageData == null) {
-      print('❌ [ChatScreen] messageData is null');
+    // ✅ Kiểm tra nếu message['message'] là Map thì dùng nó, nếu là String thì dùng message
+    Map<String, dynamic> messageData;
+    if (message['message'] != null && message['message'] is Map) {
+      messageData = Map<String, dynamic>.from(message['message'] as Map);
+    } else {
+      messageData = message;
+    }
+    
+    if (messageData.isEmpty) {
+      print('❌ [ChatScreen] messageData is empty');
       return;
     }
     
@@ -274,21 +313,63 @@ class _ChatScreenState extends State<ChatScreen> {
     
     // Get current user to determine if message is own
     final currentUser = await _authService.getCurrentUser();
-    final senderId = int.tryParse(messageData['sender_id']?.toString() ?? '0') ?? 0;
+    final senderId = int.tryParse(messageData['sender_id']?.toString() ?? messageData['customer_id']?.toString() ?? '0') ?? 0;
     final isOwn = currentUser != null && senderId == currentUser.userId;
     
     print('👤 [ChatScreen] Current user: ${currentUser?.userId}, Sender: $senderId, IsOwn: $isOwn');
     
     // Create ChatMessage object
+    // ✅ Lấy content từ message hoặc content field
+    final content = messageData['message'] is String 
+        ? messageData['message'] as String
+        : (messageData['content'] ?? messageData['message'] ?? '') as String;
+    
+    // ✅ Lấy time từ time field hoặc date_formatted
+    final timeStr = messageData['time'] ?? messageData['date_formatted'] ?? DateTime.now().toString();
+    
+    final messageId = int.tryParse(messageData['id']?.toString() ?? messageData['message_id']?.toString() ?? '0') ?? 0;
+    
+    // ✅ Kiểm tra xem message đã tồn tại chưa (tránh duplicate)
+    // Kiểm tra theo id hoặc theo content trong 5 giây gần đây
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    bool isDuplicate = false;
+    
+    // Kiểm tra theo id nếu có
+    if (messageId > 0) {
+      isDuplicate = _messages.any((msg) => msg.id == messageId && msg.id > 0);
+    }
+    
+    // Nếu chưa tìm thấy duplicate, kiểm tra theo content trong 5 giây gần đây
+    // ✅ Quan trọng: Khi gửi message, nó được thêm với isOwn=true, senderId=0
+    // Khi nhận từ Socket.IO, nó có isOwn=false, senderId=0 (hoặc customer_id)
+    // Nên chỉ cần kiểm tra content + thời gian, không cần quan tâm isOwn hay senderId
+    if (!isDuplicate) {
+      isDuplicate = _messages.any((msg) {
+        // Kiểm tra content giống nhau và thời gian gần đây (5 giây)
+        // ✅ Bỏ qua kiểm tra isOwn và senderId vì chúng có thể khác nhau
+        // khi gửi vs khi nhận từ Socket.IO
+        if (msg.content == content && (now - msg.datePost).abs() < 5) {
+          return true;
+        }
+        return false;
+      });
+    }
+    
+    // ✅ Nếu message đã tồn tại, bỏ qua
+    if (isDuplicate) {
+      print('⚠️ [ChatScreen] Duplicate message detected, skipping: $content (id: $messageId, isOwn: $isOwn, senderId: $senderId)');
+      return;
+    }
+    
     final chatMessage = ChatMessage(
-      id: int.tryParse(messageData['id']?.toString() ?? '0') ?? 0,
+      id: messageId,
       senderId: senderId,
       senderType: messageData['sender_type'] ?? 'customer',
       senderName: messageData['sender_name'] ?? 'Unknown',
       senderAvatar: messageData['sender_avatar'] ?? '',
-      content: messageData['content'] ?? messageData['message'] ?? '',
+      content: content,
       datePost: int.tryParse(messageData['date_post']?.toString() ?? '0') ?? DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      dateFormatted: messageData['date_formatted'] ?? DateTime.now().toString(),
+      dateFormatted: timeStr,
       isRead: messageData['is_read'] == 1 || messageData['is_read'] == '1' || messageData['is_read'] == true,
       isOwn: isOwn,
     );
@@ -312,6 +393,81 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     });
+    
+    // ✅ Update filtered messages nếu đang search
+    if (_searchQuery != null && _searchQuery!.isNotEmpty) {
+      _filterMessages(_searchQuery!);
+    }
+  }
+
+  void _showMenuOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.store, color: Colors.blue),
+              title: const Text('Xem hồ sơ shop'),
+              onTap: () {
+                Navigator.pop(context);
+                _navigateToShopDetail();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.search, color: Colors.orange),
+              title: const Text('Tìm kiếm tin nhắn'),
+              onTap: () {
+                Navigator.pop(context);
+                setState(() {
+                  _isSearching = true;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _navigateToShopDetail() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ShopDetailScreen(
+          shopId: widget.shopId,
+          shopName: widget.shopName,
+          shopAvatar: widget.shopAvatar,
+        ),
+      ),
+    );
+  }
+
+
+  void _filterMessages(String query) {
+    setState(() {
+      _searchQuery = query;
+      _filteredMessages = _messages.where((message) {
+        return message.content.toLowerCase().contains(query.toLowerCase());
+      }).toList();
+    });
+    
+    // Scroll to first matching message
+    if (_filteredMessages.isNotEmpty && _scrollController.hasClients) {
+      final firstMatchIndex = _messages.indexOf(_filteredMessages.first);
+      if (firstMatchIndex >= 0) {
+        _scrollController.animateTo(
+          firstMatchIndex * 80.0, // Approximate height per message
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    }
   }
 
   Future<void> _sendMessage() async {
@@ -391,26 +547,68 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.shopName,
-              style: const TextStyle(
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w600,
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.black,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Tìm kiếm tin nhắn...',
+                  hintStyle: TextStyle(
+                    color: Colors.grey[400],
+                    fontSize: 16,
+                  ),
+                  border: InputBorder.none,
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.close, size: 20),
+                    onPressed: () {
+                      setState(() {
+                        _isSearching = false;
+                        _searchQuery = null;
+                        _filteredMessages = [];
+                        _searchController.clear();
+                      });
+                    },
+                  ),
+                ),
+                onChanged: (value) {
+                  if (value.isEmpty) {
+                    setState(() {
+                      _searchQuery = null;
+                      _filteredMessages = [];
+                    });
+                  } else {
+                    _filterMessages(value);
+                  }
+                },
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.shopName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // ✅ Chấm tròn hiển thị trạng thái kết nối
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _isConnected ? Colors.green : Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            Text(
-              _isConnected ? 'Socket.io Connected' : 'Connecting...',
-              style: TextStyle(
-                fontSize: 12,
-                color: _isConnected ? Colors.green : Colors.red,
-              ),
-            ),
-          ],
-        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -418,9 +616,7 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // Show more options
-            },
+            onPressed: _showMenuOptions,
           ),
         ],
       ),
@@ -447,17 +643,110 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildChatScreen() {
+    // ✅ Sử dụng filtered messages nếu đang search, nếu không thì dùng tất cả messages
+    final displayMessages = _searchQuery != null && _searchQuery!.isNotEmpty
+        ? _filteredMessages
+        : _messages;
+    
     return Column(
       children: [
+        // ✅ Hiển thị search bar nếu đang search
+        if (_searchQuery != null && _searchQuery!.isNotEmpty)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.orange[50],
+            child: Row(
+              children: [
+                Icon(Icons.search, color: Colors.orange[700], size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Tìm thấy ${_filteredMessages.length} tin nhắn với "${_searchQuery}"',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange[700],
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 20),
+                  onPressed: () {
+                    setState(() {
+                      _searchQuery = null;
+                      _filteredMessages = [];
+                    });
+                  },
+                  color: Colors.orange[700],
+                ),
+              ],
+            ),
+          ),
         // Messages list
         Expanded(
+          child: displayMessages.isEmpty && _searchQuery != null && _searchQuery!.isNotEmpty
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.search_off, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Không tìm thấy tin nhắn nào',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: displayMessages.length,
+                  itemBuilder: (context, index) {
+                    final message = displayMessages[index];
+                    final isHighlighted = _searchQuery != null && 
+                        _searchQuery!.isNotEmpty &&
+                        message.content.toLowerCase().contains(_searchQuery!.toLowerCase());
+                    return _buildMessageBubble(message, isHighlighted: isHighlighted);
+                  },
+                ),
+        ),
+        
+        // ✅ Quick reply messages (mẫu chat tiêu biểu)
+        Container(
+          height: 50,
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: _messages.length,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _quickReplies.length,
             itemBuilder: (context, index) {
-              final message = _messages[index];
-              return _buildMessageBubble(message);
+              final reply = _quickReplies[index];
+              return Container(
+                margin: const EdgeInsets.only(right: 8),
+                child: InkWell(
+                  onTap: () {
+                    _messageController.text = reply;
+                    _sendMessage();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Center(
+                      child: Text(
+                        reply,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
             },
           ),
         ),
@@ -651,11 +940,96 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessageBubble(ChatMessage message, {bool isHighlighted = false}) {
     final isOwn = message.isOwn;
+    
+    // ✅ Highlight text nếu đang search
+    Widget contentWidget;
+    if (isHighlighted && _searchQuery != null && _searchQuery!.isNotEmpty) {
+      final query = _searchQuery!.toLowerCase();
+      final content = message.content;
+      final contentLower = content.toLowerCase();
+      final queryIndex = contentLower.indexOf(query);
+      
+      if (queryIndex >= 0) {
+        // Tìm tất cả các vị trí match
+        final matches = <int>[];
+        int startIndex = 0;
+        while (startIndex < contentLower.length) {
+          final index = contentLower.indexOf(query, startIndex);
+          if (index == -1) break;
+          matches.add(index);
+          startIndex = index + query.length;
+        }
+        
+        // Tạo TextSpan với highlight
+        final spans = <TextSpan>[];
+        int lastIndex = 0;
+        for (final matchIndex in matches) {
+          // Text trước match
+          if (matchIndex > lastIndex) {
+            spans.add(TextSpan(
+              text: content.substring(lastIndex, matchIndex),
+              style: TextStyle(
+                color: isOwn ? Colors.white : Colors.black87,
+                fontSize: 14,
+              ),
+            ));
+          }
+          // Text match (highlight)
+          spans.add(TextSpan(
+            text: content.substring(matchIndex, matchIndex + query.length),
+            style: TextStyle(
+              color: isOwn ? Colors.white : Colors.black87,
+              fontSize: 14,
+              backgroundColor: Colors.yellow,
+              fontWeight: FontWeight.bold,
+            ),
+          ));
+          lastIndex = matchIndex + query.length;
+        }
+        // Text sau match cuối
+        if (lastIndex < content.length) {
+          spans.add(TextSpan(
+            text: content.substring(lastIndex),
+            style: TextStyle(
+              color: isOwn ? Colors.white : Colors.black87,
+              fontSize: 14,
+            ),
+          ));
+        }
+        
+        contentWidget = RichText(
+          text: TextSpan(children: spans),
+        );
+      } else {
+        contentWidget = Text(
+          message.content,
+          style: TextStyle(
+            color: isOwn ? Colors.white : Colors.black87,
+            fontSize: 14,
+          ),
+        );
+      }
+    } else {
+      contentWidget = Text(
+        message.content,
+        style: TextStyle(
+          color: isOwn ? Colors.white : Colors.black87,
+          fontSize: 14,
+        ),
+      );
+    }
     
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
+      decoration: isHighlighted
+          ? BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(8),
+            )
+          : null,
+      padding: isHighlighted ? const EdgeInsets.all(4) : EdgeInsets.zero,
       child: Row(
         mainAxisAlignment: isOwn ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
@@ -673,13 +1047,7 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    message.content,
-                    style: TextStyle(
-                      color: isOwn ? Colors.white : Colors.black87,
-                      fontSize: 14,
-                    ),
-                  ),
+                  contentWidget,
                   const SizedBox(height: 4),
                   Text(
                     message.dateFormatted,

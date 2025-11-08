@@ -6,6 +6,7 @@ import '../../search/search_screen.dart';
 import '../../chat/chat_list_screen.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/chat_service.dart';
+import '../../../core/services/socketio_service.dart';
 import '../../../core/models/user.dart';
 import '../../../core/models/chat.dart';
 import '../../../core/services/api_service.dart';
@@ -21,11 +22,12 @@ class _HomeAppBarState extends State<HomeAppBar> {
   final _authService = AuthService();
   final _api = ApiService();
   final _chatService = ChatService();
+  final _socketIOService = SocketIOService();
   User? _currentUser;
   bool _isLoading = true;
   int _unread = 0;
   int _unreadChat = 0;
-  Timer? _timer;
+  Timer? _pollingTimer; // ✅ Chỉ dùng khi Socket.IO disconnect/error
 
   @override
   void initState() {
@@ -34,21 +36,32 @@ class _HomeAppBarState extends State<HomeAppBar> {
     
     // Thêm listener để cập nhật khi trạng thái đăng nhập thay đổi
     _authService.addAuthStateListener(_checkLoginStatus);
-    
-    // Cập nhật thông báo mỗi 60 giây
-    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      if (mounted && _currentUser != null) {
-        _loadUnread();
-      }
-    });
   }
 
   @override
   void dispose() {
     // Xóa listener khi dispose
     _authService.removeAuthStateListener(_checkLoginStatus);
-    _timer?.cancel();
+    _stopPolling();
+    _socketIOService.disconnect();
     super.dispose();
+  }
+
+  void _startPolling() {
+    _stopPolling();
+    // ✅ Chỉ polling khi Socket.IO disconnect/error (fallback)
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted && _currentUser != null && !_socketIOService.isConnected) {
+        _loadUnread();
+      }
+    });
+  }
+
+  void _stopPolling() {
+    if (_pollingTimer != null) {
+      _pollingTimer!.cancel();
+      _pollingTimer = null;
+    }
   }
 
   Future<void> _checkLoginStatus() async {
@@ -61,12 +74,15 @@ class _HomeAppBarState extends State<HomeAppBar> {
           _isLoading = false;
         });
         _loadUnread();
+        _setupSocketIO(); // ✅ Setup Socket.IO để nhận realtime updates
       } else {
         setState(() {
           _currentUser = null;
           _isLoading = false;
         });
         setState(() => _unread = 0);
+        _stopPolling();
+        _socketIOService.disconnect();
       }
     } catch (e) {
       setState(() {
@@ -74,6 +90,44 @@ class _HomeAppBarState extends State<HomeAppBar> {
         _isLoading = false;
       });
     }
+  }
+
+  void _setupSocketIO() {
+    // ✅ Setup Socket.IO để nhận realtime updates cho unread count
+    _socketIOService.onConnected = () {
+      _stopPolling(); // ✅ Dừng polling khi Socket.IO connect
+      print('✅ [HomeAppBar] Socket.IO connected, stopped polling');
+    };
+
+    _socketIOService.onDisconnected = () {
+      _startPolling(); // ✅ Start polling khi Socket.IO disconnect (fallback)
+      print('🔄 [HomeAppBar] Socket.IO disconnected, started polling');
+    };
+
+    _socketIOService.onError = (error) {
+      if (!_socketIOService.isConnected) {
+        _startPolling(); // ✅ Start polling khi Socket.IO error (fallback)
+        print('🔄 [HomeAppBar] Socket.IO error, started polling');
+      }
+    };
+
+    _socketIOService.onMessage = (message) {
+      // ✅ Khi nhận message mới, refresh unread count
+      if (mounted && _currentUser != null) {
+        _loadUnread();
+      }
+    };
+
+    // ✅ Connect to Socket.IO với 'global' để nhận tất cả messages
+    _socketIOService.connect('global');
+
+    // ✅ Chỉ start polling nếu Socket.IO chưa connect (fallback)
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted && !_socketIOService.isConnected) {
+        _startPolling();
+        print('🔄 [HomeAppBar] Started polling - Socket.IO not connected yet');
+      }
+    });
   }
 
   Future<void> _loadUnread() async {

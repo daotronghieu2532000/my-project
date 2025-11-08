@@ -91,14 +91,25 @@ class _ChatListScreenState extends State<ChatListScreen> {
     // Set up Socket.io callbacks for real-time updates
     _socketIOService.onConnected = () {
       print('🔌 [ChatListScreen] Socket.io connected');
+      // ✅ Dừng polling khi Socket.IO đã connect (realtime)
+      _stopPolling();
+      print('✅ [ChatListScreen] Stopped polling - using Socket.IO realtime');
     };
 
     _socketIOService.onDisconnected = () {
       print('🔌 [ChatListScreen] Socket.io disconnected');
+      // ✅ Start polling lại khi Socket.IO disconnect (fallback)
+      _startPolling();
+      print('🔄 [ChatListScreen] Started polling - Socket.IO disconnected');
     };
 
     _socketIOService.onError = (error) {
       print('❌ [ChatListScreen] Socket.io error: $error');
+      // ✅ Start polling khi Socket.IO có lỗi (fallback)
+      if (!_socketIOService.isConnected) {
+        _startPolling();
+        print('🔄 [ChatListScreen] Started polling - Socket.IO error');
+      }
     };
 
     _socketIOService.onMessage = (message) {
@@ -120,8 +131,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
           _currentUser = user;
         });
         _loadChatSessions();
-        _startPolling();
         _setupSocketIO();
+        // ✅ Chỉ start polling nếu Socket.IO chưa connect (fallback)
+        // Polling sẽ tự động dừng khi Socket.IO connect thành công
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted && !_socketIOService.isConnected) {
+            _startPolling();
+            print('🔄 [ChatListScreen] Started polling - Socket.IO not connected yet');
+          }
+        });
       } else {
         setState(() {
           _currentUser = null;

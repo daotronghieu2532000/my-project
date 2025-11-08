@@ -85,7 +85,7 @@ class SocketIOService {
       _isConnected = true;
       print('✅✅✅ [SocketIO] CONNECTED! ID: ${_socket!.id}');
       try {
-        final transportName = _socket!.io.engine?.transport?.name ?? 'unknown';
+        final transportName = _socket!.io.engine.transport?.name ?? 'unknown';
         print('✅✅✅ [SocketIO] Transport: $transportName');
       } catch (e) {
         print('⚠️ [SocketIO] Could not get transport name: $e');
