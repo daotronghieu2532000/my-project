@@ -1529,17 +1529,25 @@ class CachedApiService {
       'searchQuery': searchQuery ?? '',
     });
     
-    // Kiểm tra cache trước
-    if (!forceRefresh && _cache.has(cacheKey)) {
+    print('🔍 [CachedApiService] Cache key: $cacheKey');
+    print('🔍 [CachedApiService] Search query in cache key: "$searchQuery"');
+    
+    // Kiểm tra cache trước - nhưng không dùng cache khi có search query để đảm bảo kết quả mới nhất
+    if (!forceRefresh && (searchQuery == null || searchQuery.isEmpty) && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached shop products for page: $page');
+        print('⚡ Using cached shop products for page: $page (no search query)');
         return cachedData;
       }
+    }
+    
+    if (searchQuery != null && searchQuery.isNotEmpty) {
+      print('🔍 [CachedApiService] Force refresh cache for search query: "$searchQuery"');
     }
 
     try {
       print('🔄 Fetching shop products from API for page: $page');
+      print('🔍 [CachedApiService] Search query: "$searchQuery"');
       final result = await _apiService.getShopProductsPaginated(
         shopId: shopId,
         page: page,
@@ -1548,6 +1556,11 @@ class CachedApiService {
         categoryId: categoryId,
         searchQuery: searchQuery,
       );
+      
+      if (result != null) {
+        final products = result['products'] as List? ?? [];
+        print('🔍 [CachedApiService] API returned ${products.length} products');
+      }
       
       if (result != null) {
         // Cache kết quả

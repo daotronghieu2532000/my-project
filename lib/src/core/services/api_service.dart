@@ -4048,9 +4048,11 @@ class ApiService {
         url += '&category_id=$categoryId';
       }
       if (searchQuery != null && searchQuery.isNotEmpty) {
-        url += '&search=$searchQuery';
+        url += '&search=${Uri.encodeComponent(searchQuery)}';
+        print('🔍 [ApiService] Adding search parameter: "$searchQuery"');
       }
       
+      print('🔍 [ApiService] Final URL: $url');
       final response = await get(url);
       
       if (response != null && response.statusCode == 200) {

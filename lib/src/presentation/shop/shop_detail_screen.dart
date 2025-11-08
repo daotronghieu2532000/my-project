@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/services/api_service.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/models/shop_detail.dart';
 import '../product/product_detail_screen.dart';
@@ -30,12 +29,12 @@ class ShopDetailScreen extends StatefulWidget {
 
 class _ShopDetailScreenState extends State<ShopDetailScreen>
     with SingleTickerProviderStateMixin {
-  final ApiService _apiService = ApiService();
   final CachedApiService _cachedApiService = CachedApiService();
   ShopDetail? _shopDetail;
   bool _isLoading = true;
   String? _error;
   late TabController _tabController;
+  String _searchKeyword = '';
 
   @override
   void initState() {
@@ -182,6 +181,15 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
                 MaterialPageRoute(builder: (context) => const CartScreen()),
               );
             },
+            onSearch: (keyword) {
+              print('🔍 [ShopDetailScreen] Search keyword received: "$keyword"');
+              print('🔍 [ShopDetailScreen] Old _searchKeyword: "$_searchKeyword"');
+              setState(() {
+                _searchKeyword = keyword;
+              });
+              print('🔍 [ShopDetailScreen] New _searchKeyword: "$_searchKeyword"');
+              print('🔍 [ShopDetailScreen] TabBarView key will be: "tab_view_${widget.shopId ?? shopInfo.shopId}_$_searchKeyword"');
+            },
           ),
           
           // Tab Bar - full width, không scrollable
@@ -207,6 +215,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
           // Tab Content
           Expanded(
             child: TabBarView(
+              key: ValueKey('tab_view_${widget.shopId ?? shopInfo.shopId}_$_searchKeyword'),
               controller: _tabController,
               children: [
                 // Shop tab - chứa Voucher, Flash Sale, Danh mục
@@ -216,8 +225,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
                 
                 // Sản phẩm
                 ShopProductsSection(
+                  key: ValueKey('shop_products_${widget.shopId ?? shopInfo.shopId}_$_searchKeyword'),
                   shopId: widget.shopId ?? shopInfo.shopId,
                   onProductTap: _navigateToProduct,
+                  searchKeyword: _searchKeyword,
                 ),
                 
                 // Kho hàng

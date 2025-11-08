@@ -1,11 +1,14 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/models/shop_detail.dart';
+import '../shop_search_results_screen.dart';
 
-class ShopBannerHeader extends StatelessWidget {
+class ShopBannerHeader extends StatefulWidget {
   final ShopInfo shopInfo;
   final VoidCallback? onBack;
   final VoidCallback? onCart;
   final VoidCallback? onChat;
+  final Function(String)? onSearch;
 
   const ShopBannerHeader({
     super.key,
@@ -13,14 +16,97 @@ class ShopBannerHeader extends StatelessWidget {
     this.onBack,
     this.onCart,
     this.onChat,
+    this.onSearch,
   });
+
+  @override
+  State<ShopBannerHeader> createState() => _ShopBannerHeaderState();
+}
+
+class _ShopBannerHeaderState extends State<ShopBannerHeader> {
+  final TextEditingController _searchController = TextEditingController();
+  bool _showSearchInput = false;
+  final FocusNode _searchFocusNode = FocusNode();
+  Timer? _debounceTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchTextChanged);
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.removeListener(_onSearchTextChanged);
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  void _onSearchTextChanged() {
+    setState(() {}); // Rebuild để update suffixIcon
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _showSearchInput = !_showSearchInput;
+      if (_showSearchInput) {
+        // Focus vào input khi hiển thị
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _searchFocusNode.requestFocus();
+        });
+      } else {
+        // Clear search khi ẩn
+        _debounceTimer?.cancel();
+        _searchController.clear();
+        if (widget.onSearch != null) {
+          widget.onSearch!('');
+        }
+      }
+    });
+  }
+
+  void _onSearchChanged(String value) {
+    print('🔍 [ShopBannerHeader] Search keyword changed: "$value"');
+    
+    // Cancel previous timer
+    _debounceTimer?.cancel();
+    
+    // Debounce: chỉ search sau 500ms khi user ngừng gõ
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      print('🔍 [ShopBannerHeader] Debounce timer fired, navigating to search results with: "$value"');
+      
+      // Nếu có từ khóa, điều hướng đến màn hình kết quả tìm kiếm
+      if (value.trim().isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ShopSearchResultsScreen(
+              shopId: widget.shopInfo.shopId,
+              shopName: widget.shopInfo.name,
+              searchKeyword: value.trim(),
+            ),
+          ),
+        );
+      }
+      
+      // Vẫn gọi callback nếu có (để tương thích với code cũ)
+      if (widget.onSearch != null) {
+        widget.onSearch!(value);
+        print('🔍 [ShopBannerHeader] onSearch callback called with: "$value"');
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
         // Banner image - dính lên đỉnh trang, giữ tỷ lệ ảnh 480x160
+        // Height tự động điều chỉnh khi search input hiển thị
         Container(
+          // height: _showSearchInput ? 260 : 200,
           height: 200,
           width: double.infinity,
           decoration: BoxDecoration(
@@ -33,7 +119,7 @@ class ShopBannerHeader extends StatelessWidget {
         ),
         // Gradient overlay để text dễ đọc
         Container(
-          height: 200,
+          height: _showSearchInput ? 260 : 200,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -52,29 +138,102 @@ class ShopBannerHeader extends StatelessWidget {
           right: 0,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Row(
+            child: Column(
+              children: [
+                // Row 1: Back button và action buttons
+                Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
-                  onPressed: onBack ?? () => Navigator.pop(context),
+                      onPressed: widget.onBack ?? () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   iconSize: 24,
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (onChat != null)
+                        // Icon search
+                        IconButton(
+                          onPressed: _toggleSearch,
+                          icon: Icon(
+                            _showSearchInput ? Icons.close : Icons.search,
+                            color: Colors.white,
+                          ),
+                          iconSize: 24,
+                        ),
+                        if (widget.onChat != null)
                       IconButton(
-                        onPressed: onChat,
+                            onPressed: widget.onChat,
                         icon: const Icon(Icons.chat, color: Colors.white),
                         iconSize: 24,
                       ),
                     IconButton(
-                      onPressed: onCart,
+                          onPressed: widget.onCart,
                       icon: const Icon(Icons.shopping_cart, color: Colors.white),
                       iconSize: 24,
                     ),
                   ],
+                    ),
+                  ],
+                ),
+                // Row 2: Search input (hiển thị khi _showSearchInput = true)
+                if (_showSearchInput)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        onChanged: _onSearchChanged,
+                        onSubmitted: (value) {
+                          // Khi nhấn Enter, điều hướng ngay lập tức
+                          _debounceTimer?.cancel();
+                          if (value.trim().isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ShopSearchResultsScreen(
+                                  shopId: widget.shopInfo.shopId,
+                                  shopName: widget.shopInfo.name,
+                                  searchKeyword: value.trim(),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Tìm kiếm sản phẩm trong shop ${widget.shopInfo.name}',
+                          hintStyle: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, color: Colors.grey),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _onSearchChanged('');
+                                  },
+                                )
+                              : null,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
                 ),
               ],
             ),
@@ -95,10 +254,10 @@ class ShopBannerHeader extends StatelessWidget {
                   backgroundColor: Colors.white,
                   child: CircleAvatar(
                     radius: 32,
-                    backgroundImage: shopInfo.avatarUrl.isNotEmpty
-                        ? NetworkImage(shopInfo.avatarUrl)
+                    backgroundImage: widget.shopInfo.avatarUrl.isNotEmpty
+                        ? NetworkImage(widget.shopInfo.avatarUrl)
                         : null,
-                    child: shopInfo.avatarUrl.isEmpty
+                    child: widget.shopInfo.avatarUrl.isEmpty
                         ? const Icon(Icons.store, size: 30, color: Colors.grey)
                         : null,
                   ),
@@ -113,7 +272,7 @@ class ShopBannerHeader extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              shopInfo.name,
+                              widget.shopInfo.name,
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -161,7 +320,7 @@ class ShopBannerHeader extends StatelessWidget {
                           ),
                           const SizedBox(width: 12),
                           Text(
-                            '${shopInfo.totalProducts} Sản phẩm',
+                            '${widget.shopInfo.totalProducts} Sản phẩm',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.white.withOpacity(0.9),
@@ -175,7 +334,7 @@ class ShopBannerHeader extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (shopInfo.address.isNotEmpty) ...[
+                      if (widget.shopInfo.address.isNotEmpty) ...[
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -187,7 +346,7 @@ class ShopBannerHeader extends StatelessWidget {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                shopInfo.address,
+                                widget.shopInfo.address,
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.white.withOpacity(0.9),

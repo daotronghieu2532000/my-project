@@ -1,35 +1,34 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
-import '../../../core/models/shop_detail.dart';
-import '../../../core/utils/format_utils.dart';
-import '../../shared/widgets/product_badges.dart';
-import '../../product/widgets/variant_selection_dialog.dart';
-import '../../product/widgets/simple_purchase_dialog.dart';
-import '../../cart/cart_screen.dart';
-import '../../checkout/checkout_screen.dart';
-import '../../../core/models/product_detail.dart';
-import '../../../core/services/cart_service.dart';
-import '../../../core/services/cached_api_service.dart';
+import '../../core/models/shop_detail.dart';
+import '../../core/utils/format_utils.dart';
+import '../shared/widgets/product_badges.dart';
+import '../product/widgets/variant_selection_dialog.dart';
+import '../product/widgets/simple_purchase_dialog.dart';
+import '../cart/cart_screen.dart';
+import '../checkout/checkout_screen.dart';
+import '../product/product_detail_screen.dart';
+import '../../core/models/product_detail.dart';
+import '../../core/services/cart_service.dart';
+import '../../core/services/cached_api_service.dart';
 
-class ShopProductsSection extends StatefulWidget {
+class ShopSearchResultsScreen extends StatefulWidget {
   final int shopId;
-  final int? categoryId;
-  final Function(ShopProduct) onProductTap;
-  final String? searchKeyword;
+  final String shopName;
+  final String searchKeyword;
 
-  const ShopProductsSection({
+  const ShopSearchResultsScreen({
     super.key,
     required this.shopId,
-    this.categoryId,
-    required this.onProductTap,
-    this.searchKeyword,
+    required this.shopName,
+    required this.searchKeyword,
   });
 
   @override
-  State<ShopProductsSection> createState() => _ShopProductsSectionState();
+  State<ShopSearchResultsScreen> createState() => _ShopSearchResultsScreenState();
 }
 
-class _ShopProductsSectionState extends State<ShopProductsSection> {
+class _ShopSearchResultsScreenState extends State<ShopSearchResultsScreen> {
   final CachedApiService _cachedApiService = CachedApiService();
   final ScrollController _scrollController = ScrollController();
   
@@ -45,27 +44,6 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadProducts();
-  }
-
-  @override
-  void didUpdateWidget(ShopProductsSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    print('🔍 [ShopProductsSection] didUpdateWidget called');
-    print('🔍 [ShopProductsSection] Old searchKeyword: "${oldWidget.searchKeyword}"');
-    print('🔍 [ShopProductsSection] New searchKeyword: "${widget.searchKeyword}"');
-    print('🔍 [ShopProductsSection] Old shopId: ${oldWidget.shopId}');
-    print('🔍 [ShopProductsSection] New shopId: ${widget.shopId}');
-    
-    // Reload products khi searchKeyword thay đổi
-    final oldKeyword = oldWidget.searchKeyword ?? '';
-    final newKeyword = widget.searchKeyword ?? '';
-    if (oldKeyword != newKeyword) {
-      print('🔍 [ShopProductsSection] Search keyword changed from "$oldKeyword" to "$newKeyword"');
-      print('🔍 [ShopProductsSection] Reloading products with search keyword: "$newKeyword"');
-      _loadProducts();
-    } else {
-      print('🔍 [ShopProductsSection] Search keyword unchanged, skipping reload');
-    }
   }
 
   @override
@@ -95,31 +73,30 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     }
 
     try {
-      final searchQuery = widget.searchKeyword?.isNotEmpty == true ? widget.searchKeyword : null;
-      print('🔍 [ShopProductsSection] Loading products - shopId: ${widget.shopId}, searchQuery: "$searchQuery", page: ${loadMore ? _currentPage + 1 : 1}');
+      print('🔍 [ShopSearchResultsScreen] Loading products - shopId: ${widget.shopId}, searchKeyword: "${widget.searchKeyword}", page: ${loadMore ? _currentPage + 1 : 1}');
       
       final result = await _cachedApiService.getShopProductsPaginatedCached(
         shopId: widget.shopId,
-        categoryId: widget.categoryId?.toString(),
-        searchQuery: searchQuery,
+        categoryId: null,
+        searchQuery: widget.searchKeyword.isNotEmpty ? widget.searchKeyword : null,
         page: loadMore ? _currentPage + 1 : 1,
         limit: 50,
       );
 
-      print('🔍 [ShopProductsSection] API response received: ${result != null ? "SUCCESS" : "NULL"}');
+      print('🔍 [ShopSearchResultsScreen] API response received: ${result != null ? "SUCCESS" : "NULL"}');
 
       if (mounted && result != null) {
         final productsData = result['products'] as List? ?? [];
         final pagination = result['pagination'] as Map<String, dynamic>? ?? {};
         
-        print('🔍 [ShopProductsSection] Products count: ${productsData.length}');
-        print('🔍 [ShopProductsSection] Pagination: $pagination');
+        print('🔍 [ShopSearchResultsScreen] Products count: ${productsData.length}');
+        print('🔍 [ShopSearchResultsScreen] Pagination: $pagination');
         
         final newProducts = productsData.map((data) => ShopProduct.fromJson(data)).toList();
         
-        print('🔍 [ShopProductsSection] Parsed products: ${newProducts.length}');
+        print('🔍 [ShopSearchResultsScreen] Parsed products: ${newProducts.length}');
         if (newProducts.isNotEmpty) {
-          print('🔍 [ShopProductsSection] First product: ${newProducts.first.name}');
+          print('🔍 [ShopSearchResultsScreen] First product: ${newProducts.first.name}');
         }
         
         setState(() {
@@ -136,9 +113,9 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
           _isLoadingMore = false;
         });
         
-        print('🔍 [ShopProductsSection] State updated - Total products: ${_products.length}, Has more: $_hasMore');
+        print('🔍 [ShopSearchResultsScreen] State updated - Total products: ${_products.length}, Has more: $_hasMore');
       } else if (mounted) {
-        print('⚠️ [ShopProductsSection] API returned null or error');
+        print('⚠️ [ShopSearchResultsScreen] API returned null or error');
         setState(() {
           _isLoading = false;
           _isLoadingMore = false;
@@ -146,7 +123,7 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
         });
       }
     } catch (e) {
-      print('❌ [ShopProductsSection] Error loading products: $e');
+      print('❌ [ShopSearchResultsScreen] Error loading products: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -163,9 +140,91 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     }
   }
 
+  void _navigateToProduct(ShopProduct product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(
+          productId: product.id,
+          title: product.name,
+          image: product.image,
+          price: product.price,
+          initialShopId: widget.shopId,
+          initialShopName: widget.shopName,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    print('🔍 [ShopProductsSection] build() called with searchKeyword: "${widget.searchKeyword}"');
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tìm kiếm trong shop',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            Text(
+              widget.shopName,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: Colors.grey[200],
+          ),
+        ),
+      ),
+      body: Column(
+        children: [
+          // Search keyword display
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Row(
+              children: [
+                const Icon(Icons.search, color: Colors.grey),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Kết quả tìm kiếm cho: "${widget.searchKeyword}"',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${_products.length} sản phẩm',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Products list
+          Expanded(
+            child: _buildContent(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContent() {
     if (_isLoading) {
       return const Center(
         child: Column(
@@ -185,12 +244,12 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(_error!, style: TextStyle(color: Colors.grey)),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () => _loadProducts(),
-              child: Text('Thử lại'),
+              child: const Text('Thử lại'),
             ),
           ],
         ),
@@ -198,15 +257,20 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     }
 
     if (_products.isEmpty) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
+            Icon(Icons.search_off, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
             Text(
-              'Shop chưa có sản phẩm nào',
-              style: TextStyle(color: Colors.grey),
+              'Không tìm thấy sản phẩm nào',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Thử tìm kiếm với từ khóa khác',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
             ),
           ],
         ),
@@ -222,23 +286,20 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
 
   Widget _buildProductsGrid() {
     final screenWidth = MediaQuery.of(context).size.width;
-    // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
-    // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
-    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
+    final cardWidth = (screenWidth - 16) / 2;
 
     return Column(
       children: [
         Wrap(
-          spacing: 8, // Khoảng cách ngang giữa các card
-          runSpacing: 8, // Khoảng cách dọc giữa các hàng
+          spacing: 8,
+          runSpacing: 8,
           children: _products.map((product) {
             return SizedBox(
-              width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
-              child: _buildProductCard(product, context),
+              width: cardWidth,
+              child: _buildProductCard(product),
             );
           }).toList(),
         ),
-        // Loading indicator khi loading more
         if (_isLoadingMore)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
@@ -248,7 +309,6 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     );
   }
 
-  // Helper function to generate fake rating and sold data
   Map<String, dynamic> _generateFakeData(int productId, int price) {
     final random = Random(productId);
     final isExpensive = price >= 1000000;
@@ -268,13 +328,11 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     };
   }
 
-  Widget _buildProductCard(ShopProduct product, BuildContext context) {
+  Widget _buildProductCard(ShopProduct product) {
     final fakeData = _generateFakeData(product.id, product.price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
-      // Không set width ở đây - để parent SizedBox quản lý
-      // Không dùng margin khi dùng trong Wrap (spacing đã được xử lý bởi Wrap)
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -287,83 +345,79 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
         ],
       ),
       child: InkWell(
-        onTap: () => widget.onProductTap(product),
+        onTap: () => _navigateToProduct(product),
         borderRadius: BorderRadius.circular(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Quan trọng: tự co giãn theo nội dung
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Box trên: Ảnh sản phẩm + Label giảm giá
             LayoutBuilder(
               builder: (context, constraints) {
-                // Sử dụng width thực tế từ parent constraint
                 final imageWidth = constraints.maxWidth;
                 return Container(
                   width: double.infinity,
-                  height: imageWidth * 1.0, // Ảnh vuông - chiều cao = chiều rộng
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F6FB),
+                  height: imageWidth * 1.0,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FB),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(8),
                       topRight: Radius.circular(8),
                     ),
-                    ),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
+                  ),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
                         ),
-                          child: product.image.isNotEmpty
-                              ? Image.network(
-                                  product.image,
+                        child: product.image.isNotEmpty
+                            ? Image.network(
+                                product.image,
                                 width: double.infinity,
                                 height: double.infinity,
-                                  fit: BoxFit.cover,
+                                fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(imageWidth),
-                                )
+                              )
                             : _buildPlaceholderImage(imageWidth),
-                        ),
-                      // Flash sale icon (góc trái trên) - ưu tiên hiển thị trước
-                        if (_isFlashSale(product))
-                          Positioned(
-                            top: 4,
-                            left: 4,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [Colors.orange.shade700, Colors.red.shade700],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                      ),
+                      if (_isFlashSale(product))
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.orange.shade700, Colors.red.shade700],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.red.withOpacity(0.4),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
                                 ),
-                                borderRadius: BorderRadius.circular(6),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.red.withOpacity(0.4),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: const Icon(
-                                Icons.local_fire_department,
-                                color: Colors.white,
-                                size: 16,
-                              ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.local_fire_department,
+                              color: Colors.white,
+                              size: 16,
                             ),
                           ),
-                      // Discount badge (nổi lên trên ảnh góc phải)
-                        if (product.discountPercent > 0)
-                          Positioned(
-                            top: 4,
-                            right: 4,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: _isFlashSale(product) ? Colors.orange : Colors.red,
-                                borderRadius: BorderRadius.circular(4),
+                        ),
+                      if (product.discountPercent > 0)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: _isFlashSale(product) ? Colors.orange : Colors.red,
+                              borderRadius: BorderRadius.circular(4),
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.2),
@@ -371,18 +425,17 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                              ),
-                              child: Text(
-                                _isFlashSale(product) ? 'SALE' : '${product.discountPercent}%',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            ),
+                            child: Text(
+                              _isFlashSale(product) ? 'SALE' : '${product.discountPercent}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
+                          ),
                         ),
-                      // Icon giỏ hàng position nổi trên ảnh (góc dưới bên phải)
                       Positioned(
                         bottom: 4,
                         right: 4,
@@ -399,9 +452,9 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
                                   color: Colors.red.withOpacity(0.4),
                                   blurRadius: 6,
                                   offset: const Offset(0, 2),
-                          ),
-                      ],
-                    ),
+                                ),
+                              ],
+                            ),
                             child: const Icon(
                               Icons.add_shopping_cart,
                               size: 18,
@@ -415,40 +468,37 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
                 );
               },
             ),
-            // Box dưới: Thông tin sản phẩm - chỉ có padding bottom, left, right, tự co giãn
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4), // Giảm padding bottom
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min, // Tự co giãn theo nội dung
-                            children: [
-                              Text(
-                                product.name,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: screenWidth < 360 ? 12 : 14,
-                                  fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w500,
                       height: 1.2,
-                                ),
-                              ),
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  // Giá và badges cùng hàng
-                              Row(
-                                children: [
+                  Row(
+                    children: [
                       Flexible(
                         child: Text(
-                                    FormatUtils.formatCurrency(product.price),
+                          FormatUtils.formatCurrency(product.price),
                           style: TextStyle(
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
                             fontSize: screenWidth < 360 ? 14 : 16,
-                                    ),
+                          ),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 4),
-                      // Badges chỉ hiển thị icon - cùng hàng với giá
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -474,38 +524,36 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
                               icon: Icons.verified,
                               color: const Color.fromARGB(255, 0, 140, 255),
                               size: screenWidth < 360 ? 8 : 10,
-                                    ),
-                                  ],
-                                ],
-                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
-                              // Rating and sold with fake data
                   const SizedBox(height: 3),
-                              Row(
-                                children: [
+                  Row(
+                    children: [
                       Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
-                                  const SizedBox(width: 2),
+                      const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                                    '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                          '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,
                           ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                              ),
-                            ],
-                          ),
-                          // Badge kho ở đáy box
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 3),
-                          ProductLocationBadge(
-                            locationText: null,
-                            provinceName: product.provinceName.isNotEmpty ? product.provinceName : null,
+                  ProductLocationBadge(
+                    locationText: null,
+                    provinceName: product.provinceName.isNotEmpty ? product.provinceName : null,
                     fontSize: screenWidth < 360 ? 8 : 9,
-                            iconColor: Colors.black,
-                            textColor: Colors.black,
+                    iconColor: Colors.black,
+                    textColor: Colors.black,
                   ),
                 ],
               ),
@@ -531,17 +579,16 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     );
   }
 
-  // Widget badge chỉ hiển thị icon - không có chữ
   Widget _buildIconOnlyBadge({
     required IconData icon,
     required Color color,
     required double size,
   }) {
     return Container(
-      padding: const EdgeInsets.all(3), // Giảm padding giống flash sale
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(3), // Giảm border radius giống flash sale
+        borderRadius: BorderRadius.circular(3),
       ),
       child: Icon(
         icon,
@@ -551,9 +598,17 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     );
   }
 
+  bool _isFlashSale(ShopProduct product) {
+    for (var badge in product.badges) {
+      if (badge.toLowerCase().contains('flash') || badge.toLowerCase().contains('sale')) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void _showPurchaseDialog(BuildContext context, ShopProduct product) async {
     try {
-      // Ưu tiên dùng cache cho chi tiết sản phẩm
       final productDetail = await CachedApiService().getProductDetailCached(product.id);
       final parentContext = Navigator.of(context).context;
       
@@ -746,15 +801,5 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
       );
     }
   }
-
-  // Helper method để check flash sale
-  bool _isFlashSale(ShopProduct product) {
-    // Check từ badges list
-    for (var badge in product.badges) {
-      if (badge.toLowerCase().contains('flash') || badge.toLowerCase().contains('sale')) {
-        return true;
-      }
-    }
-    return false;
-  }
 }
+
