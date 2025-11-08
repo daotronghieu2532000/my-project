@@ -237,15 +237,15 @@ class _ShopFlashSalesTabsState extends State<ShopFlashSalesTabs>
             
             return SizedBox(
               height: cardHeight, // Chiều cao động dựa trên card height
-              child: TabBarView(
-                controller: _tabController,
-                children: _flashSales.map((flashSale) {
-                  return ShopFlashSaleProductsList(
-                    flashSale: flashSale,
-                    shopId: widget.shopId,
-                  );
-                }).toList(),
-              ),
+          child: TabBarView(
+            controller: _tabController,
+            children: _flashSales.map((flashSale) {
+              return ShopFlashSaleProductsList(
+                flashSale: flashSale,
+                shopId: widget.shopId,
+              );
+            }).toList(),
+          ),
             );
           },
         ),

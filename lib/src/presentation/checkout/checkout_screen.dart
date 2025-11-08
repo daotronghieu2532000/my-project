@@ -28,6 +28,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final cart_service.CartService _cartService = cart_service.CartService();
   final ApiService _api = ApiService();
   final AuthService _auth = AuthService();
+  final VoucherService _voucherService = VoucherService();
 
   int get totalPrice => _cartService.items
       .where((item) => item.isSelected)
@@ -36,6 +37,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   int get selectedCount => _cartService.items
       .where((item) => item.isSelected)
       .length;
+
+  @override
+  void initState() {
+    super.initState();
+    // Tự động áp dụng voucher tốt nhất khi mở checkout
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoApplyBestVouchers();
+    });
+  }
+
+  /// Tự động áp dụng voucher tốt nhất cho từng shop và voucher sàn
+  Future<void> _autoApplyBestVouchers() async {
+    final itemsByShop = _cartService.itemsByShop;
+    final selectedItems = _cartService.items.where((item) => item.isSelected).toList();
+    
+    if (selectedItems.isEmpty) return;
+    
+    // Tính tổng tiền hàng
+    final totalGoods = selectedItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+    
+    // Lấy danh sách product ID trong giỏ hàng
+    final cartProductIds = selectedItems.map((item) => item.id).toList();
+    
+    // Tự động áp dụng voucher tốt nhất cho từng shop
+    for (final entry in itemsByShop.entries) {
+      final shopId = entry.key;
+      final items = entry.value;
+      
+      // Chỉ tính cho các item đã chọn
+      final shopSelectedItems = items.where((item) => item.isSelected).toList();
+      if (shopSelectedItems.isEmpty) continue;
+      
+      // Tính tổng tiền của shop
+      final shopTotal = shopSelectedItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+      
+      // Lấy danh sách product ID trong giỏ hàng của shop
+      final shopProductIds = shopSelectedItems.map((item) => item.id).toList();
+      
+      // Tự động áp dụng voucher tốt nhất cho shop
+      await _voucherService.autoApplyBestVoucher(shopId, shopTotal, shopProductIds);
+    }
+    
+    // Tự động áp dụng voucher sàn tốt nhất (sau khi đã áp dụng voucher shop)
+    await _voucherService.autoApplyBestPlatformVoucher(totalGoods, cartProductIds);
+  }
 
   @override
   Widget build(BuildContext context) {

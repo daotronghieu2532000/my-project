@@ -103,10 +103,12 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image
+          // Background Image - Hiển thị đầy đủ phần trên (ngôi sao và slogan)
           Image.asset(
             'lib/src/core/assets/images/logo_socdo.png',
-            fit: BoxFit.cover,
+            fit: BoxFit.cover, // Fill toàn màn hình
+            alignment: Alignment.topCenter, // Căn lên trên - cắt phần dưới, giữ phần trên
+            filterQuality: FilterQuality.high, // Chất lượng cao để ảnh nét
             errorBuilder: (context, error, stackTrace) {
               return Container(
                 decoration: const BoxDecoration(

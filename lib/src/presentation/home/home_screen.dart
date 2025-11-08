@@ -181,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           color: Colors.white,
                           child: const QuickActions(),
                         ),
-                        const SizedBox(height: 8),
+                        // const SizedBox(height: 8),
                         
                         // Dedication Section - Tận tâm - Tận tình - Tận tụy
                         // "Tận tâm" (icon: fire.png)

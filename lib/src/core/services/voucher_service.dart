@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/voucher.dart';
+import 'api_service.dart';
+import '../utils/format_utils.dart';
 
 class VoucherService extends ChangeNotifier {
   static final VoucherService _instance = VoucherService._internal();
@@ -221,5 +223,163 @@ class VoucherService extends ChangeNotifier {
   /// Lấy tất cả voucher đã chọn
   List<Voucher> getAllSelectedVouchers() {
     return _selectedVouchers.values.toList();
+  }
+
+  /// Tính giá trị giảm giá thực tế của voucher cho một đơn hàng
+  int _calculateDiscountValue(Voucher voucher, int orderTotal) {
+    if (voucher.discountValue == null) return 0;
+    
+    if (voucher.discountType == 'percentage') {
+      final discount = (orderTotal * voucher.discountValue! / 100).round();
+      if (voucher.maxDiscountValue != null) {
+        return discount > voucher.maxDiscountValue! 
+            ? voucher.maxDiscountValue!.round() 
+            : discount;
+      }
+      return discount;
+    } else {
+      return voucher.discountValue!.round();
+    }
+  }
+
+  /// Tự động áp dụng voucher tốt nhất cho shop nếu đủ điều kiện
+  /// - shopId: ID của shop
+  /// - shopTotal: Tổng tiền đơn hàng của shop
+  /// - cartProductIds: Danh sách product ID trong giỏ hàng của shop
+  Future<void> autoApplyBestVoucher(int shopId, int shopTotal, List<int> cartProductIds) async {
+    // Nếu đã có voucher được áp dụng, không tự động áp dụng
+    if (_appliedVouchers.containsKey(shopId)) {
+      return;
+    }
+
+    try {
+      final apiService = ApiService();
+      
+      // Lấy danh sách voucher của shop
+      final vouchers = await apiService.getVouchers(
+        type: 'shop',
+        shopId: shopId,
+        limit: 50, // Lấy nhiều voucher để tìm voucher tốt nhất
+      );
+
+      if (vouchers == null || vouchers.isEmpty) {
+        return;
+      }
+
+      // Lọc voucher khả dụng (đủ điều kiện)
+      final eligibleVouchers = vouchers.where((voucher) {
+        // Kiểm tra điều kiện cơ bản
+        if (!canApplyVoucher(voucher, shopTotal, productIds: cartProductIds)) {
+          return false;
+        }
+        
+        // Kiểm tra áp dụng cho sản phẩm trong giỏ hàng
+        if (cartProductIds.isNotEmpty && !voucher.appliesToProducts(cartProductIds)) {
+          return false;
+        }
+        
+        return true;
+      }).toList();
+
+      if (eligibleVouchers.isEmpty) {
+        return;
+      }
+
+      // Tìm voucher có giá trị giảm giá cao nhất
+      Voucher? bestVoucher;
+      int maxDiscount = 0;
+
+      for (final voucher in eligibleVouchers) {
+        final discount = _calculateDiscountValue(voucher, shopTotal);
+        if (discount > maxDiscount) {
+          maxDiscount = discount;
+          bestVoucher = voucher;
+        }
+      }
+
+      // Tự động áp dụng voucher tốt nhất
+      if (bestVoucher != null) {
+        applyVoucher(shopId, bestVoucher);
+        if (kDebugMode) {
+          print('✅ Tự động áp dụng voucher tốt nhất cho shop $shopId: ${bestVoucher.code} (Giảm ${FormatUtils.formatCurrency(maxDiscount)})');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Lỗi khi tự động áp dụng voucher cho shop $shopId: $e');
+      }
+    }
+  }
+
+  /// Tự động áp dụng voucher sàn tốt nhất nếu đủ điều kiện
+  /// - totalGoods: Tổng tiền hàng
+  /// - cartProductIds: Danh sách product ID trong giỏ hàng
+  Future<void> autoApplyBestPlatformVoucher(int totalGoods, List<int> cartProductIds) async {
+    // Nếu đã có voucher sàn được áp dụng, không tự động áp dụng
+    if (_platformVoucher != null) {
+      return;
+    }
+
+    try {
+      final apiService = ApiService();
+      
+      // Lấy danh sách voucher sàn
+      final vouchers = await apiService.getVouchers(
+        type: 'platform',
+        limit: 50, // Lấy nhiều voucher để tìm voucher tốt nhất
+      );
+
+      if (vouchers == null || vouchers.isEmpty) {
+        return;
+      }
+
+      // Lọc voucher khả dụng (đủ điều kiện)
+      final eligibleVouchers = vouchers.where((voucher) {
+        // Kiểm tra điều kiện cơ bản
+        if (!canApplyVoucher(voucher, totalGoods, productIds: cartProductIds)) {
+          return false;
+        }
+        
+        // Kiểm tra áp dụng cho sản phẩm trong giỏ hàng
+        if (cartProductIds.isNotEmpty && !voucher.appliesToProducts(cartProductIds)) {
+          return false;
+        }
+        
+        return true;
+      }).toList();
+
+      if (eligibleVouchers.isEmpty) {
+        return;
+      }
+
+      // Tìm voucher có giá trị giảm giá cao nhất
+      Voucher? bestVoucher;
+      int maxDiscount = 0;
+
+      for (final voucher in eligibleVouchers) {
+        // Tính discount cho voucher này (tạm thời set để tính)
+        final tempPlatformVoucher = _platformVoucher;
+        _platformVoucher = voucher;
+        final discount = calculatePlatformDiscountWithItems(totalGoods, cartProductIds);
+        _platformVoucher = tempPlatformVoucher; // Restore
+        
+        if (discount > maxDiscount) {
+          maxDiscount = discount;
+          bestVoucher = voucher;
+        }
+      }
+
+      // Tự động áp dụng voucher tốt nhất
+      if (bestVoucher != null && maxDiscount > 0) {
+        setPlatformVoucher(bestVoucher);
+        if (kDebugMode) {
+          print('✅ Tự động áp dụng voucher sàn tốt nhất: ${bestVoucher.code} (Giảm ${FormatUtils.formatCurrency(maxDiscount)})');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('❌ Lỗi khi tự động áp dụng voucher sàn: $e');
+      }
+    }
   }
 }

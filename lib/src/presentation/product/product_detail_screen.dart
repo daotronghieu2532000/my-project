@@ -1162,8 +1162,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   else if (_sameShopProducts.isNotEmpty) ...[
                     ProductCarousel(
                       title: 'Sản phẩm cùng gian hàng',
-                      height: 170, // Tăng height để phù hợp với card 150x150
-                      itemWidth: 320, // Tăng itemWidth một chút để phù hợp
+                      height: 300, // Tăng height để phù hợp với layout dọc 2 cột
+                      itemWidth: 0, // Không dùng itemWidth nữa, tính động trong ProductCarousel
                       children: _sameShopProducts.map((product) {
                         return SameShopProductCardHorizontal(product: product);
                       }).toList(),
@@ -1345,8 +1345,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   else if (_relatedProducts.isNotEmpty) ...[
                     ProductCarousel(
                       title: 'Sản phẩm liên quan',
-                      height: 160,
-                      itemWidth: 280,
+                      height: 300, // Tăng height để phù hợp với layout dọc 2 cột
+                      itemWidth: 0, // Không dùng itemWidth nữa, tính động trong ProductCarousel
                       children: _relatedProducts.map((product) {
                         return RelatedProductCardHorizontal(product: product);
                       }).toList(),

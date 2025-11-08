@@ -39,8 +39,8 @@ class _ProductCarouselState extends State<ProductCarousel> {
   }
 
   void _calculateItemsPerPage() {
-    // Hiển thị 1 sản phẩm mỗi lần như yêu cầu
-    _itemsPerPage = 1;
+    // Hiển thị 2 sản phẩm mỗi màn hình ngang
+    _itemsPerPage = 2;
   }
 
   @override
@@ -141,7 +141,38 @@ class _ProductCarouselState extends State<ProductCarousel> {
               final endIndex = (startIndex + _itemsPerPage).clamp(0, widget.children.length);
               final pageItems = widget.children.sublist(startIndex, endIndex);
 
-              return pageItems.isNotEmpty ? pageItems.first : const SizedBox.shrink();
+              if (pageItems.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              // Hiển thị 2 sản phẩm cạnh nhau
+              // Sử dụng LayoutBuilder để lấy width thực tế từ PageView
+              return LayoutBuilder(
+                builder: (context, constraints) {
+                  final availableWidth = constraints.maxWidth;
+                  // Padding: 4px mỗi bên = 8px tổng
+                  // Spacing giữa 2 cards: 8px
+                  // cardWidth = (availableWidth - 8 - 8) / 2 = (availableWidth - 16) / 2
+                  final cardWidth = (availableWidth - 16) / 2;
+                  
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start, // Căn trên cùng để cards cùng height
+                      mainAxisSize: MainAxisSize.min, // Quan trọng: không expand
+                      children: pageItems.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final item = entry.value;
+                        return Container(
+                          width: cardWidth, // Width cố định - đảm bảo cả 2 cards cùng width
+                          margin: EdgeInsets.only(right: index < pageItems.length - 1 ? 8 : 0),
+                          child: item,
+                        );
+                      }).toList(),
+                    ),
+                  );
+                },
+              );
             },
           ),
         ),

@@ -78,11 +78,15 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image
-          Image.asset(
-            'lib/src/core/assets/images/logo_socdo.png',
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
+          // Background Image - Hiển thị đầy đủ phần trên (ngôi sao và slogan)
+          // Dùng cover với alignment topCenter để cắt phần dưới, giữ phần trên
+          Positioned.fill(
+            child: Image.asset(
+              'lib/src/core/assets/images/logo_socdo.png',
+              fit: BoxFit.cover, // Fill toàn màn hình
+              alignment: Alignment.topCenter, // Căn lên trên - cắt phần dưới, giữ phần trên
+              filterQuality: FilterQuality.high, // Chất lượng cao để ảnh nét
+              errorBuilder: (context, error, stackTrace) {
                 // Fallback background nếu không load được ảnh
                 return Container(
                   decoration: const BoxDecoration(
@@ -90,29 +94,20 @@ class _SplashScreenState extends State<SplashScreen>
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Color(0xFF4A90E2),
-                        Color(0xFF357ABD),
+                        Color(0xFFDC143C),
+                        Color(0xFFB71C1C),
                       ],
                     ),
                   ),
-              );
-            },
-          ),
-          // Overlay để làm mờ background
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.5),
-                ],
-              ),
+                );
+              },
             ),
           ),
-          // Main Content
-          Center(
+          // Main Content - Loading indicator ở dưới cùng
+          Positioned(
+            bottom: 50,
+            left: 0,
+            right: 0,
             child: AnimatedBuilder(
               animation: _animationController,
               builder: (context, child) {
@@ -120,19 +115,15 @@ class _SplashScreenState extends State<SplashScreen>
                   opacity: _fadeAnimation,
                   child: ScaleTransition(
                     scale: _scaleAnimation,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Loading indicator only
-                        SizedBox(
-                          width: 30,
-                          height: 30,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
+                    child: Center(
+                      child: SizedBox(
+                        width: 30,
+                        height: 30,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 );

@@ -77,26 +77,38 @@ class _SuggestSectionState extends State<SuggestSection> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            child: Text('Có thể bạn cũng thích', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-          ),
-          SizedBox(height: 80),
-          Center(
-            child: CircularProgressIndicator(),
-          ),
-          SizedBox(height: 80),
-        ],
-      );
-    }
+    // Luôn hiển thị section header
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          child: Text('Có thể bạn cũng thích', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+        ),
+        if (_isLoading)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: CircularProgressIndicator(),
+            ),
+          )
+        else if (_suggestions.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 40),
+            child: Center(
+              child: Text(
+                'Không có sản phẩm gợi ý',
+                style: TextStyle(color: Colors.grey, fontSize: 14),
+              ),
+            ),
+          )
+        else
+          _buildSuggestionsList(context),
+      ],
+    );
+  }
 
-    if (_suggestions.isEmpty) {
-      return const SizedBox.shrink();
-    }
+  Widget _buildSuggestionsList(BuildContext context) {
 
     final screenWidth = MediaQuery.of(context).size.width;
     // Tính toán width: (screenWidth - padding ListView - padding Wrap - spacing giữa 2 cột) / 2
@@ -106,30 +118,21 @@ class _SuggestSectionState extends State<SuggestSection> {
     // Tổng: 24 + 8 + 8 = 40
     final cardWidth = (screenWidth - 40) / 2;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          child: Text('Có thể bạn cũng thích', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Wrap(
-            spacing: 8, // Khoảng cách ngang giữa các card
-            runSpacing: 8, // Khoảng cách dọc giữa các hàng
-            children: _suggestions.map((product) {
-              return SizedBox(
-                width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
-                child: ProductCardHorizontal(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Wrap(
+        spacing: 8, // Khoảng cách ngang giữa các card
+        runSpacing: 8, // Khoảng cách dọc giữa các hàng
+        children: _suggestions.map((product) {
+          return SizedBox(
+            width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+            child: ProductCardHorizontal(
               product: product,
-                  index: _suggestions.indexOf(product),
-                ),
-            );
-            }).toList(),
-          ),
-        ),
-      ],
+              index: _suggestions.indexOf(product),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }

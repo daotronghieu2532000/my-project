@@ -418,10 +418,10 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                               colors: [Colors.pink, Colors.orange],
                             ),
                             borderRadius: BorderRadius.circular(4),
-                          ),
+                ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: [
+                  children: [
                               Icon(Icons.flash_on, size: 12, color: Colors.white),
                               SizedBox(width: 2),
                     Text(
@@ -429,8 +429,8 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -476,7 +476,7 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                                   offset: const Offset(0, 2),
                                 ),
                               ],
-                            ),
+                        ),
                             child: const Icon(
                               Icons.add_shopping_cart,
                               size: 18,
@@ -540,7 +540,7 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                               icon: Icons.local_shipping,
                               color: Colors.green,
                               size: screenWidth < 360 ? 8 : 10,
-                            ),
+                        ),
                           ],
                           if (chinhhangIcon.isNotEmpty) ...[
                             if (voucherIcon.isNotEmpty || freeshipIcon.isNotEmpty)
@@ -549,16 +549,16 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                               icon: Icons.verified,
                               color: const Color.fromARGB(255, 0, 140, 255),
                               size: screenWidth < 360 ? 8 : 10,
-                            ),
+                          ),
                           ],
                         ],
-                      ),
-                    ],
-                  ),
+                        ),
+                      ],
+                    ),
                   // Rating and sold
                   const SizedBox(height: 3), // Giảm từ 4 xuống 3
-                  Row(
-                    children: [
+                Row(
+                  children: [
                       Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
                       const SizedBox(width: 2),
                       Flexible(
@@ -569,10 +569,10 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                             color: Colors.grey,
                           ),
                           overflow: TextOverflow.ellipsis,
-                        ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
+                ),
                   // Location badge - chỉ hiển thị nếu có
                   if (provinceName.isNotEmpty) ...[
                     const SizedBox(height: 3), // Giảm từ 3 xuống 3 (giữ nguyên)
@@ -582,11 +582,11 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                       fontSize: screenWidth < 360 ? 8 : 9,
                       iconColor: Colors.black,
                       textColor: Colors.black,
-                    ),
+              ),
                   ],
                 ],
-              ),
             ),
+          ),
         ],
       ),
       ),

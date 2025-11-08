@@ -6,6 +6,7 @@ import 'widgets/cart_service_shop_section.dart';
 import 'models/shop_cart.dart';
 import 'models/cart_item.dart';
 import '../../core/services/cart_service.dart' as cart_service;
+import '../../core/services/voucher_service.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -16,6 +17,7 @@ class CartScreen extends StatefulWidget {
 
 class _CartScreenState extends State<CartScreen> {
   final cart_service.CartService _cartService = cart_service.CartService();
+  final VoucherService _voucherService = VoucherService();
   bool _isEditMode = false;
   
   List<ShopCart> get shops {
@@ -75,16 +77,61 @@ class _CartScreenState extends State<CartScreen> {
   void initState() {
     super.initState();
     _cartService.addListener(_onCartChanged);
+    _voucherService.addListener(_onVoucherChanged);
+    // Tự động áp dụng voucher tốt nhất khi mở giỏ hàng
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoApplyBestVouchers();
+    });
   }
 
   @override
   void dispose() {
     _cartService.removeListener(_onCartChanged);
+    _voucherService.removeListener(_onVoucherChanged);
     super.dispose();
   }
 
   void _onCartChanged() {
     setState(() {});
+    // Tự động áp dụng voucher tốt nhất cho từng shop
+    _autoApplyBestVouchers();
+  }
+
+  void _onVoucherChanged() {
+    // Cập nhật UI khi voucher thay đổi
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Tự động áp dụng voucher tốt nhất cho từng shop
+  Future<void> _autoApplyBestVouchers() async {
+    final itemsByShop = _cartService.itemsByShop;
+    
+    if (itemsByShop.isEmpty) return;
+    
+    for (final entry in itemsByShop.entries) {
+      final shopId = entry.key;
+      final items = entry.value;
+      
+      // Chỉ tính cho các item đã chọn
+      final selectedItems = items.where((item) => item.isSelected).toList();
+      if (selectedItems.isEmpty) continue;
+      
+      // Tính tổng tiền của shop
+      final shopTotal = selectedItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+      
+      // Lấy danh sách product ID trong giỏ hàng của shop
+      final cartProductIds = selectedItems.map((item) => item.id).toList();
+      
+      // Tự động áp dụng voucher tốt nhất cho shop
+      await _voucherService.autoApplyBestVoucher(shopId, shopTotal, cartProductIds);
+    }
+    
+    // Cập nhật UI sau khi áp dụng voucher
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
