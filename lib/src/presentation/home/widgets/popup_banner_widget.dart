@@ -189,12 +189,27 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
     );
   }
 
-  Future<void> _handleTargetUrl(BuildContext context, String targetUrl) async {
+  Future<void> _handleTargetUrl(BuildContext context, String? targetUrl) async {
     try {
       print('🔗 [DEBUG] Handling target URL: $targetUrl');
       
-      // Nếu không có link hoặc rỗng, return
-      if (targetUrl.isEmpty || targetUrl.trim().isEmpty) {
+      // Nếu có product_id từ API (đã join với sanpham), dùng trực tiếp (giống partner_banner_slider.dart)
+      if (widget.popupBanner.productId != null && widget.popupBanner.productId! > 0) {
+        print('🔗 [DEBUG] Using productId from API: ${widget.popupBanner.productId}');
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(
+                productId: widget.popupBanner.productId,
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Nếu không có product_id, parse từ link
+      if (targetUrl == null || targetUrl.isEmpty || targetUrl.trim().isEmpty) {
         print('⚠️ [DEBUG] Target URL is empty');
         return;
       }

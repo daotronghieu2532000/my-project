@@ -3,6 +3,7 @@ class PopupBanner {
   final String title;
   final String imageUrl;
   final String? targetUrl;
+  final int? productId; // Thêm productId từ API (giống BannerModel)
   final DateTime? startAt;
   final DateTime? endAt;
   final int priority;
@@ -16,6 +17,7 @@ class PopupBanner {
     required this.title,
     required this.imageUrl,
     this.targetUrl,
+    this.productId,
     this.startAt,
     this.endAt,
     required this.priority,
@@ -31,6 +33,7 @@ class PopupBanner {
       title: json['title'] ?? '',
       imageUrl: json['image_url'] ?? '',
       targetUrl: json['target_url'],
+      productId: json['product_id'] != null ? int.tryParse(json['product_id'].toString()) : null,
       startAt: json['start_at'] != null
           ? DateTime.tryParse(json['start_at'])
           : null,
@@ -55,6 +58,7 @@ class PopupBanner {
       'title': title,
       'image_url': imageUrl,
       'target_url': targetUrl,
+      'product_id': productId,
       'start_at': startAt?.toIso8601String(),
       'end_at': endAt?.toIso8601String(),
       'priority': priority,
