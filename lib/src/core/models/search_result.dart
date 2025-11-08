@@ -1,6 +1,7 @@
 class SearchResult {
   final bool success;
   final List<SearchProduct> products;
+  final List<ShopSuggestion> shops;
   final SearchPagination pagination;
   final String keyword;
   final String searchTime;
@@ -8,6 +9,7 @@ class SearchResult {
   SearchResult({
     required this.success,
     required this.products,
+    this.shops = const [],
     required this.pagination,
     required this.keyword,
     required this.searchTime,
@@ -16,6 +18,7 @@ class SearchResult {
   factory SearchResult.fromJson(Map<String, dynamic> json) {
     final data = json['data'] as Map<String, dynamic>? ?? {};
     final productsJson = data['products'] as List<dynamic>? ?? [];
+    final shopsJson = data['shops'] as List<dynamic>? ?? [];
     final paginationJson = data['pagination'] as Map<String, dynamic>? ?? {};
 
     return SearchResult(
@@ -39,6 +42,18 @@ class SearchResult {
           .where((product) => product != null)
           .cast<SearchProduct>()
           .toList(),
+      shops: shopsJson
+          .map((shop) {
+            try {
+              return ShopSuggestion.fromJson(shop as Map<String, dynamic>);
+            } catch (e) {
+              print('❌ Lỗi parse shop: $e, shop data: $shop');
+              return null;
+            }
+          })
+          .where((shop) => shop != null)
+          .cast<ShopSuggestion>()
+          .toList(),
       pagination: SearchPagination.fromJson(paginationJson),
       keyword: data['keyword']?.toString() ?? '',
       searchTime: data['search_time']?.toString() ?? DateTime.now().toIso8601String(),
@@ -50,6 +65,7 @@ class SearchResult {
       'success': success,
       'data': {
         'products': products.map((product) => product.toJson()).toList(),
+        'shops': shops.map((shop) => shop.toJson()).toList(),
         'pagination': pagination.toJson(),
         'keyword': keyword,
         'search_time': searchTime,
@@ -251,6 +267,46 @@ class SearchProduct {
     } else {
       return sold.toString();
     }
+  }
+}
+
+class ShopSuggestion {
+  final int shopId;
+  final int userId;
+  final String name;
+  final String username;
+  final String handle;
+  final String avatar;
+
+  ShopSuggestion({
+    required this.shopId,
+    required this.userId,
+    required this.name,
+    required this.username,
+    required this.handle,
+    required this.avatar,
+  });
+
+  factory ShopSuggestion.fromJson(Map<String, dynamic> json) {
+    return ShopSuggestion(
+      shopId: SearchProduct._safeParseInt(json['shop_id']) ?? 0,
+      userId: SearchProduct._safeParseInt(json['user_id']) ?? 0,
+      name: json['name']?.toString() ?? '',
+      username: json['username']?.toString() ?? '',
+      handle: json['handle']?.toString() ?? json['username']?.toString() ?? '',
+      avatar: json['avatar']?.toString() ?? 'https://socdo.vn/images/no-images.jpg',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'shop_id': shopId,
+      'user_id': userId,
+      'name': name,
+      'username': username,
+      'handle': handle,
+      'avatar': avatar,
+    };
   }
 }
 

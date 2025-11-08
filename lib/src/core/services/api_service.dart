@@ -2275,29 +2275,42 @@ class ApiService {
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('🔍 Search Products Response: $data');
+        print('🔍 [API] Search Products Response: $data');
         
         if (data['success'] == true && data['data'] != null) {
           final products = data['data']['products'] as List?;
           final pagination = data['data']['pagination'] as Map?;
+          final shops = data['data']['shops'] as List?;
           
-          print('✅ Tìm kiếm thành công với từ khóa: $keyword');
-          print('📊 Số sản phẩm trả về: ${products?.length ?? 0}');
-          print('📊 Total products: ${pagination?['total_products'] ?? 0}');
+          print('✅ [API] Tìm kiếm thành công với từ khóa: $keyword');
+          print('📊 [API] Số sản phẩm trả về: ${products?.length ?? 0}');
+          print('📊 [API] Total products: ${pagination?['total_products'] ?? 0}');
+          print('🏪 [API] Số shops trả về: ${shops?.length ?? 0}');
           
-          // Nếu API trả về products rỗng, thử dùng mock data
-          if (products == null || products.isEmpty) {
-            print('⚠️ API trả về products rỗng, dùng mock data');
+          if (shops != null && shops.isNotEmpty) {
+            print('🏪 [API] Shops data: $shops');
+            for (var shop in shops) {
+              print('🏪 [API] Shop: ${shop.toString()}');
+            }
+          } else {
+            print('⚠️ [API] Không có shops trong response');
+          }
+          
+          // Nếu API trả về products rỗng nhưng có shops, vẫn return data gốc (có shops)
+          // Chỉ dùng mock data khi cả products và shops đều rỗng
+          if ((products == null || products.isEmpty) && (shops == null || shops.isEmpty)) {
+            print('⚠️ [API] API trả về products và shops đều rỗng, dùng mock data');
             return _getMockSearchResult(keyword, page, limit);
           }
           
+          // Nếu có shops hoặc products, return data gốc từ API
           return data;
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
+          print('❌ [API] API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return _getMockSearchResult(keyword, page, limit);
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
+        print('❌ [API] HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockSearchResult(keyword, page, limit);
       }
     } catch (e) {

@@ -8,6 +8,7 @@ import '../../core/models/search_result.dart';
 import '../../core/utils/format_utils.dart';
 import 'widgets/search_product_card_horizontal.dart';
 import '../common/widgets/go_top_button.dart';
+import '../shop/shop_detail_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -40,6 +41,10 @@ class _SearchScreenState extends State<SearchScreen> {
   // Gợi ý từ khóa
   List<String> _searchSuggestions = [];
   bool _isLoadingSuggestions = false;
+  
+  // Gợi ý shop
+  List<ShopSuggestion> _shopSuggestions = [];
+  bool _isLoadingShopSuggestions = false;
   
   // Danh mục nổi bật (có ảnh)
   List<Map<String, dynamic>> _randomCategories = [];
@@ -74,6 +79,7 @@ class _SearchScreenState extends State<SearchScreen> {
     } else {
       setState(() {
         _searchSuggestions = [];
+        _shopSuggestions = [];
       });
     }
   }
@@ -349,8 +355,11 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _loadSearchSuggestions(String keyword) async {
     if (_isLoadingSuggestions) return;
     
+    print('🔍 [DEBUG] _loadSearchSuggestions called with keyword: "$keyword"');
+    
     setState(() {
       _isLoadingSuggestions = true;
+      _isLoadingShopSuggestions = true;
     });
 
     try {
@@ -363,30 +372,135 @@ class _SearchScreenState extends State<SearchScreen> {
       // Nếu cache không có data, fallback về ApiService
       List<String>? suggestionsList;
       if (suggestions == null || suggestions.isEmpty) {
-        print('🔄 Cache miss, fetching suggestions from ApiService...');
+        print('🔄 [DEBUG] Cache miss, fetching suggestions from ApiService...');
         suggestionsList = await _apiService.getSearchSuggestions(
           keyword: keyword,
           limit: 5,
         );
       } else {
-        print('💡 Using cached search suggestions');
+        print('💡 [DEBUG] Using cached search suggestions');
         suggestionsList = suggestions;
       }
       
-      if (mounted && suggestionsList != null) {
-        setState(() {
-          _searchSuggestions = suggestionsList!;
-          _isLoadingSuggestions = false;
-        });
+      print('🔍 [DEBUG] Keyword suggestions count: ${suggestionsList?.length ?? 0}');
+      
+      // Load shop suggestions từ search products API
+      print('🏪 [DEBUG] Loading shop suggestions...');
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
+      print('🏪 [DEBUG] Calling searchProducts API with keyword: "$keyword", userId: $userId');
+      final searchResult = await _apiService.searchProducts(
+        keyword: keyword,
+        page: 1,
+        limit: 10,
+        userId: userId,
+      );
+      
+      print('🏪 [DEBUG] searchProducts API response: ${searchResult != null ? "SUCCESS" : "NULL"}');
+      
+      List<ShopSuggestion> shopSuggestionsList = [];
+      if (searchResult != null && searchResult['success'] == true) {
+        print('🏪 [DEBUG] API returned success, parsing shops...');
+        final data = searchResult['data'] as Map<String, dynamic>?;
+        print('🏪 [DEBUG] Data keys: ${data?.keys.toList()}');
+        
+        if (data != null && data['shops'] != null) {
+          final shopsJson = data['shops'] as List<dynamic>?;
+          print('🏪 [DEBUG] Shops JSON type: ${shopsJson.runtimeType}, count: ${shopsJson?.length ?? 0}');
+          
+          if (shopsJson != null && shopsJson.isNotEmpty) {
+            for (var shopJson in shopsJson) {
+              try {
+                final shop = ShopSuggestion.fromJson(shopJson as Map<String, dynamic>);
+                shopSuggestionsList.add(shop);
+                print('🏪 [DEBUG] Parsed shop: ${shop.name} (ID: ${shop.shopId}, Handle: ${shop.handle})');
+              } catch (e) {
+                print('❌ [DEBUG] Error parsing shop: $e, shop data: $shopJson');
+              }
+            }
+            
+            // Sort shops: ưu tiên name match chính xác, sau đó có avatar
+            final keywordLower = keyword.toLowerCase().trim();
+            shopSuggestionsList.sort((a, b) {
+              // 1. Ưu tiên name match chính xác
+              final aNameLower = a.name.toLowerCase().trim();
+              final bNameLower = b.name.toLowerCase().trim();
+              
+              final aExactMatch = aNameLower == keywordLower;
+              final bExactMatch = bNameLower == keywordLower;
+              if (aExactMatch != bExactMatch) {
+                return aExactMatch ? -1 : 1;
+              }
+              
+              final aStartsWith = aNameLower.startsWith(keywordLower);
+              final bStartsWith = bNameLower.startsWith(keywordLower);
+              if (aStartsWith != bStartsWith) {
+                return aStartsWith ? -1 : 1;
+              }
+              
+              // 2. Ưu tiên có avatar
+              final aHasAvatar = a.avatar.isNotEmpty;
+              final bHasAvatar = b.avatar.isNotEmpty;
+              if (aHasAvatar != bHasAvatar) {
+                return aHasAvatar ? -1 : 1;
+              }
+              
+              // 3. Cuối cùng sort theo name
+              return a.name.compareTo(b.name);
+            });
+            
+            print('🏪 [DEBUG] Shops sorted: ${shopSuggestionsList.map((s) => s.name).join(", ")}');
+          } else {
+            print('⚠️ [DEBUG] Shops JSON is empty or null');
+          }
+        } else {
+          print('⚠️ [DEBUG] No shops key in data or data is null');
+        }
+      } else {
+        print('❌ [DEBUG] API returned error or null: ${searchResult?['message'] ?? "No message"}');
       }
-    } catch (e) {
+      
+      print('🏪 [DEBUG] Total shops parsed: ${shopSuggestionsList.length}');
+      
+      if (mounted) {
+        setState(() {
+          _searchSuggestions = suggestionsList ?? [];
+          _shopSuggestions = shopSuggestionsList;
+          _isLoadingSuggestions = false;
+          _isLoadingShopSuggestions = false;
+        });
+        
+        print('✅ [DEBUG] State updated - Keyword suggestions: ${_searchSuggestions.length}, Shop suggestions: ${_shopSuggestions.length}');
+      }
+    } catch (e, stackTrace) {
+      print('❌ [DEBUG] Error in _loadSearchSuggestions: $e');
+      print('❌ [DEBUG] Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _searchSuggestions = [];
+          _shopSuggestions = [];
           _isLoadingSuggestions = false;
+          _isLoadingShopSuggestions = false;
         });
       }
     }
+  }
+
+  void _navigateToShopDetail(ShopSuggestion shop) {
+    print('🏪 [DEBUG] Navigating to shop detail: ${shop.name} (ID: ${shop.shopId}, Username: ${shop.username})');
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ShopDetailScreen(
+          shopId: shop.shopId > 0 ? shop.shopId : null,
+          shopUsername: shop.username.isNotEmpty ? shop.username : null,
+          shopName: shop.name,
+          shopAvatar: shop.avatar.isNotEmpty ? shop.avatar : null,
+        ),
+      ),
+    );
   }
 
   @override
@@ -1076,6 +1190,80 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: 24),
         ],
+        // Hiển thị gợi ý shop nếu đang nhập
+        Builder(
+          builder: (context) {
+            print('🏪 [DEBUG UI] Building shop suggestions section');
+            print('🏪 [DEBUG UI] _searchController.text: "${_searchController.text}"');
+            print('🏪 [DEBUG UI] _shopSuggestions.length: ${_shopSuggestions.length}');
+            print('🏪 [DEBUG UI] _isLoadingShopSuggestions: $_isLoadingShopSuggestions');
+            
+            if (_searchController.text.isNotEmpty) {
+              if (_isLoadingShopSuggestions) {
+                print('🏪 [DEBUG UI] Showing loading indicator');
+                return Column(
+                  children: [
+                    _SectionTitle(icon: Icons.store, title: 'Shops'),
+                    const SizedBox(height: 12),
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              } else if (_shopSuggestions.isNotEmpty) {
+                print('🏪 [DEBUG UI] Showing ${_shopSuggestions.length} shops');
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _SectionTitle(icon: Icons.store, title: 'Shops'),
+                        ),
+                        if (_shopSuggestions.length > 4)
+                          GestureDetector(
+                            onTap: () {
+                              // TODO: Navigate to shop search results page
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Text(
+                                'Xem tất cả >',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _ShopSuggestionsList(
+                      shops: _shopSuggestions,
+                      isLoading: _isLoadingShopSuggestions,
+                      onTap: (shop) {
+                        print('🏪 [DEBUG] Tap shop: ${shop.name}');
+                        _navigateToShopDetail(shop);
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+                );
+              } else {
+                print('🏪 [DEBUG UI] No shops to display');
+                return const SizedBox.shrink();
+              }
+            } else {
+              print('🏪 [DEBUG UI] Search text is empty, hiding shop suggestions');
+              return const SizedBox.shrink();
+            }
+          },
+        ),
         // Hiển thị lịch sử tìm kiếm nếu có
         if (_searchHistory.isNotEmpty) ...[
           Row(
@@ -1543,6 +1731,127 @@ class _KeywordItem extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ShopSuggestionsList extends StatelessWidget {
+  final List<ShopSuggestion> shops;
+  final bool isLoading;
+  final Function(ShopSuggestion) onTap;
+
+  const _ShopSuggestionsList({
+    required this.shops,
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    print('🏪 [DEBUG _ShopSuggestionsList] Building with ${shops.length} shops, isLoading: $isLoading');
+    
+    if (isLoading) {
+      print('🏪 [DEBUG _ShopSuggestionsList] Showing loading indicator');
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    if (shops.isEmpty) {
+      print('🏪 [DEBUG _ShopSuggestionsList] No shops to display');
+      return const SizedBox.shrink();
+    }
+
+    // Chỉ hiển thị tối đa 4 shop đầu tiên
+    final displayShops = shops.take(4).toList();
+    print('🏪 [DEBUG _ShopSuggestionsList] Displaying ${displayShops.length} shops');
+
+    return Column(
+      children: displayShops.map((shop) {
+        print('🏪 [DEBUG _ShopSuggestionsList] Rendering shop: ${shop.name} (Avatar: ${shop.avatar})');
+        return Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          child: ListTile(
+            leading: ClipOval(
+              child: shop.avatar.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: shop.avatar,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) {
+                        print('🏪 [DEBUG _ShopSuggestionsList] Loading avatar for ${shop.name} from: $url');
+                        return Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorWidget: (context, url, error) {
+                        print('❌ [DEBUG _ShopSuggestionsList] Error loading avatar for ${shop.name}: $error, URL: $url');
+                        return Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.store,
+                            size: 24,
+                            color: Colors.grey[400],
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.store,
+                        size: 24,
+                        color: Colors.grey[400],
+                      ),
+                    ),
+            ),
+            title: Text(
+              shop.name,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF333333),
+              ),
+            ),
+            trailing: Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: Colors.grey[400],
+            ),
+            onTap: () {
+              print('🏪 [DEBUG _ShopSuggestionsList] Shop tapped: ${shop.name}');
+              onTap(shop);
+            },
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            tileColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          ),
+        );
+      }).toList(),
     );
   }
 }

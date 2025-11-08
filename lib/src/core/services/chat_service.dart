@@ -251,6 +251,33 @@ class ChatService {
     }
   }
 
+  /// Xóa phiên chat (xóa cả cuộc trò chuyện)
+  Future<bool> deleteSession({required String phien, required String userType}) async {
+    try {
+      final headers = await _headers;
+      final url = '$_baseUrl/chat_api_correct?action=delete_session';
+      final body = {
+        'phien': phien,
+        'user_type': userType,
+      };
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: headers,
+        body: json.encode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['success'] == true;
+      } else {
+        throw Exception('HTTP ${response.statusCode}: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Lỗi xóa cuộc trò chuyện: $e');
+    }
+  }
+
   /// Tìm kiếm tin nhắn
   Future<ChatMessagesResponse> searchMessages({
     required String phien,

@@ -242,7 +242,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _socketIOService.onConnected = () {
       print('🔌 [Socket.io] Connected successfully');
       if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
-      setState(() { _isConnected = true; });
+        setState(() { _isConnected = true; });
       // ✅ Dừng polling khi Socket.IO đã connect (realtime)
       _stopPolling();
       print('✅ [ChatScreen] Stopped polling - using Socket.IO realtime');
@@ -251,7 +251,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _socketIOService.onDisconnected = () {
       print('🔌 [Socket.io] Disconnected');
       if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
-      setState(() { _isConnected = false; });
+        setState(() { _isConnected = false; });
       // ✅ Start polling lại khi Socket.IO disconnect (fallback)
       _startPolling();
       print('🔄 [ChatScreen] Started polling - Socket.IO disconnected');
@@ -260,7 +260,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _socketIOService.onError = (error) {
       print('❌ [Socket.io] Error: $error');
       if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
-      setState(() { _isConnected = false; });
+        setState(() { _isConnected = false; });
       // ✅ Start polling khi Socket.IO có lỗi (fallback)
       if (!_socketIOService.isConnected) {
         _startPolling();
@@ -281,7 +281,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // Polling sẽ tự động dừng khi Socket.IO connect thành công
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && !_socketIOService.isConnected) {
-        _startPolling();
+    _startPolling();
         print('🔄 [ChatScreen] Started polling - Socket.IO not connected yet');
       }
     });
@@ -586,16 +586,16 @@ class _ChatScreenState extends State<ChatScreen> {
                 },
               )
             : Row(
-                children: [
+          children: [
                   Expanded(
                     child: Text(
-                      widget.shopName,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+              widget.shopName,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
                   ),
                   const SizedBox(width: 8),
                   // ✅ Chấm tròn hiển thị trạng thái kết nối
@@ -603,12 +603,12 @@ class _ChatScreenState extends State<ChatScreen> {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: _isConnected ? Colors.green : Colors.red,
+                color: _isConnected ? Colors.green : Colors.red,
                       shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
               ),
+            ),
+          ],
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -661,7 +661,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Tìm thấy ${_filteredMessages.length} tin nhắn với "${_searchQuery}"',
+                    'Tìm thấy ${_filteredMessages.length} tin nhắn với "$_searchQuery"',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.orange[700],
@@ -698,10 +698,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                 )
               : ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
+            controller: _scrollController,
+            padding: const EdgeInsets.all(16),
                   itemCount: displayMessages.length,
-                  itemBuilder: (context, index) {
+            itemBuilder: (context, index) {
                     final message = displayMessages[index];
                     final isHighlighted = _searchQuery != null && 
                         _searchQuery!.isNotEmpty &&

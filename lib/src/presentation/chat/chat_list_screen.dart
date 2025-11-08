@@ -415,7 +415,55 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Widget _buildChatItem(ChatSession session) {
-    return Container(
+    return Dismissible(
+      key: Key(session.phien),
+      direction: DismissDirection.endToStart, // ✅ Chỉ swipe từ phải sang trái
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.red,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 20),
+        child: const Icon(
+          Icons.delete,
+          color: Colors.white,
+          size: 28,
+        ),
+      ),
+      confirmDismiss: (direction) async {
+        // ✅ Hiển thị dialog xác nhận
+        return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Xóa cuộc trò chuyện'),
+            content: Text('Bạn có chắc chắn muốn xóa cuộc trò chuyện với ${session.shopName}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Hủy'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                child: const Text('Xóa'),
+              ),
+            ],
+          ),
+        ) ?? false;
+      },
+      onDismissed: (direction) {
+        // ✅ Xóa session khỏi UI ngay lập tức
+        setState(() {
+          _sessions.removeWhere((s) => s.phien == session.phien);
+        });
+        // ✅ Gọi API xóa
+        _deleteSession(session);
+      },
+      child: Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -524,10 +572,57 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     ),
                   ),
               ],
+              ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _deleteSession(ChatSession session) async {
+    try {
+      final success = await _chatService.deleteSession(
+        phien: session.phien,
+        userType: 'customer',
+      );
+      
+      if (success) {
+        // ✅ Đã xóa thành công, refresh list
+        _loadChatSessions();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã xóa cuộc trò chuyện'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        // ✅ Nếu xóa thất bại, reload lại list để hiển thị lại
+        _loadChatSessions();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể xóa cuộc trò chuyện'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } 
+      } 
+    } catch (e) {
+      _loadChatSessions();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi xóa cuộc trò chuyện: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 }
