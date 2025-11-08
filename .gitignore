@@ -50,6 +50,7 @@ app.*.map.json
 /admin_folder/
 /database_web/
 /doc_web/
+/chat.socdo.vn/
 
 # Keystore files - QUAN TRỌNG: Không được commit lên Git!
 android/keystore.properties
