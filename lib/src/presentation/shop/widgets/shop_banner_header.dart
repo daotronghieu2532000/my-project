@@ -152,28 +152,30 @@ class _ShopBannerHeaderState extends State<ShopBannerHeader> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                        // Icon search
-                        IconButton(
-                          onPressed: _toggleSearch,
-                          icon: Icon(
-                            _showSearchInput ? Icons.close : Icons.search,
-                            color: Colors.white,
-                          ),
-                          iconSize: 24,
-                        ),
-                        if (widget.onChat != null)
-                      IconButton(
-                            onPressed: widget.onChat,
-                        icon: const Icon(Icons.chat, color: Colors.white),
-                        iconSize: 24,
+                    // Icon search với border và chữ
+                    _buildActionButton(
+                      icon: _showSearchInput ? Icons.close : Icons.search,
+                      label: 'Tìm kiếm',
+                      onPressed: _toggleSearch,
+                    ),
+                    const SizedBox(width: 8),
+                    // Icon chat với border và chữ
+                    if (widget.onChat != null) ...[
+                      _buildActionButton(
+                        icon: Icons.chat,
+                        label: 'Chat',
+                        onPressed: widget.onChat!,
                       ),
-                    IconButton(
-                          onPressed: widget.onCart,
-                      icon: const Icon(Icons.shopping_cart, color: Colors.white),
-                      iconSize: 24,
+                      const SizedBox(width: 8),
+                    ],
+                    // Icon giỏ hàng với border và chữ
+                    _buildActionButton(
+                      icon: Icons.shopping_cart,
+                      label: 'Giỏ hàng',
+                      onPressed: widget.onCart ?? () {},
                     ),
                   ],
-                    ),
+                ),
                   ],
                 ),
                 // Row 2: Search input (hiển thị khi _showSearchInput = true)
@@ -372,6 +374,52 @@ class _ShopBannerHeaderState extends State<ShopBannerHeader> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.2),
+          border: Border.all(
+            color: Colors.white,
+            width: 1.5,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                shadows: [
+                  Shadow(
+                    color: Colors.black54,
+                    blurRadius: 2,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

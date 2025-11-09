@@ -59,4 +59,7 @@ android/app/*.keystore
 *.jks
 *.keystore
 
+# Windows special device names - cannot be indexed by Git
+nul
+
 

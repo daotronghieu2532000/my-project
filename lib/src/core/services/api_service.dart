@@ -3984,6 +3984,49 @@ class ApiService {
     }
   }
 
+  /// Thêm sản phẩm vào giỏ hàng (lưu cart behavior)
+  Future<Map<String, dynamic>?> addToCart({
+    required int userId,
+    required int productId,
+    int quantity = 1,
+    String? variant,
+  }) async {
+    try {
+      final token = await getValidToken();
+      if (token == null) {
+        print('❌ Không có token hợp lệ');
+        return null;
+      }
+
+      print('🛒 Add to cart: userId=$userId, productId=$productId, quantity=$quantity, variant=$variant');
+
+      final response = await post(
+        '/add_to_cart',
+        body: {
+          'user_id': userId,
+          'product_id': productId,
+          'quantity': quantity,
+          'variant': variant ?? '',
+        },
+      );
+
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          print('✅ Cart behavior saved successfully');
+          return data;
+        } else {
+          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
+        }
+      } else {
+        print('❌ HTTP Error: ${response?.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Lỗi khi lưu cart behavior: $e');
+    }
+    return null;
+  }
+
   /// Toggle favorite (thích/bỏ thích)
   Future<Map<String, dynamic>?> toggleFavoriteProduct({
     required int userId,

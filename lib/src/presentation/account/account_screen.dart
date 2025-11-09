@@ -44,7 +44,7 @@ class AccountScreen extends StatelessWidget {
           const SectionHeader(title: 'Danh mục '),
           ActionList(
             items: const [
-            ActionItem(Icons.receipt_long_outlined, 'Tất cả đơn hàng'),
+            ActionItem(Icons.receipt_long_outlined, 'Lịch sử mua hàng'),
               ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
             ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
             ActionItem(Icons.sell_outlined, 'Mã giảm giá'),

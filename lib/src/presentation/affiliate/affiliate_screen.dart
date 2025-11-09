@@ -1,12 +1,20 @@
+import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import '../../core/models/affiliate_dashboard.dart';
+import '../../core/models/affiliate_product.dart';
 import '../../core/services/affiliate_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/utils/format_utils.dart';
 import '../../core/widgets/scroll_preservation_wrapper.dart';
 import '../auth/login_screen.dart';
-import 'affiliate_products_screen.dart';
+import '../product/product_detail_screen.dart';
+import '../common/widgets/go_top_button.dart';
 import 'affiliate_links_screen.dart';
 import 'affiliate_orders_screen.dart';
 import 'affiliate_withdraw_screen.dart';
@@ -32,10 +40,47 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
   bool? _isAffiliateRegistered;
   bool _agreeToTerms = false;
 
+  // Products state
+  final ScrollController _productsScrollController = ScrollController();
+  List<AffiliateProduct> _products = [];
+  List<AffiliateProduct> _filteredProducts = [];
+  bool _isProductsLoading = true;
+  String? _productsError;
+  int _currentPage = 1;
+  bool _hasMoreData = true;
+  final Map<int, bool> _followBusy = {};
+  
+  // Filters & search
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _onlyFollowed = false;
+  bool _onlyHasLink = false;
+  String _sortBy = 'newest';
+  bool _isFilterVisible = false;
+  Timer? _searchDebounceTimer;
+
   @override
   void initState() {
     super.initState();
     _initUser();
+    _productsScrollController.addListener(_onProductsScroll);
+  }
+
+  @override
+  void dispose() {
+    _productsScrollController.dispose();
+    _searchController.dispose();
+    _searchDebounceTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onProductsScroll() {
+    if (_productsScrollController.position.pixels >=
+        _productsScrollController.position.maxScrollExtent - 200) {
+      if (_hasMoreData && !_isProductsLoading) {
+        _loadProducts();
+      }
+    }
   }
 
   Future<void> _initUser() async {
@@ -46,6 +91,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     
     if (_currentUserId != null) {
       await _checkAffiliateStatus();
+      _loadProducts();
     }
     
     _loadDashboard();
@@ -351,19 +397,116 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     }
   }
 
+  Future<void> _loadProducts({bool refresh = false}) async {
+    if (_currentUserId == null) return;
+    
+    if (refresh) {
+      setState(() {
+        _currentPage = 1;
+        _products = [];
+        _hasMoreData = true;
+      });
+    }
+
+    setState(() {
+      _isProductsLoading = true;
+      _productsError = null;
+    });
+
+    try {
+      final result = await _affiliateService.getProducts(
+        userId: _currentUserId,
+        page: _currentPage,
+        limit: 300,
+        search: _searchQuery.isEmpty ? null : _searchQuery,
+        sortBy: _sortBy,
+        onlyFollowing: _onlyFollowed,
+      );
+      
+      if (mounted) {
+        setState(() {
+          if (result != null && result['products'] != null) {
+            final newProducts = result['products'] as List<AffiliateProduct>;
+            if (refresh) {
+              _products = newProducts;
+            } else {
+              _products.addAll(newProducts);
+            }
+            _applyFilters();
+            
+            final pagination = result['pagination'];
+            _hasMoreData = _currentPage < pagination['total_pages'];
+            _currentPage++;
+          }
+          _isProductsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _productsError = 'Lỗi khi tải sản phẩm: $e';
+          _isProductsLoading = false;
+        });
+      }
+    }
+  }
+
+  void _applyFilters() {
+    List<AffiliateProduct> list = List.of(_products);
+
+    if (_onlyFollowed) {
+      list = list.where((p) => p.isFollowing).toList();
+    }
+    if (_onlyHasLink) {
+      list = list.where((p) => p.hasLink).toList();
+    }
+
+    setState(() {
+      _filteredProducts = list;
+    });
+  }
+
+  String _buildAffiliateUrl(AffiliateProduct product) {
+    final userId = _currentUserId ?? 0;
+    final base = product.productUrl;
+    final separator = base.contains('?') ? '&' : '?';
+    return '$base${separator}utm_source_shop=$userId';
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScrollPreservationWrapper(
       tabIndex: 2, // Affiliate tab
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Affiliate'),
+          title: const Text(
+            'TIẾP THỊ LIÊN KẾT',
+            style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 0,
           actions: [
+            if (_currentUserId != null && _currentTabIndex == 0)
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isFilterVisible = !_isFilterVisible;
+                  });
+                },
+                icon: Icon(
+                  _isFilterVisible ? Icons.filter_list_off_rounded : Icons.filter_list_rounded,
+                  color: _hasActiveFilters() ? const Color(0xFFFF6B35) : Colors.black,
+                ),
+                tooltip: _isFilterVisible ? 'Ẩn bộ lọc' : 'Hiện bộ lọc',
+              ),
             if (_currentUserId != null)
               IconButton(
                 onPressed: _loadDashboard,
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh, color: Colors.black),
               ),
           ],
         ),
@@ -391,133 +534,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                         ? const Center(child: Text('Không có dữ liệu'))
                         : Column(
                         children: [
-                          // Affiliate Marketing Banner
-                          Container(
-                            margin: const EdgeInsets.all(16),
-                            height: 200,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.3),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Stack(
-                                children: [
-                                  // Background Image
-                                  Positioned.fill(
-                                    child: Image.asset(
-                                      'assets/images/affiliate-marketing-15725072874221438636530.jpg',
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          decoration: BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Colors.purple[600]!,
-                                                Colors.pink[500]!,
-                                                Colors.orange[400]!,
-                                              ],
-                                              begin: Alignment.topLeft,
-                                              end: Alignment.bottomRight,
-                                            ),
-                                          ),
-                                          child: const Center(
-                                            child: Icon(
-                                              Icons.image_not_supported,
-                                              color: Colors.white,
-                                              size: 48,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  // Overlay with content
-                                  Positioned.fill(
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.topCenter,
-                                          end: Alignment.bottomCenter,
-                                          colors: [
-                                            Colors.black.withOpacity(0.3),
-                                            Colors.black.withOpacity(0.6),
-                                          ],
-                                        ),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(20),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            const Spacer(),
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Column(
-                                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                                    children: [
-                                                      const Text(
-                                                        '💰 TIẾP THỊ LIÊN KẾT',
-                                                        style: TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 20,
-                                                          fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 4),
-                                                      const Text(
-                                                        'Kiếm tiền từ việc chia sẻ',
-                                                        style: TextStyle(
-                                                          color: Colors.white70,
-                                                          fontSize: 14,
-                                                        ),
-                                                      ),
-                                                      const SizedBox(height: 8),
-                                                      Text(
-                                                        'Tổng hoa hồng: ${FormatUtils.formatCurrency(_dashboard!.totalCommission.toInt())}',
-                                                        style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 16,
-                                                          fontWeight: FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                                Container(
-                                                  padding: const EdgeInsets.all(12),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.white.withOpacity(0.2),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.trending_up,
-                                                    color: Colors.white,
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-
                           // Custom Tab Bar
                           Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16),
+                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: Colors.grey[100],
@@ -526,13 +545,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                             child: Row(
                               children: [
                                 Expanded(
-                                  child: _buildCustomTab('Tổng quan', 0),
+                                  child: _buildCustomTab('Tiếp thị liên kết', 0),
                                 ),
                                 Expanded(
-                                  child: _buildCustomTab('Quản lý', 1),
-                                ),
-                                Expanded(
-                                  child: _buildCustomTab('Lịch sử', 2),
+                                  child: _buildCustomTab('Các tiện ích khác', 1),
                                 ),
                               ],
                             ),
@@ -543,9 +559,8 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                             child: IndexedStack(
                               index: _currentTabIndex,
                               children: [
-                                _buildOverviewTab(),
-                                _buildManagementTab(),
-                                _buildHistoryTab(),
+                                _buildAffiliateMarketingTab(),
+                                _buildUtilitiesTab(),
                               ],
                             ),
                           ),
@@ -876,106 +891,289 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     );
   }
 
-  Widget _buildOverviewTab() {
+  Widget _buildAffiliateMarketingTab() {
+    return Stack(
+      children: [
+        Column(
+          children: [
+            // Filter Panel - Fixed at top
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              height: _isFilterVisible ? null : 0,
+              child: _isFilterVisible ? _buildFilterPanel() : const SizedBox.shrink(),
+            ),
+            
+            // Main Content - Scrollable
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _productsScrollController,
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Statistics Cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSimpleCard(
+                            'Có thể rút',
+                            FormatUtils.formatCurrency(_dashboard!.withdrawableBalance.toInt()),
+                            Colors.green,
+                            Icons.account_balance_wallet,
+                            null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildSimpleCard(
+                            'Lượt click',
+                            _dashboard!.totalClicks.toString(),
+                            Colors.blue,
+                            Icons.mouse,
+                            null,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSimpleCard(
+                            'Đơn hàng',
+                            _dashboard!.totalOrders.toString(),
+                            Colors.purple,
+                            Icons.shopping_bag,
+                            null,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildSimpleCard(
+                            'Tỷ lệ chuyển đổi',
+                            '${_dashboard!.conversionRate.toStringAsFixed(1)}%',
+                            _dashboard!.conversionRate >= 3
+                                ? Colors.green
+                                : _dashboard!.conversionRate >= 1
+                                    ? Colors.orange
+                                    : Colors.red,
+                            Icons.trending_up,
+                            null,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Affiliate Marketing Banner
+                    Container(
+                      width: double.infinity,
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.3),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Stack(
+                          children: [
+                            Positioned.fill(
+                              child: Image.asset(
+                                'assets/images/affiliate-marketing-15725072874221438636530.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.purple[600]!,
+                                          Colors.pink[500]!,
+                                          Colors.orange[400]!,
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.white,
+                                        size: 48,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            Positioned.fill(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.black.withOpacity(0.3),
+                                      Colors.black.withOpacity(0.6),
+                                    ],
+                                  ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(20),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Spacer(),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                const Text(
+                                                  '💰 TIẾP THỊ LIÊN KẾT',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                const Text(
+                                                  'Kiếm tiền từ việc chia sẻ',
+                                                  style: TextStyle(
+                                                    color: Colors.white70,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Tổng hoa hồng: ${FormatUtils.formatCurrency(_dashboard!.totalCommission.toInt())}',
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: const Icon(
+                                              Icons.trending_up,
+                                              color: Colors.white,
+                                              size: 24,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Products Section
+                    const Text(
+                      'Sản phẩm Affiliate',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Products List
+                    _isProductsLoading && _products.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : _productsError != null && _products.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(_productsError!),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: () => _loadProducts(refresh: true),
+                                      child: const Text('Thử lại'),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : _filteredProducts.isEmpty
+                                ? Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.inventory_2_outlined,
+                                          size: 64,
+                                          color: Colors.grey[400],
+                                        ),
+                                        const SizedBox(height: 16),
+                                        Text(
+                                          'Không có sản phẩm affiliate',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  )
+                                : Column(
+                                    children: [
+                                      ..._filteredProducts.map((product) => _buildProductCard(product)),
+                                      if (_hasMoreData && _isProductsLoading)
+                                        const Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Center(child: CircularProgressIndicator()),
+                                        ),
+                                    ],
+                                  ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Go Top Button
+        GoTopButton(
+          scrollController: _productsScrollController,
+          showAfterScrollDistance: 1000.0,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUtilitiesTab() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Balance Cards
-          // Only show one compact balance card
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleCard(
-                  'Có thể rút',
-                  FormatUtils.formatCurrency(_dashboard!.withdrawableBalance.toInt()),
-                  Colors.green,
-                  Icons.account_balance_wallet,
-                  () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const AffiliateWithdrawScreen(),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          // Statistics
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleCard(
-                  'Lượt click',
-                  _dashboard!.totalClicks.toString(),
-                  Colors.blue,
-                  Icons.mouse,
-                  null,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildSimpleCard(
-                  'Đơn hàng',
-                  _dashboard!.totalOrders.toString(),
-                  Colors.purple,
-                  Icons.shopping_bag,
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AffiliateOrdersScreen()),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 16),
-
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleCard(
-                  'Tỷ lệ chuyển đổi',
-                  '${_dashboard!.conversionRate.toStringAsFixed(1)}%',
-                  _dashboard!.conversionRate >= 3
-                      ? Colors.green
-                      : _dashboard!.conversionRate >= 1
-                          ? Colors.orange
-                          : Colors.red,
-                  Icons.trending_up,
-                  null,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildManagementTab() {
-    return SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _buildMenuCard(
-            Icons.inventory_2_outlined,
-            'Sản phẩm Affiliate',
-            'Tạo link chia sẻ sản phẩm',
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AffiliateProductsScreen()),
-            ),
-          ),
-          const SizedBox(height: 12),
           _buildMenuCard(
             Icons.link,
-            'ĐANG THEO DÕI ✅',
+            'Đang theo dõi',
             'Quản lý các sản phẩm đang theo dõi',
             () => Navigator.push(
               context,
@@ -1002,16 +1200,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
               MaterialPageRoute(builder: (context) => const AffiliateWithdrawScreen()),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHistoryTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
+          const SizedBox(height: 12),
           _buildMenuCard(
             Icons.history,
             'Lịch sử hoa hồng',
@@ -1174,6 +1363,1036 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
         ),
       ),
     );
+  }
+
+  bool _hasActiveFilters() {
+    return _searchQuery.isNotEmpty || 
+           _onlyFollowed || 
+           _onlyHasLink ||
+           _sortBy != 'newest';
+  }
+
+  Widget _buildFilterPanel() {
+    return Container(
+      margin: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Search Bar
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm sản phẩm...',
+                hintStyle: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 14,
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  color: Colors.grey[400],
+                  size: 20,
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear_rounded,
+                          color: Colors.grey[400],
+                          size: 18,
+                        ),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            _searchQuery = '';
+                          });
+                          _loadProducts(refresh: true);
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: const Color(0xFFF8F9FA),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: Color(0xFFFF6B35),
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              textInputAction: TextInputAction.search,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+                
+                _searchDebounceTimer?.cancel();
+                _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+                  if (value.trim().isNotEmpty) {
+                    _loadProducts(refresh: true);
+                  }
+                });
+              },
+              onSubmitted: (_) {
+                FocusScope.of(context).unfocus();
+                _loadProducts(refresh: true);
+              },
+            ),
+          ),
+          
+          // Filter Chips Row
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildFilterChip(
+                    icon: Icons.favorite_rounded,
+                    label: 'Đang theo dõi',
+                    isSelected: _onlyFollowed,
+                    onTap: () {
+                      setState(() {
+                        _onlyFollowed = !_onlyFollowed;
+                      });
+                      _loadProducts(refresh: true);
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildFilterChip(
+                    icon: Icons.link_rounded,
+                    label: 'Có link rút gọn',
+                    isSelected: _onlyHasLink,
+                    onTap: () {
+                      setState(() {
+                        _onlyHasLink = !_onlyHasLink;
+                      });
+                      _applyFilters();
+                    },
+                  ),
+                  const SizedBox(width: 8),
+                  _buildSortChip(),
+                  if (_hasActiveFilters()) ...[
+                    const SizedBox(width: 8),
+                    _buildFilterChip(
+                      icon: Icons.clear_all_rounded,
+                      label: 'Xóa bộ lọc',
+                      isSelected: false,
+                      backgroundColor: Colors.red[50],
+                      textColor: Colors.red[600],
+                      iconColor: Colors.red[600],
+                      onTap: () {
+                        setState(() {
+                          _searchQuery = '';
+                          _searchController.clear();
+                          _onlyFollowed = false;
+                          _onlyHasLink = false;
+                          _sortBy = 'newest';
+                        });
+                        _loadProducts(refresh: true);
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    Color? backgroundColor,
+    Color? textColor,
+    Color? iconColor,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? const Color(0xFFFF6B35) 
+              : backgroundColor ?? const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+                ? const Color(0xFFFF6B35) 
+                : const Color(0xFFE9ECEF),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected 
+                  ? Colors.white 
+                  : iconColor ?? Colors.grey[600],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: isSelected 
+                    ? Colors.white 
+                    : textColor ?? Colors.grey[700],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSortChip() {
+    return GestureDetector(
+      onTap: _showSortBottomSheet,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: const Color(0xFFE9ECEF),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.sort_rounded,
+              size: 16,
+              color: Colors.grey[600],
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _getSortLabel(_sortBy),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              Icons.keyboard_arrow_down_rounded,
+              size: 16,
+              color: Colors.grey[600],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _getSortLabel(String sortBy) {
+    final options = {
+      'newest': 'Mới nhất',
+      'price_asc': 'Giá tăng dần',
+      'price_desc': 'Giá giảm dần',
+      'commission_asc': 'Hoa hồng tăng dần',
+      'commission_desc': 'Hoa hồng giảm dần',
+    };
+    return options[sortBy] ?? 'Mới nhất';
+  }
+
+  void _showSortBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.sort_rounded,
+                    color: const Color(0xFFFF6B35),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Sắp xếp theo',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ..._getSortOptions().map((option) {
+              final isSelected = option['value'] == _sortBy;
+              return ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                        ? const Color(0xFFFF6B35).withOpacity(0.1)
+                        : Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    option['icon'] as IconData,
+                    color: isSelected 
+                        ? const Color(0xFFFF6B35)
+                        : Colors.grey[600],
+                    size: 20,
+                  ),
+                ),
+                title: Text(
+                  option['label'] as String,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected 
+                        ? const Color(0xFFFF6B35)
+                        : const Color(0xFF333333),
+                  ),
+                ),
+                trailing: isSelected
+                    ? Icon(
+                        Icons.check_circle_rounded,
+                        color: const Color(0xFFFF6B35),
+                        size: 24,
+                      )
+                    : null,
+                onTap: () {
+                  Navigator.pop(context);
+                  setState(() {
+                    _sortBy = option['value'] as String;
+                  });
+                  _loadProducts(refresh: true);
+                },
+              );
+            }),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Map<String, dynamic>> _getSortOptions() {
+    return [
+      {
+        'value': 'newest',
+        'label': 'Mới nhất',
+        'icon': Icons.new_releases_rounded,
+      },
+      {
+        'value': 'price_asc',
+        'label': 'Giá tăng dần',
+        'icon': Icons.trending_up_rounded,
+      },
+      {
+        'value': 'price_desc',
+        'label': 'Giá giảm dần',
+        'icon': Icons.trending_down_rounded,
+      },
+      {
+        'value': 'commission_asc',
+        'label': 'Hoa hồng tăng dần',
+        'icon': Icons.monetization_on_rounded,
+      },
+      {
+        'value': 'commission_desc',
+        'label': 'Hoa hồng giảm dần',
+        'icon': Icons.money_off_rounded,
+      },
+    ];
+  }
+
+  Widget _buildProductCard(AffiliateProduct product) {
+    final commissionRange = _calculateCommissionRange(product);
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    product.image,
+                    width: 110,
+                    height: 110,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 110,
+                        height: 110,
+                        color: const Color(0xFFF5F5F5),
+                        child: const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 32,
+                            color: Color(0xFF999999),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              product.title,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xFF333333),
+                                height: 1.3,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: _followBusy[product.id] == true
+                                ? const CircularProgressIndicator(strokeWidth: 2)
+                                : Checkbox(
+                                    activeColor: const Color(0xFFFF6B35),
+                                    value: product.isFollowing,
+                                    onChanged: (v) async {
+                                      setState(() { _followBusy[product.id] = true; });
+                                      final result = await _affiliateService.toggleFollow(
+                                        userId: _currentUserId ?? 0,
+                                        spId: product.id,
+                                        shopId: product.shopId,
+                                        follow: v ?? false,
+                                      );
+                                      if (!mounted) return;
+                                      setState(() { _followBusy[product.id] = false; });
+                                      
+                                      if (result != null && result['success'] == true) {
+                                        final index = _products.indexWhere((p) => p.id == product.id);
+                                        if (index != -1) {
+                                          final updatedProduct = AffiliateProduct(
+                                            id: product.id,
+                                            name: product.name,
+                                            slug: product.slug,
+                                            image: product.image,
+                                            price: product.price,
+                                            oldPrice: product.oldPrice,
+                                            discountPercent: product.discountPercent,
+                                            shopId: product.shopId,
+                                            categoryIds: product.categoryIds,
+                                            brandId: product.brandId,
+                                            brandName: product.brandName,
+                                            productUrl: product.productUrl,
+                                            commissionInfo: product.commissionInfo,
+                                            shortLink: product.shortLink,
+                                            campaignName: product.campaignName,
+                                            priceFormatted: product.priceFormatted,
+                                            oldPriceFormatted: product.oldPriceFormatted,
+                                            isFeatured: product.isFeatured,
+                                            isFlashSale: product.isFlashSale,
+                                            createdAt: product.createdAt,
+                                            updatedAt: product.updatedAt,
+                                            isFollowing: v ?? false,
+                                          );
+                                          setState(() {
+                                            _products[index] = updatedProduct;
+                                            final fIndex = _filteredProducts.indexWhere((p) => p.id == updatedProduct.id);
+                                            if (fIndex != -1) {
+                                              _filteredProducts[fIndex] = updatedProduct;
+                                            } else {
+                                              _applyFilters();
+                                            }
+                                          });
+                                        }
+                                      }
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Text(
+                            FormatUtils.formatCurrency(product.price.toInt()),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFFFF6B35),
+                            ),
+                          ),
+                          if (product.oldPrice > product.price) ...[
+                            const SizedBox(width: 8),
+                            Text(
+                              FormatUtils.formatCurrency(product.oldPrice.toInt()),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF999999),
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (product.oldPrice > product.price) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFF6B35),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                          child: Text(
+                            'GIẢM ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0F9FF),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFFE1F5FE)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1976D2),
+                                borderRadius: BorderRadius.circular(3),
+                              ),
+                              child: Text(
+                                product.mainCommission,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              commissionRange.replaceAll('↓', '→'),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Color(0xFF1976D2),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 32,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFFE0E0E0)),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetailScreen(productId: product.id),
+                              ),
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          child: const Text(
+                            'Xem chi tiết',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Container(
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: product.hasLink ? const Color(0xFF1976D2) : const Color(0xFFFF6B35),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: TextButton(
+                          onPressed: product.hasLink
+                              ? () => _showShareDialog(product)
+                              : () => _createAffiliateLink(product),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          child: Text(
+                            product.hasLink ? 'Chia sẻ' : 'Rút gọn link & Chia sẻ',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                _buildLinkRow(_buildAffiliateUrl(product)),
+                if (product.hasLink) ...[
+                  const SizedBox(height: 6),
+                  _buildLinkRow(product.shortLink!),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+  }
+
+  String _calculateCommissionRange(AffiliateProduct product) {
+    if (product.commissionInfo.isEmpty) {
+      return 'Hoa hồng: ${product.mainCommission}';
+    }
+    
+    final commissions = <double>[];
+    
+    for (final commission in product.commissionInfo) {
+      if (commission.type == 'phantram') {
+        final minPrice = product.price;
+        final maxPrice = product.oldPrice > product.price ? product.oldPrice : product.price * 1.2;
+        
+        final minCommission = (minPrice * commission.value / 100).round();
+        final maxCommission = (maxPrice * commission.value / 100).round();
+        
+        commissions.addAll([minCommission.toDouble(), maxCommission.toDouble()]);
+      } else {
+        commissions.add(commission.value);
+      }
+    }
+    
+    if (commissions.isEmpty) {
+      return 'Hoa hồng: ${product.mainCommission}';
+    }
+    
+    commissions.sort();
+    final minCommission = commissions.first;
+    final maxCommission = commissions.last;
+    
+    if (minCommission == maxCommission) {
+      return 'Hoa hồng: ${FormatUtils.formatCurrency(minCommission.round())}';
+    } else {
+      return '${FormatUtils.formatCurrency(minCommission.round())} ↓ ${FormatUtils.formatCurrency(maxCommission.round())}';
+    }
+  }
+
+  Widget _buildLinkRow(String url) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.link, size: 12, color: Color(0xFF6C757D)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              url,
+              style: const TextStyle(
+                fontSize: 10,
+                color: Color(0xFF495057),
+                fontWeight: FontWeight.w400,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: url));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Đã copy link!'),
+                  backgroundColor: const Color(0xFF28A745),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              );
+            },
+            child: const Icon(Icons.copy, size: 12, color: Color(0xFF6C757D)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _createAffiliateLink(AffiliateProduct product) async {
+    try {
+      final longAffiliate = _buildAffiliateUrl(product);
+      final result = await _affiliateService.createLink(
+        userId: _currentUserId ?? 0,
+        spId: product.id,
+        fullLink: longAffiliate,
+      );
+
+      if (mounted) {
+        if (result != null && result['short_link'] != null) {
+          final short = result['short_link'] as String;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Đã tạo link: $short'),
+              backgroundColor: Colors.green,
+              action: SnackBarAction(
+                label: 'Copy',
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: short));
+                },
+              ),
+            ),
+          );
+          final index = _products.indexWhere((p) => p.id == product.id);
+          if (index != -1) {
+            final updated = _cloneWithShortLink(_products[index], short);
+            setState(() {
+              _products[index] = updated;
+              final fIndex = _filteredProducts.indexWhere((p) => p.id == updated.id);
+              if (fIndex != -1) {
+                _filteredProducts[fIndex] = updated;
+              } else {
+                _applyFilters();
+              }
+            });
+          }
+          _showShareDialog(product);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tạo link thất bại'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  AffiliateProduct _cloneWithShortLink(AffiliateProduct src, String shortLink) {
+    return AffiliateProduct(
+      id: src.id,
+      name: src.name,
+      slug: src.slug,
+      image: src.image,
+      price: src.price,
+      oldPrice: src.oldPrice,
+      discountPercent: src.discountPercent,
+      shopId: src.shopId,
+      categoryIds: src.categoryIds,
+      brandId: src.brandId,
+      brandName: src.brandName,
+      productUrl: src.productUrl,
+      commissionInfo: src.commissionInfo,
+      shortLink: shortLink,
+      campaignName: src.campaignName,
+      priceFormatted: src.priceFormatted,
+      oldPriceFormatted: src.oldPriceFormatted,
+      isFeatured: src.isFeatured,
+      isFlashSale: src.isFlashSale,
+      createdAt: src.createdAt,
+      updatedAt: src.updatedAt,
+      isFollowing: src.isFollowing,
+    );
+  }
+
+  void _showShareDialog(AffiliateProduct product) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Column(
+                children: [
+                  const Text(
+                    'Chia sẻ sản phẩm',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF333333),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    product.title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF666666),
+                      height: 1.3,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: Center(
+                child: GestureDetector(
+                  onTap: () => _shareToOther(product),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1976D2).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFF1976D2).withOpacity(0.2), width: 1),
+                        ),
+                        child: const Icon(
+                          Icons.share,
+                          color: Color(0xFF1976D2),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Chia sẻ',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF666666),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _shareToOther(AffiliateProduct product) async {
+    final shareText = _buildShareText(product);
+    final shareUrl = _buildAffiliateUrl(product);
+    
+    try {
+      if (product.image.isNotEmpty) {
+        final imageFile = await _downloadImageToTemp(product.image);
+        if (imageFile != null) {
+          try {
+            await Share.shareXFiles(
+              [XFile(imageFile.path)],
+              text: '$shareText\n\n$shareUrl',
+              subject: product.title,
+            );
+            return;
+          } catch (e) {
+            // Fallback to text-only
+          }
+        }
+      }
+      Share.share(
+        '$shareText\n\n$shareUrl',
+        subject: product.title,
+      );
+    } catch (e) {
+      Share.share(
+        '$shareText\n\n$shareUrl',
+        subject: product.title,
+      );
+    }
+  }
+
+  Future<File?> _downloadImageToTemp(String imageUrl) async {
+    try {
+      if (!imageUrl.startsWith('http')) {
+        return null;
+      }
+      
+      final response = await http.get(
+        Uri.parse(imageUrl),
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'image/*',
+        },
+      ).timeout(const Duration(seconds: 30));
+      
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final fileName = 'product_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final file = File('${tempDir.path}/$fileName');
+        await file.writeAsBytes(response.bodyBytes);
+        
+        final fileSize = await file.length();
+        if (fileSize < 100) {
+          return null;
+        }
+        
+        return file;
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    return null;
+  }
+
+  String _buildShareText(AffiliateProduct product) {
+    final discountPercent = product.oldPrice > product.price 
+        ? ' (Giảm ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%)'
+        : '';
+    
+    final oldPriceText = product.oldPrice > product.price 
+        ? '\n💸 Giá gốc: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}'
+        : '';
+    
+    return '🔥 ${product.title}$discountPercent\n💰 Giá: ${FormatUtils.formatCurrency(product.price.toInt())}$oldPriceText\n💎 Hoa hồng: ${product.mainCommission}\n🏪 Thương hiệu: ${product.brandName}\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
   }
 
   Widget _buildAffiliateRegistrationPrompt() {

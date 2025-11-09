@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'voucher_service.dart';
 import 'auth_service.dart';
+import 'api_service.dart';
 
 class CartItem {
   final int id;
@@ -102,6 +103,7 @@ class CartService extends ChangeNotifier {
 
   final List<CartItem> _items = [];
   final AuthService _authService = AuthService();
+  final ApiService _apiService = ApiService();
   static const String _cartKeyPrefix = 'cart_items_';
   bool _isLoading = false; // Flag để tránh lưu khi đang load
   int? _currentUserId; // User ID hiện tại để theo dõi thay đổi user
@@ -171,7 +173,7 @@ class CartService extends ChangeNotifier {
   }
 
   // Add item to cart
-  void addItem(CartItem item) {
+  void addItem(CartItem item) async {
     // Check if item already exists (same id and variant)
     final existingIndex = _items.indexWhere(
       (existing) => existing.id == item.id && existing.variant == item.variant,
@@ -195,8 +197,40 @@ class CartService extends ChangeNotifier {
       _validateAndClearVouchers(shopId);
     }
     
+    // Lưu cart behavior vào database (chạy async, không ảnh hưởng UI)
+    _saveCartBehavior(item);
+    
     notifyListeners();
     _saveCart(); // Lưu giỏ hàng sau khi thay đổi
+  }
+  
+  // Lưu cart behavior vào database
+  Future<void> _saveCartBehavior(CartItem item) async {
+    try {
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      if (userId != null) {
+        // Gọi API để lưu cart behavior (chạy async, không chờ kết quả)
+        _apiService.addToCart(
+          userId: userId,
+          productId: item.id,
+          quantity: item.quantity,
+          variant: item.variant,
+        ).then((result) {
+          if (result != null && result['success'] == true) {
+            print('✅ Cart behavior saved successfully for product_id=${item.id}');
+          } else {
+            print('⚠️ Failed to save cart behavior for product_id=${item.id}');
+          }
+        }).catchError((error) {
+          print('❌ Error saving cart behavior: $error');
+        });
+      } else {
+        print('⚠️ User not logged in - cannot save cart behavior');
+      }
+    } catch (e) {
+      print('❌ Error in _saveCartBehavior: $e');
+    }
   }
 
   // Remove item from cart
