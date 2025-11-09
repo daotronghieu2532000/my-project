@@ -3991,14 +3991,19 @@ class ApiService {
     int quantity = 1,
     String? variant,
   }) async {
+    print('🛒 [ApiService] addToCart called: userId=$userId, productId=$productId, quantity=$quantity, variant=$variant');
+    
     try {
+      print('🛒 [ApiService] Getting token...');
       final token = await getValidToken();
       if (token == null) {
-        print('❌ Không có token hợp lệ');
+        print('❌ [ApiService] Không có token hợp lệ');
         return null;
       }
+      
+      print('🛒 [ApiService] Token obtained, calling API...');
 
-      print('🛒 Add to cart: userId=$userId, productId=$productId, quantity=$quantity, variant=$variant');
+      print('🛒 [ApiService] POST /add_to_cart with: userId=$userId, productId=$productId, quantity=$quantity, variant=$variant');
 
       final response = await post(
         '/add_to_cart',
@@ -4010,19 +4015,25 @@ class ApiService {
         },
       );
 
+      print('🛒 [ApiService] API response received: statusCode=${response?.statusCode}');
+      
       if (response != null && response.statusCode == 200) {
+        print('🛒 [ApiService] Response body: ${response.body}');
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
-          print('✅ Cart behavior saved successfully');
+          print('✅ [ApiService] Cart behavior saved successfully');
           return data;
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
+          print('❌ [ApiService] API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
+          print('❌ [ApiService] Full response: $data');
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
+        print('❌ [ApiService] HTTP Error: ${response?.statusCode}');
+        print('❌ [ApiService] Response body: ${response?.body}');
       }
-    } catch (e) {
-      print('❌ Lỗi khi lưu cart behavior: $e');
+    } catch (e, stackTrace) {
+      print('❌ [ApiService] Lỗi khi lưu cart behavior: $e');
+      print('❌ [ApiService] Stack trace: $stackTrace');
     }
     return null;
   }

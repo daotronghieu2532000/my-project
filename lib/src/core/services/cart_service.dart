@@ -173,7 +173,9 @@ class CartService extends ChangeNotifier {
   }
 
   // Add item to cart
-  void addItem(CartItem item) async {
+  void addItem(CartItem item) {
+    print('🛒 [CartService] addItem called: product_id=${item.id}, quantity=${item.quantity}, variant=${item.variant}');
+    
     // Check if item already exists (same id and variant)
     final existingIndex = _items.indexWhere(
       (existing) => existing.id == item.id && existing.variant == item.variant,
@@ -184,11 +186,13 @@ class CartService extends ChangeNotifier {
 
     if (existingIndex != -1) {
       // Update quantity if item exists
+      print('🛒 [CartService] Item exists, updating quantity');
       _items[existingIndex] = _items[existingIndex].copyWith(
         quantity: _items[existingIndex].quantity + item.quantity,
       );
     } else {
       // Add new item
+      print('🛒 [CartService] Adding new item to cart');
       _items.add(item);
     }
 
@@ -198,6 +202,7 @@ class CartService extends ChangeNotifier {
     }
     
     // Lưu cart behavior vào database (chạy async, không ảnh hưởng UI)
+    print('🛒 [CartService] Calling _saveCartBehavior...');
     _saveCartBehavior(item);
     
     notifyListeners();
@@ -206,10 +211,18 @@ class CartService extends ChangeNotifier {
   
   // Lưu cart behavior vào database
   Future<void> _saveCartBehavior(CartItem item) async {
+    print('🛒 [CartService] _saveCartBehavior called: product_id=${item.id}, quantity=${item.quantity}, variant=${item.variant}');
+    
     try {
+      print('🛒 [CartService] Getting current user...');
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
+      
+      print('🛒 [CartService] User: ${user != null ? "logged in" : "null"}, userId: $userId');
+      
       if (userId != null) {
+        print('🛒 [CartService] Calling API addToCart: userId=$userId, productId=${item.id}, quantity=${item.quantity}, variant=${item.variant}');
+        
         // Gọi API để lưu cart behavior (chạy async, không chờ kết quả)
         _apiService.addToCart(
           userId: userId,
@@ -217,19 +230,24 @@ class CartService extends ChangeNotifier {
           quantity: item.quantity,
           variant: item.variant,
         ).then((result) {
+          print('🛒 [CartService] API response received: $result');
           if (result != null && result['success'] == true) {
-            print('✅ Cart behavior saved successfully for product_id=${item.id}');
+            print('✅ [CartService] Cart behavior saved successfully for product_id=${item.id}');
           } else {
-            print('⚠️ Failed to save cart behavior for product_id=${item.id}');
+            print('⚠️ [CartService] Failed to save cart behavior for product_id=${item.id}');
+            print('⚠️ [CartService] Response: $result');
           }
         }).catchError((error) {
-          print('❌ Error saving cart behavior: $error');
+          print('❌ [CartService] Error saving cart behavior: $error');
+          print('❌ [CartService] Stack trace: ${StackTrace.current}');
         });
       } else {
-        print('⚠️ User not logged in - cannot save cart behavior');
+        print('⚠️ [CartService] User not logged in - cannot save cart behavior');
+        print('⚠️ [CartService] User object: $user');
       }
-    } catch (e) {
-      print('❌ Error in _saveCartBehavior: $e');
+    } catch (e, stackTrace) {
+      print('❌ [CartService] Error in _saveCartBehavior: $e');
+      print('❌ [CartService] Stack trace: $stackTrace');
     }
   }
 
