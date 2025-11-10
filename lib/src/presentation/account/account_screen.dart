@@ -45,11 +45,11 @@ class AccountScreen extends StatelessWidget {
           ActionList(
             items: const [
             ActionItem(Icons.receipt_long_outlined, 'Lịch sử mua hàng'),
-              ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
+            ActionItem(Icons.shopping_bag_outlined, 'Sản phẩm đã mua'),
             ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
             ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
             // ActionItem(Icons.star_border, 'Lịch sử đánh giá'),
-            ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
+            // ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
             ],
           ),
           // const SizedBox(height: 12),

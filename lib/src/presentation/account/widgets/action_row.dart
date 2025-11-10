@@ -59,7 +59,7 @@ class ActionRow extends StatelessWidget {
 
   void _handleNavigation(BuildContext context) {
     switch (title) {
-      case 'Tất cả đơn hàng':
+      case 'Lịch sử mua hàng':
         Navigator.push(
           context,
           MaterialPageRoute(

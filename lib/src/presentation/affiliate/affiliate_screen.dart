@@ -45,10 +45,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
   List<AffiliateProduct> _products = [];
   List<AffiliateProduct> _filteredProducts = [];
   bool _isProductsLoading = true;
+  bool _isLoadingMore = false; // Separate loading state for load more
   String? _productsError;
   int _currentPage = 1;
   bool _hasMoreData = true;
   final Map<int, bool> _followBusy = {};
+  static const int _itemsPerPage = 20; // Load 20 items per page (like Shopee)
   
   // Filters & search
   final TextEditingController _searchController = TextEditingController();
@@ -58,6 +60,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
   String _sortBy = 'newest';
   bool _isFilterVisible = false;
   Timer? _searchDebounceTimer;
+  Timer? _scrollDebounceTimer; // Debounce for scroll events
 
   @override
   void initState() {
@@ -71,16 +74,25 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     _productsScrollController.dispose();
     _searchController.dispose();
     _searchDebounceTimer?.cancel();
+    _scrollDebounceTimer?.cancel();
     super.dispose();
   }
 
   void _onProductsScroll() {
-    if (_productsScrollController.position.pixels >=
-        _productsScrollController.position.maxScrollExtent - 200) {
-      if (_hasMoreData && !_isProductsLoading) {
+    // Only load more if we're near the bottom and not already loading
+    if (!_productsScrollController.hasClients) return;
+    
+    final maxScroll = _productsScrollController.position.maxScrollExtent;
+    final currentScroll = _productsScrollController.position.pixels;
+    final threshold = maxScroll * 0.8; // Load more when 80% scrolled (like Shopee)
+    
+    // Debounce scroll events to avoid too many API calls
+    _scrollDebounceTimer?.cancel();
+    _scrollDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (currentScroll >= threshold && _hasMoreData && !_isProductsLoading && !_isLoadingMore) {
         _loadProducts();
       }
-    }
+    });
   }
 
   Future<void> _initUser() async {
@@ -91,7 +103,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     
     if (_currentUserId != null) {
       await _checkAffiliateStatus();
-      _loadProducts();
+      _loadProducts(refresh: true); // Load products on first init
     }
     
     _loadDashboard();
@@ -398,54 +410,106 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
   }
 
   Future<void> _loadProducts({bool refresh = false}) async {
-    if (_currentUserId == null) return;
+    if (_currentUserId == null) {
+      print('❌ [AFFILIATE] Cannot load products: no user ID');
+      return;
+    }
     
-    if (refresh) {
+    // If products list is empty, treat as refresh
+    final isFirstLoad = _products.isEmpty;
+    final shouldRefresh = refresh || isFirstLoad;
+    
+    print('🔄 [AFFILIATE] Loading products - refresh: $refresh, isFirstLoad: $isFirstLoad, shouldRefresh: $shouldRefresh');
+    print('🔄 [AFFILIATE] Current state - page: $_currentPage, products: ${_products.length}, loading: $_isProductsLoading, loadingMore: $_isLoadingMore');
+    
+    // Prevent multiple simultaneous loads
+    if (!shouldRefresh && (_isProductsLoading || _isLoadingMore)) {
+      print('⏸️ [AFFILIATE] Already loading, skipping...');
+      return;
+    }
+    
+    if (shouldRefresh) {
       setState(() {
         _currentPage = 1;
         _products = [];
+        _filteredProducts = [];
         _hasMoreData = true;
+        _isProductsLoading = true;
+        _productsError = null;
+      });
+    } else {
+      // Loading more
+      if (!_hasMoreData) return; // No more data to load
+      if (_isLoadingMore) return; // Already loading more
+      setState(() {
+        _isLoadingMore = true;
       });
     }
 
-    setState(() {
-      _isProductsLoading = true;
-      _productsError = null;
-    });
-
     try {
+      print('🌐 [AFFILIATE] Calling API - page: $_currentPage, limit: $_itemsPerPage, search: "$_searchQuery", sortBy: $_sortBy, onlyFollowing: $_onlyFollowed');
+      
       final result = await _affiliateService.getProducts(
         userId: _currentUserId,
         page: _currentPage,
-        limit: 300,
+        limit: _itemsPerPage, // Load only 20 items per page (like Shopee)
         search: _searchQuery.isEmpty ? null : _searchQuery,
         sortBy: _sortBy,
         onlyFollowing: _onlyFollowed,
       );
       
+      print('📦 [AFFILIATE] API Response received - result: ${result != null ? "not null" : "null"}');
+      
       if (mounted) {
-        setState(() {
-          if (result != null && result['products'] != null) {
-            final newProducts = result['products'] as List<AffiliateProduct>;
-            if (refresh) {
+        if (result != null && result['products'] != null) {
+          final newProducts = result['products'] as List<AffiliateProduct>;
+          print('✅ [AFFILIATE] Received ${newProducts.length} products');
+          
+          setState(() {
+            if (shouldRefresh) {
               _products = newProducts;
             } else {
               _products.addAll(newProducts);
             }
+            
+            // Apply filters after adding products
             _applyFilters();
             
+            // Update pagination - check before incrementing page
             final pagination = result['pagination'];
-            _hasMoreData = _currentPage < pagination['total_pages'];
+            if (pagination != null) {
+              // Check if there are more pages after current page
+              _hasMoreData = _currentPage < pagination['total_pages'];
+            } else {
+              // If no pagination info, assume no more data if we got less than requested
+              _hasMoreData = newProducts.length >= _itemsPerPage;
+            }
+            
+            // Increment page for next load
             _currentPage++;
-          }
-          _isProductsLoading = false;
-        });
+            _isProductsLoading = false;
+            _isLoadingMore = false;
+          });
+          
+          print('✅ [AFFILIATE] Products updated - total: ${_products.length}, filtered: ${_filteredProducts.length}, hasMore: $_hasMoreData, nextPage: $_currentPage');
+        } else {
+          // No products returned
+          print('⚠️ [AFFILIATE] No products in response');
+          setState(() {
+            _hasMoreData = false;
+            _isProductsLoading = false;
+            _isLoadingMore = false;
+          });
+        }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ [AFFILIATE] Error loading products: $e');
+      print('❌ [AFFILIATE] Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _productsError = 'Lỗi khi tải sản phẩm: $e';
           _isProductsLoading = false;
+          _isLoadingMore = false;
         });
       }
     }
@@ -908,62 +972,62 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
             Expanded(
               child: SingleChildScrollView(
                 controller: _productsScrollController,
-                padding: const EdgeInsets.all(16),
-                child: Column(
+      padding: const EdgeInsets.all(16),
+      child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+        children: [
                     // Statistics Cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSimpleCard(
-                            'Có thể rút',
-                            FormatUtils.formatCurrency(_dashboard!.withdrawableBalance.toInt()),
-                            Colors.green,
-                            Icons.account_balance_wallet,
+          Row(
+            children: [
+              Expanded(
+                child: _buildSimpleCard(
+                  'Có thể rút',
+                  FormatUtils.formatCurrency(_dashboard!.withdrawableBalance.toInt()),
+                  Colors.green,
+                  Icons.account_balance_wallet,
                             null,
-                          ),
-                        ),
+                ),
+              ),
                         const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSimpleCard(
-                            'Lượt click',
-                            _dashboard!.totalClicks.toString(),
-                            Colors.blue,
-                            Icons.mouse,
-                            null,
-                          ),
-                        ),
+              Expanded(
+                child: _buildSimpleCard(
+                  'Lượt click',
+                  _dashboard!.totalClicks.toString(),
+                  Colors.blue,
+                  Icons.mouse,
+                  null,
+                ),
+              ),
                       ],
                     ),
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        Expanded(
-                          child: _buildSimpleCard(
-                            'Đơn hàng',
-                            _dashboard!.totalOrders.toString(),
-                            Colors.purple,
-                            Icons.shopping_bag,
+              Expanded(
+                child: _buildSimpleCard(
+                  'Đơn hàng',
+                  _dashboard!.totalOrders.toString(),
+                  Colors.purple,
+                  Icons.shopping_bag,
                             null,
-                          ),
-                        ),
+                ),
+              ),
                         const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildSimpleCard(
-                            'Tỷ lệ chuyển đổi',
-                            '${_dashboard!.conversionRate.toStringAsFixed(1)}%',
-                            _dashboard!.conversionRate >= 3
-                                ? Colors.green
-                                : _dashboard!.conversionRate >= 1
-                                    ? Colors.orange
-                                    : Colors.red,
-                            Icons.trending_up,
-                            null,
-                          ),
-                        ),
-                      ],
-                    ),
+              Expanded(
+                child: _buildSimpleCard(
+                  'Tỷ lệ chuyển đổi',
+                  '${_dashboard!.conversionRate.toStringAsFixed(1)}%',
+                  _dashboard!.conversionRate >= 3
+                      ? Colors.green
+                      : _dashboard!.conversionRate >= 1
+                          ? Colors.orange
+                          : Colors.red,
+                  Icons.trending_up,
+                  null,
+                ),
+              ),
+            ],
+          ),
 
                     const SizedBox(height: 16),
 
@@ -1008,8 +1072,8 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                                         color: Colors.white,
                                         size: 48,
                                       ),
-                                    ),
-                                  );
+      ),
+    );
                                 },
                               ),
                             ),
@@ -1144,10 +1208,29 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                                 : Column(
                                     children: [
                                       ..._filteredProducts.map((product) => _buildProductCard(product)),
-                                      if (_hasMoreData && _isProductsLoading)
+                                      // Show loading indicator at bottom when loading more
+                                      if (_isLoadingMore)
                                         const Padding(
                                           padding: EdgeInsets.all(16),
-                                          child: Center(child: CircularProgressIndicator()),
+                                          child: Center(
+                                            child: SizedBox(
+                                              width: 24,
+                                              height: 24,
+                                              child: CircularProgressIndicator(strokeWidth: 2),
+                                            ),
+                                          ),
+                                        ),
+                                      // Show "No more products" message if no more data
+                                      if (!_hasMoreData && _filteredProducts.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.all(16),
+                                          child: Text(
+                                            'Đã hiển thị tất cả sản phẩm',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
                                         ),
                                     ],
                                   ),
@@ -1168,7 +1251,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
 
   Widget _buildUtilitiesTab() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           _buildMenuCard(
