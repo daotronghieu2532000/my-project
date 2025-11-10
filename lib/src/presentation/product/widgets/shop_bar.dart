@@ -26,15 +26,6 @@ class ShopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String firstLetter() {
-      final base = (shopLogo?.trim().isNotEmpty == true)
-          ? shopLogo!.trim()
-          : (shopName?.trim().isNotEmpty == true)
-              ? shopName!.trim()
-              : 'S';
-      return base.isNotEmpty ? base.characters.first.toUpperCase() : 'S';
-    }
-
     return SliverToBoxAdapter(
       child: GestureDetector(
         onTap: onViewShop,
@@ -61,26 +52,24 @@ class ShopBar extends StatelessWidget {
                           width: 70, // Đảm bảo width đầy đủ
                           height: 70, // Đảm bảo height đầy đủ
                           fit: BoxFit.cover, // Thay đổi thành cover để full box
-                          errorBuilder: (context, error, stackTrace) => Center(
-                            child: Text(
-                              firstLetter(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 18, // Tăng kích thước chữ cho phù hợp
-                                fontWeight: FontWeight.w600,
-                              ),
+                          errorBuilder: (context, error, stackTrace) => ClipRRect(
+                            borderRadius: BorderRadius.circular(60),
+                            child: Image.asset(
+                              'assets/images/shop.jpg',
+                              width: 70,
+                              height: 70,
+                              fit: BoxFit.cover,
                             ),
                           ),
                         ),
                       )
-                    : Center(
-                        child: Text(
-                          firstLetter(),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18, // Tăng kích thước chữ cho phù hợp
-                            fontWeight: FontWeight.w600,
-                          ),
+                    : ClipRRect(
+                        borderRadius: BorderRadius.circular(60),
+                        child: Image.asset(
+                          'assets/images/shop.jpg',
+                          width: 70,
+                          height: 70,
+                          fit: BoxFit.cover,
                         ),
                       ),
               ),

@@ -254,14 +254,26 @@ class _ShopBannerHeaderState extends State<ShopBannerHeader> {
                 CircleAvatar(
                   radius: 35,
                   backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 32,
-                    backgroundImage: widget.shopInfo.avatarUrl.isNotEmpty
-                        ? NetworkImage(widget.shopInfo.avatarUrl)
-                        : null,
-                    child: widget.shopInfo.avatarUrl.isEmpty
-                        ? const Icon(Icons.store, size: 30, color: Colors.grey)
-                        : null,
+                  child: ClipOval(
+                    child: widget.shopInfo.avatarUrl.isNotEmpty
+                        ? Image.network(
+                            widget.shopInfo.avatarUrl,
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => Image.asset(
+                              'assets/images/shop.jpg',
+                              width: 64,
+                              height: 64,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Image.asset(
+                            'assets/images/shop.jpg',
+                            width: 64,
+                            height: 64,
+                            fit: BoxFit.cover,
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),

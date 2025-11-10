@@ -21,12 +21,27 @@ class ShopInfoHeader extends StatelessWidget {
               // Avatar
               CircleAvatar(
                 radius: 30,
-                backgroundImage: shopInfo.avatarUrl.isNotEmpty
-                    ? NetworkImage(shopInfo.avatarUrl)
-                    : null,
-                child: shopInfo.avatarUrl.isEmpty
-                    ? const Icon(Icons.store, size: 30)
-                    : null,
+                child: ClipOval(
+                  child: shopInfo.avatarUrl.isNotEmpty
+                      ? Image.network(
+                          shopInfo.avatarUrl,
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Image.asset(
+                            'assets/images/shop.jpg',
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(
+                          'assets/images/shop.jpg',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                        ),
+                ),
               ),
               const SizedBox(width: 16),
               
@@ -138,25 +153,6 @@ class ShopInfoHeader extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: 12,
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
     );
   }
 

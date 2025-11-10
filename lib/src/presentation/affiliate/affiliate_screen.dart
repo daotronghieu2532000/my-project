@@ -445,7 +445,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
         _isLoadingMore = true;
       });
     }
-
     try {
       print('🌐 [AFFILIATE] Calling API - page: $_currentPage, limit: $_itemsPerPage, search: "$_searchQuery", sortBy: $_sortBy, onlyFollowing: $_onlyFollowed');
       
@@ -1034,7 +1033,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                     // Affiliate Marketing Banner
                     Container(
                       width: double.infinity,
-                      height: 200,
+                      height: 170, // Giảm từ 200 xuống 170 (giảm 30px)
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
@@ -1119,7 +1118,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                                                 ),
                                                 const SizedBox(height: 8),
                                                 Text(
-                                                  'Tổng hoa hồng: ${FormatUtils.formatCurrency(_dashboard!.totalCommission.toInt())}',
+                                                  'Hoa đồng: ${FormatUtils.formatCurrency(_dashboard!.totalCommission.toInt())}',
                                                   style: const TextStyle(
                                                     color: Colors.white,
                                                     fontSize: 16,
@@ -1205,35 +1204,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                                       ],
                                     ),
                                   )
-                                : Column(
-                                    children: [
-                                      ..._filteredProducts.map((product) => _buildProductCard(product)),
-                                      // Show loading indicator at bottom when loading more
-                                      if (_isLoadingMore)
-                                        const Padding(
-                                          padding: EdgeInsets.all(16),
-                                          child: Center(
-                                            child: SizedBox(
-                                              width: 24,
-                                              height: 24,
-                                              child: CircularProgressIndicator(strokeWidth: 2),
-                                            ),
-                                          ),
-                                        ),
-                                      // Show "No more products" message if no more data
-                                      if (!_hasMoreData && _filteredProducts.isNotEmpty)
-                                        Padding(
-                                          padding: const EdgeInsets.all(16),
-                                          child: Text(
-                                            'Đã hiển thị tất cả sản phẩm',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey[600],
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
+                                : _buildProductsGrid(),
                   ],
                 ),
               ),
@@ -1841,11 +1812,62 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     ];
   }
 
+  Widget _buildProductsGrid() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Tính toán width: (screenWidth - padding SingleChildScrollView - padding Wrap - spacing giữa 2 cột) / 2
+    // SingleChildScrollView padding: 16px mỗi bên = 32px
+    // Wrap padding: 4px mỗi bên = 8px
+    // Spacing giữa 2 cột: 8px
+    // Tổng: 32 + 8 + 8 = 48
+    final cardWidth = (screenWidth - 48) / 2;
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Wrap(
+            spacing: 8, // Khoảng cách ngang giữa các card
+            runSpacing: 8, // Khoảng cách dọc giữa các hàng
+            children: _filteredProducts.map((product) {
+              return SizedBox(
+                width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+                child: _buildProductCard(product),
+              );
+            }).toList(),
+          ),
+        ),
+        // Show loading indicator at bottom when loading more
+        if (_isLoadingMore)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          ),
+        // Show "No more products" message if no more data
+        if (!_hasMoreData && _filteredProducts.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              'Đã hiển thị tất cả sản phẩm',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildProductCard(AffiliateProduct product) {
     final commissionRange = _calculateCommissionRange(product);
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(8),
@@ -1857,25 +1879,50 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
           ),
         ],
       ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(productId: product.id),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Tự co giãn theo nội dung
         children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Box trên: Ảnh sản phẩm + Badges
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final imageWidth = constraints.maxWidth;
+                return Container(
+                  width: double.infinity,
+                  height: imageWidth * 1.0, // Ảnh vuông
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FB),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
+                    ),
+                  ),
+                  child: Stack(
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
+                        ),
                   child: Image.network(
                     product.image,
-                    width: 110,
-                    height: 110,
+                          width: double.infinity,
+                          height: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        width: 110,
-                        height: 110,
+                              width: double.infinity,
+                              height: double.infinity,
                         color: const Color(0xFFF5F5F5),
                         child: const Center(
                           child: Icon(
@@ -1888,31 +1935,23 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                     },
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              product.title,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFF333333),
-                                height: 1.3,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                      // Follow checkbox badge ở góc trên phải
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          SizedBox(
+                          child: SizedBox(
                             height: 24,
                             width: 24,
                             child: _followBusy[product.id] == true
-                                ? const CircularProgressIndicator(strokeWidth: 2)
+                                ? const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
                                 : Checkbox(
                                     activeColor: const Color(0xFFFF6B35),
                                     value: product.isFollowing,
@@ -1968,9 +2007,104 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                                     },
                                   ),
                           ),
-                        ],
+                        ),
                       ),
-                      const SizedBox(height: 6),
+                      // Discount badge ở góc trên trái
+                      if (product.oldPrice > product.price)
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF6B35),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: Text(
+                              'GIẢM ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Nút Chia sẻ ở góc phải bên dưới
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: product.hasLink
+                                ? () => _shareToOther(product)
+                                : () => _createAffiliateLink(product),
+                            borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: (product.hasLink ? const Color(0xFF1976D2) : const Color(0xFFFF6B35)).withOpacity(0.95),
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.share,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    product.hasLink ? 'Chia sẻ' : 'Rút gọn',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            
+            // Box dưới: Thông tin sản phẩm
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Tên sản phẩm
+                  Text(
+                    product.title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF333333),
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Giá
                       Row(
                         children: [
                           Text(
@@ -1982,11 +2116,11 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                             ),
                           ),
                           if (product.oldPrice > product.price) ...[
-                            const SizedBox(width: 8),
+                        const SizedBox(width: 6),
                             Text(
                               FormatUtils.formatCurrency(product.oldPrice.toInt()),
                               style: const TextStyle(
-                                fontSize: 12,
+                            fontSize: 11,
                                 color: Color(0xFF999999),
                                 decoration: TextDecoration.lineThrough,
                               ),
@@ -1994,25 +2128,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                           ],
                         ],
                       ),
-                      if (product.oldPrice > product.price) ...[
                         const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF6B35),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                          child: Text(
-                            'GIẢM ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                      const SizedBox(height: 6),
+                  
+                  // Hoa hồng
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                         decoration: BoxDecoration(
@@ -2039,104 +2157,34 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                               ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
+                        Flexible(
+                          child: Text(
                               commissionRange.replaceAll('↓', '→'),
                               style: const TextStyle(
                                 fontSize: 11,
                                 color: Color(0xFF1976D2),
                                 fontWeight: FontWeight.w500,
                               ),
-                            ),
-                          ],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 32,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFFE0E0E0)),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: TextButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ProductDetailScreen(productId: product.id),
-                              ),
-                            );
-                          },
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          child: const Text(
-                            'Xem chi tiết',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF333333),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Container(
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: product.hasLink ? const Color(0xFF1976D2) : const Color(0xFFFF6B35),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: TextButton(
-                          onPressed: product.hasLink
-                              ? () => _showShareDialog(product)
-                              : () => _createAffiliateLink(product),
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.zero,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                          child: Text(
-                            product.hasLink ? 'Chia sẻ' : 'Rút gọn link & Chia sẻ',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
+                  const SizedBox(height: 4),
+                  
+                  // Link rows
                 _buildLinkRow(_buildAffiliateUrl(product)),
                 if (product.hasLink) ...[
-                  const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                   _buildLinkRow(product.shortLink!),
                 ],
               ],
             ),
           ),
-          const SizedBox(height: 12),
         ],
+        ),
       ),
     );
   }
@@ -2178,47 +2226,55 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
   }
 
   Widget _buildLinkRow(String url) {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFE9ECEF)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.link, size: 12, color: Color(0xFF6C757D)),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              url,
-              style: const TextStyle(
-                fontSize: 10,
-                color: Color(0xFF495057),
-                fontWeight: FontWeight.w400,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: url));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Đã copy link!'),
-                  backgroundColor: const Color(0xFF28A745),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+    return GestureDetector(
+      onTap: () {}, // Prevent tap event from bubbling to parent InkWell
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: const Color(0xFFE9ECEF)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.link, size: 11, color: Color(0xFF6C757D)),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                url,
+                style: const TextStyle(
+                  fontSize: 9,
+                  color: Color(0xFF495057),
+                  fontWeight: FontWeight.w400,
                 ),
-              );
-            },
-            child: const Icon(Icons.copy, size: 12, color: Color(0xFF6C757D)),
-          ),
-        ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: url));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Đã copy link!'),
+                    backgroundColor: const Color(0xFF28A745),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                );
+              },
+              behavior: HitTestBehavior.opaque, // Prevent event bubbling
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                child: const Icon(Icons.copy, size: 11, color: Color(0xFF6C757D)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2259,8 +2315,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                 _applyFilters();
               }
             });
+            // Gọi trực tiếp _shareToOther sau khi tạo link thành công
+            _shareToOther(updated);
+          } else {
+            // Nếu không tìm thấy product trong list, vẫn gọi với product gốc
+            _shareToOther(product);
           }
-          _showShareDialog(product);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -2306,98 +2366,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
       createdAt: src.createdAt,
       updatedAt: src.updatedAt,
       isFollowing: src.isFollowing,
-    );
-  }
-
-  void _showShareDialog(AffiliateProduct product) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(16),
-            topRight: Radius.circular(16),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: const Color(0xFFE0E0E0),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Column(
-                children: [
-                  const Text(
-                    'Chia sẻ sản phẩm',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF333333),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    product.title,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF666666),
-                      height: 1.3,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              child: Center(
-                child: GestureDetector(
-                  onTap: () => _shareToOther(product),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1976D2).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFF1976D2).withOpacity(0.2), width: 1),
-                        ),
-                        child: const Icon(
-                          Icons.share,
-                          color: Color(0xFF1976D2),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Chia sẻ',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Color(0xFF666666),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

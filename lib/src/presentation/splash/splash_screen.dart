@@ -82,7 +82,8 @@ class _SplashScreenState extends State<SplashScreen>
           // Dùng cover với alignment topCenter để cắt phần dưới, giữ phần trên
           Positioned.fill(
             child: Image.asset(
-              'lib/src/core/assets/images/logo_socdo.png',
+              // 'lib/src/core/assets/images/logo_socdo.png',
+               'lib/src/core/assets/images/socdo_vn.png',
               fit: BoxFit.cover, // Fill toàn màn hình
               alignment: Alignment.topCenter, // Căn lên trên - cắt phần dưới, giữ phần trên
               filterQuality: FilterQuality.high, // Chất lượng cao để ảnh nét
