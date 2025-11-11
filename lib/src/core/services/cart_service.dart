@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'voucher_service.dart';
 import 'auth_service.dart';
 import 'api_service.dart';
+import 'cached_api_service.dart';
 
 class CartItem {
   final int id;
@@ -104,6 +105,7 @@ class CartService extends ChangeNotifier {
   final List<CartItem> _items = [];
   final AuthService _authService = AuthService();
   final ApiService _apiService = ApiService();
+  final CachedApiService _cachedApiService = CachedApiService();
   static const String _cartKeyPrefix = 'cart_items_';
   bool _isLoading = false; // Flag để tránh lưu khi đang load
   int? _currentUserId; // User ID hiện tại để theo dõi thay đổi user
@@ -233,6 +235,10 @@ class CartService extends ChangeNotifier {
           print('🛒 [CartService] API response received: $result');
           if (result != null && result['success'] == true) {
             print('✅ [CartService] Cart behavior saved successfully for product_id=${item.id}');
+            
+            // ===== CẢI THIỆN: Cache invalidation =====
+            // Clear cache home suggestions để gợi ý mới được cập nhật
+            _clearHomeSuggestionsCache(userId);
           } else {
             print('⚠️ [CartService] Failed to save cart behavior for product_id=${item.id}');
             print('⚠️ [CartService] Response: $result');
@@ -248,6 +254,24 @@ class CartService extends ChangeNotifier {
     } catch (e, stackTrace) {
       print('❌ [CartService] Error in _saveCartBehavior: $e');
       print('❌ [CartService] Stack trace: $stackTrace');
+    }
+  }
+  
+  // ===== CẢI THIỆN: Clear cache home suggestions khi có hành vi mới =====
+  void _clearHomeSuggestionsCache(int? userId) {
+    try {
+      print('🔄 [CartService] Clearing home suggestions cache for userId=$userId');
+      // Gọi getHomeSuggestions với forceRefresh=true để clear cache
+      _cachedApiService.getHomeSuggestions(
+        userId: userId,
+        forceRefresh: true,
+      ).then((_) {
+        print('✅ [CartService] Home suggestions cache cleared for userId=$userId');
+      }).catchError((error) {
+        print('⚠️ [CartService] Error clearing cache: $error');
+      });
+    } catch (e) {
+      print('⚠️ [CartService] Error in _clearHomeSuggestionsCache: $e');
     }
   }
 

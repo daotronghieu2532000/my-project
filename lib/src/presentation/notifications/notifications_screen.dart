@@ -112,7 +112,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
       }
     }
   }
-
+  
   Future<void> _deleteAllNotifications() async {
     if (_userId == null) return;
     final ok = await _api.deleteAllNotifications(userId: _userId!);

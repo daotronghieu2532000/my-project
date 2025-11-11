@@ -44,16 +44,42 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
 
   Future<void> _load() async {
     final u = await _auth.getCurrentUser();
-    if (u == null) return;
+    
     // Chuẩn bị danh sách items trong giỏ
     final cart = cart_service.CartService();
     final items = cart.items
+        .where((i) => i.isSelected) // ✅ Chỉ lấy items đã chọn
         .map((i) => {
               'product_id': i.id,
               'quantity': i.quantity,
             })
         .toList();
+    
+    // ✅ Nếu chưa đăng nhập, hiển thị thông báo yêu cầu đăng nhập
+    if (u == null) {
+      if (!mounted) return;
+      setState(() {
+        _shipFee = null;
+        _originalShipFee = null;
+        _shipSupport = null;
+        _etaText = null;
+        _provider = null;
+        _warehouseDetails = null;
+      });
+      return;
+    }
+    
+    // ✅ Nếu không có items được chọn, không tính ship
     if (items.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _shipFee = 0;
+        _originalShipFee = 0;
+        _shipSupport = 0;
+        _etaText = null;
+        _provider = null;
+        _warehouseDetails = null;
+      });
       return;
     }
   
@@ -725,7 +751,15 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Phí vận chuyển: ${_originalShipFee != null ? _formatCurrency(_originalShipFee!) : 'đang tính...'}'),
+                    // ✅ Hiển thị thông báo phù hợp khi chưa đăng nhập
+                    Text(
+                      _originalShipFee != null 
+                        ? 'Phí vận chuyển: ${_formatCurrency(_originalShipFee!)}'
+                        : 'Phí vận chuyển: Vui lòng đăng nhập để tính phí ship',
+                      style: TextStyle(
+                        color: _originalShipFee == null ? Colors.orange : null,
+                      ),
+                    ),
                     
                     // Hiển thị chi tiết phí ship từng kho với provider
                     if (_warehouseDetails != null && _warehouseDetails!.isNotEmpty)
@@ -782,7 +816,14 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
             children: [
               const Icon(Icons.access_time, color: Colors.grey),
               const SizedBox(width: 8),
-              Text('Dự kiến: ${_etaText ?? 'đang tính...'}'),
+              Text(
+                _etaText != null 
+                  ? 'Dự kiến: $_etaText'
+                  : 'Dự kiến: Vui lòng đăng nhập để tính thời gian',
+                style: TextStyle(
+                  color: _etaText == null ? Colors.orange : null,
+                ),
+              ),
             ],
           ),
           if (_provider != null) const SizedBox(height: 6),
