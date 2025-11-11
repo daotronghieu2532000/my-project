@@ -5,13 +5,38 @@ import '../../../core/services/voucher_service.dart';
 import '../../../core/utils/format_utils.dart' as utils;
 import '../../cart/widgets/voucher_dialog.dart';
 
-class ProductSection extends StatelessWidget {
-  ProductSection({super.key});
+class ProductSection extends StatefulWidget {
+  const ProductSection({super.key});
 
+  @override
+  State<ProductSection> createState() => _ProductSectionState();
+}
+
+class _ProductSectionState extends State<ProductSection> {
   final cart_service.CartService _cartService = cart_service.CartService();
+  final VoucherService _voucherService = VoucherService();
 
   List<cart_service.CartItem> get selectedItems =>
       _cartService.items.where((item) => item.isSelected).toList();
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Listen vào VoucherService để tự động rebuild khi voucher thay đổi
+    _voucherService.addListener(_onVoucherChanged);
+  }
+
+  @override
+  void dispose() {
+    _voucherService.removeListener(_onVoucherChanged);
+    super.dispose();
+  }
+
+  void _onVoucherChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +114,7 @@ class ProductSection extends StatelessWidget {
                         },
                       );
                       if (selected != null && context.mounted) {
+                        // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Đã áp dụng voucher shop'),

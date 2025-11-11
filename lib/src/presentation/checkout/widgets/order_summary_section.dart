@@ -141,7 +141,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         // Nếu không có, thử lấy từ warehouse_shipping
         if (warehouseDetailsList == null || warehouseDetailsList.isEmpty) {
           final warehouseShipping = rawQuote?['data']?['warehouse_shipping'] as Map<String, dynamic>?;
-          if (warehouseShipping != null) {
+        if (warehouseShipping != null) {
             warehouseDetailsList = warehouseShipping['warehouse_details'] as List<dynamic>?;
           }
         }
@@ -240,13 +240,13 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                 if (products != null) {
                   // ✅ Xử lý cả trường hợp products là Map hoặc List
                   if (products is Map<String, dynamic> && products.isNotEmpty) {
-                    for (final productEntry in products.entries) {
+                  for (final productEntry in products.entries) {
                       if (productEntry.value is Map<String, dynamic>) {
-                        final productConfig = productEntry.value as Map<String, dynamic>;
-                        final supportAmount = productConfig['value'] as int? ?? 0;
-                        if (supportAmount > 0) {
-                          hasValidFreeship = true;
-                          break;
+                    final productConfig = productEntry.value as Map<String, dynamic>;
+                    final supportAmount = productConfig['value'] as int? ?? 0;
+                    if (supportAmount > 0) {
+                      hasValidFreeship = true;
+                      break;
                         }
                       }
                     }

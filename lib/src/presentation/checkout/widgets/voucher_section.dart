@@ -14,10 +14,30 @@ class VoucherSection extends StatefulWidget {
 }
 
 class _VoucherSectionState extends State<VoucherSection> {
+  final VoucherService _voucherService = VoucherService();
+
+  @override
+  void initState() {
+    super.initState();
+    // ✅ Listen vào VoucherService để tự động rebuild khi voucher thay đổi
+    _voucherService.addListener(_onVoucherChanged);
+  }
+
+  @override
+  void dispose() {
+    _voucherService.removeListener(_onVoucherChanged);
+    super.dispose();
+  }
+
+  void _onVoucherChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final voucherService = VoucherService();
-    final pv = voucherService.platformVoucher;
+    final pv = _voucherService.platformVoucher;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -33,8 +53,7 @@ class _VoucherSectionState extends State<VoucherSection> {
           InkWell(
             onTap: () async {
               await _showPlatformVoucherDialog(context);
-              if (!mounted) return;
-              setState(() {});
+              // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
@@ -67,7 +86,6 @@ class _VoucherSectionState extends State<VoucherSection> {
   Future<void> _showPlatformVoucherDialog(BuildContext context) async {
     final api = ApiService();
     final cart = cart_service.CartService();
-    final voucherService = VoucherService();
     final items = cart.items;
     if (items.isEmpty) return;
 
@@ -196,7 +214,8 @@ class _VoucherSectionState extends State<VoucherSection> {
     );
 
     if (selected != null) {
-      voucherService.setPlatformVoucher(selected);
+      _voucherService.setPlatformVoucher(selected);
+      // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
