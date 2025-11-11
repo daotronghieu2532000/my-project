@@ -223,22 +223,19 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                           )
                         : RefreshIndicator(
                             onRefresh: () => _loadLinks(refresh: true),
-                            child: ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: _filteredLinks.length + (_hasMoreData ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (index == _filteredLinks.length) {
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: (ScrollNotification scrollInfo) {
+                                if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
                                   if (_hasMoreData && !_isLoading) {
                                     _loadLinks();
                                   }
-                                  return const Padding(
-                                    padding: EdgeInsets.all(16),
-                                    child: Center(child: CircularProgressIndicator()),
-                                  );
                                 }
-                                final link = _filteredLinks[index];
-                                return _buildLinkCard(link);
+                                return false;
                               },
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.all(16),
+                                child: _buildProductsGrid(),
+                              ),
                             ),
                           ),
           ),
@@ -247,218 +244,337 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
     );
   }
 
+  Widget _buildProductsGrid() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // 32px (SingleChildScrollView padding) + 8px (Wrap padding) + 8px (spacing) = 48px
+    final cardWidth = (screenWidth - 48) / 2;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start, // Căn trái toàn bộ nội dung
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Wrap(
+            alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
+            spacing: 8, // Khoảng cách ngang giữa các card
+            runSpacing: 8, // Khoảng cách dọc giữa các hàng
+            children: _filteredLinks.map((link) {
+              return SizedBox(
+                width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
+                child: _buildLinkCard(link),
+              );
+            }).toList(),
+          ),
+        ),
+        if (_hasMoreData && !_isLoading)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        if (!_hasMoreData && _filteredLinks.isNotEmpty)
+          const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: Text(
+                'Đã hiển thị tất cả',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildLinkCard(AffiliateLink link) {
     final bool hasShort = link.shortLink.isNotEmpty;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFEAEAEA)),
+        borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProductDetailScreen(productId: link.spId),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Tự co giãn theo nội dung
           children: [
-            // Header row: product info + follow checkbox
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProductDetailScreen(productId: link.spId),
-                  ),
-                );
-              },
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      link.productImage,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 80,
-                          height: 80,
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.image_not_supported),
-                        );
-                      },
+            // Box trên: Ảnh sản phẩm + Badges
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final imageWidth = constraints.maxWidth;
+                return Container(
+                  width: double.infinity,
+                  height: imageWidth * 1.0, // Ảnh vuông
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FB),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      topRight: Radius.circular(8),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          link.productTitle,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8),
                         ),
-                        const SizedBox(height: 4),
-                         Row(
-                           children: [
-                             Text(
-                               FormatUtils.formatCurrency(link.productPrice.toInt()),
-                               style: const TextStyle(
-                                 fontSize: 16,
-                                 fontWeight: FontWeight.bold,
-                                 color: Color(0xFFFF6B35),
-                               ),
-                             ),
-                             if (link.oldPrice > link.productPrice) ...[
-                               const SizedBox(width: 8),
-                               Text(
-                                 FormatUtils.formatCurrency(link.oldPrice.toInt()),
-                                 style: const TextStyle(
-                                   fontSize: 12,
-                                   color: Color(0xFF999999),
-                                   decoration: TextDecoration.lineThrough,
-                                 ),
-                               ),
-                               const SizedBox(width: 8),
-                               Container(
-                                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                 decoration: BoxDecoration(
-                                   color: const Color(0xFFFF6B35),
-                                   borderRadius: BorderRadius.circular(2),
-                                 ),
-                                 child: Text(
-                                   'GIẢM ${link.discountPercent}%',
-                                   style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
-                                 ),
-                               ),
-                             ],
-                           ],
-                         ),
-                         const SizedBox(height: 4),
-                         _buildCommissionRange(link),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        child: Image.network(
+                          link.productImage,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: double.infinity,
+                              height: double.infinity,
+                              color: const Color(0xFFF5F5F5),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 32,
+                                  color: Color(0xFF999999),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      // Follow checkbox badge ở góc trên phải
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            'Tap để xem chi tiết',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.blue,
-                              fontWeight: FontWeight.w500,
+                          child: SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: _followBusy[link.spId] == true
+                                ? const Padding(
+                                    padding: EdgeInsets.all(4),
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : Checkbox(
+                                    activeColor: const Color(0xFFFF6B35),
+                                    value: true,
+                                    onChanged: (v) async {
+                                      setState(() { _followBusy[link.spId] = true; });
+                                      final result = await _affiliateService.toggleFollow(
+                                        userId: _currentUserId ?? 0,
+                                        spId: link.spId,
+                                        shopId: link.shopId,
+                                        follow: v ?? true,
+                                      );
+                                      
+                                      if (!mounted) return;
+                                      setState(() { _followBusy[link.spId] = false; });
+                                      
+                                      // Nếu unfollow thành công
+                                      if (result != null && result['success'] == true && (v ?? true) == false) {
+                                        // Loại bỏ card khỏi danh sách ngay lập tức
+                                        setState(() { 
+                                          _links.removeWhere((l) => l.spId == link.spId);
+                                          _applyFilters();
+                                        });
+                                        
+                                        // Hiển thị thông báo
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Đã bỏ theo dõi sản phẩm'),
+                                            backgroundColor: Colors.orange,
+                                            duration: Duration(seconds: 1),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  ),
+                          ),
+                        ),
+                      ),
+                      // Discount badge ở góc trên trái
+                      if (link.oldPrice > link.productPrice)
+                        Positioned(
+                          top: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFF6B35),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                            child: Text(
+                              'GIẢM ${link.discountPercent}%',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  // Follow checkbox
-                   SizedBox(
-                     height: 24,
-                     width: 24,
-                     child: _followBusy[link.spId] == true
-                         ? const CircularProgressIndicator(strokeWidth: 2)
-                        : Checkbox(
-                            value: true,
-                            onChanged: (v) async {
-                              setState(() { _followBusy[link.spId] = true; });
-                              final result = await _affiliateService.toggleFollow(
-                                userId: _currentUserId ?? 0,
-                                spId: link.spId,
-                                shopId: link.shopId,
-                                follow: v ?? true,
-                              );
-                              
-                              if (!mounted) return;
-                              setState(() { _followBusy[link.spId] = false; });
-                              
-                              // Nếu unfollow thành công
-                              if (result != null && result['success'] == true && (v ?? true) == false) {
-                                // Loại bỏ card khỏi danh sách ngay lập tức
-                                setState(() { 
-                                  _links.removeWhere((l) => l.spId == link.spId);
-                                  _applyFilters();
-                                });
-                                
-                                // Hiển thị thông báo
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Đã bỏ theo dõi sản phẩm'),
-                                    backgroundColor: Colors.orange,
-                                    duration: Duration(seconds: 1),
+                      // Nút Chia sẻ ở góc phải bên dưới
+                      Positioned(
+                        bottom: 4,
+                        right: 4,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              final affiliateUrl = link.fullLink.isNotEmpty ? link.fullLink : link.shortLink;
+                              final shareText = _buildShareTextForLink(link);
+                              _shareWithImage(link, shareText, affiliateUrl);
+                            },
+                            borderRadius: BorderRadius.circular(4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1976D2).withOpacity(0.95),
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
                                   ),
-                                );
-                              }
-                             },
-                           ),
-                   ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.share,
+                                    size: 12,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  const Text(
+                                    'Chia sẻ',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            
+            // Box dưới: Thông tin sản phẩm
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Tên sản phẩm
+                  Text(
+                    link.productTitle,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF333333),
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Giá
+                  Row(
+                    children: [
+                      Text(
+                        FormatUtils.formatCurrency(link.productPrice.toInt()),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF6B35),
+                        ),
+                      ),
+                      if (link.oldPrice > link.productPrice) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          FormatUtils.formatCurrency(link.oldPrice.toInt()),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF999999),
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Hoa hồng
+                  _buildCommissionRange(link),
+                  const SizedBox(height: 4),
+                  
+                  // Link rows
+                  _buildLinkRow(link.fullLink),
+                  if (hasShort) ...[
+                    const SizedBox(height: 4),
+                    _buildLinkRow(link.shortLink),
+                  ],
+                  const SizedBox(height: 4),
+                  
+                  // Statistics
+                  Row(
+                    children: [
+                      Expanded(child: _buildStatItemSmall(icon: Icons.visibility, label: 'Click', value: '${link.clicks}')),
+                      Expanded(child: _buildStatItemSmall(icon: Icons.shopping_cart, label: 'Đơn', value: '${link.orders}')),
+                      Expanded(child: _buildStatItemSmall(icon: Icons.percent, label: 'CVR', value: link.conversionRateText)),
+                      Expanded(child: _buildStatItemSmall(icon: Icons.monetization_on, label: 'HH', value: FormatUtils.formatCurrency(link.commission.toInt()))),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  
+                  // Created date
+                  Row(
+                    children: [
+                      const Icon(Icons.access_time, size: 11, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          'Đã thêm: ${link.createdAt}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            
-            // Short link
-            // Links: full (utm) then short (if any)
-             Row(
-               children: [
-                 Expanded(child: _buildLinkRow(link.fullLink)),
-                 const SizedBox(width: 8),
-                 _buildShareButton(() => _showShareDialogForLink(link)),
-               ],
-             ),
-            if (hasShort) ...[
-              const SizedBox(height: 8),
-               Row(
-                 children: [
-                   Expanded(child: _buildLinkRow(link.shortLink)),
-                   const SizedBox(width: 8),
-                   _buildShareButton(() => _showShareDialogForLink(link)),
-                 ],
-               ),
-            ],
-            const SizedBox(height: 16),
-            
-            // Statistics
-            Row(
-              children: [
-                Expanded(child: _buildStatItemSmall(icon: Icons.visibility, label: 'Click', value: '${link.clicks}')),
-                Expanded(child: _buildStatItemSmall(icon: Icons.shopping_cart, label: 'Đơn', value: '${link.orders}')),
-                Expanded(child: _buildStatItemSmall(icon: Icons.percent, label: 'CVR', value: link.conversionRateText)),
-                Expanded(child: _buildStatItemSmall(icon: Icons.monetization_on, label: 'Hoa hồng', value: FormatUtils.formatCurrency(link.commission.toInt()))),
-              ],
-            ),
-            const SizedBox(height: 12),
-            
-            // Created date
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  'Đã thêm: ${link.createdAt}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
             ),
           ],
         ),
@@ -491,120 +607,59 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
   }
 
   Widget _buildLinkRow(String url) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFFE9ECEF)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.link, size: 14, color: Color(0xFF6C757D)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              url,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Color(0xFF212529),
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: url));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Đã copy link!'),
-                  backgroundColor: const Color(0xFF28A745),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-            child: const Icon(Icons.copy, size: 16, color: Color(0xFF6C757D)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Share button similar style with products dialog (simple for links list)
-  Widget _buildShareButton(VoidCallback onTap) {
-    return SizedBox(
-      height: 36,
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        icon: const Icon(Icons.share, size: 16),
-        label: const Text('Chia sẻ', style: TextStyle(fontSize: 12)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 10),
-          foregroundColor: const Color(0xFF1976D2),
-          side: const BorderSide(color: Color(0xFF1976D2)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        ),
-      ),
-    );
-  }
-
-  // Share dialog (giống bên sản phẩm)
-  void _showShareDialogForLink(AffiliateLink link) {
-    final affiliateUrl = link.fullLink.isNotEmpty ? link.fullLink : link.shortLink;
-    final shareText = _buildShareTextForLink(link);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(topLeft: Radius.circular(16), topRight: Radius.circular(16)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Center(
-                child: Text('Chia sẻ sản phẩm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              ),
-              const SizedBox(height: 12),
-              Center(
-                child: _shareIconButton(Icons.share, 'Chia sẻ', () {
-                  _shareWithImage(link, shareText, affiliateUrl);
-                }),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _shareIconButton(IconData icon, String label, VoidCallback onTap) {
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF2FF),
-              borderRadius: BorderRadius.circular(16),
+      onTap: () {}, // Prevent tap event from bubbling to parent InkWell
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: const Color(0xFFE9ECEF)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.link, size: 11, color: Color(0xFF6C757D)),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                url,
+                style: const TextStyle(
+                  fontSize: 9,
+                  color: Color(0xFF495057),
+                  fontWeight: FontWeight.w400,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            child: Icon(icon, color: const Color(0xFF1976D2), size: 24),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF666666))),
-        ],
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: url));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Đã copy link!'),
+                    backgroundColor: const Color(0xFF28A745),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                );
+              },
+              behavior: HitTestBehavior.opaque, // Prevent event bubbling
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                child: const Icon(Icons.copy, size: 11, color: Color(0xFF6C757D)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   String _buildShareTextForLink(AffiliateLink link) {
     // Nội dung tương tự bên sản phẩm
@@ -817,8 +872,8 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
         maxCommission = maxCommission == null ? c.value : (c.value > maxCommission ? c.value : maxCommission);
       }
     }
-    if (minCommission == null || maxCommission == null) return '💎 Hoa hồng: —';
-    return '💎 Hoa hồng: ${FormatUtils.formatCurrency(minCommission.toInt())} → ${FormatUtils.formatCurrency(maxCommission.toInt())}';
+    if (minCommission == null || maxCommission == null) return '💎';
+    return '💎 ${FormatUtils.formatCurrency(minCommission.toInt())} → ${FormatUtils.formatCurrency(maxCommission.toInt())}';
   }
 
   Widget _buildModernFilterPanel() {

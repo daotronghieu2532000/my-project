@@ -1822,10 +1822,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     final cardWidth = (screenWidth - 48) / 2;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start, // Căn trái toàn bộ nội dung
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Wrap(
+            alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
             spacing: 8, // Khoảng cách ngang giữa các card
             runSpacing: 8, // Khoảng cách dọc giữa các hàng
             children: _filteredProducts.map((product) {
@@ -2051,9 +2053,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                                     color: Colors.black.withOpacity(0.2),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
+                          ),
+                        ],
+                      ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -2231,49 +2233,49 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
-          borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: const Color(0xFFE9ECEF)),
-        ),
-        child: Row(
-          children: [
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+      ),
+      child: Row(
+        children: [
             const Icon(Icons.link, size: 11, color: Color(0xFF6C757D)),
             const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                url,
-                style: const TextStyle(
+          Expanded(
+            child: Text(
+              url,
+              style: const TextStyle(
                   fontSize: 9,
-                  color: Color(0xFF495057),
-                  fontWeight: FontWeight.w400,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                color: Color(0xFF495057),
+                fontWeight: FontWeight.w400,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            GestureDetector(
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: url));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Đã copy link!'),
-                    backgroundColor: const Color(0xFF28A745),
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 1),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: url));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Đã copy link!'),
+                  backgroundColor: const Color(0xFF28A745),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 1),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(4),
                   ),
-                );
-              },
+                ),
+              );
+            },
               behavior: HitTestBehavior.opaque, // Prevent event bubbling
               child: Container(
                 padding: const EdgeInsets.all(4),
                 child: const Icon(Icons.copy, size: 11, color: Color(0xFF6C757D)),
               ),
-            ),
-          ],
+          ),
+        ],
         ),
       ),
     );

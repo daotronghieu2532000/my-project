@@ -121,6 +121,7 @@ class _SuggestSectionState extends State<SuggestSection> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Wrap(
+        alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
         spacing: 8, // Khoảng cách ngang giữa các card
         runSpacing: 8, // Khoảng cách dọc giữa các hàng
         children: _suggestions.map((product) {
@@ -130,9 +131,9 @@ class _SuggestSectionState extends State<SuggestSection> {
               product: product,
               index: _suggestions.indexOf(product),
             ),
-          );
+            );
         }).toList(),
-      ),
+        ),
     );
   }
 }

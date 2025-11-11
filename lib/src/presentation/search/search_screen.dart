@@ -747,7 +747,10 @@ class _SearchScreenState extends State<SearchScreen> {
           child: SingleChildScrollView(
             controller: _scrollController,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: _buildProductsGrid(),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: _buildProductsGrid(),
+            ),
           ),
         ),
       ],
@@ -995,8 +998,10 @@ class _SearchScreenState extends State<SearchScreen> {
     final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start, // Căn trái toàn bộ nội dung
       children: [
         Wrap(
+          alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
           spacing: 8, // Khoảng cách ngang giữa các card
           runSpacing: 8, // Khoảng cách dọc giữa các hàng
           children: displayedProducts.map((product) {

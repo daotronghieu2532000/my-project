@@ -491,11 +491,14 @@ class _ParentCategoryProductsScreenState extends State<ParentCategoryProductsScr
         Expanded(
           child: RefreshIndicator(
             onRefresh: _onRefresh,
-            child: SingleChildScrollView(
-                                controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: Align(
+              alignment: Alignment.topLeft,
               child: _buildProductsGrid(),
             ),
+          ),
           ),
         ),
       ],
@@ -656,8 +659,10 @@ class _ParentCategoryProductsScreenState extends State<ParentCategoryProductsScr
     final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start, // Căn trái toàn bộ nội dung
       children: [
         Wrap(
+          alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
           spacing: 8, // Khoảng cách ngang giữa các card
           runSpacing: 8, // Khoảng cách dọc giữa các hàng
           children: filteredProducts.map((product) {

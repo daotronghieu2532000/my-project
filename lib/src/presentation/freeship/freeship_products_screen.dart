@@ -258,7 +258,10 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: _buildProductsGrid(displayedProducts),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: _buildProductsGrid(displayedProducts),
+            ),
           ),
         ),
       ],
@@ -315,6 +318,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
     final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
 
     return Wrap(
+      alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
       spacing: 8, // Khoảng cách ngang giữa các card
       runSpacing: 8, // Khoảng cách dọc giữa các hàng
       children: products.map((product) {

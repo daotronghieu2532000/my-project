@@ -161,6 +161,7 @@ class _ProductGridState extends State<ProductGrid> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       child: Wrap(
+        alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
         spacing: 8, // Khoảng cách ngang giữa các card
         runSpacing: 8, // Khoảng cách dọc giữa các hàng
         children: _products.asMap().entries.map((entry) {

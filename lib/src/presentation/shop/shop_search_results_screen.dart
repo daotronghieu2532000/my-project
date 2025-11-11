@@ -289,8 +289,10 @@ class _ShopSearchResultsScreenState extends State<ShopSearchResultsScreen> {
     final cardWidth = (screenWidth - 16) / 2;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start, // Căn trái toàn bộ nội dung
       children: [
         Wrap(
+          alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
           spacing: 8,
           runSpacing: 8,
           children: _products.map((product) {
