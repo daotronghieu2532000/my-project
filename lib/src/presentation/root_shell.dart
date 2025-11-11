@@ -17,7 +17,7 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> {
+class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
   late int _currentIndex = widget.initialIndex;
   final cart_service.CartService _cart = cart_service.CartService();
   final AppLifecycleManager _lifecycleManager = AppLifecycleManager();
@@ -26,14 +26,38 @@ class _RootShellState extends State<RootShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _cart.addListener(_onCartChanged);
     _initializeAppState();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _cart.removeListener(_onCartChanged);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _restoreStateOnResume();
+    }
+  }
+
+  /// Restore state khi app resume
+  Future<void> _restoreStateOnResume() async {
+    try {
+      final savedTab = await _lifecycleManager.getSavedTab();
+      if (savedTab != null && savedTab != _currentIndex) {
+        setState(() {
+          _currentIndex = savedTab;
+        });
+      }
+    } catch (e) {
+      // Ignore error
+    }
   }
 
   void _onCartChanged() {

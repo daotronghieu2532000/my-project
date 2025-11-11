@@ -20,13 +20,14 @@ class AppLifecycleManager extends WidgetsBindingObserver {
   // Giảm từ 5 phút xuống 2 phút để cân bằng giữa UX và data freshness
   static const Duration _stateTimeout = Duration(minutes: 2);
   
-  DateTime? _lastActiveTime;
+  DateTime? _lastPauseTime;
+  DateTime? _lastResumeTime;
   bool _isAppInBackground = false;
 
   /// Khởi tạo AppLifecycleManager
   void initialize() {
     WidgetsBinding.instance.addObserver(this);
-    _loadLastActiveTime();
+    _loadLastPauseTime();
   }
 
   /// Dispose AppLifecycleManager
@@ -59,33 +60,41 @@ class AppLifecycleManager extends WidgetsBindingObserver {
 
   /// Xử lý khi app được resume
   void _handleAppResumed() {
+    _lastResumeTime = DateTime.now();
     _isAppInBackground = false;
-    _lastActiveTime = DateTime.now();
-    _saveLastActiveTime();
+    
+    // Kiểm tra nếu ở background quá lâu, clear state
+    if (_lastPauseTime != null) {
+      final backgroundDuration = _lastResumeTime!.difference(_lastPauseTime!);
+      if (backgroundDuration > _stateTimeout) {
+        // State đã hết hạn, clear để app reload
+        clearAllState();
+      }
+    }
   }
 
   /// Xử lý khi app bị pause
   void _handleAppPaused() {
+    _lastPauseTime = DateTime.now();
     _isAppInBackground = true;
-    _lastActiveTime = DateTime.now();
-    _saveLastActiveTime();
+    _saveLastPauseTime();
   }
 
-  /// Lưu thời gian hoạt động cuối cùng
-  Future<void> _saveLastActiveTime() async {
-    if (_lastActiveTime != null) {
+  /// Lưu thời gian pause cuối cùng
+  Future<void> _saveLastPauseTime() async {
+    if (_lastPauseTime != null) {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_lastActiveTimeKey, _lastActiveTime!.toIso8601String());
+      await prefs.setString(_lastActiveTimeKey, _lastPauseTime!.toIso8601String());
     }
   }
 
-  /// Load thời gian hoạt động cuối cùng
-  Future<void> _loadLastActiveTime() async {
+  /// Load thời gian pause cuối cùng
+  Future<void> _loadLastPauseTime() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final lastActiveString = prefs.getString(_lastActiveTimeKey);
-      if (lastActiveString != null) {
-        _lastActiveTime = DateTime.parse(lastActiveString);
+      final lastPauseString = prefs.getString(_lastActiveTimeKey);
+      if (lastPauseString != null) {
+        _lastPauseTime = DateTime.parse(lastPauseString);
       }
     } catch (e) {
       // Ignore error
@@ -94,12 +103,23 @@ class AppLifecycleManager extends WidgetsBindingObserver {
 
   /// Kiểm tra xem state có còn hợp lệ không
   bool isStateValid() {
-    if (_lastActiveTime == null) return false;
+    if (_lastPauseTime == null) return false;
     
-    final now = DateTime.now();
-    final timeDiff = now.difference(_lastActiveTime!);
+    // Nếu app đã resume, kiểm tra thời gian từ pause đến resume
+    if (_lastResumeTime != null && !_isAppInBackground) {
+      final backgroundDuration = _lastResumeTime!.difference(_lastPauseTime!);
+      return backgroundDuration <= _stateTimeout;
+    }
     
-    return timeDiff <= _stateTimeout;
+    // Nếu app đang trong background, kiểm tra từ pause đến hiện tại
+    if (_isAppInBackground) {
+      final now = DateTime.now();
+      final backgroundDuration = now.difference(_lastPauseTime!);
+      return backgroundDuration <= _stateTimeout;
+    }
+    
+    // Nếu chưa có pause time, state không hợp lệ
+    return false;
   }
 
   /// Lưu tab hiện tại
@@ -200,6 +220,10 @@ class AppLifecycleManager extends WidgetsBindingObserver {
       await prefs.remove(_homeScrollPositionKey);
       await prefs.remove(_categoryScrollPositionKey);
       await prefs.remove(_affiliateScrollPositionKey);
+      
+      // Clear in-memory state
+      _lastPauseTime = null;
+      _lastResumeTime = null;
     } catch (e) {
       // Ignore error
     }
@@ -237,6 +261,6 @@ class AppLifecycleManager extends WidgetsBindingObserver {
   /// Kiểm tra xem app có đang trong background không
   bool get isInBackground => _isAppInBackground;
 
-  /// Lấy thời gian cuối cùng app hoạt động
-  DateTime? get lastActiveTime => _lastActiveTime;
+  /// Lấy thời gian cuối cùng app bị pause
+  DateTime? get lastPauseTime => _lastPauseTime;
 }

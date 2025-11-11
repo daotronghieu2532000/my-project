@@ -5,6 +5,7 @@ import '../../../core/services/auth_service.dart';
 import '../../../core/services/cart_service.dart' as cart_service;
 import '../../../core/services/shipping_events.dart';
 import '../../../core/services/shipping_quote_store.dart';
+import '../../../core/services/shipping_quote_service.dart';
 
 class OrderSummarySection extends StatefulWidget {
   const OrderSummarySection({super.key});
@@ -16,12 +17,14 @@ class OrderSummarySection extends StatefulWidget {
 class _OrderSummarySectionState extends State<OrderSummarySection> {
   final _api = ApiService();
   final _auth = AuthService();
+  final _shippingQuoteService = ShippingQuoteService(); // ✅ Sử dụng service chuyên nghiệp
   int? _shipFee;
   int? _originalShipFee; // Phí ship gốc
   int? _shipSupport; // Hỗ trợ ship
   String? _etaText;
   String? _provider;
   bool _hasFreeshipAvailable = false;
+  bool _isFallback = false; // ✅ Đánh dấu đang dùng fallback
   List<Map<String, dynamic>>? _warehouseDetails; // Chi tiết phí ship từng kho
   StreamSubscription<void>? _shipSub;
 
@@ -39,19 +42,31 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
   @override
   void dispose() {
     _shipSub?.cancel();
+    _loadDebounceTimer?.cancel(); // ✅ Hủy timer khi dispose
     super.dispose();
   }
 
+  Timer? _loadDebounceTimer; // ✅ Debounce để tránh gọi API quá nhiều lần
+
   Future<void> _load() async {
+    // ✅ Debounce: Hủy timer cũ nếu có, tạo timer mới
+    _loadDebounceTimer?.cancel();
+    _loadDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
+      await _loadShippingQuote();
+    });
+  }
+
+  Future<void> _loadShippingQuote() async {
     final u = await _auth.getCurrentUser();
     
-    // Chuẩn bị danh sách items trong giỏ
+    // Chuẩn bị danh sách items trong giỏ với giá thực tế
     final cart = cart_service.CartService();
     final items = cart.items
         .where((i) => i.isSelected) // ✅ Chỉ lấy items đã chọn
         .map((i) => {
               'product_id': i.id,
               'quantity': i.quantity,
+              'price': i.price, // ✅ Thêm giá để fallback tính chính xác hơn
             })
         .toList();
     
@@ -83,10 +98,17 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       return;
     }
   
-    // evaluates all providers and returns the cheaper one with an ETA text.
-    final rawQuote = await _api.getShippingQuote(userId: u.userId, items: items);
+    // ✅ Sử dụng ShippingQuoteService với retry, timeout, fallback, và cache
+    final rawQuote = await _shippingQuoteService.getShippingQuote(
+      userId: u.userId,
+      items: items,
+      useCache: true,
+      enableFallback: true,
+    );
     if (!mounted) return;
     setState(() {
+      // ✅ Kiểm tra xem có phải fallback không
+      _isFallback = rawQuote?['is_fallback'] == true;
       // Robust parse of dynamic 'fee' (can be int/num/string)
       final dynamic feeDyn = rawQuote?['fee'];
       int? parsedFee;
@@ -107,12 +129,42 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         _originalShipFee = rawQuote?['fee'] as int? ?? 0; // Phí ship gốc
         _shipSupport = rawQuote?['best']?['ship_support'] as int? ?? 0; // Hỗ trợ ship từ best
         
-        // Lấy chi tiết phí ship từng kho
-        final warehouseShipping = rawQuote?['warehouse_shipping'] as Map<String, dynamic>?;
-        if (warehouseShipping != null) {
+        // ✅ Lấy chi tiết phí ship từng kho (ưu tiên từ best, sau đó warehouse_shipping)
+        List<dynamic>? warehouseDetailsList;
+        
+        // Thử lấy từ best['warehouse_details'] trước
+        final best = rawQuote?['best'] as Map<String, dynamic>?;
+        if (best != null) {
+          warehouseDetailsList = best['warehouse_details'] as List<dynamic>?;
+        }
+        
+        // Nếu không có, thử lấy từ warehouse_shipping
+        if (warehouseDetailsList == null || warehouseDetailsList.isEmpty) {
+          final warehouseShipping = rawQuote?['data']?['warehouse_shipping'] as Map<String, dynamic>?;
+          if (warehouseShipping != null) {
+            warehouseDetailsList = warehouseShipping['warehouse_details'] as List<dynamic>?;
+          }
+        }
+        
+        // Nếu vẫn không có, thử lấy từ quotes[0]
+        if (warehouseDetailsList == null || warehouseDetailsList.isEmpty) {
+          final quotes = rawQuote?['quotes'] as List<dynamic>?;
+          if (quotes != null && quotes.isNotEmpty) {
+            final firstQuote = quotes[0] as Map<String, dynamic>?;
+            if (firstQuote != null) {
+              warehouseDetailsList = firstQuote['warehouse_details'] as List<dynamic>?;
+            }
+          }
+        }
+        
+        if (warehouseDetailsList != null && warehouseDetailsList.isNotEmpty) {
           _warehouseDetails = List<Map<String, dynamic>>.from(
-            warehouseShipping['warehouse_details'] as List? ?? []
+            warehouseDetailsList.map((e) => e as Map<String, dynamic>)
           );
+          print('🔍 [OrderSummary] Found ${_warehouseDetails!.length} warehouse details');
+        } else {
+          _warehouseDetails = null;
+          print('⚠️ [OrderSummary] No warehouse_details found');
         }
       
       // Debug log để kiểm tra
@@ -752,13 +804,37 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ✅ Hiển thị thông báo phù hợp khi chưa đăng nhập
-                    Text(
-                      _originalShipFee != null 
-                        ? 'Phí vận chuyển: ${_formatCurrency(_originalShipFee!)}'
-                        : 'Phí vận chuyển: Vui lòng đăng nhập để tính phí ship',
-                      style: TextStyle(
-                        color: _originalShipFee == null ? Colors.orange : null,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _originalShipFee != null 
+                            ? 'Phí vận chuyển: ${_formatCurrency(_originalShipFee!)}'
+                            : 'Phí vận chuyển: Vui lòng đăng nhập để tính phí ship',
+                          style: TextStyle(
+                            color: _originalShipFee == null ? Colors.orange : null,
+                          ),
+                        ),
+                        // ✅ Hiển thị cảnh báo khi đang dùng fallback
+                        if (_isFallback)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline, size: 14, color: Colors.orange[700]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Đang sử dụng phí ship ước tính',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.orange[700],
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     
                     // Hiển thị chi tiết phí ship từng kho với provider

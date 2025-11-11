@@ -491,6 +491,8 @@ class ApiService {
   }
 
   // Shipping quote via server wrapper that uses existing carrier classes
+  // ⚠️ Lưu ý: Nên sử dụng ShippingQuoteService thay vì gọi trực tiếp method này
+  // ShippingQuoteService có retry, timeout, fallback, và cache
   Future<Map<String, dynamic>?> getShippingQuote({
     required int userId,
     required List<Map<String, dynamic>> items, // [{product_id, quantity}]

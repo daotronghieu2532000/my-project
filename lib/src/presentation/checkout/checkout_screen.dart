@@ -14,6 +14,7 @@ import '../../core/services/auth_service.dart';
 import '../../core/services/shipping_quote_store.dart';
 import '../../core/services/voucher_service.dart';
 import '../../core/services/shipping_events.dart';
+import '../../core/services/shipping_quote_service.dart';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -29,6 +30,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final ApiService _api = ApiService();
   final AuthService _auth = AuthService();
   final VoucherService _voucherService = VoucherService();
+  final ShippingQuoteService _shippingQuoteService = ShippingQuoteService(); // ✅ Service chuyên nghiệp
 
   int get totalPrice => _cartService.items
       .where((item) => item.isSelected)
@@ -224,14 +226,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     
     // Gọi API shipping_quote để lấy thông tin freeship cho tất cả items
     try {
+      // ✅ Thêm giá vào items để fallback tính chính xác hơn
       final shippingItems = items.map((item) => {
         'product_id': item['id'],
         'quantity': item['quantity'],
+        'price': item['gia_moi'], // ✅ Thêm giá để fallback tính chính xác
       }).toList();
       
-      final shippingQuote = await _api.getShippingQuote(
+      // ✅ Sử dụng ShippingQuoteService với retry, timeout, fallback, và cache
+      final shippingQuote = await _shippingQuoteService.getShippingQuote(
         userId: user.userId,
         items: shippingItems.cast<Map<String, dynamic>>(),
+        useCache: true,
+        enableFallback: true, // ✅ Cho phép fallback nếu API fail
       );
       
       if (shippingQuote != null && shippingQuote['success'] == true) {
@@ -274,21 +281,51 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
         
         // ✅ Lấy warehouse_shipping_details để map provider cho từng shop
-        final warehouseShipping = shippingQuote['data']?['warehouse_shipping'] as Map<String, dynamic>?;
-        if (warehouseShipping != null) {
-          final warehouseDetails = warehouseShipping['warehouse_details'] as List<dynamic>?;
-          if (warehouseDetails != null) {
-            for (final detail in warehouseDetails) {
-              final detailMap = detail as Map<String, dynamic>?;
-              if (detailMap != null) {
-                final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
-                final provider = detailMap['provider']?.toString() ?? '';
-                if (shopId > 0 && provider.isNotEmpty) {
-                  shopShippingProviders[shopId] = provider;
-                }
+        // Ưu tiên lấy từ best['warehouse_details'], sau đó từ warehouse_shipping
+        List<dynamic>? warehouseDetails;
+        
+        // Thử lấy từ best['warehouse_details'] trước (chính xác hơn)
+        final best = shippingQuote['best'] as Map<String, dynamic>?;
+        if (best != null) {
+          warehouseDetails = best['warehouse_details'] as List<dynamic>?;
+        }
+        
+        // Nếu không có, thử lấy từ warehouse_shipping
+        if (warehouseDetails == null || warehouseDetails.isEmpty) {
+          final warehouseShipping = shippingQuote['data']?['warehouse_shipping'] as Map<String, dynamic>?;
+          if (warehouseShipping != null) {
+            warehouseDetails = warehouseShipping['warehouse_details'] as List<dynamic>?;
+          }
+        }
+        
+        // Nếu vẫn không có, thử lấy từ quotes[0]
+        if (warehouseDetails == null || warehouseDetails.isEmpty) {
+          final quotes = shippingQuote['quotes'] as List<dynamic>?;
+          if (quotes != null && quotes.isNotEmpty) {
+            final firstQuote = quotes[0] as Map<String, dynamic>?;
+            if (firstQuote != null) {
+              warehouseDetails = firstQuote['warehouse_details'] as List<dynamic>?;
+            }
+          }
+        }
+        
+        // Map provider cho từng shop
+        if (warehouseDetails != null && warehouseDetails.isNotEmpty) {
+          print('🔍 [Checkout] Found ${warehouseDetails.length} warehouse details');
+          for (final detail in warehouseDetails) {
+            final detailMap = detail as Map<String, dynamic>?;
+            if (detailMap != null) {
+              final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
+              final provider = detailMap['provider']?.toString() ?? '';
+              if (shopId > 0 && provider.isNotEmpty) {
+                shopShippingProviders[shopId] = provider;
+                print('🔍 [Checkout] Mapped shop $shopId -> provider: $provider');
               }
             }
           }
+          print('🔍 [Checkout] Total shops mapped: ${shopShippingProviders.length}');
+        } else {
+          print('⚠️ [Checkout] No warehouse_details found in response');
         }
       }
     } catch (e) {
@@ -304,11 +341,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final itemsWithProvider = items.map((item) {
       final shopId = item['shop'] as int? ?? 0;
       final provider = shopShippingProviders[shopId] ?? ship.provider ?? '';
+      print('🔍 [Checkout] Item ${item['id']} (shop $shopId) -> provider: $provider');
       return {
         ...item,
         'shipping_provider': provider, // ✅ Thêm shipping_provider vào mỗi item
       };
     }).toList();
+    
+    // ✅ Log tổng hợp để debug
+    print('🔍 [Checkout] Items with provider:');
+    for (final item in itemsWithProvider) {
+      print('  - Product ${item['id']}: shop=${item['shop']}, provider=${item['shipping_provider']}');
+    }
     
     // final grandTotal = totalGoods + finalShipFee - shopDiscount - platformDiscount;
     
