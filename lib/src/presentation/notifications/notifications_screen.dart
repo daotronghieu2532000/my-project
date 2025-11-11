@@ -3,6 +3,10 @@ import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../root_shell.dart';
 import '../auth/login_screen.dart';
+import '../voucher/voucher_screen.dart';
+import '../orders/orders_screen.dart';
+import '../orders/order_detail_screen.dart';
+import '../affiliate/affiliate_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -11,18 +15,31 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen> with SingleTickerProviderStateMixin {
   final ApiService _api = ApiService();
   final AuthService _auth = AuthService();
   bool _loading = true;
   int _unread = 0;
   List<dynamic> _items = [];
   int? _userId;
+  
+  // Phân loại thông báo theo category
+  Map<String, List<dynamic>> _groupedNotifications = {};
+  
+  // TabController cho tabs
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 5, vsync: this);
     _init();
+  }
+  
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _init() async {
@@ -43,12 +60,40 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Future<void> _load() async {
     if (_userId == null) return;
     setState(() => _loading = true);
-    final data = await _api.getNotifications(userId: _userId!, page: 1, limit: 20);
+    final data = await _api.getNotifications(userId: _userId!, page: 1, limit: 100);
     if (!mounted) return;
+    
+    final items = (data?['data']?['notifications'] as List?) ?? [];
+    
+    // Nhóm thông báo theo category
+    final grouped = <String, List<dynamic>>{
+      'orders': [],
+      'vouchers': [],
+      'transactions': [],
+      'affiliate': [],
+      'other': [],
+    };
+    
+    for (var item in items) {
+      final type = item['type']?.toString() ?? '';
+      if (type == 'order') {
+        grouped['orders']!.add(item);
+      } else if (type == 'voucher_new' || type == 'voucher_expiring') {
+        grouped['vouchers']!.add(item);
+      } else if (type == 'deposit' || type == 'withdrawal') {
+        grouped['transactions']!.add(item);
+      } else if (type == 'affiliate_order' || type == 'affiliate_product') {
+        grouped['affiliate']!.add(item);
+      } else {
+        grouped['other']!.add(item);
+      }
+    }
+    
     setState(() {
       _loading = false;
-      _items = (data?['data']?['notifications'] as List?) ?? [];
+      _items = items;
       _unread = (data?['data']?['unread_count'] as int?) ?? 0;
+      _groupedNotifications = grouped;
     });
   }
 
@@ -106,6 +151,59 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50),
+          child: Container(
+            color: Colors.white,
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              indicatorSize: TabBarIndicatorSize.tab,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: const Color(0xFF2196F3).withOpacity(0.1),
+              ),
+              indicatorColor: const Color(0xFF2196F3),
+              labelColor: const Color(0xFF2196F3),
+              unselectedLabelColor: Colors.grey[600],
+              labelStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+              tabs: [
+                _buildTab(
+                  'Tất cả',
+                  _items.length,
+                  Icons.notifications_outlined,
+                ),
+                _buildTab(
+                  'Đơn hàng',
+                  _groupedNotifications['orders']?.length ?? 0,
+                  Icons.shopping_bag_outlined,
+                ),
+                _buildTab(
+                  'Voucher',
+                  _groupedNotifications['vouchers']?.length ?? 0,
+                  Icons.card_giftcard_outlined,
+                ),
+                _buildTab(
+                  'Giao dịch',
+                  _groupedNotifications['transactions']?.length ?? 0,
+                  Icons.account_balance_wallet_outlined,
+                ),
+                _buildTab(
+                  'Affiliate',
+                  _groupedNotifications['affiliate']?.length ?? 0,
+                  Icons.handshake_outlined,
+                ),
+              ],
+            ),
+          ),
+        ),
         actions: [
           if (_items.isNotEmpty)
             PopupMenuButton<String>(
@@ -154,147 +252,89 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           }
           return RefreshIndicator(
             onRefresh: _load,
-            child: ListView(
+            child: Column(
               children: [
-          // Header với số lượng thông báo
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
+                // Header với số lượng thông báo
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: _unread > 0 
-                          ? [const Color(0xFF4CAF50), const Color(0xFF45A049)]
-                          : [const Color(0xFF9E9E9E), const Color(0xFF757575)],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.notifications_active,
                     color: Colors.white,
-                    size: 24,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: _unread > 0 
+                                ? [const Color(0xFF4CAF50), const Color(0xFF45A049)]
+                                : [const Color(0xFF9E9E9E), const Color(0xFF757575)],
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.notifications_active,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _unread > 0
+                                  ? 'Bạn có $_unread thông báo mới'
+                                  : 'Không có thông báo mới',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF2C3E50),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Cập nhật lần cuối: Hôm nay',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey[500],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 16),
+                
+                // TabBarView với nội dung từng tab
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: TabBarView(
+                    controller: _tabController,
                     children: [
-                      Text(
-                        _unread > 0
-                            ? 'Bạn có $_unread thông báo mới'
-                            : 'Không có thông báo mới',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2C3E50),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Cập nhật lần cuối: Hôm nay',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[500],
-                        ),
-                      ),
+                      // Tab: Tất cả
+                      _buildTabContent(_items),
+                      // Tab: Đơn hàng
+                      _buildTabContent(_groupedNotifications['orders'] ?? []),
+                      // Tab: Voucher
+                      _buildTabContent(_groupedNotifications['vouchers'] ?? []),
+                      // Tab: Giao dịch
+                      _buildTabContent(_groupedNotifications['transactions'] ?? []),
+                      // Tab: Affiliate
+                      _buildTabContent(_groupedNotifications['affiliate'] ?? []),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Danh sách thông báo
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: _items.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(40),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.notifications_none,
-                          size: 64,
-                          color: Colors.grey[300],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Chưa có thông báo',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Khi có thông báo mới, chúng sẽ xuất hiện ở đây',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[500],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                : Column(
-                    children: [
-                      for (int i = 0; i < _items.length; i++) ...[
-                        _NotificationItemWidget(
-                          id: _items[i]['id'] ?? 0,
-                          iconWidget: _getNotificationIcon(
-                            _items[i]['type']?.toString(),
-                            _items[i]['title']?.toString(),
-                          ),
-                          title: _items[i]['title']?.toString() ?? 'Thông báo',
-                          subtitle: _items[i]['content']?.toString() ?? '',
-                          time: _items[i]['time_ago']?.toString() ?? '',
-                          isRead: (_items[i]['is_read'] as bool?) ?? false,
-                          priority: _items[i]['priority']?.toString() ?? 'medium',
-                          data: _items[i]['data'] as Map<String, dynamic>?,
-                          onMarkRead: _markRead,
-                        ),
-                        if (i < _items.length - 1) 
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16),
-                            height: 1,
-                            color: Colors.grey[100],
-                          ),
-                      ],
-                    ],
-                  ),
-          ),
-          
-          const SizedBox(height: 24),
               ],
             ),
           );
@@ -302,6 +342,176 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       ),
       bottomNavigationBar: const RootShellBottomBar(),
     );
+  }
+
+  // Widget tạo tab với badge số lượng
+  Widget _buildTab(String label, int count, IconData icon) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16),
+          const SizedBox(width: 6),
+          Text(label),
+          if (count > 0) ...[
+            const SizedBox(width: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                '$count',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  // Widget tạo nội dung cho từng tab
+  Widget _buildTabContent(List<dynamic> notifications) {
+    if (notifications.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.notifications_none,
+              size: 64,
+              color: Colors.grey[300],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Chưa có thông báo',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Khi có thông báo mới, chúng sẽ xuất hiện ở đây',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[500],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      itemCount: notifications.length,
+      itemBuilder: (context, index) {
+        final notification = notifications[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: _NotificationItemWidget(
+            id: notification['id'] ?? 0,
+            iconWidget: _getNotificationIcon(
+              notification['type']?.toString(),
+              notification['title']?.toString(),
+            ),
+            title: notification['title']?.toString() ?? 'Thông báo',
+            subtitle: notification['content']?.toString() ?? '',
+            time: notification['time_ago']?.toString() ?? '',
+            isRead: (notification['is_read'] as bool?) ?? false,
+            priority: notification['priority']?.toString() ?? 'medium',
+            data: notification['data'] as Map<String, dynamic>?,
+            onMarkRead: _markRead,
+            onTap: () => _handleNotificationTap(notification),
+          ),
+        );
+      },
+    );
+  }
+
+  // Xử lý khi click vào thông báo
+  void _handleNotificationTap(Map<String, dynamic> notification) {
+    final type = notification['type']?.toString() ?? '';
+    final relatedId = notification['related_id'];
+    final data = notification['data'] as Map<String, dynamic>?;
+    
+    if (_userId == null) return;
+    
+    switch (type) {
+      case 'order':
+        // Nếu có order_id hoặc order_code, đi đến chi tiết đơn hàng
+        if (relatedId != null && relatedId > 0) {
+          final orderCode = data?['order_code']?.toString();
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => OrderDetailScreen(
+                userId: _userId!,
+                orderId: relatedId is int ? relatedId : int.tryParse(relatedId.toString()),
+                maDon: orderCode,
+              ),
+            ),
+          );
+        } else {
+          // Nếu không có, đi đến danh sách đơn hàng
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const OrdersScreen()),
+          );
+        }
+        break;
+        
+      case 'voucher_new':
+      case 'voucher_expiring':
+        // Đi đến màn hình voucher
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const VoucherScreen()),
+        );
+        break;
+        
+      case 'deposit':
+      case 'withdrawal':
+        // Đi đến màn hình affiliate (có phần giao dịch)
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AffiliateScreen()),
+        );
+        break;
+        
+      case 'affiliate_order':
+      case 'affiliate_product':
+        // Đi đến màn hình affiliate
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AffiliateScreen()),
+        );
+        break;
+        
+      default:
+        // Không làm gì cho các loại khác
+        break;
+    }
   }
 
   Widget _getNotificationIcon(String? type, String? title) {
@@ -645,6 +855,7 @@ class _NotificationItemWidget extends StatefulWidget {
   final String priority;
   final Map<String, dynamic>? data;
   final Function(int) onMarkRead;
+  final VoidCallback? onTap;
 
   const _NotificationItemWidget({
     required this.id,
@@ -656,6 +867,7 @@ class _NotificationItemWidget extends StatefulWidget {
     required this.priority,
     this.data,
     required this.onMarkRead,
+    this.onTap,
   });
 
   @override
@@ -664,7 +876,6 @@ class _NotificationItemWidget extends StatefulWidget {
 
 class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
   bool _isExpanded = false;
-  static const int _maxLines = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -687,14 +898,16 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
     // Kiểm tra nội dung có dài không
     bool isLongContent = widget.subtitle.length > 100;
     
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: widget.priority == 'high' && !widget.isRead 
-            ? const Border(left: BorderSide(color: Color(0xFFEF4444), width: 3))
-            : null,
-      ),
-      child: ListTile(
+    return InkWell(
+      onTap: widget.onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: widget.priority == 'high' && !widget.isRead 
+              ? const Border(left: BorderSide(color: Color(0xFFEF4444), width: 3))
+              : null,
+        ),
+        child: ListTile(
         leading: productImage != null && productImage.isNotEmpty
             ? Container(
                 width: 50,
@@ -746,45 +959,32 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
             : widget.iconWidget,
         title: Row(
           children: [
-            // Icon trạng thái đơn hàng
-            _getOrderStatusIconForTitle(widget.title),
-            const SizedBox(width: 8),
             Expanded(
               child: Text(
                 widget.title,
                 style: TextStyle(
                   fontWeight: widget.isRead ? FontWeight.w500 : FontWeight.w600,
-                  color: _getOrderStatusColor(widget.title),
+                  fontSize: 14,
+                  color: Colors.black87,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (widget.priority == 'high' && !widget.isRead)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.priority_high,
-                      color: Colors.white,
-                      size: 12,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Quan trọng',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
+                child: const Icon(
+                  Icons.priority_high,
+                  color: Colors.white,
+                  size: 12,
                 ),
               ),
           ],
@@ -794,106 +994,79 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
           children: [
             const SizedBox(height: 4),
             // Nội dung thông báo với tính năng rút gọn
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Text(
-                    widget.subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
-                    maxLines: _isExpanded ? null : _maxLines,
-                    overflow: _isExpanded ? null : TextOverflow.ellipsis,
+            Text(
+              widget.subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+              maxLines: _isExpanded ? null : 2,
+              overflow: _isExpanded ? null : TextOverflow.ellipsis,
+            ),
+            if (isLongContent) ...[
+              const SizedBox(height: 4),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+                child: Text(
+                  _isExpanded ? 'Thu gọn' : 'Xem thêm',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.blue[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                if (isLongContent) ...[
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isExpanded = !_isExpanded;
-                      });
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue[50],
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.blue[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                            size: 16,
-                            color: Colors.blue[600],
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            _isExpanded ? 'Thu gọn' : 'Xem thêm',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.blue[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
             if (productTitle != null && productTitle.isNotEmpty) ...[
               const SizedBox(height: 4),
               Row(
                 children: [
                   Icon(
                     Icons.shopping_cart_outlined,
-                    size: 14,
+                    size: 12,
                     color: Colors.blue[600],
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      'Sản phẩm: $productTitle',
+                      productTitle,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: Colors.blue[600],
                         fontWeight: FontWeight.w500,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ],
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Row(
               children: [
                 Icon(
                   Icons.access_time_outlined,
-                  size: 12,
+                  size: 11,
                   color: Colors.grey[500],
                 ),
                 const SizedBox(width: 4),
                 Text(
                   widget.time,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: Colors.grey[500],
                   ),
                 ),
                 const Spacer(),
                 if (!widget.isRead)
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: 6,
+                    height: 6,
                     decoration: BoxDecoration(
                       color: widget.priority == 'high' 
                           ? const Color(0xFFEF4444) 
@@ -905,118 +1078,12 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
             ),
           ],
         ),
-        // Bỏ chức năng click vào thông báo
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
       ),
     );
   }
 
-  // Hàm tạo icon nhỏ cho tiêu đề trạng thái đơn hàng
-  Widget _getOrderStatusIconForTitle(String title) {
-    if (title.contains('đã được xác nhận')) {
-      return Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: const Color(0xFF2196F3),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.check_circle_outlined,
-          color: Colors.white,
-          size: 12,
-        ),
-      );
-    } else if (title.contains('đang được giao')) {
-      return Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFF9800),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.local_shipping_outlined,
-          color: Colors.white,
-          size: 12,
-        ),
-      );
-    } else if (title.contains('đã giao thành công')) {
-      return Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: const Color(0xFF4CAF50),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.done_all_outlined,
-          color: Colors.white,
-          size: 12,
-        ),
-      );
-    } else if (title.contains('đã bị hủy')) {
-      return Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF44336),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.cancel_outlined,
-          color: Colors.white,
-          size: 12,
-        ),
-      );
-    } else if (title.contains('đã hoàn trả')) {
-      return Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: const Color(0xFF9C27B0),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.undo_outlined,
-          color: Colors.white,
-          size: 12,
-        ),
-      );
-    } else {
-      // Trạng thái mặc định
-      return Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: const Color(0xFF607D8B),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Icon(
-          Icons.shopping_bag_outlined,
-          color: Colors.white,
-          size: 12,
-        ),
-      );
-    }
-  }
-
-  // Hàm tạo màu sắc cho tiêu đề trạng thái đơn hàng
-  Color _getOrderStatusColor(String title) {
-    if (title.contains('đã được xác nhận')) {
-      return const Color(0xFF2196F3); // Xanh dương
-    } else if (title.contains('đang được giao')) {
-      return const Color(0xFFFF9800); // Cam
-    } else if (title.contains('đã giao thành công')) {
-      return const Color(0xFF4CAF50); // Xanh lá
-    } else if (title.contains('đã bị hủy')) {
-      return const Color(0xFFF44336); // Đỏ
-    } else if (title.contains('đã hoàn trả')) {
-      return const Color(0xFF9C27B0); // Tím
-    } else {
-      return Colors.black87; // Mặc định
-    }
-  }
 }
 
 class _LoggedOutView extends StatelessWidget {

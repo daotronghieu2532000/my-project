@@ -258,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
               PopupBannerWidget(
                 popupBanner: _popupBanner!,
                 onClose: _closePopup,
-              ),
+            ),
           ],
         ),
       ),
