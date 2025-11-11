@@ -209,7 +209,14 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
             print('🔍 DEBUG: Found ${shopFreeshipDetails.length} shops with freeship config');
             // Check if any shop has freeship config (regardless of applied status)
             for (final entry in shopFreeshipDetails.entries) {
-              final config = entry.value as Map<String, dynamic>;
+              // ✅ Xử lý an toàn: entry.value có thể là Map hoặc List
+              final value = entry.value;
+              if (value is! Map<String, dynamic>) {
+                print('⚠️ [OrderSummary] Shop ${entry.key}: config is not Map, skipping');
+                continue;
+              }
+              
+              final config = value;
               final mode = config['mode'] as int? ?? 0;
               final discount = (config['discount'] as num?)?.toDouble() ?? 0.0;
               
@@ -229,14 +236,30 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                 hasValidFreeship = true;
               } else if (mode == 3) {
                 // Mode 3: Per-product freeship - check if any products have ship support
-                final products = config['products'] as Map<String, dynamic>?;
-                if (products != null && products.isNotEmpty) {
-                  for (final productEntry in products.entries) {
-                    final productConfig = productEntry.value as Map<String, dynamic>;
-                    final supportAmount = productConfig['value'] as int? ?? 0;
-                    if (supportAmount > 0) {
-                      hasValidFreeship = true;
-                      break;
+                final products = config['products'];
+                if (products != null) {
+                  // ✅ Xử lý cả trường hợp products là Map hoặc List
+                  if (products is Map<String, dynamic> && products.isNotEmpty) {
+                    for (final productEntry in products.entries) {
+                      if (productEntry.value is Map<String, dynamic>) {
+                        final productConfig = productEntry.value as Map<String, dynamic>;
+                        final supportAmount = productConfig['value'] as int? ?? 0;
+                        if (supportAmount > 0) {
+                          hasValidFreeship = true;
+                          break;
+                        }
+                      }
+                    }
+                  } else if (products is List && products.isNotEmpty) {
+                    // Nếu products là List, kiểm tra từng item
+                    for (final productItem in products) {
+                      if (productItem is Map<String, dynamic>) {
+                        final supportAmount = productItem['value'] as int? ?? 0;
+                        if (supportAmount > 0) {
+                          hasValidFreeship = true;
+                          break;
+                        }
+                      }
                     }
                   }
                 }

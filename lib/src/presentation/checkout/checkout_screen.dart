@@ -310,6 +310,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
         
         // Map provider cho từng shop
+        // ✅ Đảm bảo mỗi shop chỉ có 1 provider duy nhất
         if (warehouseDetails != null && warehouseDetails.isNotEmpty) {
           print('🔍 [Checkout] Found ${warehouseDetails.length} warehouse details');
           for (final detail in warehouseDetails) {
@@ -317,9 +318,17 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             if (detailMap != null) {
               final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
               final provider = detailMap['provider']?.toString() ?? '';
-              if (shopId > 0 && provider.isNotEmpty) {
+              // ✅ Xử lý cả shop_id = 0 (nếu có) và shop_id > 0
+              if (provider.isNotEmpty) {
+                // ✅ Nếu shop đã có provider, log warning (không nên xảy ra)
+                if (shopShippingProviders.containsKey(shopId)) {
+                  final oldProvider = shopShippingProviders[shopId];
+                  print('⚠️ [Checkout] Shop $shopId đã có provider: $oldProvider, ghi đè bằng: $provider');
+                }
                 shopShippingProviders[shopId] = provider;
                 print('🔍 [Checkout] Mapped shop $shopId -> provider: $provider');
+              } else {
+                print('⚠️ [Checkout] Shop $shopId không có provider trong warehouse_details');
               }
             }
           }
@@ -338,9 +347,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     finalShipFee = finalShipFee.clamp(0, ship.lastFee);
     
     // ✅ Thêm shipping_provider vào mỗi item dựa trên shop_id
+    // ✅ Đảm bảo tất cả items trong cùng shop có cùng provider
     final itemsWithProvider = items.map((item) {
       final shopId = item['shop'] as int? ?? 0;
+      // ✅ Ưu tiên lấy từ shopShippingProviders (từ warehouse_details)
+      // Nếu không có, dùng fallback từ ship.provider
       final provider = shopShippingProviders[shopId] ?? ship.provider ?? '';
+      
+      // ✅ Validation: Nếu shop không có provider, log warning
+      if (provider.isEmpty) {
+        print('⚠️ [Checkout] Item ${item['id']} (shop $shopId) không có provider!');
+      }
+      
       print('🔍 [Checkout] Item ${item['id']} (shop $shopId) -> provider: $provider');
       return {
         ...item,
@@ -348,11 +366,30 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       };
     }).toList();
     
+    // ✅ Validation: Kiểm tra tất cả items trong cùng shop có cùng provider
+    final shopProviderMap = <int, String>{};
+    for (final item in itemsWithProvider) {
+      final shopId = item['shop'] as int? ?? 0;
+      final provider = item['shipping_provider']?.toString() ?? '';
+      if (shopProviderMap.containsKey(shopId)) {
+        final existingProvider = shopProviderMap[shopId];
+        if (existingProvider != provider) {
+          print('❌ [Checkout] LỖI: Shop $shopId có 2 provider khác nhau: "$existingProvider" và "$provider"');
+        }
+      } else {
+        shopProviderMap[shopId] = provider;
+      }
+    }
+    
     // ✅ Log tổng hợp để debug
     print('🔍 [Checkout] Items with provider:');
     for (final item in itemsWithProvider) {
       print('  - Product ${item['id']}: shop=${item['shop']}, provider=${item['shipping_provider']}');
     }
+    print('🔍 [Checkout] Shop provider summary:');
+    shopProviderMap.forEach((shopId, provider) {
+      print('  - Shop $shopId: $provider');
+    });
     
     // final grandTotal = totalGoods + finalShipFee - shopDiscount - platformDiscount;
     
