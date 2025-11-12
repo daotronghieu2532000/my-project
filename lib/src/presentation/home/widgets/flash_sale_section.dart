@@ -14,13 +14,17 @@ class FlashSaleSection extends StatefulWidget {
   State<FlashSaleSection> createState() => _FlashSaleSectionState();
 }
 
-class _FlashSaleSectionState extends State<FlashSaleSection> {
+class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  
   Duration _timeLeft = const Duration(hours: 2, minutes: 6, seconds: 49);
   late Timer _timer;
   final CachedApiService _cachedApiService = CachedApiService();
   List<FlashSaleDeal> _deals = [];
   bool _isLoading = true;
   String? _error;
+  bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
 
   @override
   void initState() {
@@ -55,6 +59,12 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
 
   Future<void> _loadFlashSaleDealsFromCache() async {
     try {
+      // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi scroll)
+      if (_hasLoadedOnce && _deals.isNotEmpty) {
+        print('⚡ Flash sale already loaded, skipping reload');
+        return;
+      }
+      
       if (!mounted) return;
       setState(() {
         _isLoading = true;
@@ -74,8 +84,8 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
         currentTimeline = '16:00';
       }
 
-      // Chỉ load từ cache
-      final flashSaleData = await _cachedApiService.getHomeFlashSale();
+      // Chỉ load từ cache (không force refresh)
+      final flashSaleData = await _cachedApiService.getHomeFlashSale(forceRefresh: false);
       
       if (!mounted) return;
       
@@ -86,6 +96,7 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
         setState(() {
           _isLoading = false;
           _deals = deals;
+          _hasLoadedOnce = true; // Đánh dấu đã load
           // Cập nhật countdown theo mốc hiện tại (đến cuối slot)
           final slotEnd = _currentSlotEnd(currentTimeline);
           final nowTs = DateTime.now();
@@ -322,6 +333,7 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Container(
       margin: const EdgeInsets.only(top: 8),
       decoration: const BoxDecoration(
