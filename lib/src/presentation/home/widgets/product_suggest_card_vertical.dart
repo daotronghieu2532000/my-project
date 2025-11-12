@@ -188,7 +188,6 @@ class ProductSuggestCardVertical extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13, // Giảm từ 14 xuống 13px
-                      fontWeight: FontWeight.w500,
                       height: 1.2,
                     ),
                   ),

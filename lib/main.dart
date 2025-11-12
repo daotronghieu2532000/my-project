@@ -3,7 +3,6 @@ import 'package:firebase_core/firebase_core.dart';
 
 import 'src/app.dart';
 import 'src/core/services/app_initialization_service.dart';
-import 'src/core/services/app_lifecycle_manager.dart';
 
 void main() async {
   // Khởi tạo Flutter binding
@@ -26,10 +25,6 @@ void main() async {
 Future<void> _initializeApp() async {
   try {
     print('🚀 Đang khởi tạo ứng dụng...');
-    
-    // Khởi tạo AppLifecycleManager (không blocking)
-    final lifecycleManager = AppLifecycleManager();
-    lifecycleManager.initialize();
     
     // Khởi tạo token (chạy background, không block UI)
     final initService = AppInitializationService();

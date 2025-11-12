@@ -11,7 +11,6 @@ import '../../core/services/affiliate_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/utils/format_utils.dart';
-import '../../core/widgets/scroll_preservation_wrapper.dart';
 import '../auth/login_screen.dart';
 import '../product/product_detail_screen.dart';
 import '../common/widgets/go_top_button.dart';
@@ -28,7 +27,9 @@ class AffiliateScreen extends StatefulWidget {
   State<AffiliateScreen> createState() => _AffiliateScreenState();
 }
 
-class _AffiliateScreenState extends State<AffiliateScreen> {
+class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   final AffiliateService _affiliateService = AffiliateService();
   final AuthService _authService = AuthService();
   final CachedApiService _cachedApiService = CachedApiService();
@@ -538,9 +539,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ScrollPreservationWrapper(
-      tabIndex: 2, // Affiliate tab
-      child: Scaffold(
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    return Scaffold(
         appBar: AppBar(
           title: const Text(
             'TIẾP THỊ LIÊN KẾT',
@@ -629,7 +630,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                           ),
                         ],
                       ),
-      ),
     );
   }
 
@@ -2097,7 +2097,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                     product.title,
                     style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w400,
                       color: Color(0xFF333333),
                       height: 1.3,
                     ),
@@ -2539,7 +2538,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         const Text(
-                                          '💰 Affiliate Marketing',
+                                          '💰 TIẾP THỊ LIÊN KẾT',
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 20,

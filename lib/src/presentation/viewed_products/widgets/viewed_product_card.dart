@@ -84,7 +84,6 @@ class ViewedProductCard extends StatelessWidget {
                   product.name,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
                     color: Colors.black87,
                     height: 1.3,
                   ),

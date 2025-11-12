@@ -56,7 +56,6 @@ class SearchProductCard extends StatelessWidget {
                       product.name,
                       style: const TextStyle(
                         fontSize: 14,
-                        fontWeight: FontWeight.w600,
                         height: 1.3,
                       ),
                       maxLines: 2,

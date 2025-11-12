@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/services/api_service.dart';
+import '../../core/models/splash_screen.dart';
 import '../root_shell.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -13,12 +15,37 @@ class _SplashScreenState extends State<SplashScreen>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  
+  late Future<SplashScreenModel?> _splashScreenFuture;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
+    // Load API ngay từ đầu, không chờ
+    _splashScreenFuture = _apiService.getSplashScreen();
     _navigateToHome();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Preload ảnh khi context sẵn sàng để hiển thị nhanh hơn
+    _preloadImage();
+  }
+
+  Future<void> _preloadImage() async {
+    try {
+      final splashScreen = await _splashScreenFuture;
+      if (mounted && splashScreen != null && splashScreen.imageUrl.isNotEmpty) {
+        // Preload ảnh để cache và hiển thị nhanh hơn
+        final imageProvider = NetworkImage(splashScreen.imageUrl);
+        precacheImage(imageProvider, context);
+      }
+    } catch (e) {
+      // Ignore preload errors
+    }
   }
 
   void _setupAnimations() {
@@ -66,6 +93,62 @@ class _SplashScreenState extends State<SplashScreen>
     });
   }
 
+  Widget _buildBackgroundImage() {
+    return FutureBuilder<SplashScreenModel?>(
+      future: _splashScreenFuture,
+      builder: (context, snapshot) {
+        // Đang load API → hiển thị màn hình trống (không có gì)
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Container(
+            color: Colors.white, // Màn hình trắng trong khi load
+          );
+        }
+        
+        // Đã load xong API
+        final splashScreen = snapshot.data;
+        
+        // Nếu có splash screen từ API và có image_url → chỉ hiển thị ảnh từ DB
+        if (splashScreen != null && splashScreen.imageUrl.isNotEmpty) {
+          return Image.network(
+            splashScreen.imageUrl,
+            fit: BoxFit.cover,
+            alignment: Alignment.topCenter,
+            filterQuality: FilterQuality.high,
+            // Không hiển thị gì trong khi load ảnh (màn hình trắng)
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) {
+                return child;
+              }
+              // Màn hình trắng trong khi load ảnh từ DB
+              return Container(color: Colors.white);
+            },
+            errorBuilder: (context, error, stackTrace) {
+              print('❌ Lỗi khi load ảnh splash screen từ API: $error');
+              // Nếu lỗi load ảnh từ DB → fallback về ảnh mặc định
+              return _buildDefaultImage();
+            },
+          );
+        }
+        
+        // API không có ảnh → hiển thị ảnh mặc định từ app
+        return _buildDefaultImage();
+      },
+    );
+  }
+
+  Widget _buildDefaultImage() {
+    return Image.asset(
+      'lib/src/core/assets/images/socdo_vn.png',
+      fit: BoxFit.cover,
+      alignment: Alignment.topCenter,
+      filterQuality: FilterQuality.high,
+      errorBuilder: (context, error, stackTrace) {
+        // Nếu không load được ảnh asset → màn hình trắng (bỏ gradient)
+        return Container(color: Colors.white);
+      },
+    );
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -78,31 +161,9 @@ class _SplashScreenState extends State<SplashScreen>
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image - Hiển thị đầy đủ phần trên (ngôi sao và slogan)
-          // Dùng cover với alignment topCenter để cắt phần dưới, giữ phần trên
+          // Background Image - Hiển thị ảnh từ API hoặc ảnh mặc định
           Positioned.fill(
-            child: Image.asset(
-              // 'lib/src/core/assets/images/logo_socdo.png',
-               'lib/src/core/assets/images/socdo_vn.png',
-              fit: BoxFit.cover, // Fill toàn màn hình
-              alignment: Alignment.topCenter, // Căn lên trên - cắt phần dưới, giữ phần trên
-              filterQuality: FilterQuality.high, // Chất lượng cao để ảnh nét
-              errorBuilder: (context, error, stackTrace) {
-                // Fallback background nếu không load được ảnh
-                return Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Color(0xFFDC143C),
-                        Color(0xFFB71C1C),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+            child: _buildBackgroundImage(),
           ),
           // Main Content - Loading indicator ở dưới cùng
           Positioned(

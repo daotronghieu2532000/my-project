@@ -4,7 +4,6 @@ import 'home/home_screen.dart';
 import 'category/category_screen.dart';
 import 'cart/cart_screen.dart';
 import '../core/services/cart_service.dart' as cart_service;
-import '../core/services/app_lifecycle_manager.dart';
 import '../core/utils/format_utils.dart';
 // import 'notifications/notifications_screen.dart';
 import 'affiliate/affiliate_screen.dart';
@@ -17,80 +16,34 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
+class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixin {
   late int _currentIndex = widget.initialIndex;
   final cart_service.CartService _cart = cart_service.CartService();
-  final AppLifecycleManager _lifecycleManager = AppLifecycleManager();
-  bool _isInitialized = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _cart.addListener(_onCartChanged);
-    _initializeAppState();
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _cart.removeListener(_onCartChanged);
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      _restoreStateOnResume();
-    }
-  }
-
-  /// Restore state khi app resume
-  Future<void> _restoreStateOnResume() async {
-    try {
-      final savedTab = await _lifecycleManager.getSavedTab();
-      if (savedTab != null && savedTab != _currentIndex) {
-        setState(() {
-          _currentIndex = savedTab;
-        });
-      }
-    } catch (e) {
-      // Ignore error
-    }
   }
 
   void _onCartChanged() {
     if (mounted) setState(() {});
   }
 
-  /// Khởi tạo và khôi phục state của app
-  Future<void> _initializeAppState() async {
-    if (_isInitialized) return;
-    
-    try {
-      // Khởi tạo AppLifecycleManager
-      _lifecycleManager.initialize();
-      
-      // Thử khôi phục tab đã lưu
-      final savedTab = await _lifecycleManager.getSavedTab();
-      if (savedTab != null && savedTab != widget.initialIndex) {
-        setState(() {
-          _currentIndex = savedTab;
-        });
-      }
-      
-      _isInitialized = true;
-    } catch (e) {
-      // Ignore error
-    }
-  }
-
-  // Tabs: Trang chủ, Danh mục, Affiliate
-  final List<Widget> _tabs = const [
-    HomeScreen(),
-    CategoryScreen(),
-    AffiliateScreen(),
+  // Tabs với PageStorageKey để Flutter tự động lưu/restore scroll position
+  final List<Widget> _tabs = [
+    HomeScreen(key: const PageStorageKey('home')),
+    CategoryScreen(key: const PageStorageKey('category')),
+    AffiliateScreen(key: const PageStorageKey('affiliate')),
   ];
 
   Widget _buildNavItem({
@@ -142,16 +95,18 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver {
       setState(() {
         _currentIndex = newIndex;
       });
-      
-      // Lưu tab hiện tại
-      _lifecycleManager.saveCurrentTab(newIndex);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
-      body: _tabs[_currentIndex],
+      // Sử dụng IndexedStack để giữ tất cả tabs alive - không dispose khi switch tab
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _tabs,
+      ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(

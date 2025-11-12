@@ -193,7 +193,6 @@ class FlashSaleProductCardVertical extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
                       height: 1.2,
                     ),
                   ),

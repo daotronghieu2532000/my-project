@@ -177,27 +177,49 @@ class _ShopFlashSalesTabsState extends State<ShopFlashSalesTabs>
       children: [
         // Tab bar - căn trái, gọn vào góc màn hình
         Container(
+          decoration: BoxDecoration(
           color: Colors.white,
-          child: TabBar(
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1,
+              ),
+            ),
+          ),
+          child: Stack(
+            children: [
+              TabBar(
             controller: _tabController,
             isScrollable: true,
-            padding: const EdgeInsets.only(left: 0),
+                padding: const EdgeInsets.only(left: 0, right: 40), // Thêm padding phải cho icon
             labelPadding: const EdgeInsets.symmetric(horizontal: 16),
             tabAlignment: TabAlignment.start,
             labelColor: Colors.red,
             unselectedLabelColor: Colors.grey,
             indicatorColor: Colors.red,
+                indicatorWeight: 2,
             tabs: _flashSales.map((flashSale) {
               final timeLeft = _timeLeftMap[flashSale.id] ?? const Duration();
               final isActive = timeLeft.inSeconds > 0;
               return Tab(
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white,
+                      ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Flexible(
                       child: Text(
                         flashSale.title,
-                        style: const TextStyle(fontSize: 14),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -221,33 +243,46 @@ class _ShopFlashSalesTabsState extends State<ShopFlashSalesTabs>
                       ),
                     ],
                   ],
+                      ),
                 ),
               );
             }).toList(),
           ),
-        ),
-        // Tab content - sử dụng SizedBox với chiều cao động thay vì cố định
-        Builder(
-          builder: (context) {
-            final screenWidth = MediaQuery.of(context).size.width;
-            final cardWidth = (screenWidth - 16) / 2;
-            final imageHeight = cardWidth * 1.0;
-            final estimatedInfoHeight = screenWidth < 360 ? 100 : 106;
-            final cardHeight = imageHeight + estimatedInfoHeight;
-            
-            return SizedBox(
-              height: cardHeight, // Chiều cao động dựa trên card height
-          child: TabBarView(
-            controller: _tabController,
-            children: _flashSales.map((flashSale) {
-              return ShopFlashSaleProductsList(
-                flashSale: flashSale,
-                shopId: widget.shopId,
-              );
-            }).toList(),
+              // Icon ">" ở bên phải để chỉ ra có thể scroll
+              Positioned(
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Container(
+                  width: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Colors.white.withOpacity(0),
+                        Colors.white.withOpacity(0.8),
+                        Colors.white,
+                      ],
+                    ),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.chevron_right,
+                      color: Colors.grey.shade600,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-            );
-          },
+        ),
+        // Tab content - sử dụng helper widget để đo height thực tế
+        _ShopFlashSaleTabBarView(
+          tabController: _tabController,
+          flashSales: _flashSales,
+          shopId: widget.shopId,
         ),
       ],
     );
@@ -307,39 +342,17 @@ class _FlashSaleProductsListHelper extends StatelessWidget {
       return const SizedBox.shrink();
     }
     
-    // Tính toán chiều cao cho horizontal scroll - giống flash_sale_section.dart
+    // Tính toán width cho card - responsive
     final screenWidth = MediaQuery.of(context).size.width;
     // Tính toán width: (screenWidth - padding left/right - spacing giữa cards) / 2
     // Padding ListView: 4px mỗi bên = 8px, spacing (margin right): 8px
     // Width = (screenWidth - 8 - 8) / 2 = (screenWidth - 16) / 2
     final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
-    final imageHeight = cardWidth * 1.0; // Ảnh vuông
-    // Chiều cao phần thông tin tự động (mainAxisSize.min) - tính lại chính xác
-    // Tên (2 dòng với height: 1.2): ~28-34px, Giá+Badge: ~20px, Rating: ~16px
-    // Padding: 4px (top) + 4px (bottom) = 8px, Spacing: 4 + 4 = 8px
-    // Tổng thực tế: ~80-86px, thêm buffer 20px để tránh overflow = 100-106px
-    final estimatedInfoHeight = screenWidth < 360 ? 100 : 106;
-    final cardHeight = imageHeight + estimatedInfoHeight;
-    
-    return SizedBox(
-      height: cardHeight,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: products.length,
-        itemBuilder: (context, index) {
-          final product = products[index];
-          return Container(
-            width: cardWidth, // Width cố định cho 2 cột
-            margin: const EdgeInsets.only(right: 8), // Spacing giữa các card
-            child: _FlashSaleProductCardHelper(
-              productId: product['productId'] as int,
-              productInfo: product['productInfo'] as Map<String, dynamic>,
-              variant: product['variant'] as Map<String, dynamic>,
-            ),
-          );
-        },
-      ),
+
+    // Sử dụng helper widget để đo height thực tế và hiển thị ListView
+    return _ShopFlashSaleHorizontalList(
+      products: products,
+      cardWidth: cardWidth,
     );
   }
 }
@@ -850,6 +863,190 @@ class _FlashSaleProductCardHelper extends StatelessWidget {
         ),
       );
     }
+  }
+}
+
+// Helper widget để đo height thực tế của card và hiển thị ListView
+class _ShopFlashSaleHorizontalList extends StatefulWidget {
+  final List<Map<String, dynamic>> products;
+  final double cardWidth;
+
+  const _ShopFlashSaleHorizontalList({
+    required this.products,
+    required this.cardWidth,
+  });
+
+  @override
+  State<_ShopFlashSaleHorizontalList> createState() => _ShopFlashSaleHorizontalListState();
+}
+
+class _ShopFlashSaleHorizontalListState extends State<_ShopFlashSaleHorizontalList> {
+  double? _measuredHeight;
+  final GlobalKey _measureKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    // Đo height sau khi widget được build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measureCardHeight();
+    });
+  }
+
+  void _measureCardHeight() {
+    final RenderBox? renderBox = _measureKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null && mounted) {
+      setState(() {
+        _measuredHeight = renderBox.size.height;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Nếu chưa đo được height, hiển thị card mẫu để đo (ẩn bằng Offstage)
+    if (_measuredHeight == null) {
+      return Offstage(
+        child: SizedBox(
+          width: widget.cardWidth,
+          child: Container(
+            key: _measureKey,
+            child: _FlashSaleProductCardHelper(
+              productId: widget.products.first['productId'] as int,
+              productInfo: widget.products.first['productInfo'] as Map<String, dynamic>,
+              variant: widget.products.first['variant'] as Map<String, dynamic>,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Hiển thị ListView với height đã đo được
+    return SizedBox(
+      height: _measuredHeight,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        itemCount: widget.products.length,
+        itemBuilder: (context, index) {
+          final product = widget.products[index];
+          return Container(
+            width: widget.cardWidth,
+            margin: const EdgeInsets.only(right: 8),
+            child: _FlashSaleProductCardHelper(
+              productId: product['productId'] as int,
+              productInfo: product['productInfo'] as Map<String, dynamic>,
+              variant: product['variant'] as Map<String, dynamic>,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Helper widget để đo height thực tế cho TabBarView
+class _ShopFlashSaleTabBarView extends StatefulWidget {
+  final TabController tabController;
+  final List<ShopFlashSale> flashSales;
+  final int shopId;
+
+  const _ShopFlashSaleTabBarView({
+    required this.tabController,
+    required this.flashSales,
+    required this.shopId,
+  });
+
+  @override
+  State<_ShopFlashSaleTabBarView> createState() => _ShopFlashSaleTabBarViewState();
+}
+
+class _ShopFlashSaleTabBarViewState extends State<_ShopFlashSaleTabBarView> {
+  double? _measuredHeight;
+  final GlobalKey _measureKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    // Đo height sau khi widget được build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measureTabHeight();
+    });
+  }
+
+  void _measureTabHeight() {
+    final RenderBox? renderBox = _measureKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null && mounted) {
+      setState(() {
+        _measuredHeight = renderBox.size.height;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Tính toán width cho card để đo height
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = (screenWidth - 16) / 2;
+    
+    // Lấy products từ flash sale đầu tiên để đo height
+    final firstFlashSale = widget.flashSales.isNotEmpty ? widget.flashSales.first : null;
+    if (firstFlashSale == null) {
+      return const SizedBox.shrink();
+    }
+    
+    final products = <Map<String, dynamic>>[];
+    for (var entry in firstFlashSale.subProducts.entries) {
+      final productId = int.tryParse(entry.key) ?? 0;
+      final productData = entry.value;
+      if (productData is! Map<String, dynamic>) continue;
+      
+      final productInfo = productData['product_info'] as Map<String, dynamic>?;
+      final variants = productData['variants'] as List<dynamic>?;
+      if (productInfo == null || variants == null || variants.isEmpty) continue;
+      
+      final variant = variants.first as Map<String, dynamic>;
+      products.add({
+        'productId': productId,
+        'productInfo': productInfo,
+        'variant': variant,
+      });
+    }
+    
+    if (products.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    // Nếu chưa đo được height, hiển thị card mẫu để đo (ẩn bằng Offstage)
+    if (_measuredHeight == null) {
+      return Offstage(
+        child: SizedBox(
+          width: cardWidth,
+          child: Container(
+            key: _measureKey,
+            child: _FlashSaleProductCardHelper(
+              productId: products.first['productId'] as int,
+              productInfo: products.first['productInfo'] as Map<String, dynamic>,
+              variant: products.first['variant'] as Map<String, dynamic>,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Hiển thị TabBarView với height đã đo được
+    return SizedBox(
+      height: _measuredHeight,
+      child: TabBarView(
+        controller: widget.tabController,
+        children: widget.flashSales.map((flashSale) {
+          return ShopFlashSaleProductsList(
+            flashSale: flashSale,
+            shopId: widget.shopId,
+          );
+        }).toList(),
+      ),
+    );
   }
 }
 

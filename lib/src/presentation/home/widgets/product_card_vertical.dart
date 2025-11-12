@@ -155,7 +155,6 @@ class _ProductCardVerticalState extends State<ProductCardVertical> {
                         productName,
                         style: const TextStyle(
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
                           height: 1.2,
                         ),
                         maxLines: 2,

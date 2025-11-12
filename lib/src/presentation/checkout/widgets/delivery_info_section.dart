@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/shipping_events.dart';
-import '../../../core/services/shipping_quote_service.dart';
 import '../../../core/models/user.dart';
 
 class DeliveryInfoSection extends StatefulWidget {
@@ -46,12 +45,6 @@ class _DeliveryInfoSectionState extends State<DeliveryInfoSection> {
       // Nếu đăng nhập thành công, reload lại địa chỉ và trigger refresh shipping
       if (loginResult == true) {
         await _load();
-        // Clear cache shipping quote để tính lại
-        final user = await _auth.getCurrentUser();
-        if (user != null) {
-          final shippingQuoteService = ShippingQuoteService();
-          await shippingQuoteService.clearCache(userId: user.userId);
-        }
         // Trigger refresh shipping để OrderSummarySection tự động tính lại phí ship
         ShippingEvents.refresh();
       }

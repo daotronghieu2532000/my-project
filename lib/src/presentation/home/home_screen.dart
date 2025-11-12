@@ -11,7 +11,6 @@ import 'widgets/popup_banner_widget.dart';
 import 'widgets/service_guarantees.dart';
 // import 'widgets/dedication_section.dart'; // Tận tâm - Tận tình - Tận tụy
 import '../common/widgets/go_top_button.dart';
-import '../../core/widgets/scroll_preservation_wrapper.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
@@ -24,7 +23,9 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   final ScrollController _scrollController = ScrollController();
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
@@ -183,6 +184,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
     // Hiển thị loading screen trong khi preload
     if (_isPreloading) {
       return Scaffold(
@@ -193,22 +196,20 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return ScrollPreservationWrapper(
-      tabIndex: 0, // Home tab
-      scrollController: _scrollController,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Stack(
-          children: [
-            Column(
-              children: [
-                const HomeAppBar(),
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _refreshData,
-                    child: ListView(
-                      controller: _scrollController,
-                      padding: EdgeInsets.zero,
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Column(
+            children: [
+              const HomeAppBar(),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshData,
+                  child: ListView(
+                    key: const PageStorageKey('home_list'), // Flutter tự động lưu/restore scroll position
+                    controller: _scrollController,
+                    padding: EdgeInsets.zero,
                       children: [
                         // Partner Banner - Full width, 160px height (thay thế banner mobile)
                         PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
@@ -261,7 +262,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }

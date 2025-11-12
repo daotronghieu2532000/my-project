@@ -300,19 +300,19 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
         ],
       ),
       child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ProductDetailScreen(productId: link.spId),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ProductDetailScreen(productId: link.spId),
+                  ),
+                );
+              },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min, // Tự co giãn theo nội dung
-          children: [
+                      children: [
             // Box trên: Ảnh sản phẩm + Badges
             LayoutBuilder(
               builder: (context, constraints) {
@@ -328,7 +328,7 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                     ),
                   ),
                   child: Stack(
-                    children: [
+                           children: [
                       ClipRRect(
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
@@ -348,9 +348,9 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                                 child: Icon(
                                   Icons.image_not_supported,
                                   size: 32,
-                                  color: Color(0xFF999999),
+                                   color: Color(0xFF999999),
                                 ),
-                              ),
+                                 ),
                             );
                           },
                         ),
@@ -365,47 +365,47 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: _followBusy[link.spId] == true
+                     height: 24,
+                     width: 24,
+                     child: _followBusy[link.spId] == true
                                 ? const Padding(
                                     padding: EdgeInsets.all(4),
                                     child: CircularProgressIndicator(strokeWidth: 2),
                                   )
-                                : Checkbox(
+                        : Checkbox(
                                     activeColor: const Color(0xFFFF6B35),
-                                    value: true,
-                                    onChanged: (v) async {
-                                      setState(() { _followBusy[link.spId] = true; });
-                                      final result = await _affiliateService.toggleFollow(
-                                        userId: _currentUserId ?? 0,
-                                        spId: link.spId,
-                                        shopId: link.shopId,
-                                        follow: v ?? true,
-                                      );
-                                      
-                                      if (!mounted) return;
-                                      setState(() { _followBusy[link.spId] = false; });
-                                      
-                                      // Nếu unfollow thành công
-                                      if (result != null && result['success'] == true && (v ?? true) == false) {
-                                        // Loại bỏ card khỏi danh sách ngay lập tức
-                                        setState(() { 
-                                          _links.removeWhere((l) => l.spId == link.spId);
-                                          _applyFilters();
-                                        });
-                                        
-                                        // Hiển thị thông báo
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          const SnackBar(
-                                            content: Text('Đã bỏ theo dõi sản phẩm'),
-                                            backgroundColor: Colors.orange,
-                                            duration: Duration(seconds: 1),
-                                          ),
-                                        );
-                                      }
-                                    },
+                            value: true,
+                            onChanged: (v) async {
+                              setState(() { _followBusy[link.spId] = true; });
+                              final result = await _affiliateService.toggleFollow(
+                                userId: _currentUserId ?? 0,
+                                spId: link.spId,
+                                shopId: link.shopId,
+                                follow: v ?? true,
+                              );
+                              
+                              if (!mounted) return;
+                              setState(() { _followBusy[link.spId] = false; });
+                              
+                              // Nếu unfollow thành công
+                              if (result != null && result['success'] == true && (v ?? true) == false) {
+                                // Loại bỏ card khỏi danh sách ngay lập tức
+                                setState(() { 
+                                  _links.removeWhere((l) => l.spId == link.spId);
+                                  _applyFilters();
+                                });
+                                
+                                // Hiển thị thông báo
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Đã bỏ theo dõi sản phẩm'),
+                                    backgroundColor: Colors.orange,
+                                    duration: Duration(seconds: 1),
                                   ),
+                                );
+                              }
+                             },
+                           ),
                           ),
                         ),
                       ),
@@ -453,9 +453,9 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                                     color: Colors.black.withOpacity(0.2),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
+                   ),
+                ],
+              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -463,7 +463,7 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                                     Icons.share,
                                     size: 12,
                                     color: Colors.white,
-                                  ),
+            ),
                                   const SizedBox(width: 3),
                                   const Text(
                                     'Chia sẻ',
@@ -491,7 +491,7 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: [
+               children: [
                   // Tên sản phẩm
                   Text(
                     link.productTitle,
@@ -500,15 +500,15 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                       fontWeight: FontWeight.w400,
                       color: Color(0xFF333333),
                       height: 1.3,
-                    ),
+             ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
                   
                   // Giá
-                  Row(
-                    children: [
+               Row(
+                 children: [
                       Text(
                         FormatUtils.formatCurrency(link.productPrice.toInt()),
                         style: const TextStyle(
@@ -541,37 +541,37 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                   if (hasShort) ...[
                     const SizedBox(height: 4),
                     _buildLinkRow(link.shortLink),
-                  ],
+            ],
                   const SizedBox(height: 4),
-                  
-                  // Statistics
-                  Row(
-                    children: [
-                      Expanded(child: _buildStatItemSmall(icon: Icons.visibility, label: 'Click', value: '${link.clicks}')),
-                      Expanded(child: _buildStatItemSmall(icon: Icons.shopping_cart, label: 'Đơn', value: '${link.orders}')),
-                      Expanded(child: _buildStatItemSmall(icon: Icons.percent, label: 'CVR', value: link.conversionRateText)),
+            
+            // Statistics
+            Row(
+              children: [
+                Expanded(child: _buildStatItemSmall(icon: Icons.visibility, label: 'Click', value: '${link.clicks}')),
+                Expanded(child: _buildStatItemSmall(icon: Icons.shopping_cart, label: 'Đơn', value: '${link.orders}')),
+                Expanded(child: _buildStatItemSmall(icon: Icons.percent, label: 'CVR', value: link.conversionRateText)),
                       Expanded(child: _buildStatItemSmall(icon: Icons.monetization_on, label: 'HH', value: FormatUtils.formatCurrency(link.commission.toInt()))),
-                    ],
-                  ),
+              ],
+            ),
                   const SizedBox(height: 4),
-                  
-                  // Created date
-                  Row(
-                    children: [
+            
+            // Created date
+            Row(
+              children: [
                       const Icon(Icons.access_time, size: 11, color: Colors.grey),
-                      const SizedBox(width: 4),
+                const SizedBox(width: 4),
                       Flexible(
                         child: Text(
-                          'Đã thêm: ${link.createdAt}',
-                          style: const TextStyle(
+                  'Đã thêm: ${link.createdAt}',
+                  style: const TextStyle(
                             fontSize: 10,
-                            color: Colors.grey,
+                    color: Colors.grey,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                  ),
+                ),
+              ],
                   ),
                 ],
               ),
@@ -612,48 +612,48 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF8F9FA),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: const Color(0xFFE9ECEF)),
-        ),
-        child: Row(
-          children: [
+        border: Border.all(color: const Color(0xFFE9ECEF)),
+      ),
+      child: Row(
+        children: [
             const Icon(Icons.link, size: 11, color: Color(0xFF6C757D)),
             const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                url,
-                style: const TextStyle(
+          Expanded(
+            child: Text(
+              url,
+              style: const TextStyle(
                   fontSize: 9,
                   color: Color(0xFF495057),
                   fontWeight: FontWeight.w400,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            GestureDetector(
-              onTap: () {
-                Clipboard.setData(ClipboardData(text: url));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Text('Đã copy link!'),
-                    backgroundColor: const Color(0xFF28A745),
-                    behavior: SnackBarBehavior.floating,
-                    duration: const Duration(seconds: 1),
+          ),
+          GestureDetector(
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: url));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Đã copy link!'),
+                  backgroundColor: const Color(0xFF28A745),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 1),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
-                  ),
-                );
-              },
+                ),
+              );
+            },
               behavior: HitTestBehavior.opaque, // Prevent event bubbling
               child: Container(
                 padding: const EdgeInsets.all(4),
                 child: const Icon(Icons.copy, size: 11, color: Color(0xFF6C757D)),
               ),
-            ),
+          ),
           ],
         ),
       ),

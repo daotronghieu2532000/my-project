@@ -7,6 +7,7 @@ import '../voucher/voucher_screen.dart';
 import '../orders/orders_screen.dart';
 import '../orders/order_detail_screen.dart';
 import '../affiliate/affiliate_screen.dart';
+import '../product/product_detail_screen.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -501,7 +502,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
         
       case 'affiliate_order':
       case 'affiliate_product':
+      case 'affiliate_daily':
         // Đi đến màn hình affiliate
+        // Nếu có product_id trong data, có thể navigate đến product detail
+        final productId = data?['product_id'];
+        if (productId != null) {
+          final productIdInt = productId is int 
+              ? productId 
+              : (productId is String ? int.tryParse(productId) : null);
+          
+          if (productIdInt != null && productIdInt > 0) {
+            // Navigate đến product detail
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductDetailScreen(productId: productIdInt),
+              ),
+            );
+            break;
+          }
+        }
+        
+        // Fallback: Navigate đến affiliate screen
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AffiliateScreen()),

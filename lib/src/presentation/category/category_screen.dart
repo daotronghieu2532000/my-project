@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'widgets/left_menu_item.dart';
 import 'widgets/right_content.dart';
 import '../../core/services/cached_api_service.dart';
-import '../../core/widgets/scroll_preservation_wrapper.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -12,7 +11,10 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true;
   final CachedApiService _cachedApiService = CachedApiService();
   
   List<Map<String, dynamic>> _parentCategories = [];
@@ -133,53 +135,54 @@ class _CategoryScreenState extends State<CategoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    return ScrollPreservationWrapper(
-      tabIndex: 1, // Category tab
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Danh mục sản phẩm',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-            ),
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'Danh mục sản phẩm',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
           ),
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          // Ẩn icon giỏ hàng góc phải theo yêu cầu
         ),
-        body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : Row(
-              children: [
-                SizedBox(
-                  width: 110,
-                  child: ListView.builder(
-                    itemCount: _parentCategories.length,
-                    itemBuilder: (context, index) => LeftMenuItem(
-                      label: _parentCategories[index]['name'] ?? _parentCategories[index]['cat_tieude'] ?? 'Danh mục',
-                      imageUrl: _parentCategories[index]['image'] ?? _parentCategories[index]['cat_minhhoa'] ?? _parentCategories[index]['cat_img'],
-                      selected: index == _selectedParentIndex,
-                      onTap: () => _onParentCategorySelected(index),
-                    ),
-                  ),
-                ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: RightContent(
-                    title: _parentCategories.isNotEmpty 
-                      ? _parentCategories[_selectedParentIndex]['name'] ?? _parentCategories[_selectedParentIndex]['cat_tieude'] ?? 'Danh mục'
-                      : 'Danh mục',
-                    parentCategoryId: _parentCategories.isNotEmpty 
-                      ? _parentCategories[_selectedParentIndex]['id'] ?? _parentCategories[_selectedParentIndex]['cat_id'] ?? 0
-                      : 0,
-                    childCategories: _childCategories,
-                  ),
-                ),
-              ],
-            ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        // Ẩn icon giỏ hàng góc phải theo yêu cầu
       ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : Row(
+            children: [
+              SizedBox(
+                width: 110,
+                child: ListView.builder(
+                  key: const PageStorageKey('category_left_menu'), // Flutter tự động lưu scroll position
+                  itemCount: _parentCategories.length,
+                  itemBuilder: (context, index) => LeftMenuItem(
+                    label: _parentCategories[index]['name'] ?? _parentCategories[index]['cat_tieude'] ?? 'Danh mục',
+                    imageUrl: _parentCategories[index]['image'] ?? _parentCategories[index]['cat_minhhoa'] ?? _parentCategories[index]['cat_img'],
+                    selected: index == _selectedParentIndex,
+                    onTap: () => _onParentCategorySelected(index),
+                  ),
+                ),
+              ),
+              const VerticalDivider(width: 1),
+              Expanded(
+                child: RightContent(
+                  key: const PageStorageKey('category_right_content'), // Flutter tự động lưu scroll position
+                  title: _parentCategories.isNotEmpty 
+                    ? _parentCategories[_selectedParentIndex]['name'] ?? _parentCategories[_selectedParentIndex]['cat_tieude'] ?? 'Danh mục'
+                    : 'Danh mục',
+                  parentCategoryId: _parentCategories.isNotEmpty 
+                    ? _parentCategories[_selectedParentIndex]['id'] ?? _parentCategories[_selectedParentIndex]['cat_id'] ?? 0
+                    : 0,
+                  childCategories: _childCategories,
+                ),
+              ),
+            ],
+          ),
     );
   }
 }

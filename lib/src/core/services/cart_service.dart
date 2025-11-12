@@ -133,12 +133,67 @@ class CartService extends ChangeNotifier {
         await _saveCartForUser(_currentUserId!);
       }
       
+      // ✅ Nếu đang chuyển từ guest sang user (đăng nhập), merge cart guest vào cart user
+      List<CartItem> guestCartItems = [];
+      if (_currentUserId == null && newUserId != null && _items.isNotEmpty) {
+        // Lưu cart guest trước khi clear
+        guestCartItems = List.from(_items);
+        print('🛒 [CartService] Đang đăng nhập, giữ lại ${guestCartItems.length} items từ cart guest');
+      }
+      
       // Clear giỏ hàng hiện tại
       _items.clear();
       _currentUserId = newUserId;
       
       // Load giỏ hàng của user mới
       await _loadCart();
+      
+      // ✅ Nếu user mới chưa có cart (items rỗng) và có cart guest, merge vào
+      if (newUserId != null && _items.isEmpty && guestCartItems.isNotEmpty) {
+        print('🛒 [CartService] User mới chưa có cart, merge ${guestCartItems.length} items từ cart guest');
+        _items.addAll(guestCartItems);
+        await _saveCartForUser(newUserId); // Lưu cart đã merge
+      } else if (newUserId != null && _items.isNotEmpty && guestCartItems.isNotEmpty) {
+        // ✅ Nếu user đã có cart, merge items từ guest cart (tránh duplicate)
+        print('🛒 [CartService] User đã có cart, merge ${guestCartItems.length} items từ cart guest');
+        for (final guestItem in guestCartItems) {
+          final existingItem = _items.firstWhere(
+            (item) => item.id == guestItem.id && item.variant == guestItem.variant,
+            orElse: () => CartItem(
+              id: 0,
+              name: '',
+              image: '',
+              price: 0,
+              quantity: 0,
+              shopId: 0,
+              shopName: '',
+              addedAt: DateTime.now(),
+            ),
+          );
+          if (existingItem.id == 0) {
+            // Item chưa có trong cart user, thêm vào
+            _items.add(guestItem);
+          } else {
+            // Item đã có, cộng thêm quantity
+            final index = _items.indexOf(existingItem);
+            _items[index] = CartItem(
+              id: existingItem.id,
+              name: existingItem.name,
+              image: existingItem.image,
+              price: existingItem.price,
+              oldPrice: existingItem.oldPrice,
+              quantity: existingItem.quantity + guestItem.quantity,
+              variant: existingItem.variant,
+              shopId: existingItem.shopId,
+              shopName: existingItem.shopName,
+              addedAt: existingItem.addedAt,
+              isSelected: existingItem.isSelected,
+            );
+          }
+        }
+        await _saveCartForUser(newUserId); // Lưu cart đã merge
+      }
+      
       notifyListeners();
     }
   }

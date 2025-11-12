@@ -350,13 +350,22 @@ class AuthService {
   /// Gửi OTP quên mật khẩu qua SMS (ZNS Zalo)
   Future<Map<String, dynamic>> forgotPasswordSMS(String phoneNumber) async {
     try {
+      print('📤 [forgotPasswordSMS] Gửi request đến: /forgot_password_sms');
+      print('📤 [forgotPasswordSMS] Phone: $phoneNumber');
+      
       final response = await _apiService.post('/forgot_password_sms', body: {
         'phone_number': phoneNumber,
       });
 
       if (response != null) {
+        print('📥 [forgotPasswordSMS] Response status: ${response.statusCode}');
+        print('📥 [forgotPasswordSMS] Response headers: ${response.headers}');
+        print('📥 [forgotPasswordSMS] Response body (first 500 chars): ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}');
+        
         try {
           final data = jsonDecode(response.body);
+          print('✅ [forgotPasswordSMS] JSON parsed successfully');
+          print('📊 [forgotPasswordSMS] Response data: $data');
           
           if (data['success'] == true) {
             print('✅ Gửi OTP thành công đến: $phoneNumber');
@@ -366,29 +375,60 @@ class AuthService {
               'data': data['data'],
             };
           } else {
+            // Hiển thị chi tiết lỗi từ server
+            String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
+            String debugInfo = '';
+            
+            if (data['error'] != null) {
+              debugInfo += '\nError: ${data['error']}';
+            }
+            if (data['file'] != null) {
+              debugInfo += '\nFile: ${data['file']}';
+            }
+            if (data['line'] != null) {
+              debugInfo += '\nLine: ${data['line']}';
+            }
+            if (data['debug'] != null) {
+              debugInfo += '\nDebug: ${jsonEncode(data['debug'])}';
+            }
+            
+            print('❌ [forgotPasswordSMS] Server error: $errorMessage$debugInfo');
+            
             return {
               'success': false,
-              'message': data['message'] ?? 'Gửi OTP thất bại',
+              'message': errorMessage + debugInfo,
+              'error_details': data,
             };
           }
-        } catch (e) {
-          print('❌ Lỗi parse JSON forgot password SMS response: $e');
+        } catch (e, stackTrace) {
+          print('❌ [forgotPasswordSMS] Lỗi parse JSON: $e');
+          print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
+          print('❌ [forgotPasswordSMS] Response body (raw): ${response.body}');
+          print('❌ [forgotPasswordSMS] Response body length: ${response.body.length}');
+          
+          // Trả về response body để debug
           return {
             'success': false,
-            'message': 'Lỗi xử lý dữ liệu từ server',
+            'message': 'Lỗi xử lý dữ liệu từ server: $e',
+            'raw_response': response.body.length > 1000 ? response.body.substring(0, 1000) : response.body,
+            'response_length': response.body.length,
+            'status_code': response.statusCode,
           };
         }
       } else {
+        print('❌ [forgotPasswordSMS] Response is null');
         return {
           'success': false,
-          'message': 'Lỗi kết nối server',
+          'message': 'Lỗi kết nối server - Response null',
         };
       }
-    } catch (e) {
-      print('❌ Lỗi forgot password SMS: $e');
+    } catch (e, stackTrace) {
+      print('❌ [forgotPasswordSMS] Exception: $e');
+      print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
       return {
         'success': false,
-        'message': 'Lỗi kết nối server',
+        'message': 'Lỗi kết nối server: $e',
+        'exception': e.toString(),
       };
     }
   }

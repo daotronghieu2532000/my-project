@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../presentation/product/product_detail_screen.dart';
+import '../../presentation/affiliate/affiliate_screen.dart';
 
 /// Xử lý deep linking khi user tap vào notification
 class NotificationHandler {
@@ -47,6 +49,53 @@ class NotificationHandler {
           print('🎫 [DEBUG] Handling voucher notification');
           // Navigate đến voucher list
           _navigateToVouchers();
+          break;
+
+        case 'affiliate_daily':
+        case 'affiliate_product':
+          print('💼 [DEBUG] Handling affiliate notification');
+          print('💼 [DEBUG] Full data: $data');
+          
+          // Navigate đến affiliate screen hoặc product detail nếu có product_id
+          final affiliateId = data['affiliate_id'];
+          final productId = data['product_id'];
+          
+          print('💼 [DEBUG] Affiliate ID: $affiliateId (type: ${affiliateId.runtimeType})');
+          print('💼 [DEBUG] Product ID: $productId (type: ${productId.runtimeType})');
+          
+          // Parse product_id (có thể là int, string, hoặc JSON string)
+          int? productIdInt;
+          if (productId != null) {
+            if (productId is int) {
+              productIdInt = productId;
+            } else if (productId is String) {
+              // Thử parse JSON string trước
+              try {
+                final parsed = jsonDecode(productId);
+                if (parsed is int) {
+                  productIdInt = parsed;
+                } else if (parsed is String) {
+                  productIdInt = int.tryParse(parsed);
+                }
+              } catch (e) {
+                // Không phải JSON, parse trực tiếp
+                productIdInt = int.tryParse(productId);
+              }
+            }
+          }
+          
+          print('💼 [DEBUG] Parsed product_id: $productIdInt');
+          
+          // Nếu có product_id, navigate đến product detail
+          if (productIdInt != null && productIdInt > 0) {
+            print('✅ [DEBUG] Valid product_id found, navigating to ProductDetailScreen');
+            _navigateToProductDetail(productIdInt);
+            return;
+          }
+          
+          // Fallback: navigate đến affiliate screen
+          print('📋 [DEBUG] No valid product_id, navigating to AffiliateScreen');
+          _navigateToAffiliate();
           break;
 
         case 'admin_manual':
@@ -135,6 +184,44 @@ class NotificationHandler {
       // TODO: Implement navigation khi có route
       // Navigator.pushNamed(context, '/notifications');
     }
+  }
+
+  void _navigateToAffiliate() {
+    print('🚀 [DEBUG] _navigateToAffiliate called');
+    
+    // Retry logic: Đợi context sẵn sàng (tối đa 3 giây)
+    _tryNavigateAffiliateWithRetry(maxRetries: 30, delayMs: 100);
+  }
+
+  void _tryNavigateAffiliateWithRetry({int maxRetries = 30, int delayMs = 100}) async {
+    for (int i = 0; i < maxRetries; i++) {
+      final context = navigatorKey.currentContext;
+      
+      if (context != null) {
+        print('✅ [DEBUG] Navigator context found (attempt ${i + 1}), navigating to AffiliateScreen');
+        try {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AffiliateScreen(),
+            ),
+          );
+          print('✅ [DEBUG] Navigation to AffiliateScreen completed successfully');
+          return;
+        } catch (e, stackTrace) {
+          print('❌ [DEBUG] Error during navigation: $e');
+          print('❌ [DEBUG] Stack trace: $stackTrace');
+          return;
+        }
+      } else {
+        if (i == 0) {
+          print('⚠️ [DEBUG] Navigator context is null, retrying... (attempt ${i + 1}/$maxRetries)');
+        }
+        await Future.delayed(Duration(milliseconds: delayMs));
+      }
+    }
+    
+    print('❌ [DEBUG] Failed to get navigator context after $maxRetries attempts');
   }
 
   void _navigateToProductDetail(int productId) {

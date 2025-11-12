@@ -47,6 +47,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _autoApplyBestVouchers();
     });
+    
+    // ✅ Lắng nghe thay đổi cart để rebuild khi cart thay đổi
+    _cartService.addListener(_onCartChanged);
+    
+    // ✅ Lắng nghe thay đổi auth state để reload sau khi đăng nhập
+    _auth.addAuthStateListener(_onAuthStateChanged);
+  }
+  
+  @override
+  void dispose() {
+    // ✅ Remove listeners
+    _cartService.removeListener(_onCartChanged);
+    _auth.removeAuthStateListener(_onAuthStateChanged);
+    super.dispose();
+  }
+  
+  // ✅ Callback khi cart thay đổi
+  void _onCartChanged() {
+    if (mounted) {
+      setState(() {
+        // Trigger rebuild để cập nhật UI
+      });
+    }
+  }
+  
+  // ✅ Callback khi auth state thay đổi (đăng nhập/đăng xuất)
+  Future<void> _onAuthStateChanged() async {
+    if (mounted) {
+      // Reload cart sau khi đăng nhập
+      await _cartService.loadCartForUser();
+      // Trigger rebuild
+      setState(() {});
+      // Trigger refresh shipping
+      ShippingEvents.refresh();
+    }
   }
 
   /// Tự động áp dụng voucher tốt nhất cho từng shop và voucher sàn
@@ -142,27 +177,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               '/login',
             );
             
-            // Nếu login thành công, refresh lại toàn bộ checkout
+            // Nếu login thành công, reload cart và trigger rebuild
             if (loginResult == true) {
-              // Clear cache shipping quote để tính lại
-              final user = await _auth.getCurrentUser();
-              if (user != null) {
-                await _shippingQuoteService.clearCache(userId: user.userId);
-              }
+              // ✅ Reload cart sau khi đăng nhập (sẽ merge cart guest vào cart user)
+              await _cartService.loadCartForUser();
               
-              // Trigger reload shipping fee và các section khác
-              ShippingEvents.refresh();
-              
-              // Force rebuild để refresh UI
+              // ✅ Trigger rebuild để cập nhật UI
               if (mounted) {
                 setState(() {});
               }
               
+              // ✅ Trigger reload shipping fee sau khi đăng nhập
+              ShippingEvents.refresh();
+              
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Đăng nhập thành công! Đang tính lại phí vận chuyển...'),
+                  content: Text('Đăng nhập thành công!'),
                   backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
                 ),
               );
             }

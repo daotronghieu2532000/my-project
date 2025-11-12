@@ -175,7 +175,6 @@ class _ProductSectionState extends State<ProductSection> {
                         children: [
                           Text(
                             items[i].name,
-                            style: const TextStyle(fontWeight: FontWeight.w600),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),

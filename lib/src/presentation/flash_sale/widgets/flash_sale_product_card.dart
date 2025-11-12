@@ -119,7 +119,6 @@ class FlashSaleProductCard extends StatelessWidget {
                   product.name,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.w500,
                     height: 1.3,
                   ),
                   maxLines: 2,

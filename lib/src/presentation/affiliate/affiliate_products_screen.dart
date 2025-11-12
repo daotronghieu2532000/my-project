@@ -501,7 +501,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
                               product.title,
                               style: const TextStyle(
                                 fontSize: 13,
-                                fontWeight: FontWeight.w400,
                                 color: Color(0xFF333333),
                                 height: 1.3,
                               ),

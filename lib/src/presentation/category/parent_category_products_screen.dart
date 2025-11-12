@@ -492,13 +492,13 @@ class _ParentCategoryProductsScreenState extends State<ParentCategoryProductsScr
           child: RefreshIndicator(
             onRefresh: _onRefresh,
           child: SingleChildScrollView(
-            controller: _scrollController,
+                                controller: _scrollController,
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
             child: Align(
               alignment: Alignment.topLeft,
               child: _buildProductsGrid(),
             ),
-          ),
+            ),
           ),
         ),
       ],

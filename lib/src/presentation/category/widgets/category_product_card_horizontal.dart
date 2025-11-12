@@ -203,7 +203,6 @@ class CategoryProductCardHorizontal extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: screenWidth < 360 ? 12 : 14,
-                                    fontWeight: FontWeight.w500,
                       height: 1.2,
                                   ),
                                 ),

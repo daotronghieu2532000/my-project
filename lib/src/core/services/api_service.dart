@@ -14,6 +14,7 @@ import '../models/banner.dart';
 import '../models/popup_banner.dart';
 import '../models/brand.dart';
 import '../models/shop_detail.dart';
+import '../models/splash_screen.dart';
 
 class ApiService {
   static const String baseUrl = 'https://api.socdo.vn/v1';
@@ -3615,6 +3616,44 @@ class ApiService {
     }
     
     return null;
+  }
+
+  /// Lấy splash screen đang active
+  Future<SplashScreenModel?> getSplashScreen() async {
+    try {
+      const endpoint = '/splash_screen';
+      
+      print('🔍 Splash Screen API Endpoint: $endpoint');
+      
+      final response = await get(endpoint);
+      
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true) {
+          // data['data'] có thể là null nếu không có splash screen nào active
+          if (data['data'] != null) {
+            final splashData = data['data'] as Map<String, dynamic>;
+            final splashScreen = SplashScreenModel.fromJson(splashData);
+            
+            print('✅ Lấy splash screen thành công: ${splashScreen.title}');
+            return splashScreen;
+          } else {
+            print('ℹ️ Không có splash screen nào đang active');
+            return null;
+          }
+        } else {
+          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
+          return null;
+        }
+      } else {
+        print('❌ HTTP Error: ${response?.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Lỗi khi lấy splash screen: $e');
+      return null;
+    }
   }
 
   /// Lấy popup banner hiển thị trên app

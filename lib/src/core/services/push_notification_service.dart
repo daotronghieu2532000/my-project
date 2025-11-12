@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:device_info_plus/device_info_plus.dart';
@@ -91,11 +92,18 @@ class PushNotificationService {
     });
 
     // Handle when app is opened from terminated state
-    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-      if (message != null) {
-        print('📱 App opened from terminated state: ${message.messageId}');
-        _handleNotificationTap(message);
-      }
+    // Đợi một chút để đảm bảo Navigator đã sẵn sàng
+    Future.delayed(const Duration(milliseconds: 500), () {
+      FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+        if (message != null) {
+          print('📱 App opened from terminated state: ${message.messageId}');
+          print('📱 [DEBUG] Message data from terminated: ${message.data}');
+          // Đợi thêm một chút để Navigator context sẵn sàng
+          Future.delayed(const Duration(milliseconds: 300), () {
+            _handleNotificationTap(message);
+          });
+        }
+      });
     });
 
     // Set background message handler
@@ -131,7 +139,30 @@ class PushNotificationService {
 
   /// Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
-    final data = message.data;
+    print('📱 [DEBUG] _handleNotificationTap called');
+    print('📱 [DEBUG] Message data (raw): ${message.data}');
+    print('📱 [DEBUG] Message data keys: ${message.data.keys.toList()}');
+    
+    // FCM data payload là Map<String, dynamic>, nhưng values có thể là string (JSON)
+    // Cần parse lại nếu cần
+    final data = Map<String, dynamic>.from(message.data);
+    
+    // Parse các giá trị JSON string thành object nếu cần
+    data.forEach((key, value) {
+      if (value is String) {
+        // Thử parse JSON nếu là JSON string
+        try {
+          final parsed = jsonDecode(value);
+          if (parsed is Map || parsed is List) {
+            data[key] = parsed;
+          }
+        } catch (e) {
+          // Không phải JSON, giữ nguyên string
+        }
+      }
+    });
+    
+    print('📱 [DEBUG] Parsed data: $data');
     _notificationHandler.handleNotificationData(data);
   }
 

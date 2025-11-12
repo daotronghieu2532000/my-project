@@ -39,25 +39,35 @@ class _ScrollPreservationWrapperState extends State<ScrollPreservationWrapper> {
 
   /// Khôi phục vị trí scroll đã lưu
   Future<void> _restoreScrollPosition() async {
-    if (_hasRestoredScroll) return;
+    if (_hasRestoredScroll) {
+      print('📜 [ScrollPreservation] Already restored for tab ${widget.tabIndex}');
+      return;
+    }
     
+    print('📜 [ScrollPreservation] Restoring scroll position for tab ${widget.tabIndex}...');
     try {
       final savedPosition = await _lifecycleManager.getSavedScrollPosition(widget.tabIndex);
       if (savedPosition != null && savedPosition > 0) {
+        print('   ✅ Found saved position: ${savedPosition.toStringAsFixed(1)}');
         // Đợi một chút để đảm bảo widget đã được build
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (_scrollController!.hasClients) {
+            print('   🔄 Animating to position: ${savedPosition.toStringAsFixed(1)}');
             _scrollController!.animateTo(
               savedPosition,
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeOut,
             );
+          } else {
+            print('   ⚠️ ScrollController has no clients yet');
           }
         });
+      } else {
+        print('   ℹ️ No saved position found or position is 0');
       }
       _hasRestoredScroll = true;
     } catch (e) {
-      // Ignore error
+      print('   ❌ Error restoring scroll position: $e');
     }
   }
 
@@ -65,7 +75,9 @@ class _ScrollPreservationWrapperState extends State<ScrollPreservationWrapper> {
   void _saveScrollPosition() {
     if (_scrollController!.hasClients) {
       final position = _scrollController!.offset;
-      _lifecycleManager.saveScrollPosition(widget.tabIndex, position);
+      if (position > 0) {
+        _lifecycleManager.saveScrollPosition(widget.tabIndex, position);
+      }
     }
   }
 

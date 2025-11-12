@@ -155,7 +155,6 @@ class RelatedProductCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 12, // Giảm từ 13 xuống 12
-                      fontWeight: FontWeight.w500,
                       height: 1.2,
                     ),
                   ),

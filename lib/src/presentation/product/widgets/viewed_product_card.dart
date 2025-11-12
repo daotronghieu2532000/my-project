@@ -157,7 +157,6 @@ class ViewedProductCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 13,
-                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 4),
