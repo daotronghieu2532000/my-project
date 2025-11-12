@@ -346,4 +346,103 @@ class AuthService {
       print('📱 Push notification service ready, token will be registered');
     }
   }
+
+  /// Gửi OTP quên mật khẩu qua SMS (ZNS Zalo)
+  Future<Map<String, dynamic>> forgotPasswordSMS(String phoneNumber) async {
+    try {
+      final response = await _apiService.post('/forgot_password_sms', body: {
+        'phone_number': phoneNumber,
+      });
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          
+          if (data['success'] == true) {
+            print('✅ Gửi OTP thành công đến: $phoneNumber');
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Mã OTP đã được gửi đến số điện thoại của bạn',
+              'data': data['data'],
+            };
+          } else {
+            return {
+              'success': false,
+              'message': data['message'] ?? 'Gửi OTP thất bại',
+            };
+          }
+        } catch (e) {
+          print('❌ Lỗi parse JSON forgot password SMS response: $e');
+          return {
+            'success': false,
+            'message': 'Lỗi xử lý dữ liệu từ server',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Lỗi kết nối server',
+        };
+      }
+    } catch (e) {
+      print('❌ Lỗi forgot password SMS: $e');
+      return {
+        'success': false,
+        'message': 'Lỗi kết nối server',
+      };
+    }
+  }
+
+  /// Xác thực OTP và đổi mật khẩu
+  Future<Map<String, dynamic>> verifyOTPAndResetPassword({
+    required String phoneNumber,
+    required String otp,
+    required String newPassword,
+    required String rePassword,
+  }) async {
+    try {
+      final response = await _apiService.post('/verify_otp_reset_password', body: {
+        'phone_number': phoneNumber,
+        'otp': otp,
+        'new_password': newPassword,
+        're_password': rePassword,
+      });
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          
+          if (data['success'] == true) {
+            print('✅ Đổi mật khẩu thành công');
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Đổi mật khẩu thành công',
+            };
+          } else {
+            return {
+              'success': false,
+              'message': data['message'] ?? 'Đổi mật khẩu thất bại',
+            };
+          }
+        } catch (e) {
+          print('❌ Lỗi parse JSON verify OTP response: $e');
+          return {
+            'success': false,
+            'message': 'Lỗi xử lý dữ liệu từ server',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Lỗi kết nối server',
+        };
+      }
+    } catch (e) {
+      print('❌ Lỗi verify OTP reset password: $e');
+      return {
+        'success': false,
+        'message': 'Lỗi kết nối server',
+      };
+    }
+  }
 }

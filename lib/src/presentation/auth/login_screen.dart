@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -475,10 +476,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           Center(
                             child: GestureDetector(
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Tính năng quên mật khẩu đang được phát triển'),
-                                    duration: Duration(seconds: 2),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ForgotPasswordScreen(),
                                   ),
                                 );
                               },

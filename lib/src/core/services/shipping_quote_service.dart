@@ -172,7 +172,7 @@ class ShippingQuoteService {
       },
     };
 
-    print('✅ [ShippingQuote] Fallback calculated: ${fallbackFee}₫');
+    print('✅ [ShippingQuote] Fallback calculated: $fallbackFee₫');
     return fallbackQuote;
   }
 

@@ -142,16 +142,27 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               '/login',
             );
             
-            // Nếu login thành công, chỉ quay lại trang checkout
-            // Người dùng cần bấm nút đặt hàng lại sau khi đăng nhập
+            // Nếu login thành công, refresh lại toàn bộ checkout
             if (loginResult == true) {
-              // Trigger reload shipping fee sau khi đăng nhập
+              // Clear cache shipping quote để tính lại
+              final user = await _auth.getCurrentUser();
+              if (user != null) {
+                await _shippingQuoteService.clearCache(userId: user.userId);
+              }
+              
+              // Trigger reload shipping fee và các section khác
               ShippingEvents.refresh();
+              
+              // Force rebuild để refresh UI
+              if (mounted) {
+                setState(() {});
+              }
               
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Đăng nhập thành công! Vui lòng bấm nút đặt hàng lại.'),
+                  content: Text('Đăng nhập thành công! Đang tính lại phí vận chuyển...'),
                   backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
                 ),
               );
             }
