@@ -91,7 +91,7 @@ class SuggestCard extends StatelessWidget {
                     product.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 12),
                   ),
                   const SizedBox(height: 4),
                   Row(

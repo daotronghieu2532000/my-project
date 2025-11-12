@@ -154,28 +154,42 @@ class AuthService {
 
   /// Lấy thông tin user hiện tại
   Future<User?> getCurrentUser() async {
+    print('🔍 [AuthService] getCurrentUser() - Bắt đầu...');
+    print('   - _isLoggingOut: $_isLoggingOut');
+    print('   - _currentUser (memory): ${_currentUser != null ? "NOT NULL (userId: ${_currentUser!.userId})" : "NULL"}');
+    
     // CRITICAL: Nếu đang trong quá trình logout, không restore user data
     if (_isLoggingOut) {
+      print('   - ⚠️ Đang trong quá trình logout, return NULL');
       return null;
     }
     
     if (_currentUser != null) {
+      print('   - ✅ Trả về _currentUser từ memory (userId: ${_currentUser!.userId})');
       return _currentUser;
     }
 
     try {
+      print('   - Đang đọc từ SharedPreferences...');
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString(_userKey);
       
+      print('   - userJson từ SharedPreferences: ${userJson != null ? "NOT NULL (length: ${userJson.length})" : "NULL"}');
+      
       if (userJson != null) {
+        print('   - Đang parse JSON...');
         final userData = jsonDecode(userJson) as Map<String, dynamic>;
+        print('   - userData keys: ${userData.keys.toList()}');
         _currentUser = User.fromJson(userData);
+        print('   - ✅ Đã parse thành công, userId: ${_currentUser!.userId}');
         return _currentUser;
       }
       
+      print('   - ❌ Không có userJson trong SharedPreferences');
       return null;
-    } catch (e) {
-      print('❌ Lỗi khi lấy user: $e');
+    } catch (e, stackTrace) {
+      print('   - ❌ Lỗi khi lấy user: $e');
+      print('   - Stack trace: $stackTrace');
       return null;
     }
   }

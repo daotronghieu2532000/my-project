@@ -381,7 +381,6 @@ class _AllOrdersSectionState extends State<AllOrdersSection> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
                   color: Color(0xFF333333),
                 ),
               ),

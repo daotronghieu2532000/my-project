@@ -32,11 +32,11 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
     // Kích thước popup theo tỉ lệ 1:1.5 (width:height)
     // Popup dọc, height = width * 1.5
     // Căn giữa màn hình
-    final popupWidth = screenWidth * 0.80; // 80% chiều rộng màn hình
-    final popupHeight = popupWidth * 1.5; // Tỉ lệ 1:1.5 (width:height)
+    final popupWidth = screenWidth * 0.75; // 80% chiều rộng màn hình
+    final popupHeight = popupWidth * 1.4; // Tỉ lệ 1:1.5 (width:height)
     
     // Đảm bảo không quá cao (tối đa 70% chiều cao màn hình)
-    final maxHeight = screenHeight * 0.70;
+    final maxHeight = screenHeight * 0.60;
     final finalHeight = popupHeight > maxHeight ? maxHeight : popupHeight;
     
     return Material(

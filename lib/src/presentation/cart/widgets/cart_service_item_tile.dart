@@ -68,7 +68,6 @@ class CartServiceItemTile extends StatelessWidget {
                     item.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                 ),
                 // Hiển thị biến thể nếu có
@@ -287,7 +286,6 @@ class CartServiceItemTile extends StatelessWidget {
                             item.name,
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w600,
                               color: Colors.grey[800],
                             ),
                             maxLines: 2,

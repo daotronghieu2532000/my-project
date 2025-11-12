@@ -107,7 +107,7 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  FormatUtils.formatCurrency(grandTotal),
+                    'Tổng: ${FormatUtils.formatCurrency(grandTotal)}',
                   style: const TextStyle(
                     color: Colors.red,
                     fontWeight: FontWeight.w800,

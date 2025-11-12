@@ -1,6 +1,8 @@
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cached_network_image/cached_network_image.dart';
   import 'widgets/home_app_bar.dart';
 import 'widgets/quick_actions.dart';
 import 'widgets/flash_sale_section.dart';
@@ -26,6 +28,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
+  
   final ScrollController _scrollController = ScrollController();
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
@@ -38,8 +41,33 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   @override
   void initState() {
     super.initState();
+    print('🚀 [HomeScreen] initState - wantKeepAlive: $wantKeepAlive');
+    
+    // Listen to scroll changes để debug
+    _scrollController.addListener(() {
+      if (_scrollController.hasClients) {
+        final pos = _scrollController.offset;
+        // Chỉ log khi scroll position thay đổi đáng kể (tránh spam)
+        if (pos > 0 && pos % 500 < 10) {
+          print('📜 [HomeScreen] Scroll position: ${pos.toStringAsFixed(1)}');
+          print('   💾 PageStorage will auto-save this position');
+        }
+      }
+    });
+    
     _preloadData();
     _loadPopupBanner();
+  }
+  
+  @override
+  void dispose() {
+    final scrollPos = _scrollController.hasClients ? _scrollController.offset.toStringAsFixed(1) : "N/A";
+    print('🗑️ [HomeScreen] dispose called!');
+    print('   ⚠️ This should NOT happen with IndexedStack + AutomaticKeepAliveClientMixin');
+    print('   📊 Scroll position at dispose: $scrollPos');
+    print('   💡 If you see this, IndexedStack is not working correctly');
+    _scrollController.dispose();
+    super.dispose();
   }
   
   Future<void> _loadPopupBanner() async {
@@ -75,29 +103,73 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       }
       
       if (mounted && popupBanner != null) {
-        setState(() {
-          _popupBanner = popupBanner;
-          _showPopup = true;
-        });
+        // Preload ảnh trước khi hiển thị popup
+        print('🖼️ Preloading popup banner image: ${popupBanner.imageUrl}');
+        final imageLoaded = await _preloadPopupImage(popupBanner.imageUrl);
         
-        // Thêm banner ID mới vào danh sách đã hiển thị
-        if (!displayedBannerIds.contains(popupBanner.id)) {
-          displayedBannerIds.add(popupBanner.id);
+        if (mounted && imageLoaded) {
+          // Chỉ hiển thị popup khi ảnh đã load xong
+          setState(() {
+            _popupBanner = popupBanner;
+            _showPopup = true;
+          });
+          
+          // Thêm banner ID mới vào danh sách đã hiển thị
+          if (!displayedBannerIds.contains(popupBanner.id)) {
+            displayedBannerIds.add(popupBanner.id);
+          }
+          
+          // Lưu danh sách banner ID đã hiển thị vào SharedPreferences
+          await prefs.setString(
+            'displayed_popup_banner_ids',
+            displayedBannerIds.join(','),
+          );
+          
+          print('✅ Popup banner loaded and image preloaded: ${popupBanner.title} (ID: ${popupBanner.id})');
+          print('🔍 Updated displayed banner IDs: $displayedBannerIds');
+        } else {
+          print('⚠️ Popup banner image failed to load, skipping popup display');
         }
-        
-        // Lưu danh sách banner ID đã hiển thị vào SharedPreferences
-        await prefs.setString(
-          'displayed_popup_banner_ids',
-          displayedBannerIds.join(','),
-        );
-        
-        print('✅ Popup banner loaded: ${popupBanner.title} (ID: ${popupBanner.id})');
-        print('🔍 Updated displayed banner IDs: $displayedBannerIds');
       } else {
         print('ℹ️ No popup banner to display');
       }
     } catch (e) {
       print('❌ Error loading popup banner: $e');
+    }
+  }
+  
+  /// Preload ảnh popup banner vào cache trước khi hiển thị
+  /// Trả về true nếu ảnh load thành công, false nếu thất bại hoặc timeout
+  Future<bool> _preloadPopupImage(String imageUrl) async {
+    try {
+      if (imageUrl.isEmpty) {
+        print('⚠️ Popup banner image URL is empty');
+        return false;
+      }
+      
+      // Sử dụng CachedNetworkImageProvider để preload ảnh
+      final imageProvider = CachedNetworkImageProvider(imageUrl);
+      
+      // Preload ảnh với timeout 10 giây
+      await precacheImage(
+        imageProvider,
+        context,
+      ).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          print('⏱️ Popup banner image preload timeout after 10s');
+          throw TimeoutException('Image preload timeout');
+        },
+      );
+      
+      print('✅ Popup banner image preloaded successfully');
+      return true;
+    } on TimeoutException {
+      print('❌ Popup banner image preload timeout');
+      return false;
+    } catch (e) {
+      print('❌ Error preloading popup banner image: $e');
+      return false;
     }
   }
   
@@ -177,14 +249,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    final scrollPosition = _scrollController.hasClients ? _scrollController.offset : 0.0;
+    print('🏗️ [HomeScreen] build - Scroll position: ${scrollPosition.toStringAsFixed(1)}');
+    print('   ✅ wantKeepAlive: $wantKeepAlive (widget will be kept alive)');
+    print('   📦 PageStorageKey: home_list (Flutter auto-saves scroll position)');
     
     // Hiển thị loading screen trong khi preload
     if (_isPreloading) {

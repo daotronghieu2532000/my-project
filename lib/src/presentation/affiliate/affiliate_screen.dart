@@ -35,6 +35,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   final CachedApiService _cachedApiService = CachedApiService();
   AffiliateDashboard? _dashboard;
   bool _isLoading = true;
+  bool _isCheckingUser = true; // State để kiểm tra user đang đăng nhập
   String? _error;
   int _currentTabIndex = 0;
   int? _currentUserId;
@@ -66,12 +67,29 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   @override
   void initState() {
     super.initState();
+    print('🚀 [AffiliateScreen] initState - wantKeepAlive: $wantKeepAlive');
+    print('🔍 [AffiliateScreen] initState - Initial state:');
+    print('   - _isCheckingUser: $_isCheckingUser');
+    print('   - _currentUserId: $_currentUserId');
+    print('   - _isAffiliateRegistered: $_isAffiliateRegistered');
     _initUser();
     _productsScrollController.addListener(_onProductsScroll);
+    
+    // Thêm listener để cập nhật khi trạng thái đăng nhập thay đổi
+    print('🔔 [AffiliateScreen] Thêm auth state listener');
+    _authService.addAuthStateListener(_onAuthStateChanged);
   }
 
   @override
   void dispose() {
+    print('🗑️ [AffiliateScreen] dispose called!');
+    print('   ⚠️ This should NOT happen with IndexedStack + AutomaticKeepAliveClientMixin');
+    print('   💡 If you see this, IndexedStack is not working correctly');
+    
+    // Xóa listener khi dispose
+    print('🔔 [AffiliateScreen] Xóa auth state listener');
+    _authService.removeAuthStateListener(_onAuthStateChanged);
+    
     _productsScrollController.dispose();
     _searchController.dispose();
     _searchDebounceTimer?.cancel();
@@ -96,15 +114,77 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     });
   }
 
+  /// Callback khi trạng thái đăng nhập thay đổi
+  void _onAuthStateChanged() {
+    print('🔔 [AffiliateScreen] _onAuthStateChanged() - Auth state changed!');
+    print('   - Current _currentUserId: $_currentUserId');
+    print('   - Reloading user...');
+    
+    // Reload user khi có thay đổi trạng thái đăng nhập
+    if (mounted) {
+      setState(() {
+        _isCheckingUser = true; // Hiển thị loading khi reload
+      });
+      _initUser();
+    }
+  }
+
   Future<void> _initUser() async {
+    print('👤 [AffiliateScreen] _initUser() - Bắt đầu kiểm tra user...');
+    print('   - _isCheckingUser trước: $_isCheckingUser');
+    print('   - _currentUserId trước: $_currentUserId');
+    
+    // Kiểm tra user đăng nhập trước
+    print('   - Đang gọi _authService.getCurrentUser()...');
     final user = await _authService.getCurrentUser();
+    print('   - getCurrentUser() trả về: ${user != null ? "NOT NULL" : "NULL"}');
+    if (user != null) {
+      print('   - User details:');
+      print('     * userId: ${user.userId}');
+      print('     * username: ${user.username}');
+      print('     * name: ${user.name}');
+    } else {
+      print('   - ⚠️ User is NULL - chưa đăng nhập');
+    }
+    
+    if (!mounted) {
+      print('   - ⚠️ Widget không còn mounted, return');
+      return;
+    }
+    
+    // Kiểm tra xem userId có thay đổi không
+    final newUserId = user?.userId;
+    final userIdChanged = _currentUserId != newUserId;
+    
+    print('   - Đang setState với userId: $newUserId');
+    print('   - userIdChanged: $userIdChanged (old: $_currentUserId, new: $newUserId)');
+    
     setState(() {
-      _currentUserId = user?.userId;
+      _currentUserId = newUserId;
+      _isCheckingUser = false; // Đã kiểm tra xong user
     });
+    print('   - Sau setState:');
+    print('     * _currentUserId: $_currentUserId');
+    print('     * _isCheckingUser: $_isCheckingUser');
     
     if (_currentUserId != null) {
-      await _checkAffiliateStatus();
-      _loadProducts(refresh: true); // Load products on first init
+      print('   - ✅ User đã đăng nhập (userId: $_currentUserId), tiếp tục load data...');
+      
+      // Chỉ reload affiliate status và products nếu userId thay đổi (từ null -> có giá trị hoặc user khác)
+      if (userIdChanged) {
+        print('   - 🔄 User ID thay đổi, reload affiliate status và products...');
+        await _checkAffiliateStatus();
+        _loadProducts(refresh: true); // Load products on first init or when user changes
+      }
+    } else {
+      print('   - ❌ User chưa đăng nhập, bỏ qua load data');
+      // Clear data khi logout
+      setState(() {
+        _isAffiliateRegistered = null;
+        _dashboard = null;
+        _products = [];
+        _filteredProducts = [];
+      });
     }
     
     _loadDashboard();
@@ -540,6 +620,34 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    print('🏗️ [AffiliateScreen] build() - Current tab: $_currentTabIndex');
+    print('   ✅ wantKeepAlive: $wantKeepAlive (widget will be kept alive)');
+    print('   🔍 [AffiliateScreen] build() - Current state:');
+    print('      - _isCheckingUser: $_isCheckingUser');
+    print('      - _currentUserId: $_currentUserId');
+    print('      - _isAffiliateRegistered: $_isAffiliateRegistered');
+    print('      - _isLoading: $_isLoading');
+    print('      - _error: $_error');
+    print('      - _dashboard: ${_dashboard != null ? "NOT NULL" : "NULL"}');
+    
+    // Xác định màn hình nào sẽ được hiển thị
+    String screenToShow = 'UNKNOWN';
+    if (_isCheckingUser) {
+      screenToShow = 'LOADING (checking user)';
+    } else if (_currentUserId == null) {
+      screenToShow = 'LOGIN PROMPT';
+    } else if (_isAffiliateRegistered == false) {
+      screenToShow = 'REGISTRATION PROMPT';
+    } else if (_isLoading) {
+      screenToShow = 'LOADING (dashboard)';
+    } else if (_error != null) {
+      screenToShow = 'ERROR';
+    } else if (_dashboard == null) {
+      screenToShow = 'NO DATA';
+    } else {
+      screenToShow = 'AFFILIATE CONTENT';
+    }
+    print('   📺 [AffiliateScreen] build() - Sẽ hiển thị: $screenToShow');
     
     return Scaffold(
         appBar: AppBar(
@@ -574,29 +682,31 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
               ),
           ],
         ),
-        body: _currentUserId == null
-            ? _buildLoginPrompt()
-            : _isAffiliateRegistered == false
-                ? _buildAffiliateRegistrationPrompt()
-                : _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(_error!),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: _loadDashboard,
-                                  child: const Text('Thử lại'),
+        body: _isCheckingUser
+            ? const Center(child: CircularProgressIndicator())
+            : _currentUserId == null
+                ? _buildLoginPrompt()
+                : _isAffiliateRegistered == false
+                    ? _buildAffiliateRegistrationPrompt()
+                    : _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _error != null
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(_error!),
+                                    const SizedBox(height: 16),
+                                    ElevatedButton(
+                                      onPressed: _loadDashboard,
+                                      child: const Text('Thử lại'),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          )
-                        : _dashboard == null
-                        ? const Center(child: Text('Không có dữ liệu'))
-                        : Column(
+                              )
+                            : _dashboard == null
+                            ? const Center(child: Text('Không có dữ liệu'))
+                            : Column(
                         children: [
                           // Custom Tab Bar
                           Container(
@@ -849,8 +959,16 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                             ),
                           ).then((result) {
                             // Reload user info after login
+                            print('🔄 [AffiliateScreen] Quay lại từ LoginScreen, result: $result');
                             if (result == true) {
+                              print('   - ✅ Login thành công, reload user...');
+                              setState(() {
+                                _isCheckingUser = true; // Hiển thị loading khi reload user
+                              });
+                              print('   - Đã set _isCheckingUser = true, gọi _initUser()...');
                               _initUser();
+                            } else {
+                              print('   - ❌ Login không thành công hoặc bị cancel');
                             }
                           });
                         },

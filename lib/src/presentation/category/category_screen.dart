@@ -25,7 +25,16 @@ class _CategoryScreenState extends State<CategoryScreen>
   @override
   void initState() {
     super.initState();
+    print('🚀 [CategoryScreen] initState - wantKeepAlive: $wantKeepAlive');
     _loadParentCategories();
+  }
+  
+  @override
+  void dispose() {
+    print('🗑️ [CategoryScreen] dispose called!');
+    print('   ⚠️ This should NOT happen with IndexedStack + AutomaticKeepAliveClientMixin');
+    print('   💡 If you see this, IndexedStack is not working correctly');
+    super.dispose();
   }
 
   Future<void> _loadParentCategories() async {
@@ -136,6 +145,9 @@ class _CategoryScreenState extends State<CategoryScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    print('🏗️ [CategoryScreen] build');
+    print('   ✅ wantKeepAlive: $wantKeepAlive (widget will be kept alive)');
+    print('   📦 PageStorageKeys: category_left_menu, category_right_content');
     
     return Scaffold(
       appBar: AppBar(

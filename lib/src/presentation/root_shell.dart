@@ -26,11 +26,13 @@ class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixi
   @override
   void initState() {
     super.initState();
+    print('🚀 [RootShell] initState - Initial tab: $_currentIndex');
     _cart.addListener(_onCartChanged);
   }
 
   @override
   void dispose() {
+    print('🗑️ [RootShell] dispose');
     _cart.removeListener(_onCartChanged);
     super.dispose();
   }
@@ -92,6 +94,8 @@ class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixi
   /// Xử lý khi tab thay đổi
   void _onTabChanged(int newIndex) {
     if (newIndex != _currentIndex) {
+      print('🔄 [RootShell] Tab changed: $_currentIndex → $newIndex');
+      print('   📊 IndexedStack will show tab $newIndex (all tabs kept alive)');
       setState(() {
         _currentIndex = newIndex;
       });
@@ -101,6 +105,9 @@ class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixi
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    print('🏗️ [RootShell] build - Current tab: $_currentIndex');
+    print('   📦 IndexedStack: Showing tab $_currentIndex, keeping all ${_tabs.length} tabs alive');
+    
     return Scaffold(
       // Sử dụng IndexedStack để giữ tất cả tabs alive - không dispose khi switch tab
       body: IndexedStack(
