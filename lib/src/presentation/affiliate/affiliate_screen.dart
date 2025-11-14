@@ -28,7 +28,10 @@ class AffiliateScreen extends StatefulWidget {
   State<AffiliateScreen> createState() => _AffiliateScreenState();
 }
 
-class _AffiliateScreenState extends State<AffiliateScreen> {
+class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  
   final AffiliateService _affiliateService = AffiliateService();
   final AuthService _authService = AuthService();
   final CachedApiService _cachedApiService = CachedApiService();
@@ -39,6 +42,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
   int? _currentUserId;
   bool? _isAffiliateRegistered;
   bool _agreeToTerms = false;
+  bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
 
   // Products state
   final ScrollController _productsScrollController = ScrollController();
@@ -365,7 +369,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
     }
   }
 
-  Future<void> _loadDashboard() async {
+  Future<void> _loadDashboard({bool forceRefresh = false}) async {
+    // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi switch tabs)
+    if (!forceRefresh && _hasLoadedOnce && _dashboard != null) {
+      return;
+    }
+    
     setState(() {
       _isLoading = true;
       _error = null;
@@ -375,6 +384,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
       // Sử dụng cached API service cho dashboard
       final dashboardData = await _cachedApiService.getAffiliateDashboard(
         userId: _currentUserId,
+        forceRefresh: forceRefresh,
       );
       
       // Xử lý dữ liệu từ cache hoặc API
@@ -397,6 +407,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
         setState(() {
           _dashboard = dashboard;
           _isLoading = false;
+          _hasLoadedOnce = true; // Đánh dấu đã load
         });
       }
     } catch (e) {
@@ -538,6 +549,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
     return ScrollPreservationWrapper(
       tabIndex: 2, // Affiliate tab
       child: Scaffold(

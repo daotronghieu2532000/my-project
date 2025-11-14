@@ -439,9 +439,15 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
 
   void _measureProductCardHeight() {
     final RenderBox? renderBox = _productCardKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null && mounted) {
+    // Kiểm tra renderBox đã được laid out và có size chưa
+    if (renderBox != null && renderBox.hasSize && mounted) {
       setState(() {
         _productCardHeight = renderBox.size.height;
+      });
+    } else if (mounted) {
+      // Nếu chưa laid out, đợi thêm một frame nữa
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _measureProductCardHeight();
       });
     }
   }

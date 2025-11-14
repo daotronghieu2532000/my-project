@@ -132,10 +132,11 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   }
 
   // Tabs: Trang chủ, Danh mục, Affiliate
-  final List<Widget> _tabs = const [
-    HomeScreen(),
-    CategoryScreen(),
-    AffiliateScreen(),
+  // Sử dụng keys để giữ state khi switch tabs
+  final List<Widget> _tabs = [
+    HomeScreen(key: const PageStorageKey('home')),
+    CategoryScreen(key: const PageStorageKey('category')),
+    AffiliateScreen(key: const PageStorageKey('affiliate')),
   ];
 
   Widget _buildNavItem({
@@ -198,7 +199,10 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
-      body: _tabs[_currentIndex],
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _tabs,
+      ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(

@@ -15,9 +15,18 @@ class FreeShipProductsScreen extends StatefulWidget {
 class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
   final ApiService _apiService = ApiService();
   final CachedApiService _cachedApiService = CachedApiService();
-  List<FreeShipProduct> _products = [];
+  final ScrollController _scrollController = ScrollController();
+  
+  List<FreeShipProduct> _allProducts = []; // Tất cả sản phẩm đã load
+  List<FreeShipProduct> _displayedProducts = []; // Sản phẩm đang hiển thị
   bool _isLoading = true;
+  bool _isLoadingMore = false;
   String? _error;
+  
+  // Pagination
+  static const int _initialLoadCount = 20; // Số sản phẩm load ban đầu
+  static const int _loadMoreCount = 20; // Số sản phẩm load thêm mỗi lần
+  int _currentDisplayCount = 0;
 
   // Lọc & sắp xếp
   String _currentSort = 'relevance'; // relevance | price-asc | price-desc | rating-desc | sold-desc
@@ -27,28 +36,40 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     _loadProducts();
   }
+  
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  void _onScroll() {
+    if (!_isLoadingMore && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreProducts();
+    }
+  }
 
-  Future<void> _loadProducts() async {
+  Future<void> _loadProducts({bool refresh = false}) async {
     try {
+      if (refresh) {
+        // Clear cache khi refresh
+        _cachedApiService.clearFreeshipCache();
+        print('🧹 Cleared freeship cache to force refresh');
+      }
+      
       setState(() {
         _isLoading = true;
         _error = null;
       });
 
-      // Clear cache để force refresh với dữ liệu mới
-      _cachedApiService.clearFreeshipCache();
-      print('🧹 Cleared freeship cache to force refresh');
-      
       // Sử dụng cached API service cho freeship products
-      final productsData = await _cachedApiService.getFreeShipProductsCached();
-      
-      // Debug: In ra cached data
-      print('🔍 Cached productsData: ${productsData?.length} items');
-      if (productsData != null && productsData.isNotEmpty) {
-        print('🔍 First cached product: ${productsData.first}');
-      }
+      final productsData = await _cachedApiService.getFreeShipProductsCached(
+        forceRefresh: refresh,
+      );
       
       // Nếu cache không có data, fallback về ApiService
       List<FreeShipProduct>? products;
@@ -56,26 +77,22 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         print('🔄 Cache miss, fetching from ApiService...');
         products = await _apiService.getFreeShipProducts();
       } else {
-        print('🚚 Using cached freeship products data');
+        print('🚚 Using cached freeship products data (${productsData.length} items)');
         // Convert cached data to FreeShipProduct list
-        products = productsData.map((data) {
-          print('🔍 Converting cached data: ${data['id']}');
-          print('  - voucherIcon: ${data['voucher_icon']}');
-          print('  - freeshipIcon: ${data['freeship_icon']}');
-          print('  - chinhhangIcon: ${data['chinhhang_icon']}');
-          print('  - warehouseName: ${data['warehouse_name']}');
-          print('  - provinceName: ${data['province_name']}');
-          return FreeShipProduct.fromJson(data);
-        }).toList();
+        products = productsData.map((data) => FreeShipProduct.fromJson(data)).toList();
       }
       
       if (mounted) {
         setState(() {
           _isLoading = false;
-          if (products != null) {
-            _products = products;
+          if (products != null && products.isNotEmpty) {
+            _allProducts = products;
+            _currentDisplayCount = 0;
+            _updateDisplayedProducts();
           } else {
             _error = 'Không thể tải danh sách sản phẩm';
+            _allProducts = [];
+            _displayedProducts = [];
           }
         });
       }
@@ -87,6 +104,79 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         });
       }
     }
+  }
+  
+  void _loadMoreProducts() {
+    final filtered = _getFilteredAndSortedProducts();
+    if (_currentDisplayCount >= filtered.length) {
+      return; // Đã hiển thị hết
+    }
+    
+    setState(() {
+      _isLoadingMore = true;
+    });
+    
+    // Simulate loading delay để UX mượt hơn
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _updateDisplayedProducts();
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
+    });
+  }
+  
+  void _updateDisplayedProducts() {
+    // Lấy danh sách sản phẩm đã lọc và sắp xếp
+    final filtered = _getFilteredAndSortedProducts();
+    
+    // Hiển thị thêm sản phẩm
+    final increment = _currentDisplayCount == 0 ? _initialLoadCount : _loadMoreCount;
+    final newCount = (_currentDisplayCount + increment).clamp(0, filtered.length);
+    _displayedProducts = filtered.sublist(0, newCount);
+    _currentDisplayCount = newCount;
+  }
+  
+  List<FreeShipProduct> _getFilteredAndSortedProducts() {
+    List<FreeShipProduct> filtered = List.from(_allProducts);
+
+    // Lọc theo điều kiện
+    if (_onlyHasVoucher) {
+      filtered = filtered.where((product) {
+        return product.voucherIcon != null && product.voucherIcon!.isNotEmpty;
+      }).toList();
+    }
+
+    // Sắp xếp
+    switch (_currentSort) {
+      case 'price-asc':
+        filtered.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'price-desc':
+        filtered.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'rating-desc':
+        filtered.sort((a, b) {
+          final ratingA = a.rating ?? 0.0;
+          final ratingB = b.rating ?? 0.0;
+          return ratingB.compareTo(ratingA);
+        });
+        break;
+      case 'sold-desc':
+        filtered.sort((a, b) {
+          final soldA = a.sold ?? 0;
+          final soldB = b.sold ?? 0;
+          return soldB.compareTo(soldA);
+        });
+        break;
+      case 'relevance':
+      default:
+        // Giữ nguyên thứ tự từ API
+        break;
+    }
+
+    return filtered;
   }
 
   @override
@@ -113,7 +203,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh, color: Color(0xFF333333)),
-            onPressed: _loadProducts,
+            onPressed: () => _loadProducts(refresh: true),
           ),
         ],
       ),
@@ -169,7 +259,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
       );
     }
 
-    if (_products.isEmpty) {
+    if (_allProducts.isEmpty) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -190,7 +280,8 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
       );
     }
 
-    final displayedProducts = _getDisplayedProducts();
+    final filteredProducts = _getFilteredAndSortedProducts();
+    final totalCount = filteredProducts.length;
 
     return Column(
       children: [
@@ -206,7 +297,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
           child: Row(
             children: [
               Text(
-                'Tìm thấy ${displayedProducts.length} sản phẩm',
+                'Tìm thấy $totalCount sản phẩm',
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF666666),
@@ -218,6 +309,9 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
                 onTap: () {
                   setState(() {
                     _showFilters = !_showFilters;
+                    // Reset và cập nhật lại danh sách hiển thị khi thay đổi filter
+                    _currentDisplayCount = 0;
+                    _updateDisplayedProducts();
                   });
                 },
                 child: Container(
@@ -254,61 +348,44 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         // Panel lọc
         if (_showFilters) _buildFilterPanel(),
 
-        // Danh sách sản phẩm - Wrap 2 cột
+        // Danh sách sản phẩm - Wrap 2 cột với lazy loading
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: _buildProductsGrid(displayedProducts),
+          child: RefreshIndicator(
+            onRefresh: () => _loadProducts(refresh: true),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Column(
+                children: [
+                  Align(
+                    alignment: Alignment.topLeft,
+                    child: _buildProductsGrid(_displayedProducts),
+                  ),
+                  // Loading indicator khi đang load thêm
+                  if (_isLoadingMore)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
+                    ),
+                  // Hiển thị thông báo nếu đã load hết
+                  if (!_isLoadingMore && _currentDisplayCount >= filteredProducts.length && filteredProducts.isNotEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text(
+                        'Đã hiển thị tất cả sản phẩm',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF999999),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
       ],
     );
-  }
-
-  // Lấy danh sách sản phẩm đã lọc và sắp xếp
-  List<FreeShipProduct> _getDisplayedProducts() {
-    List<FreeShipProduct> filtered = List.from(_products);
-
-    // Lọc theo điều kiện
-    if (_onlyHasVoucher) {
-      filtered = filtered.where((product) {
-        // Kiểm tra cả boolean và icon voucher
-        return product.voucherIcon != null && product.voucherIcon!.isNotEmpty;
-      }).toList();
-    }
-
-    // Sắp xếp
-    switch (_currentSort) {
-      case 'price-asc':
-        filtered.sort((a, b) => a.price.compareTo(b.price));
-        break;
-      case 'price-desc':
-        filtered.sort((a, b) => b.price.compareTo(a.price));
-        break;
-      case 'rating-desc':
-        filtered.sort((a, b) {
-          final ratingA = a.rating ?? 0.0;
-          final ratingB = b.rating ?? 0.0;
-          return ratingB.compareTo(ratingA);
-        });
-        break;
-      case 'sold-desc':
-        filtered.sort((a, b) {
-          final soldA = a.sold ?? 0;
-          final soldB = b.sold ?? 0;
-          return soldB.compareTo(soldA);
-        });
-        break;
-      case 'relevance':
-      default:
-        // Giữ nguyên thứ tự từ API
-        break;
-    }
-
-    return filtered;
   }
 
   Widget _buildProductsGrid(List<FreeShipProduct> products) {
@@ -368,6 +445,9 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
       onTap: () {
         setState(() {
           _currentSort = value;
+          // Reset và cập nhật lại danh sách hiển thị khi thay đổi sort
+          _currentDisplayCount = 0;
+          _updateDisplayedProducts();
         });
       },
       child: Container(
@@ -411,6 +491,9 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
           if (type == 'hasVoucher') {
             _onlyHasVoucher = !_onlyHasVoucher;
           }
+          // Reset và cập nhật lại danh sách hiển thị khi thay đổi filter
+          _currentDisplayCount = 0;
+          _updateDisplayedProducts();
         });
       },
       child: Container(

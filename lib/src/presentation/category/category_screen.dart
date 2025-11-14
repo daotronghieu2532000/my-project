@@ -12,13 +12,17 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  
   final CachedApiService _cachedApiService = CachedApiService();
   
   List<Map<String, dynamic>> _parentCategories = [];
   List<Map<String, dynamic>> _childCategories = [];
   bool _isLoading = true;
   int _selectedParentIndex = 0;
+  bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
 
   @override
   void initState() {
@@ -28,6 +32,11 @@ class _CategoryScreenState extends State<CategoryScreen>
 
   Future<void> _loadParentCategories() async {
     try {
+      // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi switch tabs)
+      if (_hasLoadedOnce && _parentCategories.isNotEmpty) {
+        return;
+      }
+      
       setState(() => _isLoading = true);
       
       // Sử dụng cached API service
@@ -35,17 +44,21 @@ class _CategoryScreenState extends State<CategoryScreen>
         type: 'parents',
         includeChildren: true,
         includeProductsCount: true,
+        forceRefresh: false, // Chỉ load từ cache
       );
       
       if (categoriesData.isNotEmpty && mounted) {
         setState(() {
           _parentCategories = categoriesData;
           _isLoading = false;
+          _hasLoadedOnce = true; // Đánh dấu đã load
           // Load children of first category
           if (categoriesData.isNotEmpty) {
             _loadChildrenFromParent(categoriesData.first);
           }
         });
+      } else if (mounted) {
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       print('❌ Lỗi khi tải danh mục cha: $e');
@@ -133,6 +146,7 @@ class _CategoryScreenState extends State<CategoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
     return ScrollPreservationWrapper(
       tabIndex: 1, // Category tab
       child: Scaffold(

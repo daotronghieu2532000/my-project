@@ -49,5 +49,11 @@
 		<true/>
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<!-- Privacy Permissions - BẮT BUỘC cho App Store -->
+		<!-- App sử dụng image_picker để chọn ảnh từ thư viện và camera -->
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Ứng dụng cần truy cập thư viện ảnh để bạn có thể chọn và tải ảnh lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
+		<key>NSCameraUsageDescription</key>
+		<string>Ứng dụng cần truy cập camera để bạn có thể chụp ảnh và tải lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
 	</dict>
 </plist>

@@ -13,11 +13,15 @@ class PartnerBannerSlider extends StatefulWidget {
   State<PartnerBannerSlider> createState() => _PartnerBannerSliderState();
 }
 
-class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
+class _PartnerBannerSliderState extends State<PartnerBannerSlider> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  
   final CachedApiService _cachedApiService = CachedApiService();
   List<BannerModel> _banners = [];
   bool _isLoading = true;
   int _currentIndex = 0;
+  bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
 
   @override
   void initState() {
@@ -28,8 +32,13 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
 
   Future<void> _loadBannersFromCache() async {
     try {
+      // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi scroll)
+      if (_hasLoadedOnce && _banners.isNotEmpty) {
+        return;
+      }
+      
       // Chỉ load từ cache, không gọi API
-      final bannersData = await _cachedApiService.getHomePartnerBanners();
+      final bannersData = await _cachedApiService.getHomePartnerBanners(forceRefresh: false);
       
       if (mounted) {
         if (bannersData.isNotEmpty) {
@@ -39,6 +48,7 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
           setState(() {
             _banners = banners;
             _isLoading = false;
+            _hasLoadedOnce = true; // Đánh dấu đã load
           });
           
           // print('✅ Partner banners loaded from cache (${banners.length} banners)');
@@ -145,7 +155,8 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> {
 
   @override
   Widget build(BuildContext context) {
-  
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
+    
     final screenWidth = MediaQuery.of(context).size.width;
     
     final bannerHeight = (screenWidth / 3).clamp(100.0, 150.0);
