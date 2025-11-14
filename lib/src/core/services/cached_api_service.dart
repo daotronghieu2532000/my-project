@@ -6,6 +6,7 @@ import '../models/product_detail.dart';
 import '../models/product_suggest.dart';
 import '../models/voucher.dart';
 import '../models/shop_detail.dart';
+import '../models/banner_products.dart';
 
 /// Enhanced API Service với Memory Cache
 /// Tự động cache dữ liệu API để giảm số lần gọi và cải thiện performance
@@ -937,6 +938,126 @@ class CachedApiService {
   }
 
   /// Force refresh tất cả cache của home
+  /// Lấy banner products với cache
+  Future<Map<String, BannerProducts?>?> getBannerProductsCached({
+    String? viTriHienThi,
+    bool forceRefresh = false,
+    Duration? cacheDuration,
+  }) async {
+    // Cache key bao gồm vi_tri_hien_thi để phân biệt cache cho từng vị trí
+    final cacheKey = MemoryCacheService.createKey(
+      CacheKeys.homeBannerProducts,
+      {
+        if (viTriHienThi != null && viTriHienThi.isNotEmpty) 'position': viTriHienThi,
+      },
+    );
+    
+    // Kiểm tra cache trước
+    if (!forceRefresh && _cache.has(cacheKey)) {
+      final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+      if (cachedData != null) {
+        print('🎯 Using cached banner products${viTriHienThi != null ? " for position: $viTriHienThi" : ""}');
+        
+        // Parse cached data back to Map<String, BannerProducts?>
+        try {
+          final result = <String, BannerProducts?>{};
+          if (viTriHienThi != null && viTriHienThi.isNotEmpty) {
+            // Single position
+            if (cachedData.containsKey(viTriHienThi)) {
+              final positionData = cachedData[viTriHienThi];
+              if (positionData != null) {
+                result[viTriHienThi] = BannerProducts.fromJson(positionData as Map<String, dynamic>);
+              } else {
+                result[viTriHienThi] = null;
+              }
+            }
+          } else {
+            // All positions
+            for (final position in ['dau_trang', 'giua_trang', 'cuoi_trang']) {
+              if (cachedData.containsKey(position)) {
+                final positionData = cachedData[position];
+                if (positionData != null) {
+                  result[position] = BannerProducts.fromJson(positionData as Map<String, dynamic>);
+                } else {
+                  result[position] = null;
+                }
+              } else {
+                result[position] = null;
+              }
+            }
+          }
+          return result;
+        } catch (e) {
+          print('❌ Error parsing cached banner products: $e');
+          // Fall through to fetch from API
+        }
+      }
+    }
+
+    try {
+      print('🌐 Fetching banner products from API${viTriHienThi != null ? " for position: $viTriHienThi" : ""}...');
+      final result = await _apiService.getBannerProducts(viTriHienThi: viTriHienThi);
+      
+      if (result != null) {
+        // Convert BannerProducts to Map for caching
+        final cacheData = <String, dynamic>{};
+        result.forEach((position, bannerProduct) {
+          if (bannerProduct != null) {
+            cacheData[position] = bannerProduct.toJson();
+          } else {
+            cacheData[position] = null;
+          }
+        });
+        
+        // Lưu vào cache
+        _cache.set(cacheKey, cacheData, duration: cacheDuration ?? _defaultCacheDuration);
+        
+        print('✅ Banner products cached successfully${viTriHienThi != null ? " for position: $viTriHienThi" : ""}');
+      }
+      
+      return result;
+    } catch (e) {
+      print('❌ Error fetching banner products: $e');
+      
+      // Fallback về cache cũ nếu có
+      final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+      if (cachedData != null) {
+        print('🔄 Using stale cache for banner products');
+        try {
+          final result = <String, BannerProducts?>{};
+          if (viTriHienThi != null && viTriHienThi.isNotEmpty) {
+            if (cachedData.containsKey(viTriHienThi)) {
+              final positionData = cachedData[viTriHienThi];
+              if (positionData != null) {
+                result[viTriHienThi] = BannerProducts.fromJson(positionData as Map<String, dynamic>);
+              } else {
+                result[viTriHienThi] = null;
+              }
+            }
+          } else {
+            for (final position in ['dau_trang', 'giua_trang', 'cuoi_trang']) {
+              if (cachedData.containsKey(position)) {
+                final positionData = cachedData[position];
+                if (positionData != null) {
+                  result[position] = BannerProducts.fromJson(positionData as Map<String, dynamic>);
+                } else {
+                  result[position] = null;
+                }
+              } else {
+                result[position] = null;
+              }
+            }
+          }
+          return result;
+        } catch (parseError) {
+          print('❌ Error parsing stale cache: $parseError');
+        }
+      }
+      
+      rethrow;
+    }
+  }
+
   Future<void> refreshHomeCache() async {
     print('🔄 Force refreshing home cache...');
     
@@ -946,6 +1067,7 @@ class CachedApiService {
         getHomeFlashSale(forceRefresh: true),
         getHomePartnerBanners(forceRefresh: true),
         getHomeSuggestions(forceRefresh: true),
+        getBannerProductsCached(forceRefresh: true),
       ]);
       
       print('✅ Home cache refreshed successfully');

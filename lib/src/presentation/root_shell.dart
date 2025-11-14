@@ -4,6 +4,7 @@ import 'home/home_screen.dart';
 import 'category/category_screen.dart';
 import 'cart/cart_screen.dart';
 import '../core/services/cart_service.dart' as cart_service;
+import '../core/services/app_lifecycle_manager.dart';
 import '../core/utils/format_utils.dart';
 // import 'notifications/notifications_screen.dart';
 import 'affiliate/affiliate_screen.dart';
@@ -16,9 +17,11 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixin {
+class _RootShellState extends State<RootShell> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   late int _currentIndex = widget.initialIndex;
   final cart_service.CartService _cart = cart_service.CartService();
+  final AppLifecycleManager _lifecycleManager = AppLifecycleManager();
+  bool _isInitialized = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -26,26 +29,113 @@ class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixi
   @override
   void initState() {
     super.initState();
-    print('🚀 [RootShell] initState - Initial tab: $_currentIndex');
+    WidgetsBinding.instance.addObserver(this);
     _cart.addListener(_onCartChanged);
+    _initializeAppState();
   }
 
   @override
   void dispose() {
-    print('🗑️ [RootShell] dispose');
+    WidgetsBinding.instance.removeObserver(this);
     _cart.removeListener(_onCartChanged);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    print('🔄 [RootShell] Lifecycle changed: $state');
+    
+    if (state == AppLifecycleState.paused) {
+      // Lưu state khi app bị pause
+      print('   💾 Saving current tab: $_currentIndex');
+      _lifecycleManager.saveCurrentTab(_currentIndex);
+    } else if (state == AppLifecycleState.resumed) {
+      print('   📂 Attempting to restore state...');
+      // Không restore state ngay - để Flutter tự xử lý navigation stack
+      // Chỉ restore nếu app bị kill và restart
+      _restoreStateOnResume();
+    }
+  }
+
+  /// Restore state khi app resume
+  Future<void> _restoreStateOnResume() async {
+    try {
+      print('   🔍 Checking if state is valid...');
+      // Chỉ restore nếu state hợp lệ và app có thể đã bị kill
+      if (_lifecycleManager.isStateValid()) {
+        print('   ✅ State is valid, getting saved tab...');
+        final savedTab = await _lifecycleManager.getSavedTab();
+        print('   📊 Current tab: $_currentIndex, Saved tab: $savedTab');
+        
+        if (savedTab != null && savedTab != _currentIndex) {
+          print('   🔄 Restoring tab from $_currentIndex to $savedTab');
+          // Chỉ restore nếu tab khác - tránh rebuild không cần thiết
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              print('   ✅ Setting tab to $savedTab');
+              setState(() {
+                _currentIndex = savedTab;
+              });
+            }
+          });
+        } else {
+          print('   ℹ️ No need to restore (tab already correct or no saved tab)');
+        }
+      } else {
+        print('   ⚠️ State is not valid, skipping restore');
+      }
+    } catch (e) {
+      print('   ❌ Error restoring state: $e');
+    }
   }
 
   void _onCartChanged() {
     if (mounted) setState(() {});
   }
 
-  // Tabs với PageStorageKey để Flutter tự động lưu/restore scroll position
-  final List<Widget> _tabs = [
-    HomeScreen(key: const PageStorageKey('home')),
-    CategoryScreen(key: const PageStorageKey('category')),
-    AffiliateScreen(key: const PageStorageKey('affiliate')),
+  /// Khởi tạo và khôi phục state của app
+  Future<void> _initializeAppState() async {
+    if (_isInitialized) {
+      print('🔄 [RootShell] Already initialized, skipping');
+      return;
+    }
+    
+    print('🚀 [RootShell] Initializing app state...');
+    try {
+      // Khởi tạo AppLifecycleManager
+      _lifecycleManager.initialize();
+      print('   ✅ AppLifecycleManager initialized');
+      
+      // Đợi một chút để đảm bảo pause time đã được load từ storage
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // Thử khôi phục tab đã lưu
+      print('   📂 Getting saved tab...');
+      final savedTab = await _lifecycleManager.getSavedTab();
+      print('   📊 Initial index: ${widget.initialIndex}, Saved tab: $savedTab');
+      
+      if (savedTab != null && savedTab != widget.initialIndex) {
+        print('   🔄 Restoring tab to $savedTab');
+        setState(() {
+          _currentIndex = savedTab;
+        });
+      } else {
+        print('   ℹ️ No need to restore (using initial index)');
+      }
+      
+      _isInitialized = true;
+      print('   ✅ App state initialized');
+    } catch (e) {
+      print('   ❌ Error initializing app state: $e');
+    }
+  }
+
+  // Tabs: Trang chủ, Danh mục, Affiliate
+  final List<Widget> _tabs = const [
+    HomeScreen(),
+    CategoryScreen(),
+    AffiliateScreen(),
   ];
 
   Widget _buildNavItem({
@@ -94,26 +184,21 @@ class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixi
   /// Xử lý khi tab thay đổi
   void _onTabChanged(int newIndex) {
     if (newIndex != _currentIndex) {
-      print('🔄 [RootShell] Tab changed: $_currentIndex → $newIndex');
-      print('   📊 IndexedStack will show tab $newIndex (all tabs kept alive)');
+      print('🔄 [RootShell] Tab changed from $_currentIndex to $newIndex');
       setState(() {
         _currentIndex = newIndex;
       });
+      
+      // Lưu tab hiện tại
+      _lifecycleManager.saveCurrentTab(newIndex);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
-    print('🏗️ [RootShell] build - Current tab: $_currentIndex');
-    print('   📦 IndexedStack: Showing tab $_currentIndex, keeping all ${_tabs.length} tabs alive');
-    
     return Scaffold(
-      // Sử dụng IndexedStack để giữ tất cả tabs alive - không dispose khi switch tab
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _tabs,
-      ),
+      body: _tabs[_currentIndex],
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
@@ -166,30 +251,30 @@ class _RootShellState extends State<RootShell> with AutomaticKeepAliveClientMixi
                                       size: 24,
                                     ),
                                     if (_cart.itemCount > 0)
-                                      Positioned(
-                                        top: -4,
-                                        right: -6,
-                                        child: Container(
-                                          width: 16,
-                                          height: 16,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Text(
-                                              _cart.itemCount.toString(),
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.bold,
+                                    Positioned(
+                                      top: -4,
+                                      right: -6,
+                                      child: Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: const BoxDecoration(
+                                          color: Colors.red,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            _cart.itemCount.toString(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
                                                 height: 1.0,
-                                              ),
-                                              textAlign: TextAlign.center,
                                             ),
+                                              textAlign: TextAlign.center,
                                           ),
                                         ),
                                       ),
+                                    ),
                                   ],
                                 ),
                                 Builder(
@@ -319,14 +404,14 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> {
                             children: [
                               const Icon(Icons.shopping_cart_outlined, color: Colors.red, size: 24),
                               if (_cart.itemCount > 0)
-                                Positioned(
-                                  top: -4,
-                                  right: -6,
-                                  child: Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                    child: Center(
+                              Positioned(
+                                top: -4,
+                                right: -6,
+                                child: Container(
+                                  width: 16,
+                                  height: 16,
+                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                  child: Center(
                                       child: Text(
                                         _cart.itemCount.toString(),
                                         style: const TextStyle(
@@ -337,9 +422,9 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> {
                                         ),
                                         textAlign: TextAlign.center,
                                       ),
-                                    ),
                                   ),
                                 ),
+                              ),
                             ],
                           ),
                           Builder(

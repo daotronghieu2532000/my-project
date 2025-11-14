@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../product/product_detail_screen.dart';
+import 'product_review_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final int userId;
@@ -59,6 +60,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
+        actions: [
+          // Tạm thời ẩn nút đánh giá
+          // Show review button only for status 5 (Giao thành công)
+          // if ((_detail?['status'] as int? ?? 0) == 5)
+          //   Padding(
+          //     padding: const EdgeInsets.only(right: 8),
+          //     child: _buildReviewButton(),
+          //   ),
+        ],
       ),
       backgroundColor: const Color(0xFFF5F5F5),
       body: _loading
@@ -628,6 +638,57 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
     );
   }
+
+  // Tạm thời ẩn nút đánh giá
+  /*
+  Widget _buildReviewButton() {
+    final orderId = _detail?['id'] as int?;
+    final products = ((_detail?['products'] ?? []) as List).cast<Map<String, dynamic>>();
+    
+    // TODO: Check if all products are reviewed from API
+    // For now, always show review button
+    
+    return GestureDetector(
+      onTap: () {
+        if (orderId == null) return;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductReviewScreen(
+              orderId: orderId,
+              products: products,
+              onReviewSubmitted: () {
+                _load();
+              },
+            ),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF6B35),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.star, size: 16, color: Colors.white),
+            SizedBox(width: 4),
+            Text(
+              'Đánh giá',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  */
 
   // Action Buttons
   Widget _buildActionButtons() {

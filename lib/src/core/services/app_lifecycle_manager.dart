@@ -27,10 +27,7 @@ class AppLifecycleManager extends WidgetsBindingObserver {
   void initialize() {
     WidgetsBinding.instance.addObserver(this);
     // Load pause time async (không block)
-    _loadLastPauseTime().then((_) {
-      print('🔄 [AppLifecycle] Manager initialized');
-      print('   Loaded pause time: $_lastPauseTime');
-    });
+    _loadLastPauseTime();
   }
 
   /// Dispose AppLifecycleManager
@@ -66,26 +63,14 @@ class AppLifecycleManager extends WidgetsBindingObserver {
     _lastResumeTime = DateTime.now();
     _isAppInBackground = false;
     
-    print('📱 [AppLifecycle] App RESUMED');
-    print('   Last pause time: $_lastPauseTime');
-    print('   Resume time: $_lastResumeTime');
-    
     // Kiểm tra nếu ở background quá lâu, clear state
     if (_lastPauseTime != null) {
       final backgroundDuration = _lastResumeTime!.difference(_lastPauseTime!);
-      print('   Background duration: ${backgroundDuration.inSeconds} seconds (${backgroundDuration.inMinutes} minutes)');
-      print('   Timeout: ${_stateTimeout.inSeconds} seconds (${_stateTimeout.inMinutes} minutes)');
       
       if (backgroundDuration > _stateTimeout) {
         // State đã hết hạn, clear để app reload
-        print('   ⚠️ State EXPIRED - clearing state');
         clearAllState();
-      } else {
-        // State còn hợp lệ
-        print('   ✅ State VALID - keeping state');
       }
-    } else {
-      print('   ℹ️ No pause time recorded (first launch)');
     }
   }
 
@@ -94,10 +79,6 @@ class AppLifecycleManager extends WidgetsBindingObserver {
     _lastPauseTime = DateTime.now();
     _isAppInBackground = true;
     _saveLastPauseTime();
-    
-    print('📱 [AppLifecycle] App PAUSED');
-    print('   Pause time: $_lastPauseTime');
-    print('   Saving state...');
   }
 
   /// Lưu thời gian pause cuối cùng
@@ -115,50 +96,38 @@ class AppLifecycleManager extends WidgetsBindingObserver {
       final lastPauseString = prefs.getString(_lastActiveTimeKey);
       if (lastPauseString != null) {
         _lastPauseTime = DateTime.parse(lastPauseString);
-        print('📂 [AppLifecycle] Loaded pause time from storage: $_lastPauseTime');
         
         // Kiểm tra xem state có còn hợp lệ không (từ lúc pause đến hiện tại)
         final now = DateTime.now();
         final timeSincePause = now.difference(_lastPauseTime!);
-        print('   Time since pause: ${timeSincePause.inSeconds}s (${timeSincePause.inMinutes} minutes)');
         
         if (timeSincePause > _stateTimeout) {
-          print('   ⚠️ State expired, clearing...');
           await clearAllState();
-        } else {
-          print('   ✅ State still valid');
         }
-      } else {
-        print('📂 [AppLifecycle] No pause time found in storage (first launch)');
       }
     } catch (e) {
-      print('❌ [AppLifecycle] Error loading pause time: $e');
+      // Ignore error
     }
   }
 
   /// Kiểm tra xem state có còn hợp lệ không
   bool isStateValid() {
     if (_lastPauseTime == null) {
-      print('🔍 [AppLifecycle] isStateValid: false (no pause time)');
       return false;
     }
     
     // Tính thời gian từ pause đến hiện tại
     final now = DateTime.now();
     final timeSincePause = now.difference(_lastPauseTime!);
-    final isValid = timeSincePause <= _stateTimeout;
     
     // Nếu app đã resume, kiểm tra thời gian từ pause đến resume
     if (_lastResumeTime != null && !_isAppInBackground) {
       final backgroundDuration = _lastResumeTime!.difference(_lastPauseTime!);
-      print('🔍 [AppLifecycle] isStateValid: $isValid (resumed, background was: ${backgroundDuration.inSeconds}s, since pause: ${timeSincePause.inSeconds}s, timeout: ${_stateTimeout.inSeconds}s)');
       return backgroundDuration <= _stateTimeout;
     }
     
     // Nếu app đang trong background hoặc mới restart, kiểm tra từ pause đến hiện tại
-    final isValidCheck = timeSincePause <= _stateTimeout;
-    print('🔍 [AppLifecycle] isStateValid: $isValidCheck (since pause: ${timeSincePause.inSeconds}s/${timeSincePause.inMinutes}m, timeout: ${_stateTimeout.inSeconds}s/${_stateTimeout.inMinutes}m)');
-    return isValidCheck;
+    return timeSincePause <= _stateTimeout;
   }
 
   /// Lưu tab hiện tại
@@ -166,19 +135,16 @@ class AppLifecycleManager extends WidgetsBindingObserver {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt(_currentTabKey, tabIndex);
-      print('💾 [AppLifecycle] Saved current tab: $tabIndex');
     } catch (e) {
-      print('❌ [AppLifecycle] Error saving tab: $e');
+      // Ignore error
     }
   }
 
   /// Lấy tab đã lưu
   Future<int?> getSavedTab() async {
     final isValid = isStateValid();
-    print('📂 [AppLifecycle] getSavedTab - State valid: $isValid');
     
     if (!isValid) {
-      print('   ⏰ State expired, not restoring tab');
       return null;
     }
 
@@ -186,13 +152,10 @@ class AppLifecycleManager extends WidgetsBindingObserver {
       final prefs = await SharedPreferences.getInstance();
       final tab = prefs.getInt(_currentTabKey);
       if (tab != null) {
-        print('   ✅ Restored tab: $tab');
         return tab;
-      } else {
-        print('   ℹ️ No saved tab found');
       }
     } catch (e) {
-      print('   ❌ Error getting saved tab: $e');
+      // Ignore error
     }
     return null;
   }
@@ -218,19 +181,16 @@ class AppLifecycleManager extends WidgetsBindingObserver {
       }
       
       await prefs.setDouble(key, scrollPosition);
-      print('💾 [AppLifecycle] Saved scroll position for tab $tabIndex: ${scrollPosition.toStringAsFixed(1)}');
     } catch (e) {
-      print('❌ [AppLifecycle] Error saving scroll position: $e');
+      // Ignore error
     }
   }
 
   /// Lấy vị trí scroll đã lưu của một tab cụ thể
   Future<double?> getSavedScrollPosition(int tabIndex) async {
     final isValid = isStateValid();
-    print('📂 [AppLifecycle] getSavedScrollPosition(tab=$tabIndex) - State valid: $isValid');
     
     if (!isValid) {
-      print('   ⏰ State expired, not restoring scroll position');
       return null;
     }
 
@@ -254,13 +214,10 @@ class AppLifecycleManager extends WidgetsBindingObserver {
       
       final position = prefs.getDouble(key);
       if (position != null) {
-        print('   ✅ Restored scroll position: ${position.toStringAsFixed(1)}');
         return position;
-      } else {
-        print('   ℹ️ No saved scroll position found');
       }
     } catch (e) {
-      print('   ❌ Error getting saved scroll position: $e');
+      // Ignore error
     }
     return null;
   }
@@ -268,7 +225,6 @@ class AppLifecycleManager extends WidgetsBindingObserver {
   /// Xóa tất cả state đã lưu
   Future<void> clearAllState() async {
     try {
-      print('🗑️ [AppLifecycle] Clearing all state...');
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_currentTabKey);
       await prefs.remove(_scrollPositionKey);
@@ -280,9 +236,8 @@ class AppLifecycleManager extends WidgetsBindingObserver {
       // Clear in-memory state
       _lastPauseTime = null;
       _lastResumeTime = null;
-      print('   ✅ State cleared');
     } catch (e) {
-      print('   ❌ Error clearing state: $e');
+      // Ignore error
     }
   }
 

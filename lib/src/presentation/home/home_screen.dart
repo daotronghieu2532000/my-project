@@ -11,11 +11,13 @@ import 'widgets/partner_banner_slider.dart';
 import 'widgets/featured_brands_slider.dart';
 import 'widgets/popup_banner_widget.dart';
 import 'widgets/service_guarantees.dart';
+import 'widgets/banner_products_widget.dart';
 // import 'widgets/dedication_section.dart'; // Tận tâm - Tận tình - Tận tụy
 import '../common/widgets/go_top_button.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/app_lifecycle_manager.dart';
 import '../../core/models/popup_banner.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -25,7 +27,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin {
+class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
   @override
   bool get wantKeepAlive => true;
   
@@ -33,47 +35,152 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
   final ApiService _apiService = ApiService();
+  final AppLifecycleManager _lifecycleManager = AppLifecycleManager();
   bool _isPreloading = true;
   int _refreshKey = 0; // Key để trigger reload các widget con
   PopupBanner? _popupBanner;
   bool _showPopup = false;
+  bool _hasRestoredScroll = false;
+  Timer? _scrollSaveTimer; // Timer để debounce việc lưu scroll position
 
   @override
   void initState() {
     super.initState();
-    print('🚀 [HomeScreen] initState - wantKeepAlive: $wantKeepAlive');
+    WidgetsBinding.instance.addObserver(this);
     
-    // Listen to scroll changes để debug
-    _scrollController.addListener(() {
-      if (_scrollController.hasClients) {
-        final pos = _scrollController.offset;
-        // Chỉ log khi scroll position thay đổi đáng kể (tránh spam)
-        if (pos > 0 && pos % 500 < 10) {
-          print('📜 [HomeScreen] Scroll position: ${pos.toStringAsFixed(1)}');
-          print('   💾 PageStorage will auto-save this position');
-        }
-      }
-    });
+    // Lưu scroll position khi scroll
+    _scrollController.addListener(_onScroll);
     
     _preloadData();
     _loadPopupBanner();
+    
+    // Restore scroll position sau khi data đã load (đợi ListView build xong)
+    _restoreScrollPositionAfterLoad();
+  }
+  
+  /// Restore scroll position sau khi data đã load và ListView đã build
+  Future<void> _restoreScrollPositionAfterLoad() async {
+    // Đợi preload xong (đợi _isPreloading = false)
+    while (_isPreloading && mounted) {
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
+    
+    if (!mounted) return;
+    
+    // Đợi thêm để ListView build xong (sau khi setState _isPreloading = false)
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    // Đợi ListView render xong
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Đợi thêm vài frame để đảm bảo ListView đã render hoàn toàn
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _restoreScrollPosition();
+        }
+      });
+    });
   }
   
   @override
   void dispose() {
-    final scrollPos = _scrollController.hasClients ? _scrollController.offset.toStringAsFixed(1) : "N/A";
-    print('🗑️ [HomeScreen] dispose called!');
-    print('   ⚠️ This should NOT happen with IndexedStack + AutomaticKeepAliveClientMixin');
-    print('   📊 Scroll position at dispose: $scrollPos');
-    print('   💡 If you see this, IndexedStack is not working correctly');
+    WidgetsBinding.instance.removeObserver(this);
+    _scrollController.removeListener(_onScroll);
+    _scrollSaveTimer?.cancel();
+    _saveScrollPosition();
     _scrollController.dispose();
     super.dispose();
   }
   
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused) {
+      // Lưu scroll position khi app bị pause
+      _saveScrollPosition();
+    } else if (state == AppLifecycleState.resumed) {
+      // Reset flag để có thể restore lại khi resume
+      _hasRestoredScroll = false;
+      // Restore scroll position khi app resume (nếu trong 3 phút)
+      _restoreScrollPosition();
+    }
+  }
+  
+  /// Lưu scroll position vào AppLifecycleManager
+  void _saveScrollPosition() {
+    if (_scrollController.hasClients) {
+      final position = _scrollController.offset;
+      if (position > 0) {
+        _lifecycleManager.saveScrollPosition(0, position); // Tab 0 = Home
+      }
+    }
+  }
+  
+  /// Restore scroll position từ AppLifecycleManager
+  Future<void> _restoreScrollPosition() async {
+    if (_hasRestoredScroll) return;
+    
+    try {
+      final savedPosition = await _lifecycleManager.getSavedScrollPosition(0); // Tab 0 = Home
+      if (savedPosition != null && savedPosition > 0) {
+        // Retry với delay tăng dần và max retries lớn hơn
+        int retryCount = 0;
+        const maxRetries = 20;
+        
+        void tryRestore() {
+          if (!mounted) return;
+          
+          if (_scrollController.hasClients) {
+            try {
+              final position = _scrollController.position;
+              final maxScroll = position.maxScrollExtent;
+              
+              // Chỉ restore nếu maxScrollExtent > 0 (ListView đã render content)
+              if (maxScroll > 0) {
+                final targetPosition = savedPosition > maxScroll ? maxScroll : savedPosition;
+                _scrollController.jumpTo(targetPosition);
+                _hasRestoredScroll = true;
+              } else if (retryCount < maxRetries) {
+                // maxScrollExtent = 0 nghĩa là ListView chưa render xong
+                retryCount++;
+                final delay = retryCount * 50; // Delay tăng dần: 50ms, 100ms, 150ms...
+                Future.delayed(Duration(milliseconds: delay), tryRestore);
+              }
+            } catch (e) {
+              // Ignore error
+            }
+          } else if (retryCount < maxRetries) {
+            retryCount++;
+            final delay = retryCount * 50;
+            Future.delayed(Duration(milliseconds: delay), tryRestore);
+          }
+        }
+        
+        // Thử restore ngay
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          tryRestore();
+        });
+      }
+    } catch (e) {
+      // Ignore error
+    }
+  }
+  
+  /// Lưu scroll position khi user scroll (với debounce)
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    
+    final position = _scrollController.offset;
+    if (position <= 0) return;
+    
+    // Debounce: chỉ lưu sau 500ms khi user ngừng scroll
+    _scrollSaveTimer?.cancel();
+    _scrollSaveTimer = Timer(const Duration(milliseconds: 500), () {
+      _lifecycleManager.saveScrollPosition(0, position);
+    });
+  }
+  
   Future<void> _loadPopupBanner() async {
     try {
-      print('🔍 Loading popup banner...');
-      
       // Lấy danh sách banner ID đã hiển thị từ SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final displayedBannerIdsString = prefs.getString('displayed_popup_banner_ids');
@@ -88,8 +195,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             .toList();
       }
       
-      print('🔍 Displayed banner IDs: $displayedBannerIds');
-      
       // Gọi API với danh sách banner đã hiển thị để loại trừ tất cả
       PopupBanner? popupBanner = await _apiService.getPopupBanner(
         excludeIds: displayedBannerIds.isNotEmpty ? displayedBannerIds : null,
@@ -97,14 +202,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       
       // Nếu không có banner mới (đã hiển thị hết), reset danh sách và lấy banner đầu tiên
       if (popupBanner == null || displayedBannerIds.contains(popupBanner.id)) {
-        print('ℹ️ All banners have been displayed, resetting...');
         displayedBannerIds.clear();
         popupBanner = await _apiService.getPopupBanner(excludeIds: null);
       }
       
       if (mounted && popupBanner != null) {
         // Preload ảnh trước khi hiển thị popup
-        print('🖼️ Preloading popup banner image: ${popupBanner.imageUrl}');
         final imageLoaded = await _preloadPopupImage(popupBanner.imageUrl);
         
         if (mounted && imageLoaded) {
@@ -124,17 +227,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             'displayed_popup_banner_ids',
             displayedBannerIds.join(','),
           );
-          
-          print('✅ Popup banner loaded and image preloaded: ${popupBanner.title} (ID: ${popupBanner.id})');
-          print('🔍 Updated displayed banner IDs: $displayedBannerIds');
-        } else {
-          print('⚠️ Popup banner image failed to load, skipping popup display');
         }
-      } else {
-        print('ℹ️ No popup banner to display');
       }
     } catch (e) {
-      print('❌ Error loading popup banner: $e');
+      // Ignore error
     }
   }
   
@@ -143,7 +239,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   Future<bool> _preloadPopupImage(String imageUrl) async {
     try {
       if (imageUrl.isEmpty) {
-        print('⚠️ Popup banner image URL is empty');
         return false;
       }
       
@@ -157,18 +252,14 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       ).timeout(
         const Duration(seconds: 10),
         onTimeout: () {
-          print('⏱️ Popup banner image preload timeout after 10s');
           throw TimeoutException('Image preload timeout');
         },
       );
       
-      print('✅ Popup banner image preloaded successfully');
       return true;
     } on TimeoutException {
-      print('❌ Popup banner image preload timeout');
       return false;
     } catch (e) {
-      print('❌ Error preloading popup banner image: $e');
       return false;
     }
   }
@@ -182,8 +273,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   Future<void> _preloadData() async {
     try {
       // Preload tất cả dữ liệu cần thiết cho trang chủ
-      print('🚀 Preloading home data...');
-      
       // Lấy userId từ AuthService (user đã đăng nhập) để preload personalized suggestions
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
@@ -196,15 +285,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         _cachedApiService.getHomeSuggestions(limit: 100, userId: userId),
       ]);
       
-      print('✅ Home data preloaded successfully');
-      
       if (mounted) {
         setState(() {
           _isPreloading = false;
         });
       }
     } catch (e) {
-      print('❌ Error preloading home data: $e');
       if (mounted) {
         setState(() {
           _isPreloading = false;
@@ -215,8 +301,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
   Future<void> _refreshData() async {
     try {
-      print('🔄 Refreshing home data...');
-      
       // Clear cache và load lại dữ liệu
       _cachedApiService.clearCachePattern('home_');
       
@@ -232,8 +316,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true, userId: userId),
       ]);
       
-      print('✅ Home data refreshed successfully');
-      
       // Reload popup banner khi refresh
       _loadPopupBanner();
       
@@ -244,18 +326,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         });
       }
     } catch (e) {
-      print('❌ Error refreshing home data: $e');
+      // Ignore error
     }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
-    
-    final scrollPosition = _scrollController.hasClients ? _scrollController.offset : 0.0;
-    print('🏗️ [HomeScreen] build - Scroll position: ${scrollPosition.toStringAsFixed(1)}');
-    print('   ✅ wantKeepAlive: $wantKeepAlive (widget will be kept alive)');
-    print('   📦 PageStorageKey: home_list (Flutter auto-saves scroll position)');
     
     // Hiển thị loading screen trong khi preload
     if (_isPreloading) {
@@ -277,10 +354,22 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _refreshData,
-                  child: ListView(
-                    key: const PageStorageKey('home_list'), // Flutter tự động lưu/restore scroll position
-                    controller: _scrollController,
-                    padding: EdgeInsets.zero,
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification notification) {
+                      // Khi ListView đã scroll được (tức là đã ready), thử restore nếu chưa restore
+                      if (notification is ScrollUpdateNotification && !_hasRestoredScroll) {
+                        // Đợi một chút rồi restore (đảm bảo ListView đã render xong)
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          if (mounted && !_hasRestoredScroll) {
+                            _restoreScrollPosition();
+                          }
+                        });
+                      }
+                      return false;
+                    },
+                    child: ListView(
+                      controller: _scrollController,
+                      padding: EdgeInsets.zero,
                       children: [
                         // Partner Banner - Full width, 160px height (thay thế banner mobile)
                         PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
@@ -302,12 +391,21 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         // "Tận tụy" (icon: heart.png)
                         // const DedicationSection(),
                         
+                        // Banner Products - Đầu trang (sau QuickActions, trước FlashSale)
+                        BannerProductsWidget(position: 'dau_trang'),
+                        
                         // Flash Sale section
                         FlashSaleSection(key: ValueKey('flash_sale_$_refreshKey')),
                         const SizedBox(height: 4),
                         
+                        // Banner Products - Giữa trang (sau FlashSale, trước FeaturedBrands)
+                        BannerProductsWidget(position: 'giua_trang'),
+                        
                         // Featured Brands slider
                         FeaturedBrandsSlider(key: ValueKey('featured_brands_$_refreshKey')),
+                        
+                        // Banner Products - Cuối trang (sau FeaturedBrands, trước ProductGrid)
+                        BannerProductsWidget(position: 'cuoi_trang'),
                         
                         // Suggested products grid
                         Container(
@@ -318,9 +416,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                     ),
                   ),
                 ),
-              ],
-            ),
-            // Go Top Button
+              ),
+            ],
+          ),
+          // Go Top Button
             GoTopButton(
               scrollController: _scrollController,
               showAfterScrollDistance: 1000.0, // Khoảng 2.5 màn hình
@@ -336,5 +435,3 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     );
   }
 }
-
-

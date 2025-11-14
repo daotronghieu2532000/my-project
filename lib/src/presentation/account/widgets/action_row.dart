@@ -8,6 +8,7 @@ import '../app_rating_screen.dart';
 import '../app_report_screen.dart';
 import '../support_center_screen.dart';
 import '../all_orders_account_screen.dart';
+import '../review_history_screen.dart';
 
 class ActionRow extends StatelessWidget {
   final IconData icon;
@@ -44,6 +45,9 @@ class ActionRow extends StatelessWidget {
         return Colors.green;
       case 'Mã giảm giá':
         return Colors.purple;
+      // Tạm thời ẩn lịch sử đánh giá
+      // case 'Lịch sử đánh giá':
+      //   return Colors.amber;
       case 'Đã huỷ & Trả lại':
         return const Color.fromARGB(255, 255, 0, 0);
       case 'Trung tâm trợ giúp':
@@ -102,6 +106,15 @@ class ActionRow extends StatelessWidget {
           ),
         );
         break;
+      // Tạm thời ẩn lịch sử đánh giá
+      // case 'Lịch sử đánh giá':
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (context) => const ReviewHistoryScreen(),
+      //     ),
+      //   );
+      //   break;
       case 'Thông báo':
         Navigator.pushNamed(context, '/notifications');
         break;

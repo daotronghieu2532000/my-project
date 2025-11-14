@@ -282,7 +282,7 @@ class _ShopFlashSalesTabsState extends State<ShopFlashSalesTabs>
         _ShopFlashSaleTabBarView(
           tabController: _tabController,
           flashSales: _flashSales,
-          shopId: widget.shopId,
+                shopId: widget.shopId,
         ),
       ],
     );

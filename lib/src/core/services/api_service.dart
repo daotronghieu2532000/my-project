@@ -13,6 +13,7 @@ import '../models/related_product.dart';
 import '../models/banner.dart';
 import '../models/popup_banner.dart';
 import '../models/brand.dart';
+import '../models/banner_products.dart';
 import '../models/shop_detail.dart';
 import '../models/splash_screen.dart';
 
@@ -394,6 +395,336 @@ class ApiService {
       final res = await http.Response.fromStream(streamed);
       if (res.statusCode == 200) {
         return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // =============== PRODUCT REVIEWS ===============
+  Future<Map<String, dynamic>?> submitProductReview({
+    required int userId,
+    required int productId,
+    required int shopId,
+    required String content,
+    required int rating,
+    int? variantId,
+    int? orderId,
+    List<String>? images, // List of base64 strings or file paths
+    bool? matchesDescription,
+    bool? isSatisfied,
+  }) async {
+    try {
+      // API POST để submit review - sử dụng file product-reviews.php đã có
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product-reviews.php');
+      final token = await getValidToken();
+      
+      // Log request để debug
+      print('📥 Product Review API Request:');
+      print('   URL: $uri');
+      print('   Product ID: $productId');
+      print('   Shop ID: $shopId');
+      print('   User ID: $userId');
+      print('   Rating: $rating');
+      print('   Content Length: ${content.length}');
+      print('   Variant ID: $variantId');
+      print('   Order ID: $orderId');
+      print('   Has Token: ${token != null}');
+      print('   Images Count: ${images?.length ?? 0}');
+      
+      final req = http.MultipartRequest('POST', uri);
+      if (token != null) req.headers['Authorization'] = 'Bearer $token';
+      req.headers['Shop-ID'] = shopId.toString();
+      
+      req.fields['user_id'] = userId.toString();
+      req.fields['product_id'] = productId.toString();
+      req.fields['shop_id'] = shopId.toString();
+      req.fields['content'] = content;
+      req.fields['rating'] = rating.toString();
+      if (variantId != null && variantId > 0) {
+        req.fields['variant_id'] = variantId.toString();
+      }
+      if (orderId != null && orderId > 0) {
+        req.fields['order_id'] = orderId.toString();
+      }
+      if (matchesDescription != null) {
+        req.fields['matches_description'] = matchesDescription ? '1' : '0';
+      }
+      if (isSatisfied != null) {
+        req.fields['is_satisfied'] = isSatisfied ? '1' : '0';
+      }
+      
+      // Handle images - support both base64 and file uploads
+      if (images != null && images.isNotEmpty) {
+        final imageList = <String>[];
+        for (var img in images) {
+          if (img.startsWith('data:image/')) {
+            // Base64 image
+            imageList.add(img);
+          } else if (img.startsWith('/uploads/') || img.startsWith('http')) {
+            // Already uploaded URL
+            imageList.add(img);
+          }
+        }
+        if (imageList.isNotEmpty) {
+          req.fields['images'] = jsonEncode(imageList);
+        }
+      }
+      
+      final streamed = await req.send();
+      final res = await http.Response.fromStream(streamed);
+      
+      // Log response để debug
+      print('📤 Product Review API Response:');
+      print('   Status Code: ${res.statusCode}');
+      print('   Body: ${res.body}');
+      
+      if (res.statusCode == 200) {
+        try {
+          final data = jsonDecode(res.body) as Map<String, dynamic>;
+          if (data['debug'] != null) {
+            print('   Debug Info: ${jsonEncode(data['debug'])}');
+          }
+          return data;
+        } catch (e) {
+          print('   ❌ JSON Parse Error: $e');
+          return {
+            'success': false,
+            'message': 'Lỗi parse JSON: $e',
+            'raw_response': res.body,
+          };
+        }
+      } else {
+        // Try to parse error response
+        try {
+          final errorData = jsonDecode(res.body) as Map<String, dynamic>;
+          print('   Error Response: ${jsonEncode(errorData)}');
+          if (errorData['debug'] != null) {
+            print('   Debug Info: ${jsonEncode(errorData['debug'])}');
+          }
+          return errorData;
+        } catch (e) {
+          print('   ❌ Error Response Parse Failed: $e');
+          print('   Raw Error Body: ${res.body}');
+          return {
+            'success': false,
+            'message': 'HTTP ${res.statusCode}',
+            'raw_response': res.body,
+          };
+        }
+      }
+    } catch (e, stackTrace) {
+      print('❌ Product Review API Exception:');
+      print('   Error: $e');
+      print('   Stack: $stackTrace');
+      return {
+        'success': false,
+        'message': e.toString(),
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>?> getReviewHistory({
+    required int userId,
+    int page = 1,
+    int limit = 20,
+    String? status, // 'all', 'reviewed', 'pending'
+  }) async {
+    try {
+      final query = {
+        'user_id': userId.toString(),
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (status != null) 'status': status,
+      };
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product-reviews-list.php').replace(queryParameters: query);
+      final token = await getValidToken();
+      final response = await http.get(uri, headers: {
+        'Authorization': token != null ? 'Bearer $token' : '',
+      });
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> checkProductReviewStatus({
+    required int userId,
+    required int orderId,
+    required int productId,
+    int? variantId,
+  }) async {
+    try {
+      // Sử dụng product_reviews.php để check xem đã có review chưa
+      final query = {
+        'product_id': productId.toString(),
+        'page': '1',
+        'limit': '1',
+        if (variantId != null && variantId > 0) 'variant_id': variantId.toString(),
+      };
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_reviews.php').replace(queryParameters: query);
+      final token = await getValidToken();
+      final response = await http.get(uri, headers: {
+        'Authorization': token != null ? 'Bearer $token' : '',
+      });
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (data['success'] == true) {
+          final reviews = (data['data']?['reviews'] as List?) ?? [];
+          // Check xem có review nào của user này với order_id này không
+          final userReview = reviews.firstWhere(
+            (r) => r['user_id'] == userId && r['order_id'] == orderId,
+            orElse: () => null,
+          );
+          return {
+            'success': true,
+            'has_review': userReview != null,
+            'review': userReview,
+          };
+        }
+      }
+      return {'success': false, 'has_review': false};
+    } catch (e) {
+      return {'success': false, 'has_review': false};
+    }
+  }
+
+  // Lấy danh sách đánh giá của sản phẩm
+  Future<Map<String, dynamic>?> getProductReviews({
+    required int productId,
+    int page = 1,
+    int limit = 20,
+    int? rating, // 0 = all, 1-5 = filter by rating
+    String sort = 'latest', // latest, oldest, highest, lowest
+    int? variantId,
+  }) async {
+    try {
+      final query = {
+        'product_id': productId.toString(),
+        'page': page.toString(),
+        'limit': limit.toString(),
+        'sort': sort,
+        if (rating != null && rating > 0) 'rating': rating.toString(),
+        if (variantId != null && variantId > 0) 'variant_id': variantId.toString(),
+      };
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_reviews.php').replace(queryParameters: query);
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Lấy thống kê đánh giá sản phẩm
+  Future<Map<String, dynamic>?> getProductRatingStats({
+    required int productId,
+  }) async {
+    try {
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_rating_stats.php').replace(queryParameters: {
+        'product_id': productId.toString(),
+      });
+      final response = await http.get(uri);
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Cập nhật đánh giá
+  Future<Map<String, dynamic>?> updateProductReview({
+    required int commentId,
+    String? content,
+    int? rating,
+    List<String>? images,
+  }) async {
+    try {
+      final token = await getValidToken();
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_review_update.php');
+      
+      final body = <String, dynamic>{
+        'comment_id': commentId,
+      };
+      if (content != null) body['content'] = content;
+      if (rating != null) body['rating'] = rating;
+      if (images != null) body['images'] = images;
+
+      final response = await http.put(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token != null ? 'Bearer $token' : '',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Xóa đánh giá
+  Future<Map<String, dynamic>?> deleteProductReview({
+    required int commentId,
+  }) async {
+    try {
+      final token = await getValidToken();
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_review_delete.php').replace(queryParameters: {
+        'comment_id': commentId.toString(),
+      });
+
+      final response = await http.delete(
+        uri,
+        headers: {
+          'Authorization': token != null ? 'Bearer $token' : '',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Like/Dislike đánh giá
+  Future<Map<String, dynamic>?> likeProductReview({
+    required int commentId,
+    required String action, // 'like', 'dislike', 'unlike', 'undislike'
+  }) async {
+    try {
+      final token = await getValidToken();
+      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_review_like.php');
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token != null ? 'Bearer $token' : '',
+        },
+        body: jsonEncode({
+          'comment_id': commentId,
+          'action': action,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
       }
       return null;
     } catch (e) {
@@ -3797,6 +4128,88 @@ class ApiService {
       }
     } catch (e) {
       print('❌ Lỗi khi lấy featured brands: $e');
+      return null;
+    }
+    
+    return null;
+  }
+
+  // =============== BANNER PRODUCTS ===============
+  /// Lấy banner và sản phẩm theo vị trí hiển thị
+  /// Nếu viTriHienThi = null, trả về tất cả 3 vị trí (dau_trang, giua_trang, cuoi_trang)
+  Future<Map<String, BannerProducts?>?> getBannerProducts({
+    String? viTriHienThi,
+  }) async {
+    try {
+      String endpoint = '/banner_products';
+      
+      if (viTriHienThi != null && viTriHienThi.isNotEmpty) {
+        endpoint += '?vi_tri_hien_thi=$viTriHienThi';
+      }
+      
+      print('🔍 Banner Products API Endpoint: $endpoint');
+      
+      final response = await get(endpoint);
+      
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true && data['data'] != null) {
+          final dataField = data['data'];
+          
+          // Nếu có vi_tri_hien_thi, trả về 1 item hoặc null
+          if (viTriHienThi != null && viTriHienThi.isNotEmpty) {
+            if (dataField == null) {
+              print('⚠️ Banner products data is null for position: $viTriHienThi');
+              return null;
+            }
+            print('✅ Parsing banner product for position: $viTriHienThi');
+            print('📦 Data field type: ${dataField.runtimeType}');
+            print('📦 Data field: $dataField');
+            try {
+              final bannerProduct = BannerProducts.fromJson(dataField as Map<String, dynamic>);
+              print('✅ Parsed banner product: id=${bannerProduct.id}, type=${bannerProduct.bannerType}, products=${bannerProduct.products.length}, isValid=${bannerProduct.isValid}');
+              return {viTriHienThi: bannerProduct};
+            } catch (e) {
+              print('❌ Error parsing banner product: $e');
+              print('❌ Data field: $dataField');
+              return null;
+            }
+          }
+          
+          // Nếu không có vi_tri_hien_thi, trả về theo cấu trúc 3 vị trí
+          if (dataField is Map) {
+            final result = <String, BannerProducts?>{};
+            
+            for (final position in ['dau_trang', 'giua_trang', 'cuoi_trang']) {
+              final positionData = dataField[position];
+              if (positionData != null) {
+                result[position] = BannerProducts.fromJson(positionData as Map<String, dynamic>);
+              } else {
+                result[position] = null;
+              }
+            }
+            
+            print('✅ Lấy banner products thành công: ${result.length} vị trí');
+            print('📦 Result details: dau_trang=${result['dau_trang'] != null ? result['dau_trang']!.id : 'null'}, giua_trang=${result['giua_trang'] != null ? result['giua_trang']!.id : 'null'}, cuoi_trang=${result['cuoi_trang'] != null ? result['cuoi_trang']!.id : 'null'}');
+            return result;
+          }
+        } else {
+          // Kiểm tra nếu message là thành công nhưng data null
+          final message = data['message']?.toString() ?? '';
+          if (message.contains('thành công')) {
+            print('⚠️ API trả về thành công nhưng data null: $message');
+          } else {
+            print('❌ API trả về lỗi: $message');
+          }
+          return null;
+        }
+      } else {
+        print('❌ HTTP Error: ${response?.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Lỗi khi lấy banner products: $e');
       return null;
     }
     

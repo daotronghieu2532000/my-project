@@ -154,9 +154,9 @@ class AuthService {
 
   /// Lấy thông tin user hiện tại
   Future<User?> getCurrentUser() async {
-    print('🔍 [AuthService] getCurrentUser() - Bắt đầu...');
-    print('   - _isLoggingOut: $_isLoggingOut');
-    print('   - _currentUser (memory): ${_currentUser != null ? "NOT NULL (userId: ${_currentUser!.userId})" : "NULL"}');
+    // print('🔍 [AuthService] getCurrentUser() - Bắt đầu...');
+    // print('   - _isLoggingOut: $_isLoggingOut');
+    // print('   - _currentUser (memory): ${_currentUser != null ? "NOT NULL (userId: ${_currentUser!.userId})" : "NULL"}');
     
     // CRITICAL: Nếu đang trong quá trình logout, không restore user data
     if (_isLoggingOut) {
@@ -364,85 +364,91 @@ class AuthService {
   /// Gửi OTP quên mật khẩu qua SMS (ZNS Zalo)
   Future<Map<String, dynamic>> forgotPasswordSMS(String phoneNumber) async {
     try {
-      print('📤 [forgotPasswordSMS] Gửi request đến: /forgot_password_sms');
-      print('📤 [forgotPasswordSMS] Phone: $phoneNumber');
+      // TODO: Bỏ comment khi cần debug
+      // print('📤 [forgotPasswordSMS] Gửi request đến: /forgot_password_sms');
+      // print('📤 [forgotPasswordSMS] Phone: $phoneNumber');
       
       final response = await _apiService.post('/forgot_password_sms', body: {
         'phone_number': phoneNumber,
       });
 
       if (response != null) {
-        print('📥 [forgotPasswordSMS] Response status: ${response.statusCode}');
-        print('📥 [forgotPasswordSMS] Response headers: ${response.headers}');
-        print('📥 [forgotPasswordSMS] Response body (first 500 chars): ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}');
+        // TODO: Bỏ comment khi cần debug
+        // print('📥 [forgotPasswordSMS] Response status: ${response.statusCode}');
+        // print('📥 [forgotPasswordSMS] Response headers: ${response.headers}');
+        // print('📥 [forgotPasswordSMS] Response body (first 500 chars): ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}');
         
         try {
           final data = jsonDecode(response.body);
-          print('✅ [forgotPasswordSMS] JSON parsed successfully');
-          print('📊 [forgotPasswordSMS] Response data: $data');
+          // TODO: Bỏ comment khi cần debug
+          // print('✅ [forgotPasswordSMS] JSON parsed successfully');
+          // print('📊 [forgotPasswordSMS] Response data: $data');
           
           if (data['success'] == true) {
-            print('✅ Gửi OTP thành công đến: $phoneNumber');
+            // print('✅ Gửi OTP thành công đến: $phoneNumber');
             return {
               'success': true,
               'message': data['message'] ?? 'Mã OTP đã được gửi đến số điện thoại của bạn',
               'data': data['data'],
             };
           } else {
-            // Hiển thị chi tiết lỗi từ server
+            // TODO: Bỏ comment khi cần debug - Hiển thị chi tiết lỗi từ server
             String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
-            String debugInfo = '';
-            
-            if (data['error'] != null) {
-              debugInfo += '\nError: ${data['error']}';
-            }
-            if (data['file'] != null) {
-              debugInfo += '\nFile: ${data['file']}';
-            }
-            if (data['line'] != null) {
-              debugInfo += '\nLine: ${data['line']}';
-            }
-            if (data['debug'] != null) {
-              debugInfo += '\nDebug: ${jsonEncode(data['debug'])}';
-            }
-            
-            print('❌ [forgotPasswordSMS] Server error: $errorMessage$debugInfo');
+            // String debugInfo = '';
+            // 
+            // if (data['error'] != null) {
+            //   debugInfo += '\nError: ${data['error']}';
+            // }
+            // if (data['file'] != null) {
+            //   debugInfo += '\nFile: ${data['file']}';
+            // }
+            // if (data['line'] != null) {
+            //   debugInfo += '\nLine: ${data['line']}';
+            // }
+            // if (data['debug'] != null) {
+            //   debugInfo += '\nDebug: ${jsonEncode(data['debug'])}';
+            // }
+            // 
+            // print('❌ [forgotPasswordSMS] Server error: $errorMessage$debugInfo');
             
             return {
               'success': false,
-              'message': errorMessage + debugInfo,
-              'error_details': data,
+              'message': errorMessage,
+              // 'error_details': data, // TODO: Bỏ comment khi cần debug
             };
           }
-        } catch (e, stackTrace) {
-          print('❌ [forgotPasswordSMS] Lỗi parse JSON: $e');
-          print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
-          print('❌ [forgotPasswordSMS] Response body (raw): ${response.body}');
-          print('❌ [forgotPasswordSMS] Response body length: ${response.body.length}');
+        } catch (e /*, stackTrace*/) {
+          // TODO: Bỏ comment khi cần debug
+          // print('❌ [forgotPasswordSMS] Lỗi parse JSON: $e');
+          // print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
+          // print('❌ [forgotPasswordSMS] Response body (raw): ${response.body}');
+          // print('❌ [forgotPasswordSMS] Response body length: ${response.body.length}');
           
-          // Trả về response body để debug
           return {
             'success': false,
-            'message': 'Lỗi xử lý dữ liệu từ server: $e',
-            'raw_response': response.body.length > 1000 ? response.body.substring(0, 1000) : response.body,
-            'response_length': response.body.length,
-            'status_code': response.statusCode,
+            'message': 'Lỗi xử lý dữ liệu từ server',
+            // TODO: Bỏ comment khi cần debug
+            // 'raw_response': response.body.length > 1000 ? response.body.substring(0, 1000) : response.body,
+            // 'response_length': response.body.length,
+            // 'status_code': response.statusCode,
           };
         }
       } else {
-        print('❌ [forgotPasswordSMS] Response is null');
+        // TODO: Bỏ comment khi cần debug
+        // print('❌ [forgotPasswordSMS] Response is null');
         return {
           'success': false,
-          'message': 'Lỗi kết nối server - Response null',
+          'message': 'Lỗi kết nối server',
         };
       }
-    } catch (e, stackTrace) {
-      print('❌ [forgotPasswordSMS] Exception: $e');
-      print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
+    } catch (e /*, stackTrace*/) {
+      // TODO: Bỏ comment khi cần debug
+      // print('❌ [forgotPasswordSMS] Exception: $e');
+      // print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
       return {
         'success': false,
-        'message': 'Lỗi kết nối server: $e',
-        'exception': e.toString(),
+        'message': 'Lỗi kết nối server',
+        // 'exception': e.toString(), // TODO: Bỏ comment khi cần debug
       };
     }
   }
