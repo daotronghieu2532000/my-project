@@ -1156,7 +1156,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> {
 
                     // Products Section
                     const Text(
-                      'Sản phẩm Affiliate',
+                      'Chia sẻ sản phẩm',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,

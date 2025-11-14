@@ -12,12 +12,16 @@ class ProductGrid extends StatefulWidget {
   State<ProductGrid> createState() => _ProductGridState();
 }
 
-class _ProductGridState extends State<ProductGrid> {
+class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
   List<ProductSuggest> _products = [];
   bool _isLoading = true;
   String? _error;
+  bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
 
   @override
   void initState() {
@@ -28,6 +32,12 @@ class _ProductGridState extends State<ProductGrid> {
 
   Future<void> _loadProductSuggestsFromCache() async {
     try {
+      // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi scroll)
+      if (_hasLoadedOnce && _products.isNotEmpty) {
+        return;
+      }
+      
+      if (!mounted) return;
       setState(() {
         _isLoading = true;
         _error = null;
@@ -48,6 +58,7 @@ class _ProductGridState extends State<ProductGrid> {
       final suggestionsData = await _cachedApiService.getHomeSuggestions(
         limit: 100,
         userId: userId,
+        forceRefresh: false, // Chỉ load từ cache
       );
       
       if (userId != null) {
@@ -61,6 +72,7 @@ class _ProductGridState extends State<ProductGrid> {
         setState(() {
           _isLoading = false;
           _products = products;
+          _hasLoadedOnce = true; // Đánh dấu đã load
         });
         
         print('✅ Product suggestions loaded successfully (${products.length} products)');
@@ -75,7 +87,6 @@ class _ProductGridState extends State<ProductGrid> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Lỗi kết nối: $e';
         });
       }
       print('❌ Error loading product suggestions: $e');
@@ -84,6 +95,7 @@ class _ProductGridState extends State<ProductGrid> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

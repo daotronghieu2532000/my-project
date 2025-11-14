@@ -313,7 +313,7 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sản phẩm Affiliate'),
+        title: const Text('Chia sẻ Sản phẩm '),
         centerTitle: true,
         actions: [
           IconButton(

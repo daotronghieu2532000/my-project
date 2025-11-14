@@ -64,12 +64,21 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
       return Container(
         color: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        child: _BannerVerticalWithHeight(
-          bannerUrl: banner.bannerUrl,
-          bannerWidth: bannerWidth,
-          onTap: _handleBannerTap,
-          products: banner.products,
-          cardWidth: bannerWidth,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Tiêu đề
+            _buildTitle(),
+            const SizedBox(height: 8),
+            // Banner và sản phẩm
+            _BannerVerticalWithHeight(
+              bannerUrl: banner.bannerUrl,
+              bannerWidth: bannerWidth,
+              onTap: _handleBannerTap,
+              products: banner.products,
+              cardWidth: bannerWidth,
+            ),
+          ],
         ),
       );
     }
@@ -82,7 +91,11 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
         color: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 8),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Tiêu đề
+            _buildTitle(),
+            const SizedBox(height: 8),
             // Banner ngang
             GestureDetector(
               onTap: _handleBannerTap,
@@ -92,6 +105,21 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
+                  gradient: SweepGradient(
+                    center: Alignment.center,
+                    startAngle: 0,
+                    endAngle: 2 * 3.14159, // 360 độ
+                    colors: const [
+                      Color(0x99FF0080), // Hồng (mờ 60%)
+                      Color(0x99FF8000), // Cam (mờ 60%)
+                      Color(0x99FFD700), // Vàng (mờ 60%)
+                      Color(0x9900FF80), // Xanh lá (mờ 60%)
+                      Color(0x990080FF), // Xanh dương (mờ 60%)
+                      Color(0x998000FF), // Tím (mờ 60%)
+                      Color(0x99FF0080), // Hồng (lặp lại, mờ 60%)
+                    ],
+                    stops: const [0.0, 0.16, 0.33, 0.5, 0.66, 0.83, 1.0],
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -100,8 +128,9 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
                     ),
                   ],
                 ),
+                padding: const EdgeInsets.all(2), // Border width
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(6),
                   child: Image.network(
                     banner.bannerUrl,
                     width: double.infinity,
@@ -161,6 +190,21 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
     }
 
     return const SizedBox.shrink();
+  }
+
+  Widget _buildTitle() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Text(
+        'NHÀ BÁN TIỀM NĂNG',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          letterSpacing: 0.5,
+          color: Colors.grey[800],
+        ),
+      ),
+    );
   }
 
   Future<void> _loadBannerProductsFromCache() async {
@@ -426,9 +470,20 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
             height: bannerHeight,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.grey,
-                width: 2,
+              gradient: SweepGradient(
+                center: Alignment.center,
+                startAngle: 0,
+                endAngle: 2 * 3.14159, // 360 độ
+                colors: const [
+                  Color(0xFFFF0080), // Hồng
+                  Color(0xFFFF8000), // Cam
+                  Color(0xFFFFD700), // Vàng
+                  Color(0xFF00FF80), // Xanh lá
+                  Color(0xFF0080FF), // Xanh dương
+                  Color(0xFF8000FF), // Tím
+                  Color(0xFFFF0080), // Hồng (lặp lại)
+                ],
+                stops: const [0.0, 0.16, 0.33, 0.5, 0.66, 0.83, 1.0],
               ),
               boxShadow: [
                 BoxShadow(
@@ -438,8 +493,9 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
                 ),
               ],
             ),
+            padding: const EdgeInsets.all(2), // Border width
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(6),
               child: Image.network(
                 widget.bannerUrl,
                 width: double.infinity,

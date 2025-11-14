@@ -14,10 +14,14 @@ class FeaturedBrandsSlider extends StatefulWidget {
   State<FeaturedBrandsSlider> createState() => _FeaturedBrandsSliderState();
 }
 
-class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> {
+class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+  
   final CachedApiService _cachedApiService = CachedApiService();
   List<Brand> _brands = [];
   bool _isLoading = true;
+  bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
   
   // Auto scroll controller - khởi tạo ngay để tránh late initialization error
   final ScrollController _scrollController = ScrollController();
@@ -129,8 +133,13 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> {
 
   Future<void> _loadBrandsFromCache() async {
     try {
+      // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi scroll)
+      if (_hasLoadedOnce && _brands.isNotEmpty) {
+        return;
+      }
+      
       // Chỉ load từ cache, không gọi API
-      final brandsData = await _cachedApiService.getHomeFeaturedBrands();
+      final brandsData = await _cachedApiService.getHomeFeaturedBrands(forceRefresh: false);
       
       if (mounted) {
         if (brandsData.isNotEmpty) {
@@ -140,6 +149,7 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> {
           setState(() {
             _brands = brands;
             _isLoading = false;
+            _hasLoadedOnce = true; // Đánh dấu đã load
           });
           
           // Bắt đầu auto scroll sau khi load xong
@@ -300,6 +310,7 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
     if (_isLoading) {
       return Container(
         height: 120,

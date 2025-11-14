@@ -401,15 +401,39 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         // Banner Products - Giữa trang (sau FlashSale, trước FeaturedBrands)
                         BannerProductsWidget(position: 'giua_trang'),
                         
-                        // Featured Brands slider
-                        FeaturedBrandsSlider(key: ValueKey('featured_brands_$_refreshKey')),
-                        
-                        // Banner Products - Cuối trang (sau FeaturedBrands, trước ProductGrid)
-                        BannerProductsWidget(position: 'cuoi_trang'),
-                        
-                        // Suggested products grid
+                        // Featured Brands slider - Tách riêng với border
                         Container(
-                          color: Colors.white,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                              top: BorderSide(color: Colors.grey[200]!, width: 1),
+                              bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                            ),
+                          ),
+                          child: FeaturedBrandsSlider(key: ValueKey('featured_brands_$_refreshKey')),
+                        ),
+                        
+                        // Banner Products - Cuối trang (sau FeaturedBrands, trước ProductGrid) - Tách riêng với border
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                              top: BorderSide(color: Colors.grey[200]!, width: 1),
+                              bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                            ),
+                          ),
+                          child: BannerProductsWidget(position: 'cuoi_trang'),
+                        ),
+                        
+                        // Suggested products grid - Tách riêng với border
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            border: Border(
+                              top: BorderSide(color: Colors.grey[200]!, width: 1),
+                              bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                            ),
+                          ),
                           child: ProductGrid(key: ValueKey('product_grid_$_refreshKey'), title: 'GỢI Ý TỚI BẠN '),
                         ),
                       ],
