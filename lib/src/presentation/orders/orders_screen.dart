@@ -28,8 +28,7 @@ class _OrdersScreenState extends State<OrdersScreen>
   @override
   void initState() {
     super.initState();
-    // Tạm thời ẩn tab Đánh giá
-    _tabController = TabController(length: 4, vsync: this, initialIndex: widget.initialIndex);
+    _tabController = TabController(length: 5, vsync: this, initialIndex: widget.initialIndex);
     _init();
   }
 
@@ -112,8 +111,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                       _OrderTab(iconPath: 'assets/images/icons/pending-order.png', label: 'Chờ xác nhận', count: _counts[0]),
                       _OrderTab(iconPath: 'assets/images/icons/pickup1.png', label: 'Chờ lấy hàng', count: _counts[1]),
                       _OrderTab(iconPath: 'assets/images/icons/shipping1.png', label: 'Chờ giao hàng', count: _counts[2]),
-                      // Tạm thời ẩn tab Đánh giá
-                      // _OrderTab(iconPath: 'assets/images/icons/rating.png', label: 'Đánh giá', count: _counts[3]),
+                      _OrderTab(iconPath: 'assets/images/icons/rating.png', label: 'Đánh giá', count: _counts[3]),
                       _OrderTab(iconPath: 'assets/images/icons/cancel1.png', label: 'Đã hủy', count: _counts[4]),
                     ],
                   ),
@@ -156,8 +154,7 @@ class _OrdersScreenState extends State<OrdersScreen>
                 _OrdersList(statusGroup: const [0], userId: _userId!),
                 _OrdersList(statusGroup: const [1, 11, 10, 12], userId: _userId!),
                 _OrdersList(statusGroup: const [2, 8, 9, 7, 14], userId: _userId!),
-                // Tạm thời ẩn tab Đánh giá
-                // _OrdersList(statusGroup: const [5], userId: _userId!), // Đánh giá (chỉ status 5)
+                _OrdersList(statusGroup: const [5], userId: _userId!), // Đánh giá (chỉ status 5)
                 _OrdersList(statusGroup: const [3, 4, 6], userId: _userId!), // Đã hủy (status 3, 4, 6)
               ],
             ),
@@ -316,12 +313,12 @@ class _OrdersListState extends State<_OrdersList> {
     }
     
     if (_orders.isEmpty) {
-      // 60% empty state, 40% gợi ý - cùng cuộn trong một ScrollView
+      // Empty state chiếm ít không gian hơn để phần gợi ý xuất hiện sớm hơn
       return SingleChildScrollView(
         child: Column(
           children: [
             SizedBox(
-              height: MediaQuery.of(context).size.height * 0.6,
+              height: MediaQuery.of(context).size.height * 0.4,
               child: _EmptyOrderState(),
             ),
             Container(
@@ -330,13 +327,13 @@ class _OrdersListState extends State<_OrdersList> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 4),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 8),
                     child: Row(
                       children: [
                         Expanded(
                           child: Container(
                             height: 1.5,
-                            color: Colors.black87,
+                            color: Colors.grey.withOpacity(0.4),
                           ),
                         ),
                         Padding(
@@ -353,7 +350,7 @@ class _OrdersListState extends State<_OrdersList> {
                         Expanded(
                           child: Container(
                             height: 1.5,
-                            color: Colors.black87,
+                            color: Colors.grey.withOpacity(0.4),
                           ),
                         ),
                       ],
