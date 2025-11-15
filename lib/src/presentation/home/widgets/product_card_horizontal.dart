@@ -380,51 +380,58 @@ class ProductCardHorizontal extends StatelessWidget {
   void _showPurchaseDialog(BuildContext context) async {
     try {
       final productDetail = await ApiService().getProductDetail(product.id);
-      final parentContext = Navigator.of(context).context;
       
-      if (parentContext.mounted && productDetail != null) {
-        showModalBottomSheet(
-          context: parentContext,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) {
-            if (productDetail.variants.isNotEmpty) {
-              return VariantSelectionDialog(
-                product: productDetail,
-                selectedVariant: productDetail.variants.first,
-                onBuyNow: (variant, quantity) {
-                  _handleBuyNow(parentContext, productDetail, variant, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (context.mounted) Navigator.of(context).pop();
-                  });
-                },
-                onAddToCart: (variant, quantity) {
-                  _handleAddToCart(parentContext, productDetail, variant, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (context.mounted) Navigator.of(context).pop();
-                  });
-                },
-              );
-            } else {
-              return SimplePurchaseDialog(
-                product: productDetail,
-                onBuyNow: (product, quantity) {
-                  _handleBuyNowSimple(parentContext, product, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (context.mounted) Navigator.of(context).pop();
-                  });
-                },
-                onAddToCart: (product, quantity) {
-                  _handleAddToCartSimple(parentContext, product, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    if (context.mounted) Navigator.of(context).pop();
-                  });
-                },
-              );
-            }
-          },
-        );
-      }
+      if (!context.mounted || productDetail == null) return;
+      
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (dialogContext) {
+          if (productDetail.variants.isNotEmpty) {
+            return VariantSelectionDialog(
+              product: productDetail,
+              selectedVariant: productDetail.variants.first,
+              onBuyNow: (variant, quantity) {
+                // Dialog đã tự pop trước khi gọi callback
+                // Sử dụng WidgetsBinding để đảm bảo navigate sau khi dialog đã đóng hoàn toàn
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    _handleBuyNow(context, productDetail, variant, quantity);
+                  }
+                });
+              },
+              onAddToCart: (variant, quantity) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    _handleAddToCart(context, productDetail, variant, quantity);
+                  }
+                });
+              },
+            );
+          } else {
+            return SimplePurchaseDialog(
+              product: productDetail,
+              onBuyNow: (product, quantity) {
+                // Dialog đã tự pop trước khi gọi callback
+                // Sử dụng WidgetsBinding để đảm bảo navigate sau khi dialog đã đóng hoàn toàn
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    _handleBuyNowSimple(context, product, quantity);
+                  }
+                });
+              },
+              onAddToCart: (product, quantity) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    _handleAddToCartSimple(context, product, quantity);
+                  }
+                });
+              },
+            );
+          }
+        },
+      );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

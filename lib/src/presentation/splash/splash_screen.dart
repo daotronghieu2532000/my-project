@@ -111,8 +111,8 @@ class _SplashScreenState extends State<SplashScreen>
         if (splashScreen != null && splashScreen.imageUrl.isNotEmpty) {
           return Image.network(
             splashScreen.imageUrl,
-            fit: BoxFit.cover,
-            alignment: Alignment.topCenter,
+            fit: BoxFit.cover, // Fill toàn màn hình, không có khoảng trắng
+            alignment: Alignment.center, // Căn giữa - ảnh 300x658px phù hợp với tỉ lệ màn hình
             filterQuality: FilterQuality.high,
             // Không hiển thị gì trong khi load ảnh (màn hình trắng)
             loadingBuilder: (context, child, loadingProgress) {
@@ -138,9 +138,9 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _buildDefaultImage() {
     return Image.asset(
-      'lib/src/core/assets/images/socdo_vn.png',
-      fit: BoxFit.cover,
-      alignment: Alignment.topCenter,
+      'lib/src/core/assets/images/logo_socdo.png',
+      fit: BoxFit.cover, // Fill toàn màn hình, không có khoảng trắng
+      alignment: Alignment.center, // Căn giữa - ảnh 300x658px phù hợp với tỉ lệ màn hình
       filterQuality: FilterQuality.high,
       errorBuilder: (context, error, stackTrace) {
         // Nếu không load được ảnh asset → màn hình trắng (bỏ gradient)

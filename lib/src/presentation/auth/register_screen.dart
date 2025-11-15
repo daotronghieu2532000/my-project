@@ -159,11 +159,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Background Image - Hiển thị đầy đủ phần trên (ngôi sao và slogan)
+          // Background Image - Ảnh 300x658px phù hợp với tỉ lệ màn hình điện thoại
           Image.asset(
             'lib/src/core/assets/images/logo_socdo.png',
-            fit: BoxFit.cover, // Fill toàn màn hình
-            alignment: Alignment.topCenter, // Căn lên trên - cắt phần dưới, giữ phần trên
+            fit: BoxFit.cover, // Fill toàn màn hình, không có khoảng trắng
+            alignment: Alignment.center, // Căn giữa - tỉ lệ 1:2.19 gần khớp với màn hình
             filterQuality: FilterQuality.high, // Chất lượng cao để ảnh nét
             errorBuilder: (context, error, stackTrace) {
               return Container(

@@ -302,14 +302,14 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Địa chỉ giao hàng',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
+              children: [
+                Text(
+                  'Địa chỉ giao hàng',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
                     ),
                     if (canEdit)
                       GestureDetector(
@@ -838,7 +838,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final result = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+          backgroundColor: Colors.transparent,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -852,21 +852,21 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             
             return Container(
               decoration: const BoxDecoration(
-                color: Colors.white,
+              color: Colors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                   // Handle bar
-                  Container(
+                Container(
                     margin: const EdgeInsets.only(top: 12, bottom: 8),
                     width: 40,
                     height: 4,
-                    decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                       color: Colors.grey[300],
                       borderRadius: BorderRadius.circular(2),
                     ),
@@ -877,20 +877,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                const Text(
                           'Lý Do Hủy',
-                          style: TextStyle(
+                  style: TextStyle(
                             fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1D1D1F),
-                          ),
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1D1D1F),
+                  ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.close, size: 24),
                           onPressed: () => Navigator.pop(context),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
-                        ),
+                ),
                       ],
                     ),
                   ),
@@ -906,13 +906,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                Text(
                           'Chúng tôi mong muốn được biết lý do hủy đơn của bạn.',
-                          style: TextStyle(
+                  style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey[800],
-                            fontWeight: FontWeight.w500,
-                          ),
+                    fontWeight: FontWeight.w500,
+                  ),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -921,7 +921,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             fontSize: 13,
                             color: Colors.grey[800],
                             fontWeight: FontWeight.w500,
-                          ),
+                ),
                         ),
                       ],
                     ),
@@ -953,17 +953,17 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             ),
                             child: Row(
                               children: [
-                                Container(
+                Container(
                                   width: 20,
                                   height: 20,
-                                  decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: isSelected
                                           ? const Color(0xFFFF3B30)
                                           : Colors.grey[400]!,
                                       width: 2,
-                                    ),
+                  ),
                                     color: isSelected
                                         ? const Color(0xFFFF3B30)
                                         : Colors.transparent,
@@ -975,20 +975,20 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                           color: Colors.white,
                                         )
                                       : null,
-                                ),
+                      ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     reason,
                                     style: TextStyle(
-                                      fontSize: 14,
+                      fontSize: 14,
                                       color: Colors.grey[900],
                                       fontWeight: isSelected
                                           ? FontWeight.w600
                                           : FontWeight.normal,
-                                    ),
-                                  ),
-                                ),
+                    ),
+                  ),
+                ),
                               ],
                             ),
                           ),
@@ -1010,7 +1010,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                     ),
                     child: SizedBox(
                       width: double.infinity,
-                        child: ElevatedButton(
+                      child: ElevatedButton(
                         onPressed: selectedReason != null
                             ? () => Navigator.pop(context, selectedReason!)
                             : null,
@@ -1036,12 +1036,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            );
-          },
+                ),
+              ],
+          ),
         );
+      },
+    );
       },
     );
     
