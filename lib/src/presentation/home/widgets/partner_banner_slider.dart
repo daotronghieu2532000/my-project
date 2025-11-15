@@ -156,7 +156,7 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> with Automati
   @override
   Widget build(BuildContext context) {
     super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
-    
+  
     final screenWidth = MediaQuery.of(context).size.width;
     
     final bannerHeight = (screenWidth / 3).clamp(100.0, 150.0);

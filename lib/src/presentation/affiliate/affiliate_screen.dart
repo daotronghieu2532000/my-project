@@ -43,6 +43,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   bool? _isAffiliateRegistered;
   bool _agreeToTerms = false;
   bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
+  bool _isCheckingUserInBuild = false; // Flag để tránh check nhiều lần trong build
 
   // Products state
   final ScrollController _productsScrollController = ScrollController();
@@ -71,10 +72,16 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     super.initState();
     _initUser();
     _productsScrollController.addListener(_onProductsScroll);
+    
+    // Thêm listener để cập nhật khi trạng thái đăng nhập thay đổi
+    _authService.addAuthStateListener(_onAuthStateChanged);
   }
 
   @override
   void dispose() {
+    // Xóa listener khi dispose
+    _authService.removeAuthStateListener(_onAuthStateChanged);
+    
     _productsScrollController.dispose();
     _searchController.dispose();
     _searchDebounceTimer?.cancel();
@@ -99,18 +106,50 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     });
   }
 
+  /// Callback khi trạng thái đăng nhập thay đổi
+  void _onAuthStateChanged() {
+    print('🔔 [AffiliateScreen] Auth state changed - reloading user...');
+    // Reload user khi có thay đổi trạng thái đăng nhập
+    if (mounted) {
+      _initUser();
+    }
+  }
+
   Future<void> _initUser() async {
     final user = await _authService.getCurrentUser();
-    setState(() {
-      _currentUserId = user?.userId;
-    });
+    final newUserId = user?.userId;
     
-    if (_currentUserId != null) {
+    // Chỉ update nếu userId thay đổi
+    if (_currentUserId != newUserId) {
+      print('🔄 [AffiliateScreen] User ID changed: $_currentUserId -> $newUserId');
+      setState(() {
+        _currentUserId = newUserId;
+      });
+      
+      if (_currentUserId != null) {
+        // User mới đăng nhập hoặc đổi user
+        await _checkAffiliateStatus();
+        _loadProducts(refresh: true);
+        _loadDashboard(forceRefresh: true);
+      } else {
+        // User đã logout - clear data
+        setState(() {
+          _isAffiliateRegistered = null;
+          _dashboard = null;
+          _products = [];
+          _filteredProducts = [];
+          _hasLoadedOnce = false;
+        });
+      }
+    } else if (_currentUserId != null && !_hasLoadedOnce) {
+      // User đã có nhưng chưa load data lần đầu
       await _checkAffiliateStatus();
-      _loadProducts(refresh: true); // Load products on first init
+      _loadProducts(refresh: true);
+      _loadDashboard();
+    } else if (_currentUserId == null) {
+      // Chưa có user, chỉ load dashboard để hiển thị login prompt
+      _loadDashboard();
     }
-    
-    _loadDashboard();
   }
 
   Future<void> _checkAffiliateStatus() async {
@@ -550,6 +589,25 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
+    
+    // Kiểm tra lại user nếu _currentUserId là null nhưng có thể user đã đăng nhập
+    // (trường hợp user đăng nhập từ checkout rồi quay lại)
+    if (_currentUserId == null && !_hasLoadedOnce && !_isCheckingUserInBuild) {
+      // Chỉ check một lần để tránh vòng lặp rebuild
+      _isCheckingUserInBuild = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _currentUserId == null) {
+          _initUser().then((_) {
+            if (mounted) {
+              _isCheckingUserInBuild = false;
+            }
+          });
+        } else {
+          _isCheckingUserInBuild = false;
+        }
+      });
+    }
+    
     return ScrollPreservationWrapper(
       tabIndex: 2, // Affiliate tab
       child: Scaffold(

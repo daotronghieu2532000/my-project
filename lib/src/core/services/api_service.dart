@@ -402,6 +402,56 @@ class ApiService {
     }
   }
 
+  Future<bool> updateOrderAddress({
+    required int userId,
+    int? orderId,
+    String? maDon,
+    required String hoTen,
+    String? email,
+    required String dienThoai,
+    required String diaChi,
+    required int tinh,
+    required int huyen,
+    required int xa,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/order_management');
+      final token = await getValidToken();
+      final headers = {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      
+      final body = {
+        'action': 'update_address',
+        'user_id': userId,
+        if (orderId != null) 'order_id': orderId,
+        if (maDon != null) 'ma_don': maDon,
+        'ho_ten': hoTen,
+        if (email != null) 'email': email,
+        'dien_thoai': dienThoai,
+        'dia_chi': diaChi,
+        'tinh': tinh,
+        'huyen': huyen,
+        'xa': xa,
+      };
+      
+      final response = await http.put(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // =============== PRODUCT REVIEWS ===============
   Future<Map<String, dynamic>?> submitProductReview({
     required int userId,

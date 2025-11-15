@@ -5,7 +5,8 @@ import '../../core/models/user.dart';
 import '../../core/services/shipping_events.dart';
 
 class AddressBookScreen extends StatefulWidget {
-  const AddressBookScreen({super.key});
+  final Function(Map<String, dynamic>)? onAddressSelected;
+  const AddressBookScreen({super.key, this.onAddressSelected});
 
   @override
   State<AddressBookScreen> createState() => _AddressBookScreenState();
@@ -31,44 +32,68 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
       Navigator.of(context).pop();
       return;
     }
-    setState(() { _user = current; });
+    setState(() {
+      _user = current;
+    });
     final data = await _api.getUserProfile(userId: current.userId);
     if (data != null) {
-      final list = (data['addresses'] as List?)?.cast<Map<String, dynamic>>() ?? <Map<String, dynamic>>[];
-      setState(() { _addresses = list; });
+      final list =
+          (data['addresses'] as List?)?.cast<Map<String, dynamic>>() ??
+          <Map<String, dynamic>>[];
+      setState(() {
+        _addresses = list;
+      });
     }
-    if (mounted) setState(() { _loading = false; });
+    if (mounted)
+      setState(() {
+        _loading = false;
+      });
   }
 
   Future<void> _setDefault(int id) async {
     if (_user == null) return;
-    final ok = await _api.setDefaultAddress(userId: _user!.userId, addressId: id);
+    final ok = await _api.setDefaultAddress(
+      userId: _user!.userId,
+      addressId: id,
+    );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(ok ? 'Đã đặt địa chỉ mặc định' : 'Cập nhật thất bại'),
-      backgroundColor: ok ? Colors.green : Colors.red,
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Đã đặt địa chỉ mặc định' : 'Cập nhật thất bại'),
+        backgroundColor: ok ? Colors.green : Colors.red,
+      ),
+    );
     if (ok) {
       _load();
       // thông báo trang thanh toán tính lại phí ship
-      try { ShippingEvents.refresh(); } catch (_) {}
+      try {
+        ShippingEvents.refresh();
+      } catch (_) {}
     }
   }
 
   Future<void> _showEditAddressDialog(Map<String, dynamic> address) async {
     print('🔧 _showEditAddressDialog called for address: ${address['ho_ten']}');
     final dynamic rawId = address['id'];
-    final int addressId = rawId is int ? rawId : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
-    
+    final int addressId = rawId is int
+        ? rawId
+        : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
+
     if (addressId <= 0) {
       print('❌ Invalid address ID: $addressId');
       return;
     }
 
-    final nameCtrl = TextEditingController(text: address['ho_ten']?.toString() ?? '');
-    final phoneCtrl = TextEditingController(text: address['dien_thoai']?.toString() ?? '');
-    final addressCtrl = TextEditingController(text: address['dia_chi']?.toString() ?? '');
-    
+    final nameCtrl = TextEditingController(
+      text: address['ho_ten']?.toString() ?? '',
+    );
+    final phoneCtrl = TextEditingController(
+      text: address['dien_thoai']?.toString() ?? '',
+    );
+    final addressCtrl = TextEditingController(
+      text: address['dia_chi']?.toString() ?? '',
+    );
+
     // State cho dropdown
     int? selectedProvinceId;
     int? selectedDistrictId;
@@ -76,34 +101,49 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
     String? selectedProvinceName;
     String? selectedDistrictName;
     String? selectedWardName;
-    
+
     // Load dữ liệu dropdown
     final provinces = await _api.getProvinces() ?? [];
     final provinceName = address['ten_tinh']?.toString() ?? '';
     final districtName = address['ten_huyen']?.toString() ?? '';
     final wardName = address['ten_xa']?.toString() ?? '';
-    
+
     // Tìm ID từ tên
     selectedProvinceName = provinceName;
-    final province = provinces.firstWhere((p) => p['name'] == provinceName, orElse: () => {});
+    final province = provinces.firstWhere(
+      (p) => p['name'] == provinceName,
+      orElse: () => {},
+    );
     selectedProvinceId = province['id'];
-    
+
     if (selectedProvinceId != null) {
-      final districts = await _api.getDistricts(provinceId: selectedProvinceId) ?? [];
+      final districts =
+          await _api.getDistricts(provinceId: selectedProvinceId) ?? [];
       selectedDistrictName = districtName;
-      final district = districts.firstWhere((d) => d['name'] == districtName, orElse: () => {});
+      final district = districts.firstWhere(
+        (d) => d['name'] == districtName,
+        orElse: () => {},
+      );
       selectedDistrictId = district['id'];
-      
+
       if (selectedDistrictId != null) {
-        final wards = await _api.getWards(provinceId: selectedProvinceId, districtId: selectedDistrictId) ?? [];
+        final wards =
+            await _api.getWards(
+              provinceId: selectedProvinceId,
+              districtId: selectedDistrictId,
+            ) ??
+            [];
         selectedWardName = wardName;
-        final ward = wards.firstWhere((w) => w['name'] == wardName, orElse: () => {});
+        final ward = wards.firstWhere(
+          (w) => w['name'] == wardName,
+          orElse: () => {},
+        );
         selectedWardId = ward['id'];
       }
     }
 
     if (!mounted) return;
-    
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -112,58 +152,59 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) {
-        return StatefulBuilder(builder: (context, setSB) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Sửa địa chỉ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 12),
-                  _field('Họ và tên', nameCtrl),
-                  const SizedBox(height: 8),
-                  _field('Điện thoại', phoneCtrl, keyboard: TextInputType.phone),
-                  const SizedBox(height: 8),
-                  _field('Địa chỉ chi tiết', addressCtrl, maxLines: 2),
-                  const SizedBox(height: 8),
-                  FutureBuilder<List<Map<String, dynamic>>?>(
-                    future: _api.getProvinces(),
-                    builder: (context, snapshot) {
-                      final items = snapshot.data ?? [];
-                      return DropdownButtonFormField<int>(
-                        initialValue: selectedProvinceId,
-                        decoration: _dd('Tỉnh/Thành phố'),
-                        items: items.map((p) => DropdownMenuItem<int>(value: p['id'] as int, child: Text(p['name'] as String))).toList(),
-                        onChanged: (v) async {
-                          setSB(() {
-                            selectedProvinceId = v;
-                            selectedProvinceName = items.firstWhere((e)=>e['id']==v)['name'];
-                            selectedDistrictId = null;
-                            selectedDistrictName = null;
-                            selectedWardId = null;
-                            selectedWardName = null;
-                          });
-                        },
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  if (selectedProvinceId != null)
+        return StatefulBuilder(
+          builder: (context, setSB) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Sửa địa chỉ',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _field('Họ và tên', nameCtrl),
+                    const SizedBox(height: 8),
+                    _field(
+                      'Điện thoại',
+                      phoneCtrl,
+                      keyboard: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 8),
+                    _field('Địa chỉ chi tiết', addressCtrl, maxLines: 2),
+                    const SizedBox(height: 8),
                     FutureBuilder<List<Map<String, dynamic>>?>(
-                      future: _api.getDistricts(provinceId: selectedProvinceId!),
+                      future: _api.getProvinces(),
                       builder: (context, snapshot) {
                         final items = snapshot.data ?? [];
                         return DropdownButtonFormField<int>(
-                          initialValue: selectedDistrictId,
-                          decoration: _dd('Quận/Huyện'),
-                          items: items.map((d) => DropdownMenuItem<int>(value: d['id'] as int, child: Text(d['name'] as String))).toList(),
+                          initialValue: selectedProvinceId,
+                          decoration: _dd('Tỉnh/Thành phố'),
+                          items: items
+                              .map(
+                                (p) => DropdownMenuItem<int>(
+                                  value: p['id'] as int,
+                                  child: Text(p['name'] as String),
+                                ),
+                              )
+                              .toList(),
                           onChanged: (v) async {
                             setSB(() {
-                              selectedDistrictId = v;
-                              selectedDistrictName = items.firstWhere((e)=>e['id']==v)['name'];
+                              selectedProvinceId = v;
+                              selectedProvinceName = items.firstWhere(
+                                (e) => e['id'] == v,
+                              )['name'];
+                              selectedDistrictId = null;
+                              selectedDistrictName = null;
                               selectedWardId = null;
                               selectedWardName = null;
                             });
@@ -171,80 +212,148 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                         );
                       },
                     ),
-                  const SizedBox(height: 8),
-                  if (selectedDistrictId != null)
-                    FutureBuilder<List<Map<String, dynamic>>?>(
-                      future: _api.getWards(provinceId: selectedProvinceId!, districtId: selectedDistrictId!),
-                      builder: (context, snapshot) {
-                        final items = snapshot.data ?? [];
-                        return DropdownButtonFormField<int>(
-                          initialValue: selectedWardId,
-                          decoration: _dd('Phường/Xã'),
-                          items: items.map((w) => DropdownMenuItem<int>(value: w['id'] as int, child: Text(w['name'] as String))).toList(),
-                          onChanged: (v) {
-                            setSB(() {
-                              selectedWardId = v;
-                              selectedWardName = items.firstWhere((e)=>e['id']==v)['name'];
-                            });
-                          },
-                        );
-                      },
-                    ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Hủy')),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () async {
-                          if (_user == null) return;
-                          if (selectedProvinceId == null || selectedDistrictId == null || selectedWardId == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng chọn đủ Tỉnh/TP - Quận/Huyện - Phường/Xã')));
-                            return;
-                          }
-                          final ok = await _api.updateAddress(
-                            userId: _user!.userId,
-                            addressId: addressId,
-                            hoTen: nameCtrl.text.trim(),
-                            dienThoai: phoneCtrl.text.trim(),
-                            diaChi: addressCtrl.text.trim(),
-                            tenTinh: selectedProvinceName ?? '',
-                            tenHuyen: selectedDistrictName ?? '',
-                            tenXa: selectedWardName ?? '',
-                            tinh: selectedProvinceId ?? 0,
-                            huyen: selectedDistrictId ?? 0,
-                            xa: selectedWardId ?? 0,
+                    const SizedBox(height: 8),
+                    if (selectedProvinceId != null)
+                      FutureBuilder<List<Map<String, dynamic>>?>(
+                        future: _api.getDistricts(
+                          provinceId: selectedProvinceId!,
+                        ),
+                        builder: (context, snapshot) {
+                          final items = snapshot.data ?? [];
+                          return DropdownButtonFormField<int>(
+                            initialValue: selectedDistrictId,
+                            decoration: _dd('Quận/Huyện'),
+                            items: items
+                                .map(
+                                  (d) => DropdownMenuItem<int>(
+                                    value: d['id'] as int,
+                                    child: Text(d['name'] as String),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) async {
+                              setSB(() {
+                                selectedDistrictId = v;
+                                selectedDistrictName = items.firstWhere(
+                                  (e) => e['id'] == v,
+                                )['name'];
+                                selectedWardId = null;
+                                selectedWardName = null;
+                              });
+                            },
                           );
-                          if (!mounted) return;
-                          Navigator.of(context).pop();
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(ok ? 'Đã cập nhật địa chỉ' : 'Cập nhật địa chỉ thất bại'),
-                            backgroundColor: ok ? Colors.green : Colors.red,
-                          ));
-                          if (ok) {
-                            _load();
-                            try { ShippingEvents.refresh(); } catch (_) {}
-                          }
                         },
-                        child: const Text('Lưu'),
                       ),
-                    ],
-                  )
-                ],
+                    const SizedBox(height: 8),
+                    if (selectedDistrictId != null)
+                      FutureBuilder<List<Map<String, dynamic>>?>(
+                        future: _api.getWards(
+                          provinceId: selectedProvinceId!,
+                          districtId: selectedDistrictId!,
+                        ),
+                        builder: (context, snapshot) {
+                          final items = snapshot.data ?? [];
+                          return DropdownButtonFormField<int>(
+                            initialValue: selectedWardId,
+                            decoration: _dd('Phường/Xã'),
+                            items: items
+                                .map(
+                                  (w) => DropdownMenuItem<int>(
+                                    value: w['id'] as int,
+                                    child: Text(w['name'] as String),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              setSB(() {
+                                selectedWardId = v;
+                                selectedWardName = items.firstWhere(
+                                  (e) => e['id'] == v,
+                                )['name'];
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Hủy'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () async {
+                            if (_user == null) return;
+                            if (selectedProvinceId == null ||
+                                selectedDistrictId == null ||
+                                selectedWardId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Vui lòng chọn đủ Tỉnh/TP - Quận/Huyện - Phường/Xã',
+                                  ),
+                                ),
+                              );
+                              return;
+                            }
+                            final ok = await _api.updateAddress(
+                              userId: _user!.userId,
+                              addressId: addressId,
+                              hoTen: nameCtrl.text.trim(),
+                              dienThoai: phoneCtrl.text.trim(),
+                              diaChi: addressCtrl.text.trim(),
+                              tenTinh: selectedProvinceName ?? '',
+                              tenHuyen: selectedDistrictName ?? '',
+                              tenXa: selectedWardName ?? '',
+                              tinh: selectedProvinceId ?? 0,
+                              huyen: selectedDistrictId ?? 0,
+                              xa: selectedWardId ?? 0,
+                            );
+                            if (!mounted) return;
+                            Navigator.of(context).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  ok
+                                      ? 'Đã cập nhật địa chỉ'
+                                      : 'Cập nhật địa chỉ thất bại',
+                                ),
+                                backgroundColor: ok ? Colors.green : Colors.red,
+                              ),
+                            );
+                            if (ok) {
+                              _load();
+                              try {
+                                ShippingEvents.refresh();
+                              } catch (_) {}
+                            }
+                          },
+                          child: const Text('Lưu'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          );
-        });
+            );
+          },
+        );
       },
     );
   }
 
   Future<void> _showDeleteConfirmDialog(Map<String, dynamic> address) async {
-    print('🗑️ _showDeleteConfirmDialog called for address: ${address['ho_ten']}');
+    print(
+      '🗑️ _showDeleteConfirmDialog called for address: ${address['ho_ten']}',
+    );
     final dynamic rawId = address['id'];
-    final int addressId = rawId is int ? rawId : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
-    
+    final int addressId = rawId is int
+        ? rawId
+        : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
+
     if (addressId <= 0) {
       print('❌ Invalid address ID: $addressId');
       return;
@@ -371,13 +480,17 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
         addressId: addressId,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(ok ? 'Đã xóa địa chỉ' : 'Xóa địa chỉ thất bại'),
-        backgroundColor: ok ? Colors.green : Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(ok ? 'Đã xóa địa chỉ' : 'Xóa địa chỉ thất bại'),
+          backgroundColor: ok ? Colors.green : Colors.red,
+        ),
+      );
       if (ok) {
         _load();
-        try { ShippingEvents.refresh(); } catch (_) {}
+        try {
+          ShippingEvents.refresh();
+        } catch (_) {}
       }
     }
   }
@@ -403,155 +516,243 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                 // Section Header
                 Container(
                   color: const Color(0xFFEDEFF3),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   width: double.infinity,
                   child: const Text(
                     'Địa chỉ',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
                   ),
                 ),
                 // List địa chỉ
                 Expanded(
                   child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemBuilder: (context, index) {
-                final a = _addresses[index];
-                final isDefault = (a['active']?.toString() ?? '0') == '1';
-                return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFEAEAEA)),
-                  ),
-                        child: Stack(
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Tên và số điện thoại cùng dòng
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          '${a['ho_ten']?.toString() ?? ''} | ${a['dien_thoai']?.toString() ?? ''}',
-                                          style: const TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.black87,
+                    padding: const EdgeInsets.all(16),
+                    itemBuilder: (context, index) {
+                      final a = _addresses[index];
+                      final isDefault = (a['active']?.toString() ?? '0') == '1';
+                      final canSelect = widget.onAddressSelected != null;
+                      return InkWell(
+                        onTap: canSelect
+                            ? () {
+                                // Trả về địa chỉ đã chọn
+                                final address = {
+                                  'id': a['id'],
+                                  'ho_ten': a['ho_ten'],
+                                  'email': a['email'] ?? '',
+                                  'dien_thoai': a['dien_thoai'],
+                                  'dia_chi': a['dia_chi'],
+                                  'ten_tinh': a['ten_tinh'],
+                                  'ten_huyen': a['ten_huyen'],
+                                  'ten_xa': a['ten_xa'],
+                                  'tinh': a['tinh'] is int
+                                      ? a['tinh']
+                                      : (int.tryParse(
+                                              a['tinh']?.toString() ?? '0',
+                                            ) ??
+                                            0),
+                                  'huyen': a['huyen'] is int
+                                      ? a['huyen']
+                                      : (int.tryParse(
+                                              a['huyen']?.toString() ?? '0',
+                                            ) ??
+                                            0),
+                                  'xa': a['xa'] is int
+                                      ? a['xa']
+                                      : (int.tryParse(
+                                              a['xa']?.toString() ?? '0',
+                                            ) ??
+                                            0),
+                                };
+                                widget.onAddressSelected?.call(address);
+                                Navigator.of(context).pop(address);
+                              }
+                            : null,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFEAEAEA)),
+                          ),
+                          child: Stack(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Tên và số điện thoại cùng dòng
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '${a['ho_ten']?.toString() ?? ''} | ${a['dien_thoai']?.toString() ?? ''}',
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
                                           ),
                                         ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Địa chỉ chi tiết
+                                    Text(
+                                      a['dia_chi']?.toString() ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Địa chỉ chi tiết
-                                  Text(
-                                    a['dia_chi']?.toString() ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black87,
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${a['ten_xa'] ?? ''}, ${a['ten_huyen'] ?? ''}, ${a['ten_tinh'] ?? ''}',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black87,
-                              ),
-                            ),
-                                  const SizedBox(height: 8),
-                                  // Badge mặc định hoặc nút đặt mặc định - căn phải
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                            if (isDefault)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(4),
-                                            border: Border.all(color: const Color(0xFFF5222D), width: 1),
-                                ),
-                                child: const Text(
-                                  'Mặc định',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFFF5222D),
-                                              fontWeight: FontWeight.w500,
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${a['ten_xa'] ?? ''}, ${a['ten_huyen'] ?? ''}, ${a['ten_tinh'] ?? ''}',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    // Badge mặc định hoặc nút đặt mặc định - căn phải
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        if (canSelect)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 6,
                                             ),
-                                ),
-                              )
-                            else
-                              TextButton(
-                                onPressed: () {
-                                  final dynamic rawId = a['id'];
-                                  final int id = rawId is int ? rawId : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
-                                  if (id > 0) _setDefault(id);
-                                },
-                                style: TextButton.styleFrom(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                            minimumSize: Size.zero,
-                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: const Text(
-                                  'Đặt mặc định',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Color(0xFFF5222D),
-                                              fontWeight: FontWeight.w500,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF007AFF),
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
                                             ),
+                                            child: const Text(
+                                              'Chọn',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          )
+                                        else if (isDefault)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                              border: Border.all(
+                                                color: const Color(0xFFF5222D),
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              'Mặc định',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFFF5222D),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          )
+                                        else
+                                          TextButton(
+                                            onPressed: () {
+                                              final dynamic rawId = a['id'];
+                                              final int id = rawId is int
+                                                  ? rawId
+                                                  : (rawId is String
+                                                        ? int.tryParse(rawId) ??
+                                                              0
+                                                        : (rawId as num)
+                                                              .toInt());
+                                              if (id > 0) _setDefault(id);
+                                            },
+                                            style: TextButton.styleFrom(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                    vertical: 4,
+                                                  ),
+                                              minimumSize: Size.zero,
+                                              tapTargetSize:
+                                                  MaterialTapTargetSize
+                                                      .shrinkWrap,
+                                            ),
+                                            child: const Text(
+                                              'Đặt mặc định',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFFF5222D),
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                          ],
+                              // Nút sửa/xóa ở góc phải
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.edit,
+                                        size: 18,
+                                        color: Colors.black54,
+                                      ),
+                                      onPressed: () async =>
+                                          await _showEditAddressDialog(a),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      tooltip: 'Sửa',
+                                    ),
+                                    const SizedBox(width: 4),
+                                    IconButton(
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        size: 18,
+                                        color: isDefault
+                                            ? Colors.grey
+                                            : Colors.black54,
+                                      ),
+                                      onPressed: isDefault
+                                          ? null
+                                          : () async =>
+                                                await _showDeleteConfirmDialog(
+                                                  a,
+                                                ),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      tooltip: 'Xóa',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                                ],
-                              ),
-                            ),
-                            // Nút sửa/xóa ở góc phải
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                            children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, size: 18, color: Colors.black54),
-                              onPressed: () async => await _showEditAddressDialog(a),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    tooltip: 'Sửa',
-                            ),
-                                  const SizedBox(width: 4),
-                                  IconButton(
-                                    icon: Icon(
-                                      Icons.delete_outline,
-                                      size: 18,
-                                      color: isDefault ? Colors.grey : Colors.black54,
-                                    ),
-                                    onPressed: isDefault
-                                        ? null
-                                        : () async => await _showDeleteConfirmDialog(a),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    tooltip: 'Xóa',
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                      );
+                    },
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 0),
+                    itemCount: _addresses.length,
                   ),
-                );
-              },
-              separatorBuilder: (context, index) => const SizedBox(height: 0),
-              itemCount: _addresses.length,
-            ),
                 ),
                 // Nút Thêm Địa Chỉ Mới
                 Container(
@@ -560,7 +761,7 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                   child: SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-        onPressed: _showAddAddressDialog,
+                      onPressed: _showAddAddressDialog,
                       icon: const Icon(Icons.add, color: Colors.white),
                       label: const Text(
                         'Thêm Địa Chỉ Mới',
@@ -582,7 +783,7 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                   ),
                 ),
               ],
-      ),
+            ),
     );
   }
 
@@ -609,18 +810,30 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
         return StatefulBuilder(
           builder: (context, setSB) {
             return Padding(
-              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    const Text('Thêm địa chỉ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    const Text(
+                      'Thêm địa chỉ',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     _field('Họ và tên', nameCtrl),
                     const SizedBox(height: 8),
-                    _field('Điện thoại', phoneCtrl, keyboard: TextInputType.phone),
+                    _field(
+                      'Điện thoại',
+                      phoneCtrl,
+                      keyboard: TextInputType.phone,
+                    ),
                     const SizedBox(height: 8),
                     _field('Địa chỉ (số nhà, đường)', addressCtrl, maxLines: 2),
                     const SizedBox(height: 8),
@@ -632,14 +845,21 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                           initialValue: selectedProvinceId,
                           decoration: _dd('Tỉnh/Thành phố'),
                           items: items
-                              .map((p) => DropdownMenuItem<int>(value: p['id'] as int, child: Text(p['name'] as String)))
+                              .map(
+                                (p) => DropdownMenuItem<int>(
+                                  value: p['id'] as int,
+                                  child: Text(p['name'] as String),
+                                ),
+                              )
                               .toList(),
                           onChanged: (v) {
                             setSB(() {
                               selectedProvinceId = v;
                               selectedDistrictId = null;
                               selectedWardId = null;
-                              selectedProvinceName = items.firstWhere((e) => e['id'] == v)['name'];
+                              selectedProvinceName = items.firstWhere(
+                                (e) => e['id'] == v,
+                              )['name'];
                             });
                           },
                         );
@@ -648,41 +868,61 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                     const SizedBox(height: 8),
                     if (selectedProvinceId != null)
                       FutureBuilder<List<Map<String, dynamic>>?>(
-                        future: _api.getDistricts(provinceId: selectedProvinceId!),
+                        future: _api.getDistricts(
+                          provinceId: selectedProvinceId!,
+                        ),
                         builder: (context, snapshot) {
                           final items = snapshot.data ?? [];
                           return DropdownButtonFormField<int>(
                             initialValue: selectedDistrictId,
                             decoration: _dd('Quận/Huyện'),
                             items: items
-                                .map((d) => DropdownMenuItem<int>(value: d['id'] as int, child: Text(d['name'] as String)))
+                                .map(
+                                  (d) => DropdownMenuItem<int>(
+                                    value: d['id'] as int,
+                                    child: Text(d['name'] as String),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (v) {
                               setSB(() {
                                 selectedDistrictId = v;
                                 selectedWardId = null;
-                                selectedDistrictName = items.firstWhere((e) => e['id'] == v)['name'];
+                                selectedDistrictName = items.firstWhere(
+                                  (e) => e['id'] == v,
+                                )['name'];
                               });
                             },
                           );
                         },
                       ),
                     const SizedBox(height: 8),
-                    if (selectedProvinceId != null && selectedDistrictId != null)
+                    if (selectedProvinceId != null &&
+                        selectedDistrictId != null)
                       FutureBuilder<List<Map<String, dynamic>>?>(
-                        future: _api.getWards(provinceId: selectedProvinceId!, districtId: selectedDistrictId!),
+                        future: _api.getWards(
+                          provinceId: selectedProvinceId!,
+                          districtId: selectedDistrictId!,
+                        ),
                         builder: (context, snapshot) {
                           final items = snapshot.data ?? [];
                           return DropdownButtonFormField<int>(
                             initialValue: selectedWardId,
                             decoration: _dd('Phường/Xã'),
                             items: items
-                                .map((w) => DropdownMenuItem<int>(value: w['id'] as int, child: Text(w['name'] as String)))
+                                .map(
+                                  (w) => DropdownMenuItem<int>(
+                                    value: w['id'] as int,
+                                    child: Text(w['name'] as String),
+                                  ),
+                                )
                                 .toList(),
                             onChanged: (v) {
                               setSB(() {
                                 selectedWardId = v;
-                                selectedWardName = items.firstWhere((e) => e['id'] == v)['name'];
+                                selectedWardName = items.firstWhere(
+                                  (e) => e['id'] == v,
+                                )['name'];
                               });
                             },
                           );
@@ -706,14 +946,23 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Hủy')),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Hủy'),
+                        ),
                         const SizedBox(width: 8),
                         ElevatedButton(
                           onPressed: () async {
                             if (_user == null) return;
-                            if (selectedProvinceId == null || selectedDistrictId == null || selectedWardId == null) {
+                            if (selectedProvinceId == null ||
+                                selectedDistrictId == null ||
+                                selectedWardId == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Vui lòng chọn đủ Tỉnh/TP - Quận/Huyện - Phường/Xã')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Vui lòng chọn đủ Tỉnh/TP - Quận/Huyện - Phường/Xã',
+                                  ),
+                                ),
                               );
                               return;
                             }
@@ -734,7 +983,11 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(ok ? 'Đã thêm địa chỉ' : 'Thêm địa chỉ thất bại'),
+                                content: Text(
+                                  ok
+                                      ? 'Đã thêm địa chỉ'
+                                      : 'Thêm địa chỉ thất bại',
+                                ),
                                 backgroundColor: ok ? Colors.green : Colors.red,
                               ),
                             );
@@ -759,8 +1012,12 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
     );
   }
 
-
-  Widget _field(String label, TextEditingController c, {TextInputType? keyboard, int maxLines = 1}) {
+  Widget _field(
+    String label,
+    TextEditingController c, {
+    TextInputType? keyboard,
+    int maxLines = 1,
+  }) {
     return TextField(
       controller: c,
       keyboardType: keyboard,
@@ -770,7 +1027,10 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
         isDense: true,
         filled: true,
         fillColor: const Color(0xFFF8F9FA),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: Color(0xFFE9ECEF)),
@@ -801,5 +1061,3 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
     );
   }
 }
-
-

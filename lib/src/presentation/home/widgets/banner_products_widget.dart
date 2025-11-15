@@ -72,20 +72,20 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
             const SizedBox(height: 8),
             // Banner và sản phẩm
             _BannerVerticalWithHeight(
-              bannerUrl: banner.bannerUrl,
-              bannerWidth: bannerWidth,
-              onTap: _handleBannerTap,
-              products: banner.products,
-              cardWidth: bannerWidth,
+          bannerUrl: banner.bannerUrl,
+          bannerWidth: bannerWidth,
+          onTap: _handleBannerTap,
+          products: banner.products,
+          cardWidth: bannerWidth,
             ),
           ],
         ),
       );
     }
 
-    // Banner ngang
+    //Chiều cao Banner ngang 
     if (banner.isHorizontalBanner) {
-      final bannerHeight = 150.0;
+      final bannerHeight = 105.0;
 
       return Container(
         color: Colors.white,
@@ -102,24 +102,8 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
               child: Container(
                 width: double.infinity,
                 height: bannerHeight,
-                margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
-                  gradient: SweepGradient(
-                    center: Alignment.center,
-                    startAngle: 0,
-                    endAngle: 2 * 3.14159, // 360 độ
-                    colors: const [
-                      Color(0x99FF0080), // Hồng (mờ 60%)
-                      Color(0x99FF8000), // Cam (mờ 60%)
-                      Color(0x99FFD700), // Vàng (mờ 60%)
-                      Color(0x9900FF80), // Xanh lá (mờ 60%)
-                      Color(0x990080FF), // Xanh dương (mờ 60%)
-                      Color(0x998000FF), // Tím (mờ 60%)
-                      Color(0x99FF0080), // Hồng (lặp lại, mờ 60%)
-                    ],
-                    stops: const [0.0, 0.16, 0.33, 0.5, 0.66, 0.83, 1.0],
-                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.05),
@@ -162,27 +146,10 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
               ),
             ),
             const SizedBox(height: 8),
-            // Sản phẩm - cuộn ngang
-            SizedBox(
-              height: 290, // Tăng từ 256 lên 286 để tránh overflow
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                controller: _productsScrollController,
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                itemCount: banner.products.length,
-                itemBuilder: (context, index) {
-                  final product = banner.products[index];
-                  final cardWidth = (screenWidth - 32) / 2;
-                  return Container(
-                    width: cardWidth,
-                    margin: const EdgeInsets.only(right: 8),
-                    child: BannerProductCard(
-                      product: product,
-                      index: index,
-                    ),
-                  );
-                },
-              ),
+            // Sản phẩm - cuộn ngang với height tự động
+            _BannerProductsHorizontalList(
+              products: banner.products,
+              cardWidth: (screenWidth - 16) / 2,
             ),
           ],
         ),
@@ -454,16 +421,28 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
 
   @override
   Widget build(BuildContext context) {
-    // Đo height của product card nếu chưa đo
+    // Nếu chưa đo được height, hiển thị card mẫu để đo (ẩn bằng Offstage)
     if (_productCardHeight == null && widget.products.isNotEmpty) {
-      // Hiển thị product card ẩn để đo height
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _measureProductCardHeight();
-      });
+      return Offstage(
+        child: SizedBox(
+          width: widget.cardWidth,
+          child: Container(
+            key: _productCardKey,
+            child: BannerProductCard(
+              product: widget.products.first,
+              index: 0,
+            ),
+          ),
+        ),
+      );
     }
 
-    // Khi đã đo được height, hiển thị banner và product list với cùng height
-    final bannerHeight = _productCardHeight ?? 286.0; // Dùng height tạm thời nếu chưa đo được
+    // Hiển thị banner và ListView với height đã đo được
+    if (_productCardHeight == null) {
+      return const SizedBox.shrink();
+    }
+
+    final bannerHeight = _productCardHeight!;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -535,47 +514,24 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
         const SizedBox(width: 8),
         // Sản phẩm - cuộn ngang với height đã đo
         Expanded(
-          child: Stack(
-            children: [
-              // Product card ẩn để đo height (nếu chưa đo được)
-              if (_productCardHeight == null && widget.products.isNotEmpty)
-                Positioned(
-                  left: 0,
-                  top: 0,
-                  child: Offstage(
-                    child: SizedBox(
-                      width: widget.cardWidth,
-                      child: Container(
-                        key: _productCardKey,
-                        child: BannerProductCard(
-                          product: widget.products.first,
-                          index: 0,
-                        ),
-                      ),
-                    ),
+          child: SizedBox(
+            height: bannerHeight,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              itemCount: widget.products.length,
+              itemBuilder: (context, index) {
+                final product = widget.products[index];
+                return Container(
+                  width: widget.cardWidth,
+                  margin: const EdgeInsets.only(right: 8),
+                  child: BannerProductCard(
+                    product: product,
+                    index: index,
                   ),
-                ),
-              // ListView hiển thị sản phẩm
-              SizedBox(
-                height: bannerHeight,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  itemCount: widget.products.length,
-                  itemBuilder: (context, index) {
-                    final product = widget.products[index];
-                    return Container(
-                      width: widget.cardWidth,
-                      margin: const EdgeInsets.only(right: 8),
-                      child: BannerProductCard(
-                        product: product,
-                        index: index,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+                );
+              },
+            ),
           ),
         ),
       ],

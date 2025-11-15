@@ -428,7 +428,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         // Suggested products grid - Tách riêng với border
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                          color: Colors.white,
                             border: Border(
                               top: BorderSide(color: Colors.grey[200]!, width: 1),
                               bottom: BorderSide(color: Colors.grey[200]!, width: 1),

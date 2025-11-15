@@ -106,7 +106,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Đã đánh dấu tất cả thông báo là đã đọc'),
+            content: Text('Đã đọc tất cả thông báo'),
             duration: Duration(seconds: 2),
           ),
         );

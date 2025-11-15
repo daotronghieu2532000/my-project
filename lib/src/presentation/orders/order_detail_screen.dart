@@ -3,6 +3,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../product/product_detail_screen.dart';
 import 'product_review_screen.dart';
+import '../profile/address_book_screen.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final int userId;
@@ -267,6 +268,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   // Address Card
   Widget _buildAddressCard() {
     final address = _detail!['customer_info']?['full_address'] ?? '';
+    final status = _detail!['status'] as int? ?? 0;
+    final canEdit = status == 0; // Chỉ cho phép sửa khi status = 0 (Chờ xử lý)
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -297,13 +300,41 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Địa chỉ giao hàng',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Địa chỉ giao hàng',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    if (canEdit)
+                      GestureDetector(
+                        onTap: _editOrderAddress,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.edit_outlined,
+                              size: 16,
+                              color: Color(0xFF007AFF),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Thay đổi',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF007AFF),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -321,6 +352,76 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _editOrderAddress() async {
+    final user = await _auth.getCurrentUser();
+    if (user == null) return;
+    
+    final selectedAddress = await Navigator.push<Map<String, dynamic>>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddressBookScreen(
+          onAddressSelected: (address) => address,
+        ),
+      ),
+    );
+    
+    if (selectedAddress == null) return;
+    
+    // Parse tinh, huyen, xa to int
+    final tinh = selectedAddress['tinh'] is int
+        ? selectedAddress['tinh'] as int
+        : (int.tryParse(selectedAddress['tinh']?.toString() ?? '0') ?? 0);
+    final huyen = selectedAddress['huyen'] is int
+        ? selectedAddress['huyen'] as int
+        : (int.tryParse(selectedAddress['huyen']?.toString() ?? '0') ?? 0);
+    final xa = selectedAddress['xa'] is int
+        ? selectedAddress['xa'] as int
+        : (int.tryParse(selectedAddress['xa']?.toString() ?? '0') ?? 0);
+    
+    if (tinh <= 0 || huyen <= 0 || xa <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Địa chỉ không hợp lệ. Vui lòng chọn lại.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    final success = await _api.updateOrderAddress(
+      userId: user.userId,
+      orderId: _detail?['id'] as int?,
+      maDon: _detail?['ma_don']?.toString(),
+      hoTen: selectedAddress['ho_ten']?.toString() ?? '',
+      email: selectedAddress['email']?.toString(),
+      dienThoai: selectedAddress['dien_thoai']?.toString() ?? '',
+      diaChi: selectedAddress['dia_chi']?.toString() ?? '',
+      tinh: tinh,
+      huyen: huyen,
+      xa: xa,
+    );
+    
+    if (!mounted) return;
+    
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã cập nhật địa chỉ giao hàng'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _load();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể cập nhật địa chỉ'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // Products Card
@@ -731,138 +832,203 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Future<void> _requestCancel() async {
     final user = await _auth.getCurrentUser();
     if (user == null) return;
-    final reason = await showDialog<String>(
+    
+    String? selectedReason;
+    
+    final result = await showModalBottomSheet<String>(
       context: context,
-      barrierDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) {
-        final ctrl = TextEditingController();
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          elevation: 0,
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final cancelReasons = [
+              'Tôi muốn cập nhật địa chỉ/sđt nhận hàng.',
+              'Tôi muốn thêm/thay đổi Mã giảm giá',
+              'Tôi muốn thay đổi sản phẩm (kích thước, màu sắc, số lượng...)',
+              'Thủ tục thanh toán rắc rối',
+              'Tôi tìm thấy chỗ mua khác tốt hơn (Rẻ hơn, uy tín hơn, giao nhanh hơn...)',
+            ];
+            
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Header with icon
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF3B30).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Icon(
-                    Icons.cancel_outlined,
-                    color: Color(0xFFFF3B30),
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                
-                // Title
-                const Text(
-                  'Yêu cầu hủy đơn',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF1D1D1F),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                
-                // Subtitle
-                Text(
-                  'Vui lòng cho chúng tôi biết lý do hủy đơn hàng! chúng tôi sẽ nâng cấp trải nghiệm của bạn 🤗',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                
-                // Input field
-                Container(
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FA),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE9ECEF)),
-                  ),
-                  child: TextField(
-                    controller: ctrl,
-                    maxLines: 3,
-                    decoration: InputDecoration(
-                      hintText: 'Nhập lý do hủy đơn hàng (tuỳ chọn)',
-                      hintStyle: TextStyle(
-                        color: Colors.grey[500],
-                        fontSize: 14,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFF1D1D1F),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 8),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                
-                // Action buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context, null),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF666666),
-                          side: const BorderSide(color: Color(0xFFE9ECEF)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Đóng',
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Lý Do Hủy',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF1D1D1F),
                           ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 24),
+                          onPressed: () => Navigator.pop(context),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Info box
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF9E6),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFFFFE58F)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Chúng tôi mong muốn được biết lý do hủy đơn của bạn.',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[800],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Nếu bạn xác nhận hủy, toàn bộ đơn hàng sẽ được hủy. Chọn lý do hủy phù hợp nhất với bạn nhé!',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[800],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Checkbox list
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      itemCount: cancelReasons.length,
+                      itemBuilder: (context, index) {
+                        final reason = cancelReasons[index];
+                        final isSelected = selectedReason == reason;
+                        return InkWell(
+                          onTap: () {
+                            setState(() {
+                              selectedReason = reason;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: Colors.grey[200]!,
+                                  width: 0.5,
+                                ),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFFFF3B30)
+                                          : Colors.grey[400]!,
+                                      width: 2,
+                                    ),
+                                    color: isSelected
+                                        ? const Color(0xFFFF3B30)
+                                        : Colors.transparent,
+                                  ),
+                                  child: isSelected
+                                      ? const Icon(
+                                          Icons.check,
+                                          size: 14,
+                                          color: Colors.white,
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    reason,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[900],
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  // Submit button
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.grey[200]!,
+                          width: 0.5,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+                    child: SizedBox(
+                      width: double.infinity,
+                        child: ElevatedButton(
+                        onPressed: selectedReason != null
+                            ? () => Navigator.pop(context, selectedReason!)
+                            : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF3B30),
-                          foregroundColor: Colors.white,
+                          backgroundColor: selectedReason != null
+                              ? const Color(0xFFFF3B30)
+                              : Colors.grey[300],
+                          foregroundColor: selectedReason != null
+                              ? Colors.white
+                              : Colors.grey[600],
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           elevation: 0,
                         ),
                         child: const Text(
-                          'Gửi yêu cầu',
+                          'Xác nhận',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -870,23 +1036,25 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
-    if (reason == null) return; // User cancelled
+    
+    if (result == null) return; // User cancelled
+    
     final res = await _api.orderCancelRequest(
       userId: user.userId,
       maDon: _detail?['ma_don']?.toString(),
-      reason: reason, // Truyền lý do từ TextField
+      reason: result,
     );
     if (mounted) {
       if (res?['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã gửi yêu cầu hủy')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã hủy đơn hàng')));
         _load();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Không thể hủy: ${res?['message'] ?? ''}')));

@@ -39,7 +39,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
     _scrollController.addListener(_onScroll);
     _loadProducts();
   }
-  
+
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
@@ -65,7 +65,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         _isLoading = true;
         _error = null;
       });
-
+      
       // Sử dụng cached API service cho freeship products
       final productsData = await _cachedApiService.getFreeShipProductsCached(
         forceRefresh: refresh,
@@ -352,13 +352,13 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () => _loadProducts(refresh: true),
-            child: SingleChildScrollView(
+          child: SingleChildScrollView(
               controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               child: Column(
                 children: [
                   Align(
-                    alignment: Alignment.topLeft,
+              alignment: Alignment.topLeft,
                     child: _buildProductsGrid(_displayedProducts),
                   ),
                   // Loading indicator khi đang load thêm
