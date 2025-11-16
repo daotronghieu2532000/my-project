@@ -333,55 +333,55 @@ class FlashSaleProductCardHorizontal extends StatelessWidget {
       
       if (!context.mounted || productDetail == null) return;
       
-      showModalBottomSheet(
+        showModalBottomSheet(
         context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
         builder: (dialogContext) {
-          if (productDetail.variants.isNotEmpty) {
-            return VariantSelectionDialog(
-              product: productDetail,
-              selectedVariant: productDetail.variants.first,
-              onBuyNow: (variant, quantity) {
+            if (productDetail.variants.isNotEmpty) {
+              return VariantSelectionDialog(
+                product: productDetail,
+                selectedVariant: productDetail.variants.first,
+                onBuyNow: (variant, quantity) {
                 // Dialog đã tự pop trước khi gọi callback
                 // Sử dụng WidgetsBinding để đảm bảo navigate sau khi dialog đã đóng hoàn toàn
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (context.mounted) {
                     _handleBuyNow(context, productDetail, variant, quantity);
                   }
-                });
-              },
-              onAddToCart: (variant, quantity) {
+                  });
+                },
+                onAddToCart: (variant, quantity) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (context.mounted) {
                     _handleAddToCart(context, productDetail, variant, quantity);
                   }
-                });
-              },
-            );
-          } else {
-            return SimplePurchaseDialog(
-              product: productDetail,
-              onBuyNow: (product, quantity) {
+                  });
+                },
+              );
+            } else {
+              return SimplePurchaseDialog(
+                product: productDetail,
+                onBuyNow: (product, quantity) {
                 // Dialog đã tự pop trước khi gọi callback
                 // Sử dụng WidgetsBinding để đảm bảo navigate sau khi dialog đã đóng hoàn toàn
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (context.mounted) {
                     _handleBuyNowSimple(context, product, quantity);
                   }
-                });
-              },
-              onAddToCart: (product, quantity) {
+                  });
+                },
+                onAddToCart: (product, quantity) {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (context.mounted) {
                     _handleAddToCartSimple(context, product, quantity);
                   }
-                });
-              },
-            );
-          }
-        },
-      );
+                  });
+                },
+              );
+            }
+          },
+        );
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

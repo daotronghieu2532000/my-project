@@ -45,9 +45,8 @@ class ActionRow extends StatelessWidget {
         return Colors.green;
       case 'Mã giảm giá':
         return Colors.purple;
-      // Tạm thời ẩn lịch sử đánh giá
-      // case 'Lịch sử đánh giá':
-      //   return Colors.amber;
+      case 'Lịch sử đánh giá':
+        return Colors.amber;
       case 'Đã huỷ & Trả lại':
         return const Color.fromARGB(255, 255, 0, 0);
       case 'Trung tâm trợ giúp':
@@ -106,15 +105,14 @@ class ActionRow extends StatelessWidget {
           ),
         );
         break;
-      // Tạm thời ẩn lịch sử đánh giá
-      // case 'Lịch sử đánh giá':
-      //   Navigator.push(
-      //     context,
-      //     MaterialPageRoute(
-      //       builder: (context) => const ReviewHistoryScreen(),
-      //     ),
-      //   );
-      //   break;
+      case 'Lịch sử đánh giá':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ReviewHistoryScreen(),
+          ),
+        );
+        break;
       case 'Thông báo':
         Navigator.pushNamed(context, '/notifications');
         break;

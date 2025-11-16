@@ -25,10 +25,13 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
   final AuthService _auth = AuthService();
   final Map<int, TextEditingController> _controllers = {};
   final Map<int, int> _ratings = {};
+  final Map<int, int?> _deliveryRatings = {}; // Đánh giá tốc độ giao hàng
+  final Map<int, int?> _shopRatings = {}; // Đánh giá shop
   final Map<int, List<String>> _images = {};
   final Map<int, bool> _loading = {};
-  final Map<int, bool?> _matchesDescription = {};
-  final Map<int, bool?> _isSatisfied = {};
+  final Map<int, bool?> _matchesDescription = {}; // Đúng với mô tả
+  final Map<int, bool?> _isSatisfied = {}; // Hài lòng
+  final Map<int, String?> _willBuyAgain = {}; // Sẽ quay lại mua: 'yes', 'no', 'maybe'
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -38,10 +41,13 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
       final productId = product['id'] as int;
       _controllers[productId] = TextEditingController();
       _ratings[productId] = 5;
+      _deliveryRatings[productId] = null;
+      _shopRatings[productId] = null;
       _images[productId] = [];
       _loading[productId] = false;
       _matchesDescription[productId] = null;
       _isSatisfied[productId] = null;
+      _willBuyAgain[productId] = null;
     }
   }
 
@@ -132,13 +138,26 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
         images: _images[productId]?.isNotEmpty == true ? _images[productId] : null,
         matchesDescription: _matchesDescription[productId],
         isSatisfied: _isSatisfied[productId],
+        deliveryRating: _deliveryRatings[productId],
+        shopRating: _shopRatings[productId],
+        willBuyAgain: _willBuyAgain[productId],
       );
 
       if (!mounted) return;
 
       if (result?['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đánh giá thành công')),
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Đánh giá thành công'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
         );
         widget.onReviewSubmitted?.call();
         Navigator.pop(context);
@@ -311,6 +330,76 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
                 ),
                 const SizedBox(height: 20),
                 
+                // Đánh giá tốc độ giao hàng
+                Row(
+                  children: [
+                    const Text(
+                      'Tốc độ giao hàng',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ...List.generate(5, (index) {
+                      final starRating = index + 1;
+                      final isSelected = (_deliveryRatings[productId] ?? 0) >= starRating;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _deliveryRatings[productId] = starRating;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Icon(
+                            isSelected ? Icons.star : Icons.star_border,
+                            color: isSelected ? Colors.amber[700] : Colors.grey[300],
+                            size: 20,
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Đánh giá shop
+                Row(
+                  children: [
+                    const Text(
+                      'Đánh giá shop',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ...List.generate(5, (index) {
+                      final starRating = index + 1;
+                      final isSelected = (_shopRatings[productId] ?? 0) >= starRating;
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _shopRatings[productId] = starRating;
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: Icon(
+                            isSelected ? Icons.star : Icons.star_border,
+                            color: isSelected ? Colors.amber[700] : Colors.grey[300],
+                            size: 20,
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
                 // Checkbox: Đúng với mô tả
                 Row(
                   children: [
@@ -368,6 +457,42 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
                       false,
                       'Chưa hài lòng',
                       _isSatisfied[productId] == false,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                // Checkbox: Sẽ quay lại mua
+                Row(
+                  children: [
+                    const Text(
+                      'Sẽ quay lại mua',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    _buildRadioOption(
+                      productId,
+                      'yes',
+                      'Có',
+                      _willBuyAgain[productId] == 'yes',
+                    ),
+                    const SizedBox(width: 12),
+                    _buildRadioOption(
+                      productId,
+                      'no',
+                      'Không',
+                      _willBuyAgain[productId] == 'no',
+                    ),
+                    const SizedBox(width: 12),
+                    _buildRadioOption(
+                      productId,
+                      'maybe',
+                      'Sẽ cân nhắc',
+                      _willBuyAgain[productId] == 'maybe',
                     ),
                   ],
                 ),
@@ -522,6 +647,47 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
             ),
           );
         }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildRadioOption(int productId, String value, String label, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _willBuyAgain[productId] = isSelected ? null : value;
+        });
+      },
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 18,
+            height: 18,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[400]!,
+                width: 2,
+              ),
+              color: isSelected ? const Color(0xFFFF6B35) : Colors.transparent,
+            ),
+            child: isSelected
+                ? const Center(
+                    child: Icon(Icons.circle, size: 10, color: Colors.white),
+                  )
+                : null,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isSelected ? const Color(0xFFFF6B35) : Colors.black87,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+        ],
       ),
     );
   }

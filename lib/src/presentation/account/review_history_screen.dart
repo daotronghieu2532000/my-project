@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
+import '../orders/product_review_screen.dart';
 
 class ReviewHistoryScreen extends StatefulWidget {
   const ReviewHistoryScreen({super.key});
@@ -242,15 +244,27 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
   Widget _buildProductReviewItem(Map<String, dynamic> product, int? orderId) {
     final productName = product['name'] ?? '';
     final productImage = product['image'] ?? '';
+    final variantName = product['variant_name'] ?? '';
     final size = product['size'] ?? '';
     final color = product['color'] ?? '';
-    final variant = [size, color].where((e) => e.toString().isNotEmpty).join(' • ');
+    // Ưu tiên dùng variant_name từ API, nếu không có thì tạo từ size và color
+    final variant = variantName.isNotEmpty 
+        ? variantName 
+        : [size, color].where((e) => e.toString().isNotEmpty).join(' • ');
     final hasReview = product['has_review'] == true;
     final review = product['review'] as Map<String, dynamic>?;
     
-    final fixedImage = productImage.startsWith('http')
-        ? productImage
-        : (productImage.isEmpty ? '' : 'https://socdo.vn$productImage');
+    // Xử lý ảnh sản phẩm: có thể là URL đầy đủ hoặc đường dẫn tương đối
+    String fixedImage = '';
+    if (productImage.isNotEmpty) {
+      if (productImage.startsWith('http')) {
+        fixedImage = productImage;
+      } else {
+        fixedImage = productImage.startsWith('/') 
+            ? 'https://socdo.vn$productImage'
+            : 'https://socdo.vn/$productImage';
+      }
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -315,19 +329,114 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
           
           // Review content
           if (hasReview && review != null) ...[
-            // Rating stars
+            // Rating stars - Sản phẩm
             Row(
-              children: List.generate(5, (index) {
-                final starRating = index + 1;
-                final isSelected = (review['rating'] as int? ?? 0) >= starRating;
-                return Icon(
-                  isSelected ? Icons.star : Icons.star_border,
-                  color: isSelected ? Colors.amber : Colors.grey[300],
-                  size: 20,
-                );
-              }),
+              children: [
+                const Text(
+                  'Sản phẩm: ',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                ...List.generate(5, (index) {
+                  final starRating = index + 1;
+                  final isSelected = (review['rating'] as int? ?? 0) >= starRating;
+                  return Icon(
+                    isSelected ? Icons.star : Icons.star_border,
+                    color: isSelected ? Colors.amber : Colors.grey[300],
+                    size: 18,
+                  );
+                }),
+              ],
             ),
-            const SizedBox(height: 8),
+            
+            // Đánh giá tốc độ giao hàng
+            if (review['delivery_rating'] != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Text(
+                    'Vận chuyển: ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  ...List.generate(5, (index) {
+                    final starRating = index + 1;
+                    final isSelected = (review['delivery_rating'] as int? ?? 0) >= starRating;
+                    return Icon(
+                      isSelected ? Icons.star : Icons.star_border,
+                      color: isSelected ? Colors.blue : Colors.grey[300],
+                      size: 16,
+                    );
+                  }),
+                ],
+              ),
+            ],
+            
+            // Đánh giá shop
+            if (review['shop_rating'] != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Text(
+                    'Shop: ',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  ...List.generate(5, (index) {
+                    final starRating = index + 1;
+                    final isSelected = (review['shop_rating'] as int? ?? 0) >= starRating;
+                    return Icon(
+                      isSelected ? Icons.star : Icons.star_border,
+                      color: isSelected ? Colors.green : Colors.grey[300],
+                      size: 16,
+                    );
+                  }),
+                ],
+              ),
+            ],
+            
+            // Checkboxes: Đúng mô tả, Hài lòng, Sẽ quay lại mua
+            if (review['matches_description'] != null || 
+                review['is_satisfied'] != null || 
+                review['will_buy_again'] != null) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 8,
+                children: [
+                  if (review['matches_description'] != null)
+                    _buildInfoChip(
+                      review['matches_description'] == true ? 'Đúng mô tả' : 'Không đúng mô tả',
+                      review['matches_description'] == true ? Colors.green : Colors.red,
+                    ),
+                  if (review['is_satisfied'] != null)
+                    _buildInfoChip(
+                      review['is_satisfied'] == true ? 'Hài lòng' : 'Chưa hài lòng',
+                      review['is_satisfied'] == true ? Colors.green : Colors.orange,
+                    ),
+                  if (review['will_buy_again'] != null)
+                    _buildInfoChip(
+                      review['will_buy_again'] == 'yes' 
+                        ? 'Sẽ quay lại mua' 
+                        : (review['will_buy_again'] == 'no' ? 'Không quay lại' : 'Sẽ cân nhắc'),
+                      review['will_buy_again'] == 'yes' 
+                        ? Colors.green 
+                        : (review['will_buy_again'] == 'no' ? Colors.red : Colors.orange),
+                    ),
+                ],
+              ),
+            ],
+            
+            const SizedBox(height: 12),
             
             // Review text
             Text(
@@ -345,12 +454,40 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                 spacing: 8,
                 runSpacing: 8,
                 children: (review['images'] as List).map((img) {
-                  final imageUrl = img.toString().startsWith('http')
-                      ? img.toString()
-                      : 'https://socdo.vn${img.toString()}';
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
+                  final imgStr = img.toString();
+                  Widget imageWidget;
+                  
+                  // Nếu là base64
+                  if (imgStr.startsWith('data:image/')) {
+                    try {
+                      final base64String = imgStr.split(',').last;
+                      final imageBytes = base64Decode(base64String);
+                      imageWidget = Image.memory(
+                        imageBytes,
+                        width: 80,
+                        height: 80,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 80,
+                          height: 80,
+                          color: const Color(0xFFF5F5F5),
+                          child: const Icon(Icons.image_not_supported, size: 20),
+                        ),
+                      );
+                    } catch (e) {
+                      imageWidget = Container(
+                        width: 80,
+                        height: 80,
+                        color: const Color(0xFFF5F5F5),
+                        child: const Icon(Icons.image_not_supported, size: 20),
+                      );
+                    }
+                  } else {
+                    // Nếu là URL
+                    final imageUrl = imgStr.startsWith('http')
+                        ? imgStr
+                        : 'https://socdo.vn${imgStr.startsWith('/') ? imgStr : '/$imgStr'}';
+                    imageWidget = Image.network(
                       imageUrl,
                       width: 80,
                       height: 80,
@@ -361,7 +498,12 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                         color: const Color(0xFFF5F5F5),
                         child: const Icon(Icons.image_not_supported, size: 20),
                       ),
-                    ),
+                    );
+                  }
+                  
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: imageWidget,
                   );
                 }).toList(),
               ),
@@ -400,7 +542,7 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
               ],
             ),
           ] else ...[
-            // Not reviewed yet
+            // Not reviewed yet - hiển thị nút đánh giá
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -426,11 +568,73 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                       ),
                     ),
                   ),
+                  GestureDetector(
+                    onTap: () {
+                      // Navigate to review screen
+                      if (orderId != null) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProductReviewScreen(
+                              orderId: orderId,
+                              products: [product],
+                              onReviewSubmitted: () {
+                                // Reload reviews
+                                setState(() {});
+                                _loadReviews(refresh: true);
+                              },
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF6B35),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.star, size: 14, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Đánh giá',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildInfoChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          color: color,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

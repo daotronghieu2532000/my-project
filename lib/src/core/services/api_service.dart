@@ -464,10 +464,13 @@ class ApiService {
     List<String>? images, // List of base64 strings or file paths
     bool? matchesDescription,
     bool? isSatisfied,
+    int? deliveryRating, // Đánh giá tốc độ giao hàng (1-5)
+    int? shopRating, // Đánh giá shop (1-5)
+    String? willBuyAgain, // 'yes', 'no', 'maybe'
   }) async {
     try {
-      // API POST để submit review - sử dụng file product-reviews.php đã có
-      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product-reviews.php');
+      // API POST để submit review
+      final uri = Uri.parse('$baseUrl/product_reviews');
       final token = await getValidToken();
       
       // Log request để debug
@@ -483,26 +486,35 @@ class ApiService {
       print('   Has Token: ${token != null}');
       print('   Images Count: ${images?.length ?? 0}');
       
-      final req = http.MultipartRequest('POST', uri);
-      if (token != null) req.headers['Authorization'] = 'Bearer $token';
-      req.headers['Shop-ID'] = shopId.toString();
+      // Build request body
+      final body = <String, dynamic>{
+        'user_id': userId,
+        'product_id': productId,
+        'shop_id': shopId,
+        'content': content,
+        'rating': rating,
+      };
       
-      req.fields['user_id'] = userId.toString();
-      req.fields['product_id'] = productId.toString();
-      req.fields['shop_id'] = shopId.toString();
-      req.fields['content'] = content;
-      req.fields['rating'] = rating.toString();
       if (variantId != null && variantId > 0) {
-        req.fields['variant_id'] = variantId.toString();
+        body['variant_id'] = variantId;
       }
       if (orderId != null && orderId > 0) {
-        req.fields['order_id'] = orderId.toString();
+        body['order_id'] = orderId;
       }
       if (matchesDescription != null) {
-        req.fields['matches_description'] = matchesDescription ? '1' : '0';
+        body['matches_description'] = matchesDescription ? 1 : 0;
       }
       if (isSatisfied != null) {
-        req.fields['is_satisfied'] = isSatisfied ? '1' : '0';
+        body['is_satisfied'] = isSatisfied ? 1 : 0;
+      }
+      if (deliveryRating != null && deliveryRating >= 1 && deliveryRating <= 5) {
+        body['delivery_rating'] = deliveryRating;
+      }
+      if (shopRating != null && shopRating >= 1 && shopRating <= 5) {
+        body['shop_rating'] = shopRating;
+      }
+      if (willBuyAgain != null && ['yes', 'no', 'maybe'].contains(willBuyAgain)) {
+        body['will_buy_again'] = willBuyAgain;
       }
       
       // Handle images - support both base64 and file uploads
@@ -518,12 +530,20 @@ class ApiService {
           }
         }
         if (imageList.isNotEmpty) {
-          req.fields['images'] = jsonEncode(imageList);
+          body['images'] = imageList;
         }
       }
       
-      final streamed = await req.send();
-      final res = await http.Response.fromStream(streamed);
+      final headers = <String, String>{
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      };
+      
+      final res = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
       
       // Log response để debug
       print('📤 Product Review API Response:');
@@ -588,7 +608,7 @@ class ApiService {
         'limit': limit.toString(),
         if (status != null) 'status': status,
       };
-      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product-reviews-list.php').replace(queryParameters: query);
+      final uri = Uri.parse('$baseUrl/product_reviews').replace(queryParameters: query);
       final token = await getValidToken();
       final response = await http.get(uri, headers: {
         'Authorization': token != null ? 'Bearer $token' : '',
@@ -616,7 +636,7 @@ class ApiService {
         'limit': '1',
         if (variantId != null && variantId > 0) 'variant_id': variantId.toString(),
       };
-      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_reviews.php').replace(queryParameters: query);
+      final uri = Uri.parse('$baseUrl/product_reviews').replace(queryParameters: query);
       final token = await getValidToken();
       final response = await http.get(uri, headers: {
         'Authorization': token != null ? 'Bearer $token' : '',
@@ -661,7 +681,7 @@ class ApiService {
         if (rating != null && rating > 0) 'rating': rating.toString(),
         if (variantId != null && variantId > 0) 'variant_id': variantId.toString(),
       };
-      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_reviews.php').replace(queryParameters: query);
+      final uri = Uri.parse('$baseUrl/product_reviews').replace(queryParameters: query);
       final response = await http.get(uri);
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -677,7 +697,7 @@ class ApiService {
     required int productId,
   }) async {
     try {
-      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_rating_stats.php').replace(queryParameters: {
+      final uri = Uri.parse('$baseUrl/product_rating_stats').replace(queryParameters: {
         'product_id': productId.toString(),
       });
       final response = await http.get(uri);

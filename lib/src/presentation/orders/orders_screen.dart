@@ -244,6 +244,7 @@ class _OrdersListState extends State<_OrdersList> {
   final int _limit = 50; // Tăng từ 20 lên 50
   final ScrollController _scrollController = ScrollController();
   bool _hasMore = true;
+  Map<String, bool> _reviewStatusCache = {}; // Cache trạng thái đánh giá: "orderId_productId" -> hasReview
 
   @override
   void initState() {
@@ -745,13 +746,77 @@ class _OrdersListState extends State<_OrdersList> {
     return null;
   }
 
+  Future<bool> _checkAllProductsReviewed(Map<String, dynamic> order) async {
+    final orderId = _toInt(order['id']);
+    if (orderId == null) return false;
+    
+    final products = (order['products'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    if (products.isEmpty) return false;
+    
+    // Kiểm tra từng sản phẩm
+    for (var product in products) {
+      final productId = _toInt(product['id'] ?? product['product_id']);
+      if (productId == null) continue;
+      
+      final cacheKey = '${orderId}_$productId';
+      if (_reviewStatusCache.containsKey(cacheKey)) {
+        if (!_reviewStatusCache[cacheKey]!) return false;
+        continue;
+      }
+      
+      // Gọi API để check
+      final reviewStatus = await _api.checkProductReviewStatus(
+        userId: widget.userId,
+        orderId: orderId,
+        productId: productId,
+        variantId: _toInt(product['variant_id']),
+      );
+      
+      final hasReview = reviewStatus?['has_review'] == true;
+      _reviewStatusCache[cacheKey] = hasReview;
+      
+      if (!hasReview) return false;
+    }
+    
+    return true;
+  }
+
   Widget _buildReviewButton(Map<String, dynamic> order) {
     final orderId = _toInt(order['id']);
     final products = (order['products'] as List?)?.cast<Map<String, dynamic>>() ?? [];
     
-    // TODO: Check if all products are reviewed from API
-    // For now, always show review button
-    
+    return FutureBuilder<bool>(
+      future: _checkAllProductsReviewed(order),
+      builder: (context, snapshot) {
+        final allReviewed = snapshot.data ?? false;
+        
+        if (allReviewed) {
+          // Đã đánh giá hết
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, size: 14, color: Colors.grey),
+                SizedBox(width: 4),
+                Text(
+                  'Đã đánh giá',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        // Chưa đánh giá hết
     return GestureDetector(
       onTap: () {
         if (orderId == null) return;
@@ -762,6 +827,8 @@ class _OrdersListState extends State<_OrdersList> {
               orderId: orderId,
               products: products,
               onReviewSubmitted: () {
+                    // Clear cache và reload
+                    _reviewStatusCache.clear();
                 _load(refresh: true);
               },
             ),
@@ -790,6 +857,8 @@ class _OrdersListState extends State<_OrdersList> {
           ],
         ),
       ),
+        );
+      },
     );
   }
 }

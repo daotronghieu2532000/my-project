@@ -739,13 +739,76 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
+  Future<bool> _checkAllProductsReviewed() async {
+    final orderId = _detail?['id'] as int?;
+    if (orderId == null) return false;
+    
+    final products = ((_detail?['products'] ?? []) as List).cast<Map<String, dynamic>>();
+    if (products.isEmpty) return false;
+    
+    // Kiểm tra từng sản phẩm
+    for (var product in products) {
+      final productId = _toInt(product['id'] ?? product['product_id']);
+      if (productId == null) continue;
+      
+      final reviewStatus = await _api.checkProductReviewStatus(
+        userId: widget.userId,
+        orderId: orderId,
+        productId: productId,
+        variantId: _toInt(product['variant_id']),
+      );
+      
+      if (reviewStatus?['has_review'] != true) {
+        return false;
+      }
+    }
+    
+    return true;
+  }
+  
+  int? _toInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
   Widget _buildReviewButton() {
     final orderId = _detail?['id'] as int?;
     final products = ((_detail?['products'] ?? []) as List).cast<Map<String, dynamic>>();
     
-    // TODO: Check if all products are reviewed from API
-    // For now, always show review button
-    
+    return FutureBuilder<bool>(
+      future: _checkAllProductsReviewed(),
+      builder: (context, snapshot) {
+        final allReviewed = snapshot.data ?? false;
+        
+        if (allReviewed) {
+          // Đã đánh giá hết
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, size: 16, color: Colors.grey),
+                SizedBox(width: 4),
+                Text(
+                  'Đã đánh giá',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        // Chưa đánh giá hết
     return GestureDetector(
       onTap: () {
         if (orderId == null) return;
@@ -784,6 +847,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           ],
         ),
       ),
+        );
+      },
     );
   }
 
