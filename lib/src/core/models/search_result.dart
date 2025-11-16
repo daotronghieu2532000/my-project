@@ -185,29 +185,32 @@ class SearchProduct {
 
   /// Helper method để build URL hình ảnh
   static String _buildImageUrl(Map<String, dynamic> json) {
-    // Ưu tiên image_url nếu có và không phải no-images.jpg
+    // Ưu tiên image_url nếu có và không phải no-images.jpg (đã có CDN từ API)
     final imageUrl = json['image_url']?.toString();
     if (imageUrl != null && !imageUrl.contains('no-images.jpg')) {
-      return imageUrl;
+      // Nếu đã là URL đầy đủ (bao gồm CDN), giữ nguyên
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        return imageUrl;
+      }
+      // Nếu là relative path, chuyển sang CDN
+      final cleanUrl = imageUrl.replaceFirst(RegExp(r'^/'), '');
+      return 'https://socdo.cdn.vccloud.vn/$cleanUrl';
     }
     
-    // Nếu có minh_hoa, build URL đầy đủ
+    // Nếu có minh_hoa, build URL với CDN
     final minhHoa = json['minh_hoa']?.toString();
     if (minhHoa != null && minhHoa.isNotEmpty) {
       // Nếu đã có https:// thì dùng luôn
       if (minhHoa.startsWith('http')) {
         return minhHoa;
       }
-      // Nếu bắt đầu bằng / thì thêm domain
-      if (minhHoa.startsWith('/')) {
-        return 'https://socdo.vn$minhHoa';
-      }
-      // Nếu không có / ở đầu thì thêm /
-      return 'https://socdo.vn/$minhHoa';
+      // Loại bỏ dấu / ở đầu nếu có và chuyển sang CDN
+      final cleanUrl = minhHoa.replaceFirst(RegExp(r'^/'), '');
+      return 'https://socdo.cdn.vccloud.vn/$cleanUrl';
     }
     
-    // Fallback về image_url hoặc no-images
-    return imageUrl ?? 'https://socdo.vn/images/no-images.jpg';
+    // Fallback về no-images
+    return 'https://socdo.vn/images/no-images.jpg';
   }
 
   Map<String, dynamic> toJson() {

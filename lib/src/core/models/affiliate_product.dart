@@ -81,10 +81,22 @@ class AffiliateProduct {
     final commissionList = json['commission_info'] as List? ?? [];
     final categoryList = json['category_ids'] as List? ?? [];
     
-    // Fix image URL - replace api.socdo.vn with socdo.vn
+    // Fix image URL - hỗ trợ CDN và sửa api.socdo.vn
     String imageUrl = json['image'] ?? '';
-    if (imageUrl.contains('api.socdo.vn')) {
-      imageUrl = imageUrl.replaceAll('api.socdo.vn', 'socdo.vn');
+    if (imageUrl.isNotEmpty) {
+      // Nếu chứa api.socdo.vn, thay bằng CDN domain
+      if (imageUrl.contains('api.socdo.vn')) {
+        imageUrl = imageUrl.replaceAll('api.socdo.vn', 'socdo.cdn.vccloud.vn');
+      }
+      // Nếu là relative path và chưa có domain, thêm CDN domain
+      else if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+        final cleanUrl = imageUrl.replaceFirst(RegExp(r'^/'), '');
+        imageUrl = 'https://socdo.cdn.vccloud.vn/$cleanUrl';
+      }
+      // Nếu chứa socdo.vn nhưng không phải CDN, thay bằng CDN
+      else if (imageUrl.contains('socdo.vn') && !imageUrl.contains('cdn.vccloud.vn')) {
+        imageUrl = imageUrl.replaceAll('socdo.vn', 'socdo.cdn.vccloud.vn');
+      }
     }
     
     // Fix product URL - replace api.socdo.vn with socdo.vn

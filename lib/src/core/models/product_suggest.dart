@@ -1,13 +1,13 @@
 // Image URL normalizer
+// Hỗ trợ CDN: https://socdo.cdn.vccloud.vn/
+// Fallback về https://socdo.vn/ nếu CDN lỗi (được xử lý ở Image widget)
 String? _fixImageUrl(String? rawUrl) {
   if (rawUrl == null) return null;
   String url = rawUrl.trim();
   if (url.isEmpty) return null;
   if (url.startsWith('@')) url = url.substring(1);
-  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
-    url = url.replaceFirst(RegExp(r'^/'), '');
-    return 'https://socdo.vn/$url';
-  }
+  
+  // Nếu đã là URL đầy đủ (bao gồm CDN), giữ nguyên
   if (url.startsWith('http://') || url.startsWith('https://')) {
     // Sửa lỗi URL có 2 dấu // (ví dụ: https://socdo.vn//uploads/...)
     url = url.replaceAll(RegExp(r'([^:])//+'), r'$1/');
@@ -17,8 +17,15 @@ String? _fixImageUrl(String? rawUrl) {
     if (url.startsWith('http://')) url = url.replaceFirst('http://', 'https://');
     return url;
   }
+  
+  // Nếu là relative path, chuyển sang CDN
+  if (url.startsWith('/uploads/') || url.startsWith('uploads/')) {
+    url = url.replaceFirst(RegExp(r'^/'), '');
+    return 'https://socdo.cdn.vccloud.vn/$url';
+  }
+  
   url = url.replaceFirst(RegExp(r'^/'), '');
-  return 'https://socdo.vn/$url';
+  return 'https://socdo.cdn.vccloud.vn/$url';
 }
 
 class ProductSuggest {
