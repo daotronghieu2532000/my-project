@@ -65,4 +65,20 @@ nul
 # Markdown documentation files
 *.md
 
+# Sensitive configuration files - QUAN TRỌNG: Không được commit!
+**/fcm_config.php
+**/zns_config.php
+**/*config*.php
+**/socdomobile-*.json
+**/google-services.json
+**/*secret*.json
+**/*credential*.json
+**/*token*.json
+**/*.pem
+**/*.p12
+**/*.key
+**/*.env
+**/*.env.*
+**/debug_*.log
+
 
