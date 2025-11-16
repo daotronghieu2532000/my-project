@@ -62,4 +62,7 @@ android/app/*.keystore
 # Windows special device names - cannot be indexed by Git
 nul
 
+# Markdown documentation files
+*.md
+
 
