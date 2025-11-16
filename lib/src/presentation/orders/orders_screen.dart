@@ -4,8 +4,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../root_shell.dart';
 import 'order_detail_screen.dart';
-// Tạm thời ẩn import product_review_screen
-// import 'product_review_screen.dart';
+import 'product_review_screen.dart';
 import '../home/widgets/product_grid.dart';
 
 class OrdersScreen extends StatefulWidget {
@@ -547,24 +546,21 @@ class _OrdersListState extends State<_OrdersList> {
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1976D2)),
                     ),
                     const Spacer(),
-                    // Tạm thời ẩn nút đánh giá
                     // Show review button only for status 5 (Đánh giá tab)
-                    // if ((o['status'] as int? ?? 0) == 5)
-                    //   _buildReviewButton(o),
+                    if ((o['status'] as int? ?? 0) == 5)
+                      _buildReviewButton(o),
+                  ],
+                ),
+              ] else if ((o['status'] as int? ?? 0) == 5) ...[
+                // If no shipping fee, still show review button for status 5
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Spacer(),
+                    _buildReviewButton(o),
                   ],
                 ),
               ],
-              // Tạm thời ẩn nút đánh giá
-              // else if ((o['status'] as int? ?? 0) == 5) ...[
-              //   // If no shipping fee, still show review button for status 5
-              //   const SizedBox(height: 4),
-              //   Row(
-              //     children: [
-              //       const Spacer(),
-              //       _buildReviewButton(o),
-              //     ],
-              //   ),
-              // ],
               // Show voucher info if available
               if ((o['voucher_tmdt'] ?? 0) > 0) ...[
                 const SizedBox(height: 6),
@@ -749,8 +745,6 @@ class _OrdersListState extends State<_OrdersList> {
     return null;
   }
 
-  // Tạm thời ẩn nút đánh giá
-  /*
   Widget _buildReviewButton(Map<String, dynamic> order) {
     final orderId = _toInt(order['id']);
     final products = (order['products'] as List?)?.cast<Map<String, dynamic>>() ?? [];
@@ -798,7 +792,6 @@ class _OrdersListState extends State<_OrdersList> {
       ),
     );
   }
-  */
 }
 
 class _EmptyOrderState extends StatelessWidget {

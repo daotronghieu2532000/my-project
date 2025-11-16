@@ -62,13 +62,12 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         foregroundColor: Colors.black,
         elevation: 0,
         actions: [
-          // Tạm thời ẩn nút đánh giá
           // Show review button only for status 5 (Giao thành công)
-          // if ((_detail?['status'] as int? ?? 0) == 5)
-          //   Padding(
-          //     padding: const EdgeInsets.only(right: 8),
-          //     child: _buildReviewButton(),
-          //   ),
+          if ((_detail?['status'] as int? ?? 0) == 5)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildReviewButton(),
+            ),
         ],
       ),
       backgroundColor: const Color(0xFFF5F5F5),
@@ -740,8 +739,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  // Tạm thời ẩn nút đánh giá
-  /*
   Widget _buildReviewButton() {
     final orderId = _detail?['id'] as int?;
     final products = ((_detail?['products'] ?? []) as List).cast<Map<String, dynamic>>();
@@ -789,7 +786,6 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       ),
     );
   }
-  */
 
   // Action Buttons
   Widget _buildActionButtons() {

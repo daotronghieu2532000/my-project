@@ -45,11 +45,11 @@ app.*.map.json
 /android/app/release
 
 # Exclude sensitive folders
-/API_WEB/
+/api/
 /android/
 /admin_folder/
-/database_web/
-/doc_web/
+/database/
+/doc/
 /chat.socdo.vn/
 
 # Keystore files - QUAN TRỌNG: Không được commit lên Git!

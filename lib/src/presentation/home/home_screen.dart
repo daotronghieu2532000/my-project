@@ -314,6 +314,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         _cachedApiService.getHomePartnerBanners(forceRefresh: true),
         _cachedApiService.getHomeFeaturedBrands(forceRefresh: true),
         _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true, userId: userId),
+        // Load banner products cho cả 3 vị trí (đầu trang, giữa trang, cuối trang)
+        _cachedApiService.getBannerProductsCached(forceRefresh: true),
       ]);
       
       // Reload popup banner khi refresh

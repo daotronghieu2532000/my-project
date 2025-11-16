@@ -9,6 +9,8 @@ String? _fixImageUrl(String? rawUrl) {
     return 'https://socdo.vn/$url';
   }
   if (url.startsWith('http://') || url.startsWith('https://')) {
+    // Sửa lỗi URL có 2 dấu // (ví dụ: https://socdo.vn//uploads/...)
+    url = url.replaceAll(RegExp(r'([^:])//+'), r'$1/');
     url = url.replaceFirst('://api.socdo.vn', '://socdo.vn');
     url = url.replaceFirst('://www.api.socdo.vn', '://socdo.vn');
     url = url.replaceFirst('://www.socdo.vn', '://socdo.vn');

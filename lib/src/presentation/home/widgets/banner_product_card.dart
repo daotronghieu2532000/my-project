@@ -272,8 +272,7 @@ class BannerProductCard extends StatelessWidget {
                     ],
                   ),
                   // Vị trí kho
-                  if ((product.warehouseName != null && product.warehouseName!.isNotEmpty) ||
-                      (product.provinceName != null && product.provinceName!.isNotEmpty))
+                  if ((product.provinceName != null && product.provinceName!.isNotEmpty))
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Row(
@@ -351,9 +350,7 @@ class BannerProductCard extends StatelessWidget {
 
   String _buildLocationText() {
     final parts = <String>[];
-    if (product.warehouseName != null && product.warehouseName!.isNotEmpty) {
-      parts.add(product.warehouseName!);
-    }
+   
     if (product.provinceName != null && product.provinceName!.isNotEmpty) {
       parts.add(product.provinceName!);
     }
