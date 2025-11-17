@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/services/api_service.dart';
 import '../../orders/order_detail_screen.dart';
+import '../../orders/product_review_screen.dart';
 
 class AllOrdersSection extends StatefulWidget {
   final int userId;
@@ -14,6 +15,7 @@ class _AllOrdersSectionState extends State<AllOrdersSection> {
   final ApiService _api = ApiService();
   bool _loading = true;
   List<Map<String, dynamic>> _orders = [];
+  Map<String, bool> _reviewStatusCache = {}; // Cache trạng thái đánh giá: "orderId_productId" -> hasReview
 
   @override
   void initState() {
@@ -324,6 +326,16 @@ class _AllOrdersSectionState extends State<AllOrdersSection> {
                   ),
                 ),
               ],
+              // Show review button for status 5 (Giao thành công)
+              if ((o['status'] as int? ?? 0) == 5) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Spacer(),
+                    _buildReviewButton(o),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -476,6 +488,122 @@ class _AllOrdersSectionState extends State<AllOrdersSection> {
       default:
         return const Color(0xFF6C757D);
     }
+  }
+
+  Future<bool> _checkAllProductsReviewed(Map<String, dynamic> order) async {
+    final orderId = _toInt(order['id']);
+    if (orderId == null) return false;
+    
+    final products = (order['products'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    if (products.isEmpty) return false;
+    
+    // Kiểm tra từng sản phẩm
+    for (var product in products) {
+      final productId = _toInt(product['id'] ?? product['product_id']);
+      if (productId == null) continue;
+      
+      final cacheKey = '${orderId}_$productId';
+      if (_reviewStatusCache.containsKey(cacheKey)) {
+        if (!_reviewStatusCache[cacheKey]!) return false;
+        continue;
+      }
+      
+      // Gọi API để check
+      final reviewStatus = await _api.checkProductReviewStatus(
+        userId: widget.userId,
+        orderId: orderId,
+        productId: productId,
+        variantId: _toInt(product['variant_id']),
+      );
+      
+      final hasReview = reviewStatus?['has_review'] == true;
+      _reviewStatusCache[cacheKey] = hasReview;
+      
+      if (!hasReview) return false;
+    }
+    
+    return true;
+  }
+
+  Widget _buildReviewButton(Map<String, dynamic> order) {
+    final orderId = _toInt(order['id']);
+    final products = (order['products'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+    
+    return FutureBuilder<bool>(
+      future: _checkAllProductsReviewed(order),
+      builder: (context, snapshot) {
+        final allReviewed = snapshot.data ?? false;
+        
+        if (allReviewed) {
+          // Đã đánh giá hết
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.check_circle, size: 14, color: Colors.grey),
+                SizedBox(width: 4),
+                Text(
+                  'Đã đánh giá',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        // Chưa đánh giá hết
+        return GestureDetector(
+          onTap: () {
+            if (orderId == null) return;
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductReviewScreen(
+                  orderId: orderId,
+                  products: products,
+                  onReviewSubmitted: () {
+                    // Clear cache để refresh
+                    _reviewStatusCache.clear();
+                    _loadOrders();
+                  },
+                ),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF6B35),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.star, size: 14, color: Colors.white),
+                SizedBox(width: 4),
+                Text(
+                  'Đánh giá',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

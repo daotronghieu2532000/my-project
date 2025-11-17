@@ -44,14 +44,11 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    print('🔄 [RootShell] Lifecycle changed: $state');
     
     if (state == AppLifecycleState.paused) {
       // Lưu state khi app bị pause
-      print('   💾 Saving current tab: $_currentIndex');
       _lifecycleManager.saveCurrentTab(_currentIndex);
     } else if (state == AppLifecycleState.resumed) {
-      print('   📂 Attempting to restore state...');
       // Không restore state ngay - để Flutter tự xử lý navigation stack
       // Chỉ restore nếu app bị kill và restart
       _restoreStateOnResume();
@@ -61,32 +58,23 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   /// Restore state khi app resume
   Future<void> _restoreStateOnResume() async {
     try {
-      print('   🔍 Checking if state is valid...');
       // Chỉ restore nếu state hợp lệ và app có thể đã bị kill
       if (_lifecycleManager.isStateValid()) {
-        print('   ✅ State is valid, getting saved tab...');
         final savedTab = await _lifecycleManager.getSavedTab();
-        print('   📊 Current tab: $_currentIndex, Saved tab: $savedTab');
         
         if (savedTab != null && savedTab != _currentIndex) {
-          print('   🔄 Restoring tab from $_currentIndex to $savedTab');
           // Chỉ restore nếu tab khác - tránh rebuild không cần thiết
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
-              print('   ✅ Setting tab to $savedTab');
               setState(() {
                 _currentIndex = savedTab;
               });
             }
           });
-        } else {
-          print('   ℹ️ No need to restore (tab already correct or no saved tab)');
         }
-      } else {
-        print('   ⚠️ State is not valid, skipping restore');
       }
     } catch (e) {
-      print('   ❌ Error restoring state: $e');
+      // Error restoring state
     }
   }
 
@@ -97,37 +85,28 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   /// Khởi tạo và khôi phục state của app
   Future<void> _initializeAppState() async {
     if (_isInitialized) {
-      print('🔄 [RootShell] Already initialized, skipping');
       return;
     }
     
-    print('🚀 [RootShell] Initializing app state...');
     try {
       // Khởi tạo AppLifecycleManager
       _lifecycleManager.initialize();
-      print('   ✅ AppLifecycleManager initialized');
       
       // Đợi một chút để đảm bảo pause time đã được load từ storage
       await Future.delayed(const Duration(milliseconds: 100));
       
       // Thử khôi phục tab đã lưu
-      print('   📂 Getting saved tab...');
       final savedTab = await _lifecycleManager.getSavedTab();
-      print('   📊 Initial index: ${widget.initialIndex}, Saved tab: $savedTab');
       
       if (savedTab != null && savedTab != widget.initialIndex) {
-        print('   🔄 Restoring tab to $savedTab');
         setState(() {
           _currentIndex = savedTab;
         });
-      } else {
-        print('   ℹ️ No need to restore (using initial index)');
       }
       
       _isInitialized = true;
-      print('   ✅ App state initialized');
     } catch (e) {
-      print('   ❌ Error initializing app state: $e');
+      // Error initializing app state
     }
   }
 
@@ -185,7 +164,6 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   /// Xử lý khi tab thay đổi
   void _onTabChanged(int newIndex) {
     if (newIndex != _currentIndex) {
-      print('🔄 [RootShell] Tab changed from $_currentIndex to $newIndex');
       setState(() {
         _currentIndex = newIndex;
       });
@@ -367,7 +345,6 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> {
   }
 
   void _onCartChanged() {
-    print('🛒 RootShell Cart changed - Item count: ${_cart.itemCount}, Selected count: ${_cart.selectedItemCount}, Total: ${_cart.selectedTotalPrice}');
     if (mounted) setState(() {});
   }
 

@@ -32,23 +32,21 @@ class _CacheDemoScreenState extends State<CacheDemoScreen> {
     });
 
     try {
-      print('🧪 Testing home cache...');
+     
       
       // Test banners
       final banners = await _cachedApiService.getHomeBanners();
-      print('📱 Banners: ${banners.length} items');
-      
+     
       // Test flash sale
       final flashSale = await _cachedApiService.getHomeFlashSale();
-      print('⚡ Flash Sale: ${flashSale.length} items');
+     
       
       // Test partner banners
       final partnerBanners = await _cachedApiService.getHomePartnerBanners();
-      print('🤝 Partner Banners: ${partnerBanners.length} items');
-      
+     
       // Test suggestions
       final suggestions = await _cachedApiService.getHomeSuggestions(limit: 20);
-      print('💡 Suggestions: ${suggestions.length} items');
+     
       
       _updateCacheInfo();
       
@@ -61,7 +59,7 @@ class _CacheDemoScreenState extends State<CacheDemoScreen> {
         );
       }
     } catch (e) {
-      print('❌ Cache test failed: $e');
+     
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -95,7 +93,7 @@ class _CacheDemoScreenState extends State<CacheDemoScreen> {
         );
       }
     } catch (e) {
-      print('❌ Refresh failed: $e');
+     
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

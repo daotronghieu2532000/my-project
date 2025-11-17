@@ -95,19 +95,10 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
                               popupId: widget.popupBanner.id,
                             );
                             
-                            if (clickSuccess) {
-                              print('✅ Click count updated successfully');
-                            } else {
-                              print('⚠️ Failed to update click count, but continuing...');
-                            }
-                            
                             // Xử lý navigation
                             if (widget.popupBanner.targetUrl != null && 
                                 widget.popupBanner.targetUrl!.isNotEmpty) {
-                              print('🔗 [DEBUG] Target URL exists: ${widget.popupBanner.targetUrl}');
                               await _handleTargetUrl(context, widget.popupBanner.targetUrl!);
-                            } else {
-                              print('⚠️ [DEBUG] No target URL provided');
                             }
                             
                             if (mounted) {
@@ -191,11 +182,8 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
 
   Future<void> _handleTargetUrl(BuildContext context, String? targetUrl) async {
     try {
-      print('🔗 [DEBUG] Handling target URL: $targetUrl');
-      
       // Nếu có product_id từ API (đã join với sanpham), dùng trực tiếp (giống partner_banner_slider.dart)
       if (widget.popupBanner.productId != null && widget.popupBanner.productId! > 0) {
-        print('🔗 [DEBUG] Using productId from API: ${widget.popupBanner.productId}');
         if (mounted) {
           Navigator.of(context).push(
             MaterialPageRoute(
@@ -210,7 +198,6 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
       
       // Nếu không có product_id, parse từ link
       if (targetUrl == null || targetUrl.isEmpty || targetUrl.trim().isEmpty) {
-        print('⚠️ [DEBUG] Target URL is empty');
         return;
       }
       
@@ -223,7 +210,6 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
           !link.startsWith('/')) {
         // Nếu không có protocol và không phải relative path, thêm https://
         normalizedUrl = 'https://$link';
-        print('🔗 [DEBUG] Added protocol, normalized URL: $normalizedUrl');
       } else {
         normalizedUrl = link;
       }
@@ -241,7 +227,6 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
         
         if (segments.isNotEmpty && segments[0] == 'shop' && segments.length >= 2) {
           final shopUsername = segments[1];
-          print('🔗 [DEBUG] Navigating to ShopDetailScreen with username: $shopUsername');
           if (mounted) {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -275,7 +260,7 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
           final productId = int.tryParse(segments[1]);
           if (productId != null && productId > 0) {
             // Navigate to product detail screen with ID
-            print('🔗 [DEBUG] Navigating to ProductDetailScreen with productId: $productId');
+           ;
             if (mounted) {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -288,23 +273,19 @@ class _PopupBannerWidgetState extends State<PopupBannerWidget> {
             }
           }
           // If not ID, could be slug - for now, just open in browser
-          print('⚠️ [DEBUG] Product slug detected, opening in browser: ${segments[1]}');
         }
       }
       
       // Mở link khác bằng web browser (fallback)
-      print('🔗 [DEBUG] Opening external URL: $normalizedUrl');
       final uri = Uri.parse(normalizedUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-        print('✅ [DEBUG] Successfully opened URL: $normalizedUrl');
+     
       } else {
-        print('❌ [DEBUG] Cannot launch URL: $normalizedUrl');
+     
       }
     } catch (e, stackTrace) {
-      print('❌ [DEBUG] Error handling target URL: $e');
-      print('❌ [DEBUG] Stack trace: $stackTrace');
-      print('❌ [DEBUG] Target URL: $targetUrl');
+     
     }
   }
 }

@@ -29,9 +29,9 @@ class _AffiliateCacheDemoScreenState extends State<AffiliateCacheDemoScreen> {
     setState(() => _isLoading = true);
     
     try {
-      print('🧪 Testing affiliate dashboard cache...');
+     
       final result = await _cachedApiService.getAffiliateDashboard(userId: 123);
-      print('✅ Dashboard result: $result');
+    
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -40,7 +40,7 @@ class _AffiliateCacheDemoScreenState extends State<AffiliateCacheDemoScreen> {
         ),
       );
     } catch (e) {
-      print('❌ Dashboard test error: $e');
+    
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Error: $e'),
@@ -57,13 +57,13 @@ class _AffiliateCacheDemoScreenState extends State<AffiliateCacheDemoScreen> {
     setState(() => _isLoading = true);
     
     try {
-      print('🧪 Testing affiliate links cache...');
+    
       final result = await _cachedApiService.getAffiliateLinks(
         userId: 123,
         page: 1,
         limit: 10,
       );
-      print('✅ Links result: $result');
+    
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -72,7 +72,7 @@ class _AffiliateCacheDemoScreenState extends State<AffiliateCacheDemoScreen> {
         ),
       );
     } catch (e) {
-      print('❌ Links test error: $e');
+    
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Error: $e'),
@@ -89,13 +89,13 @@ class _AffiliateCacheDemoScreenState extends State<AffiliateCacheDemoScreen> {
     setState(() => _isLoading = true);
     
     try {
-      print('🧪 Testing affiliate products cache...');
+    
       final result = await _cachedApiService.getAffiliateProducts(
         userId: 123,
         page: 1,
         limit: 10,
       );
-      print('✅ Products result: $result');
+     
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -104,7 +104,7 @@ class _AffiliateCacheDemoScreenState extends State<AffiliateCacheDemoScreen> {
         ),
       );
     } catch (e) {
-      print('❌ Products test error: $e');
+     
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ Error: $e'),

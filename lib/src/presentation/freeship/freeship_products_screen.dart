@@ -58,7 +58,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
       if (refresh) {
         // Clear cache khi refresh
         _cachedApiService.clearFreeshipCache();
-        print('🧹 Cleared freeship cache to force refresh');
+      
       }
       
       setState(() {
@@ -74,11 +74,9 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
       // Nếu cache không có data, fallback về ApiService
       List<FreeShipProduct>? products;
       if (productsData == null || productsData.isEmpty) {
-        print('🔄 Cache miss, fetching from ApiService...');
+        
         products = await _apiService.getFreeShipProducts();
       } else {
-        print('🚚 Using cached freeship products data (${productsData.length} items)');
-        // Convert cached data to FreeShipProduct list
         products = productsData.map((data) => FreeShipProduct.fromJson(data)).toList();
       }
       

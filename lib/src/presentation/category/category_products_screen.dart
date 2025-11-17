@@ -141,11 +141,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               'cat': product['cat']?.toString() ?? '',
               'status': product['status'] != null ? _safeParseInt(product['status']) : 1,
             };
-            print('🔍 Mapped product: ${mappedProduct['name']} - Price: ${mappedProduct['price']} - Image: ${mappedProduct['image']}');
             return mappedProduct;
           } catch (e) {
-            print('❌ Error mapping product: $e');
-            print('❌ Product data: $product');
             rethrow;
           }
         }).toList();
@@ -173,7 +170,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         });
       }
     } catch (e) {
-      print('❌ Lỗi khi tải sản phẩm: $e');
       setState(() {
         _isLoading = false;
         _isLoadingMore = false;

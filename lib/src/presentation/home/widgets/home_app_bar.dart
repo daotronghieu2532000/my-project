@@ -96,18 +96,18 @@ class _HomeAppBarState extends State<HomeAppBar> {
     // ✅ Setup Socket.IO để nhận realtime updates cho unread count
     _socketIOService.onConnected = () {
       _stopPolling(); // ✅ Dừng polling khi Socket.IO connect
-      print('✅ [HomeAppBar] Socket.IO connected, stopped polling');
+    
     };
 
     _socketIOService.onDisconnected = () {
       _startPolling(); // ✅ Start polling khi Socket.IO disconnect (fallback)
-      print('🔄 [HomeAppBar] Socket.IO disconnected, started polling');
+    
     };
 
     _socketIOService.onError = (error) {
       if (!_socketIOService.isConnected) {
         _startPolling(); // ✅ Start polling khi Socket.IO error (fallback)
-        print('🔄 [HomeAppBar] Socket.IO error, started polling');
+      
       }
     };
 
@@ -125,7 +125,7 @@ class _HomeAppBarState extends State<HomeAppBar> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && !_socketIOService.isConnected) {
         _startPolling();
-        print('🔄 [HomeAppBar] Started polling - Socket.IO not connected yet');
+      
       }
     });
   }
@@ -167,10 +167,9 @@ class _HomeAppBarState extends State<HomeAppBar> {
       setState(() {
         _unreadChat = totalUnread;
       });
-      // print('📊 [HomeAppBar] Chat unread count: $totalUnread (from ${groupedSessions.length} unique shops)');
+    
     } catch (e) {
-      // print('❌ [HomeAppBar] Error loading chat unread: $e');
-      // Ignore chat errors
+     
     }
   }
 

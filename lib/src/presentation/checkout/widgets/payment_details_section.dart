@@ -61,14 +61,7 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     final grandTotal = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
     
     // Debug log để so sánh với BottomOrderBar
-    print('📋 PaymentDetailsSection calculation:');
-    print('  - totalGoods: ${FormatUtils.formatCurrency(totalGoods)}');
-    print('  - shipFee: ${FormatUtils.formatCurrency(shipFee)}');
-    print('  - shipSupport: ${FormatUtils.formatCurrency(shipSupport)}');
-    print('  - shopDiscount: ${FormatUtils.formatCurrency(shopDiscount)}');
-    print('  - platformDiscount: ${FormatUtils.formatCurrency(platformDiscount)}');
-    print('  - voucherDiscount: ${FormatUtils.formatCurrency(voucherDiscount)}');
-    print('  - grandTotal: ${FormatUtils.formatCurrency(grandTotal)}');
+   
 
     return Container(
       padding: const EdgeInsets.all(16),

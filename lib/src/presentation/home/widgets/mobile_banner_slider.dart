@@ -42,13 +42,13 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
             _isLoading = false;
           });
           
-          // print('✅ Mobile banners loaded from cache (${banners.length} banners)');
+        
         } else {
           // Fallback nếu không có cache
           setState(() {
             _isLoading = false;
           });
-          // print('⚠️ No cached mobile banners');
+         
         }
       }
     } catch (e) {
@@ -57,7 +57,7 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
           _isLoading = false;
         });
       }
-      // print('❌ Error loading mobile banners from cache: $e');
+      
     }
   }
 
@@ -140,7 +140,7 @@ class _MobileBannerSliderState extends State<MobileBannerSlider> {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      // print('❌ Lỗi khi mở link banner: $e');
+     
     }
   }
 

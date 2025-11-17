@@ -11,9 +11,6 @@ import 'notification_handler.dart';
 /// Top-level function để handle background messages
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('📱 Background message received: ${message.messageId}');
-  print('Title: ${message.notification?.title}');
-  print('Body: ${message.notification?.body}');
   // Background messages không thể hiển thị UI, chỉ log
 }
 
@@ -34,12 +31,10 @@ class PushNotificationService {
   /// Khởi tạo push notification service
   Future<void> initialize() async {
     if (_initialized) {
-      print('✅ Push notification service already initialized');
       return;
     }
 
     try {
-      print('🚀 Initializing push notification service...');
 
       // Initialize local notifications
       await _localNotifications.initialize();
@@ -53,11 +48,8 @@ class PushNotificationService {
       );
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        print('✅ Notification permission granted');
       } else if (settings.authorizationStatus == AuthorizationStatus.provisional) {
-        print('⚠️ Provisional notification permission granted');
       } else {
-        print('❌ Notification permission denied');
         return;
       }
 
@@ -71,9 +63,7 @@ class PushNotificationService {
       _messaging.onTokenRefresh.listen(_handleTokenRefresh);
 
       _initialized = true;
-      print('✅ Push notification service initialized successfully');
     } catch (e) {
-      print('❌ Error initializing push notification service: $e');
     }
   }
 
@@ -81,13 +71,11 @@ class PushNotificationService {
   void _setupMessageHandlers() {
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📱 Foreground message received: ${message.messageId}');
       _handleForegroundMessage(message);
     });
 
     // Handle when app is opened from background/terminated
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('📱 App opened from notification: ${message.messageId}');
       _handleNotificationTap(message);
     });
 
@@ -96,8 +84,6 @@ class PushNotificationService {
     Future.delayed(const Duration(milliseconds: 500), () {
       FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
         if (message != null) {
-          print('📱 App opened from terminated state: ${message.messageId}');
-          print('📱 [DEBUG] Message data from terminated: ${message.data}');
           // Đợi thêm một chút để Navigator context sẵn sàng
           Future.delayed(const Duration(milliseconds: 300), () {
             _handleNotificationTap(message);
@@ -112,17 +98,11 @@ class PushNotificationService {
 
   /// Handle foreground message (app is open)
   void _handleForegroundMessage(RemoteMessage message) {
-    print('📨 [DEBUG] Foreground message received');
     final notification = message.notification;
     final data = message.data;
 
-    print('📨 [DEBUG] Notification title: ${notification?.title}');
-    print('📨 [DEBUG] Notification body: ${notification?.body}');
-    print('📨 [DEBUG] Message data: $data');
-    print('📨 [DEBUG] Data keys: ${data.keys.toList()}');
 
     if (notification != null) {
-      print('📨 [DEBUG] Showing local notification with payload');
       // Hiển thị local notification vì FCM không tự hiển thị khi app ở foreground
       _localNotifications.showNotification(
         id: message.hashCode,
@@ -130,7 +110,6 @@ class PushNotificationService {
         body: notification.body ?? '',
         payload: data,
       );
-      print('📨 [DEBUG] Local notification shown with ID: ${message.hashCode}');
     }
 
     // Update notification count nếu cần
@@ -139,9 +118,6 @@ class PushNotificationService {
 
   /// Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
-    print('📱 [DEBUG] _handleNotificationTap called');
-    print('📱 [DEBUG] Message data (raw): ${message.data}');
-    print('📱 [DEBUG] Message data keys: ${message.data.keys.toList()}');
     
     // FCM data payload là Map<String, dynamic>, nhưng values có thể là string (JSON)
     // Cần parse lại nếu cần
@@ -162,7 +138,6 @@ class PushNotificationService {
       }
     });
     
-    print('📱 [DEBUG] Parsed data: $data');
     _notificationHandler.handleNotificationData(data);
   }
 
@@ -171,20 +146,16 @@ class PushNotificationService {
     try {
       final token = await _messaging.getToken();
       if (token != null) {
-        print('✅ FCM Token obtained: ${token.substring(0, 20)}...');
         _currentToken = token;
         await _registerTokenToServer(token);
       } else {
-        print('⚠️ FCM Token is null');
       }
     } catch (e) {
-      print('❌ Error getting FCM token: $e');
     }
   }
 
   /// Handle token refresh
   void _handleTokenRefresh(String newToken) async {
-    print('🔄 FCM Token refreshed: ${newToken.substring(0, 20)}...');
     _currentToken = newToken;
     await _registerTokenToServer(newToken);
   }
@@ -194,7 +165,6 @@ class PushNotificationService {
     try {
       final user = await _authService.getCurrentUser();
       if (user == null) {
-        print('⚠️ User not logged in, skip token registration');
         return;
       }
 
@@ -214,7 +184,6 @@ class PushNotificationService {
           deviceModel = '${iosInfo.name} ${iosInfo.model}';
         }
       } catch (e) {
-        print('⚠️ Could not get device info: $e');
       }
 
       // Get app version
@@ -236,12 +205,9 @@ class PushNotificationService {
       );
 
       if (success) {
-        print('✅ Device token registered successfully');
       } else {
-        print('❌ Failed to register device token');
       }
     } catch (e) {
-      print('❌ Error registering device token: $e');
     }
   }
 

@@ -43,8 +43,6 @@ class LocalNotificationService {
 
     _initialized = true;
     } catch (e, stackTrace) {
-      print('❌ Error initializing notifications: $e');
-      print('❌ Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -142,9 +140,6 @@ class LocalNotificationService {
     );
 
     final payloadJson = payload != null ? jsonEncode(payload) : null;
-    print('📤 [DEBUG] Showing notification - ID: $id, Title: $title');
-    print('📤 [DEBUG] Payload (raw): $payload');
-    print('📤 [DEBUG] Payload (JSON): $payloadJson');
 
     await _notifications.show(
       id,
@@ -154,56 +149,39 @@ class LocalNotificationService {
       payload: payloadJson,
     );
     
-    print('✅ [DEBUG] Notification shown successfully');
     } catch (e, stackTrace) {
-      print('❌ Error showing notification: $e');
-      print('❌ Stack trace: $stackTrace');
       rethrow;
     }
   }
 
   /// Xử lý khi tap notification
   void _onNotificationTap(NotificationResponse response) {
-    print('🔔 [DEBUG] Notification tapped');
-    print('🔔 [DEBUG] Notification ID: ${response.id}');
-    print('🔔 [DEBUG] Notification payload raw: ${response.payload}');
     
     if (response.payload != null) {
       try {
         final payloadString = response.payload!;
-        print('🔔 [DEBUG] Parsing payload string: $payloadString');
         
         Map<String, dynamic> payloadMap;
         
         // Parse JSON string thành Map
         try {
           payloadMap = jsonDecode(payloadString) as Map<String, dynamic>;
-          print('✅ [DEBUG] Payload parsed successfully:');
           payloadMap.forEach((key, value) {
-            print('   - $key: $value (${value.runtimeType})');
           });
         } catch (e) {
           // Nếu không phải JSON hợp lệ, log và return
-          print('❌ [DEBUG] Error parsing notification payload: $e');
-          print('❌ [DEBUG] Payload string: $payloadString');
           return;
         }
         
         // Gọi NotificationHandler để xử lý
         if (payloadMap.isNotEmpty) {
-          print('📱 [DEBUG] Calling NotificationHandler with payload');
           final notificationHandler = NotificationHandler();
           notificationHandler.handleNotificationData(payloadMap);
         } else {
-          print('⚠️ [DEBUG] Payload map is empty, skipping handler');
         }
       } catch (e, stackTrace) {
-        print('❌ [DEBUG] Error handling notification tap: $e');
-        print('❌ [DEBUG] Stack trace: $stackTrace');
-        print('❌ [DEBUG] Payload: ${response.payload}');
       }
     } else {
-      print('⚠️ [DEBUG] No payload in notification response');
     }
   }
 }

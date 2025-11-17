@@ -132,10 +132,7 @@ class _AffiliateWithdrawScreenState extends State<AffiliateWithdrawScreen> {
 
     // Remove all non-numeric characters except decimal point
     String cleanText = _amountController.text.replaceAll(RegExp(r'[^\d.,]'), '').replaceAll(',', '');
-    print('🔍 Original text: "${_amountController.text}"');
-    print('🔍 Clean text: "$cleanText"');
     final amount = double.tryParse(cleanText);
-    print('🔍 Parsed amount: $amount');
     if (amount == null || amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

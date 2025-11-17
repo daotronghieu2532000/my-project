@@ -161,17 +161,9 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           _warehouseDetails = List<Map<String, dynamic>>.from(
             warehouseDetailsList.map((e) => e as Map<String, dynamic>)
           );
-          print('🔍 [OrderSummary] Found ${_warehouseDetails!.length} warehouse details');
         } else {
           _warehouseDetails = null;
-          print('⚠️ [OrderSummary] No warehouse_details found');
         }
-      
-      // Debug log để kiểm tra
-      print('🔍 OrderSummarySection - rawQuote keys: ${rawQuote?.keys.toList()}');
-      print('🔍 OrderSummarySection - best keys: ${rawQuote?['best']?.keys.toList()}');
-      print('🔍 OrderSummarySection - ship_support from best: ${rawQuote?['best']?['ship_support']}');
-      print('🔍 OrderSummarySection - _shipSupport: $_shipSupport');
       
       // Check if there's freeship available using raw API response
       _checkFreeshipAvailability(rawQuote);
@@ -193,34 +185,24 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     try {
       _hasFreeshipAvailable = false;
       
-      print('🔍 _checkFreeshipAvailability called with quote: $quote');
-      
       if (quote != null) {
-        print('🔍 Quote is not null');
-        
         // Debug info is directly in quote['debug'] (not in quote['data']['debug'])
         final debug = quote['debug'];
-        print('🔍 Debug from quote: $debug');
         
         if (debug != null) {
           final shopFreeshipDetails = debug['shop_freeship_details'] as Map<String, dynamic>?;
-          print('🔍 DEBUG: shopFreeshipDetails = $shopFreeshipDetails');
           if (shopFreeshipDetails != null && shopFreeshipDetails.isNotEmpty) {
-            print('🔍 DEBUG: Found ${shopFreeshipDetails.length} shops with freeship config');
             // Check if any shop has freeship config (regardless of applied status)
             for (final entry in shopFreeshipDetails.entries) {
               // ✅ Xử lý an toàn: entry.value có thể là Map hoặc List
               final value = entry.value;
               if (value is! Map<String, dynamic>) {
-                print('⚠️ [OrderSummary] Shop ${entry.key}: config is not Map, skipping');
                 continue;
               }
               
               final config = value;
               final mode = config['mode'] as int? ?? 0;
               final discount = (config['discount'] as num?)?.toDouble() ?? 0.0;
-              
-              print('🔍 DEBUG: Shop ${entry.key}: mode=$mode, discount=$discount');
               
               // Check freeship config based on mode
               bool hasValidFreeship = false;
@@ -266,35 +248,21 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
               }
               
               if (hasValidFreeship) {
-                print('🔍 DEBUG: Found freeship config! Setting _hasFreeshipAvailable = true');
                 _hasFreeshipAvailable = true;
                 break;
               }
             }
-          } else {
-            print('🔍 DEBUG: No shop freeship details found');
           }
-        } else {
-          print('🔍 DEBUG: Debug is null');
         }
-      } else {
-        print('🔍 Quote is null');
       }
-      
-      print('🔍 FREESHIP AVAILABILITY CHECK: $_hasFreeshipAvailable');
     } catch (e) {
-      print('🔍 ERROR in _checkFreeshipAvailability: $e');
       _hasFreeshipAvailable = false;
     }
   }
 
   void _showFreeshipDialog(BuildContext context) async {
     // Sử dụng dữ liệu đã có từ _checkFreeshipAvailability thay vì gọi API lại
-    print('🔍 FREESHIP DIALOG DEBUG:');
-    print('  - _hasFreeshipAvailable: $_hasFreeshipAvailable');
-    
     if (!_hasFreeshipAvailable) {
-      print('  - No freeship available, not showing dialog');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sản phẩm này không có ưu đãi vận chuyển')),
       );
@@ -315,42 +283,24 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     
     if (items.isEmpty) return;
     
-    print('  - Items: $items');
-    
     Map<String, dynamic>? shopFreeshipDetails;
     
     try {
       final quote = await _api.getShippingQuote(userId: u.userId, items: items);
-      print('  - Quote response: ${quote != null ? "Success" : "Failed"}');
       
       if (quote != null) {
         final debug = quote['debug'];
-        print('  - Debug available: ${debug != null}');
         
         if (debug != null) {
           shopFreeshipDetails = debug['shop_freeship_details'] as Map<String, dynamic>?;
-          print('  - Shop freeship details: ${shopFreeshipDetails?.keys.toList()}');
-          
-          if (shopFreeshipDetails != null) {
-            for (final entry in shopFreeshipDetails.entries) {
-              print('    Shop ${entry.key}: ${entry.value}');
-            }
-          } else {
-            print('  - shop_freeship_details is null in debug');
-          }
-        } else {
-          print('  - Debug is null');
         }
-      } else {
-        print('  - Quote failed');
       }
     } catch (e) {
-      print('  - Error getting quote: $e');
+      // Error getting quote
     }
     
     // Only show dialog if there's actual freeship data
     if (shopFreeshipDetails == null || shopFreeshipDetails.isEmpty) {
-      print('  - No freeship data available, not showing dialog');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sản phẩm này không có ưu đãi vận chuyển')),
       );

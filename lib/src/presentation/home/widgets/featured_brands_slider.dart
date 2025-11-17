@@ -164,14 +164,12 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
               _startAutoScroll();
             });
           }
-          
-          // print('✅ Featured brands loaded from cache (${brands.length} brands)');
         } else {
           // Fallback nếu không có cache
           setState(() {
             _isLoading = false;
           });
-          // print('⚠️ No cached featured brands');
+        
         }
       }
     } catch (e) {
@@ -180,15 +178,13 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
           _isLoading = false;
         });
       }
-      // print('❌ Error loading featured brands from cache: $e');
+   
     }
   }
 
   Future<void> _handleBrandTap(Brand brand) async {
     try {
-      // Lấy link từ brand (ưu tiên link, nếu không có thì dùng url)
-      // Note: url field có thể có lỗi format (ví dụ: "https://socdo.vnhttps://socdo.vn")
-      // nên ưu tiên dùng link field
+  
       String link = brand.link.isNotEmpty ? brand.link : brand.url;
       
       if (link.isEmpty || link.trim().isEmpty) return;
@@ -304,7 +300,7 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      // print('❌ Lỗi khi mở link brand: $e');
+    
     }
   }
 

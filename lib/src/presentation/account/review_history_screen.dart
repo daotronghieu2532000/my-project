@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../orders/product_review_screen.dart';
+import '../product/widgets/review_image_viewer.dart';
+import '../product/product_detail_screen.dart';
+import '../product/product_reviews_screen.dart';
+import 'edit_product_review_screen.dart';
 
 class ReviewHistoryScreen extends StatefulWidget {
   const ReviewHistoryScreen({super.key});
@@ -247,12 +251,15 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
     final variantName = product['variant_name'] ?? '';
     final size = product['size'] ?? '';
     final color = product['color'] ?? '';
+    final shopName = product['shop_name'] ?? '';
+    final productId = product['product_id'] as int? ?? product['id'] as int?;
     // Ưu tiên dùng variant_name từ API, nếu không có thì tạo từ size và color
     final variant = variantName.isNotEmpty 
         ? variantName 
         : [size, color].where((e) => e.toString().isNotEmpty).join(' • ');
     final hasReview = product['has_review'] == true;
     final review = product['review'] as Map<String, dynamic>?;
+    // final reviewId = review?['id'] as int?; // Có thể dùng sau để scroll đến review cụ thể
     
     // Xử lý ảnh sản phẩm: có thể là URL đầy đủ hoặc đường dẫn tương đối
     String fixedImage = '';
@@ -278,52 +285,99 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Product info
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  fixedImage,
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    width: 80,
-                    height: 80,
-                    color: const Color(0xFFF5F5F5),
-                    child: const Icon(Icons.image_not_supported, size: 30),
+          GestureDetector(
+            onTap: productId != null ? () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailScreen(
+                    productId: productId,
+                    title: productName,
+                    image: fixedImage,
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      productName,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+              );
+            } : null,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    fixedImage,
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 80,
+                      height: 80,
+                      color: const Color(0xFFF5F5F5),
+                      child: const Icon(Icons.image_not_supported, size: 30),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        productName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: productId != null ? Colors.blue : Colors.black87,
+                        ),
+                      ),
                     if (variant.isNotEmpty) ...[
                       const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Text(
+                            'Phân loại: ',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                       Text(
                         variant,
                         style: TextStyle(
                           fontSize: 12,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (shopName.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.store, size: 14, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              shopName,
+                              style: TextStyle(
+                                fontSize: 12,
                           color: Colors.grey[600],
                         ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ],
                 ),
               ),
             ],
+            ),
           ),
           const SizedBox(height: 12),
           
@@ -341,11 +395,11 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                   ),
                 ),
                 ...List.generate(5, (index) {
-                  final starRating = index + 1;
-                  final isSelected = (review['rating'] as int? ?? 0) >= starRating;
-                  return Icon(
-                    isSelected ? Icons.star : Icons.star_border,
-                    color: isSelected ? Colors.amber : Colors.grey[300],
+                final starRating = index + 1;
+                final isSelected = (review['rating'] as int? ?? 0) >= starRating;
+                return Icon(
+                  isSelected ? Icons.star : Icons.star_border,
+                  color: isSelected ? Colors.amber : Colors.grey[300],
                     size: 18,
                   );
                 }),
@@ -370,17 +424,17 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                     final isSelected = (review['delivery_rating'] as int? ?? 0) >= starRating;
                     return Icon(
                       isSelected ? Icons.star : Icons.star_border,
-                      color: isSelected ? Colors.blue : Colors.grey[300],
+                      color: isSelected ? Colors.amber : Colors.grey[300],
                       size: 16,
-                    );
-                  }),
+                );
+              }),
                 ],
-              ),
+            ),
             ],
             
             // Đánh giá shop
             if (review['shop_rating'] != null) ...[
-              const SizedBox(height: 8),
+            const SizedBox(height: 8),
               Row(
                 children: [
                   const Text(
@@ -396,7 +450,7 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                     final isSelected = (review['shop_rating'] as int? ?? 0) >= starRating;
                     return Icon(
                       isSelected ? Icons.star : Icons.star_border,
-                      color: isSelected ? Colors.green : Colors.grey[300],
+                      color: isSelected ? Colors.amber : Colors.grey[300],
                       size: 16,
                     );
                   }),
@@ -447,23 +501,51 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
               ),
             ),
             
-            // Review images
+            // Review images - horizontal scroll
             if ((review['images'] as List?)?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: (review['images'] as List).map((img) {
-                  final imgStr = img.toString();
-                  Widget imageWidget;
-                  
-                  // Nếu là base64
-                  if (imgStr.startsWith('data:image/')) {
-                    try {
-                      final base64String = imgStr.split(',').last;
-                      final imageBytes = base64Decode(base64String);
-                      imageWidget = Image.memory(
-                        imageBytes,
+              SizedBox(
+                height: 80,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: (review['images'] as List).length,
+                  itemBuilder: (context, imageIndex) {
+                    final img = (review['images'] as List)[imageIndex];
+                    final imgStr = img.toString();
+                    Widget imageWidget;
+                    
+                    // Nếu là base64
+                    if (imgStr.startsWith('data:image/')) {
+                      try {
+                        final base64String = imgStr.split(',').last;
+                        final imageBytes = base64Decode(base64String);
+                        imageWidget = Image.memory(
+                          imageBytes,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 80,
+                            height: 80,
+                            color: const Color(0xFFF5F5F5),
+                            child: const Icon(Icons.image_not_supported, size: 20),
+                          ),
+                        );
+                      } catch (e) {
+                        imageWidget = Container(
+                          width: 80,
+                          height: 80,
+                          color: const Color(0xFFF5F5F5),
+                          child: const Icon(Icons.image_not_supported, size: 20),
+                        );
+                      }
+                    } else {
+                      // Nếu là URL
+                      final imageUrl = imgStr.startsWith('http')
+                          ? imgStr
+                          : 'https://socdo.vn${imgStr.startsWith('/') ? imgStr : '/$imgStr'}';
+                      imageWidget = Image.network(
+                        imageUrl,
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,
@@ -474,38 +556,41 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                           child: const Icon(Icons.image_not_supported, size: 20),
                         ),
                       );
-                    } catch (e) {
-                      imageWidget = Container(
-                        width: 80,
-                        height: 80,
-                        color: const Color(0xFFF5F5F5),
-                        child: const Icon(Icons.image_not_supported, size: 20),
-                      );
                     }
-                  } else {
-                    // Nếu là URL
-                    final imageUrl = imgStr.startsWith('http')
-                        ? imgStr
-                        : 'https://socdo.vn${imgStr.startsWith('/') ? imgStr : '/$imgStr'}';
-                    imageWidget = Image.network(
-                      imageUrl,
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        width: 80,
-                        height: 80,
-                        color: const Color(0xFFF5F5F5),
-                        child: const Icon(Icons.image_not_supported, size: 20),
+                    
+                    return GestureDetector(
+                      onTap: () {
+                        // Chuyển đổi danh sách ảnh thành List<String>
+                        final imageList = (review['images'] as List).map((img) {
+                          final imgStr = img.toString();
+                          if (imgStr.startsWith('data:image/')) {
+                            return imgStr; // Giữ nguyên base64
+                          } else {
+                            // Chuyển đổi URL
+                            return imgStr.startsWith('http')
+                                ? imgStr
+                                : 'https://socdo.vn${imgStr.startsWith('/') ? imgStr : '/$imgStr'}';
+                          }
+                        }).toList().cast<String>();
+                        
+                        showDialog(
+                          context: context,
+                          builder: (context) => ReviewImageViewer(
+                            images: imageList,
+                            initialIndex: imageIndex,
+                          ),
+                        );
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: imageWidget,
+                        ),
                       ),
                     );
-                  }
-                  
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: imageWidget,
-                  );
-                }).toList(),
+                  },
+                ),
               ),
             ],
             
@@ -514,19 +599,44 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
             Row(
               children: [
                 if (review['is_verified_purchase'] == true) ...[
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF52C41A).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: const Color(0xFF52C41A).withOpacity(0.3)),
-                    ),
-                    child: const Text(
-                      'Đã mua hàng',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF52C41A),
+                  if (productId != null)
+                    GestureDetector(
+                      onTap: () {
+                        // Navigate to product reviews screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ProductReviewsScreen(
+                              productId: productId,
+                            ),
+                          ),
+                        );
+                      },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color.fromARGB(255, 0, 139, 253)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified,
+                            size: 12,
+                            color: Color.fromARGB(255, 0, 139, 253),
+                          ),
+                          SizedBox(width: 2),
+                          Text(
+                            'Đã mua',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: Color.fromARGB(255, 0, 139, 253),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -539,6 +649,32 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                     color: Colors.grey[600],
                   ),
                 ),
+                const Spacer(),
+                // Edit button with text
+                if (review['id'] != null)
+                  GestureDetector(
+                    onTap: () {
+                      _showEditReviewDialog(product, review, orderId);
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Sửa',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.edit_outlined,
+                          size: 18,
+                          color: Colors.grey,
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ] else ...[
@@ -624,7 +760,7 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withOpacity(0.3), width: 1),
       ),
@@ -634,6 +770,25 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
           fontSize: 11,
           color: color,
           fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  void _showEditReviewDialog(Map<String, dynamic> product, Map<String, dynamic> review, int? orderId) {
+    final reviewId = review['id'] as int?;
+    if (reviewId == null) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProductReviewScreen(
+          product: product,
+          review: review,
+          reviewId: reviewId,
+          onReviewUpdated: () {
+            _loadReviews(refresh: true);
+          },
         ),
       ),
     );

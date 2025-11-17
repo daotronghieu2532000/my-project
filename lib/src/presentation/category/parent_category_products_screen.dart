@@ -135,8 +135,7 @@ class _ParentCategoryProductsScreenState extends State<ParentCategoryProductsScr
             };
             return mappedProduct;
           } catch (e) {
-            print('❌ Error mapping product: $e');
-            print('❌ Product data: $product');
+         
             rethrow;
           }
         }).toList();
@@ -169,7 +168,7 @@ class _ParentCategoryProductsScreenState extends State<ParentCategoryProductsScr
         });
       }
     } catch (e) {
-      print('❌ Lỗi khi tải sản phẩm: $e');
+    
       setState(() {
         _isLoading = false;
         _hasError = true;
@@ -250,8 +249,7 @@ class _ParentCategoryProductsScreenState extends State<ParentCategoryProductsScr
               'status': product['status'] != null ? _safeParseInt(product['status']) : 1,
             };
           } catch (e) {
-            print('❌ Error mapping product in loadMore: $e');
-            print('❌ Product data: $product');
+          
             rethrow;
           }
         }).toList();
@@ -270,7 +268,7 @@ class _ParentCategoryProductsScreenState extends State<ParentCategoryProductsScr
         });
       }
     } catch (e) {
-      print('❌ Lỗi khi load thêm sản phẩm: $e');
+     
       setState(() {
         _isLoadingMore = false;
       });

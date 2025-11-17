@@ -63,7 +63,7 @@ class RightContent extends StatelessWidget {
                 childCategories: childCategories,
                 onCategoryTap: (categoryId, categoryName) {
                   // TODO: Navigate to category products
-                  print('Tap category: $categoryName (ID: $categoryId)');
+                
                 },
               ),
             ],

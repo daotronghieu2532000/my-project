@@ -55,10 +55,6 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     final cart = cart_service.CartService();
     final voucherService = VoucherService();
     final items = cart.items.where((i) => i.isSelected).toList();
-    // Debug log để kiểm tra
-    print('🛒 BottomOrderBar - Total items in cart: ${cart.items.length}');
-    print('🛒 BottomOrderBar - Selected items: ${items.length}');
-    print('🛒 BottomOrderBar - Selected items details: ${items.map((i) => '${i.name}: ${i.price} x ${i.quantity}').toList()}');
     final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
     final savingsFromOld = items.fold<int>(0, (s, i) {
       if (i.oldPrice != null && i.oldPrice! > i.price) {
@@ -79,17 +75,6 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     // Không để tiết kiệm vượt quá tổng tiền hàng (UX các sàn lớn)
     final totalSavings = (savingsFromOld + voucherDiscount).clamp(0, totalGoods);
     
-    // Debug log chi tiết
-    print('💰 BottomOrderBar calculation:');
-    print('  - totalGoods: ${FormatUtils.formatCurrency(totalGoods)}');
-    print('  - shipFee: ${FormatUtils.formatCurrency(shipFee)}');
-    print('  - shipSupport: ${FormatUtils.formatCurrency(shipSupport)}');
-    print('  - shopDiscount: ${FormatUtils.formatCurrency(shopDiscount)}');
-    print('  - platformDiscount: ${FormatUtils.formatCurrency(platformDiscount)}');
-    print('  - voucherDiscount: ${FormatUtils.formatCurrency(voucherDiscount)}');
-    print('  - savingsFromOld: ${FormatUtils.formatCurrency(savingsFromOld)}');
-    print('  - grandTotal: ${FormatUtils.formatCurrency(grandTotal)}');
-    print('  - totalSavings: ${FormatUtils.formatCurrency(totalSavings)}');
     return SafeArea(
       top: false,
       child: Container(

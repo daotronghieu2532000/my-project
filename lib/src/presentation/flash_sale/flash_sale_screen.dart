@@ -86,14 +86,14 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       // Nếu cache không có data, fallback về ApiService
       List<FlashSaleDeal>? deals;
       if (dealsData == null || dealsData.isEmpty) {
-        print('🔄 Cache miss, fetching from ApiService...');
+        
         deals = await _apiService.getFlashSaleDeals(
           timeSlot: _timeSlots[slotIndex],
           status: 'active',
           limit: 100,
         );
       } else {
-        print('⚡ Using cached flash sale deals');
+      
         // Convert cached data to FlashSaleDeal list
         deals = dealsData.map((data) => FlashSaleDeal.fromJson(data)).toList();
       }
@@ -230,7 +230,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
 
   // Xử lý MUA NGAY cho sản phẩm có biến thể
   void _handleBuyNow(ProductDetail product, ProductVariant variant, int quantity) {
-    print('🛒 FLASH SALE MUA NGAY - Variant: ${variant.name}, Quantity: $quantity');
+ 
     
     final cartItem = CartItem(
       id: product.id,
@@ -244,8 +244,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : 'Unknown Shop',
       addedAt: DateTime.now(),
     );
-    
-    print('🛒 Adding to cart: ${cartItem.name}');
+
     _cartService.addItem(cartItem);
     
     // Hiển thị thông báo
@@ -268,7 +267,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
 
   // Xử lý THÊM VÀO GIỎ cho sản phẩm có biến thể
   void _handleAddToCart(ProductDetail product, ProductVariant variant, int quantity) {
-    print('🛒 FLASH SALE THÊM VÀO GIỎ - Variant: ${variant.name}, Quantity: $quantity');
+   
     
     final cartItem = CartItem(
       id: product.id,
@@ -283,7 +282,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       addedAt: DateTime.now(),
     );
     
-    print('🛒 Adding to cart: ${cartItem.name}');
+
     _cartService.addItem(cartItem);
     
     // Hiển thị thông báo và chuyển đến giỏ hàng
@@ -307,7 +306,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
 
   // Xử lý MUA NGAY cho sản phẩm không có biến thể
   void _handleBuyNowSimple(ProductDetail product, int quantity) {
-    print('🛒 FLASH SALE MUA NGAY SIMPLE - Product: ${product.name}, Quantity: $quantity');
+  
     
     final cartItem = CartItem(
       id: product.id,
@@ -320,8 +319,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : 'Unknown Shop',
       addedAt: DateTime.now(),
     );
-    
-    print('🛒 Adding to cart: ${cartItem.name}');
     _cartService.addItem(cartItem);
     
     // Hiển thị thông báo
@@ -344,7 +341,7 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
 
   // Xử lý THÊM VÀO GIỎ cho sản phẩm không có biến thể
   void _handleAddToCartSimple(ProductDetail product, int quantity) {
-    print('🛒 FLASH SALE THÊM VÀO GIỎ SIMPLE - Product: ${product.name}, Quantity: $quantity');
+   
     
     final cartItem = CartItem(
       id: product.id,
@@ -357,8 +354,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : 'Unknown Shop',
       addedAt: DateTime.now(),
     );
-    
-    print('🛒 Adding to cart: ${cartItem.name}');
     _cartService.addItem(cartItem);
     
     // Hiển thị thông báo và chuyển đến giỏ hàng

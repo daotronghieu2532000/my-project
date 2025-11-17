@@ -123,7 +123,7 @@ class _SplashScreenState extends State<SplashScreen>
               return Container(color: Colors.white);
             },
             errorBuilder: (context, error, stackTrace) {
-              print('❌ Lỗi khi load ảnh splash screen từ API: $error');
+            
               // Nếu lỗi load ảnh từ DB → fallback về ảnh mặc định
               return _buildDefaultImage();
             },

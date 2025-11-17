@@ -107,7 +107,6 @@ class VoucherService extends ChangeNotifier {
     // Kiểm tra min order
     if (pv.minOrderValue != null && subtotal < pv.minOrderValue!.round()) {
       if (kDebugMode) {
-        print('🎯 PlatformVoucher ${pv.code}: NOT APPLIED - subtotal $subtotal < min ${pv.minOrderValue}');
       }
       return 0;
     }
@@ -129,7 +128,6 @@ class VoucherService extends ChangeNotifier {
       final hasApplicable = cartProductIds.toSet().intersection(allowIds).isNotEmpty;
       if (!hasApplicable) {
         if (kDebugMode) {
-          print('🎯 PlatformVoucher ${pv.code}: NOT APPLIED - no applicable product in cart. allowIds=$allowIds cartIds=${cartProductIds.toSet()}');
         }
         return 0;
       }
@@ -141,18 +139,15 @@ class VoucherService extends ChangeNotifier {
       if (pv.maxDiscountValue != null && pv.maxDiscountValue! > 0) {
         final applied = discount > pv.maxDiscountValue!.round() ? pv.maxDiscountValue!.round() : discount;
         if (kDebugMode) {
-          print('🎯 PlatformVoucher ${pv.code}: APPLY percentage ${pv.discountValue}% -> $applied (raw $discount, max ${pv.maxDiscountValue})');
         }
         return applied;
       }
       if (kDebugMode) {
-        print('🎯 PlatformVoucher ${pv.code}: APPLY percentage ${pv.discountValue}% -> $discount');
       }
       return discount;
     } else {
       final applied = pv.discountValue!.round();
       if (kDebugMode) {
-        print('🎯 PlatformVoucher ${pv.code}: APPLY fixed $applied');
       }
       return applied;
     }
@@ -301,12 +296,10 @@ class VoucherService extends ChangeNotifier {
       if (bestVoucher != null) {
         applyVoucher(shopId, bestVoucher);
         if (kDebugMode) {
-          print('✅ Tự động áp dụng voucher tốt nhất cho shop $shopId: ${bestVoucher.code} (Giảm ${FormatUtils.formatCurrency(maxDiscount)})');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Lỗi khi tự động áp dụng voucher cho shop $shopId: $e');
       }
     }
   }
@@ -373,12 +366,10 @@ class VoucherService extends ChangeNotifier {
       if (bestVoucher != null && maxDiscount > 0) {
         setPlatformVoucher(bestVoucher);
         if (kDebugMode) {
-          print('✅ Tự động áp dụng voucher sàn tốt nhất: ${bestVoucher.code} (Giảm ${FormatUtils.formatCurrency(maxDiscount)})');
         }
       }
     } catch (e) {
       if (kDebugMode) {
-        print('❌ Lỗi khi tự động áp dụng voucher sàn: $e');
       }
     }
   }

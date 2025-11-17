@@ -40,7 +40,6 @@ class AuthService {
           final data = jsonDecode(response.body);
           
           if (data['success'] == true) {
-            print('✅ Đăng ký thành công: $fullName');
             return {
               'success': true,
               'message': data['message'] ?? 'Đăng ký thành công',
@@ -53,7 +52,6 @@ class AuthService {
             };
           }
         } catch (e) {
-          print('❌ Lỗi parse JSON register response: $e');
           return {
             'success': false,
             'message': 'Lỗi xử lý dữ liệu từ server',
@@ -66,7 +64,6 @@ class AuthService {
         };
       }
     } catch (e) {
-      print('❌ Lỗi register: $e');
       return {
         'success': false,
         'message': 'Lỗi kết nối server',
@@ -94,7 +91,6 @@ class AuthService {
             final user = User.fromJson(data['data']);
             await _saveUser(user);
             
-            print('✅ Đăng nhập thành công: ${user.name}');
             
             // Register FCM token sau khi login thành công
             _registerPushToken();
@@ -113,7 +109,6 @@ class AuthService {
           }
         } catch (jsonError) {
           // Lỗi parse JSON
-          print('❌ Lỗi parse JSON: $jsonError');
           return {
             'success': false,
             'message': 'Lỗi xử lý dữ liệu từ server',
@@ -127,7 +122,6 @@ class AuthService {
         };
       }
     } catch (e) {
-      print('❌ Lỗi đăng nhập: $e');
       return {
         'success': false,
         'message': 'Có lỗi xảy ra: $e',
@@ -148,48 +142,31 @@ class AuthService {
       // Thông báo cho các listener về việc thay đổi trạng thái
       _notifyAuthStateChanged();
     } catch (e) {
-      print('❌ Lỗi khi lưu user: $e');
     }
   }
-
-  /// Lấy thông tin user hiện tại
   Future<User?> getCurrentUser() async {
-    // print('🔍 [AuthService] getCurrentUser() - Bắt đầu...');
-    // print('   - _isLoggingOut: $_isLoggingOut');
-    // print('   - _currentUser (memory): ${_currentUser != null ? "NOT NULL (userId: ${_currentUser!.userId})" : "NULL"}');
-    
-    // CRITICAL: Nếu đang trong quá trình logout, không restore user data
+   
     if (_isLoggingOut) {
-      print('   - ⚠️ Đang trong quá trình logout, return NULL');
       return null;
     }
     
     if (_currentUser != null) {
-      print('   - ✅ Trả về _currentUser từ memory (userId: ${_currentUser!.userId})');
       return _currentUser;
     }
 
     try {
-      print('   - Đang đọc từ SharedPreferences...');
       final prefs = await SharedPreferences.getInstance();
       final userJson = prefs.getString(_userKey);
       
-      print('   - userJson từ SharedPreferences: ${userJson != null ? "NOT NULL (length: ${userJson.length})" : "NULL"}');
       
       if (userJson != null) {
-        print('   - Đang parse JSON...');
         final userData = jsonDecode(userJson) as Map<String, dynamic>;
-        print('   - userData keys: ${userData.keys.toList()}');
         _currentUser = User.fromJson(userData);
-        print('   - ✅ Đã parse thành công, userId: ${_currentUser!.userId}');
         return _currentUser;
       }
       
-      print('   - ❌ Không có userJson trong SharedPreferences');
       return null;
     } catch (e, stackTrace) {
-      print('   - ❌ Lỗi khi lấy user: $e');
-      print('   - Stack trace: $stackTrace');
       return null;
     }
   }
@@ -225,14 +202,12 @@ class AuthService {
         await prefs.commit();
       }
     } catch (e) {
-      print('❌ Lỗi clear SharedPreferences: $e');
     }
     
     // Step 5: Clear API token
     try {
       await _apiService.clearToken();
     } catch (e) {
-      print('❌ Lỗi clear API token: $e');
     }
     
     // Step 6: Reset flag sau khi hoàn thành
@@ -245,7 +220,6 @@ class AuthService {
       final user = await getCurrentUser();
       return user != null;
     } catch (e) {
-      print('❌ Lỗi kiểm tra đăng nhập: $e');
       return false;
     }
   }
@@ -273,17 +247,14 @@ class AuthService {
         await prefs.commit();
       }
       
-      print('✅ Đã đăng xuất và xóa thông tin user');
       
       // CRITICAL: Xóa API token để tránh auto-login
       await _apiService.clearToken();
-      print('✅ Đã xóa API token');
       
       // CRITICAL: Force clear listeners để tránh restore user
       _onAuthStateChanged.clear();
       
     } catch (e) {
-      print('❌ Lỗi khi đăng xuất: $e');
       // Vẫn đảm bảo clear local state ngay cả khi có lỗi
       _currentUser = null;
       _onAuthStateChanged.clear();
@@ -306,7 +277,6 @@ class AuthService {
       try {
         _onAuthStateChanged[i]();
       } catch (e) {
-        print('❌ Lỗi trong auth state listener #$i: $e');
       }
     }
   }
@@ -357,42 +327,26 @@ class AuthService {
     if (pushService.isInitialized) {
       // Token sẽ được tự động register trong PushNotificationService
       // Chỉ cần đảm bảo service đã được initialize
-      print('📱 Push notification service ready, token will be registered');
     }
   }
-
-  /// Gửi OTP quên mật khẩu qua SMS (ZNS Zalo)
   Future<Map<String, dynamic>> forgotPasswordSMS(String phoneNumber) async {
     try {
-      // TODO: Bỏ comment khi cần debug
-      // print('📤 [forgotPasswordSMS] Gửi request đến: /forgot_password_sms');
-      // print('📤 [forgotPasswordSMS] Phone: $phoneNumber');
-      
+    
       final response = await _apiService.post('/forgot_password_sms', body: {
         'phone_number': phoneNumber,
       });
 
       if (response != null) {
-        // TODO: Bỏ comment khi cần debug
-        // print('📥 [forgotPasswordSMS] Response status: ${response.statusCode}');
-        // print('📥 [forgotPasswordSMS] Response headers: ${response.headers}');
-        // print('📥 [forgotPasswordSMS] Response body (first 500 chars): ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}');
-        
         try {
           final data = jsonDecode(response.body);
-          // TODO: Bỏ comment khi cần debug
-          // print('✅ [forgotPasswordSMS] JSON parsed successfully');
-          // print('📊 [forgotPasswordSMS] Response data: $data');
-          
-          if (data['success'] == true) {
-            // print('✅ Gửi OTP thành công đến: $phoneNumber');
+          if (data['success'] == true) {  
             return {
               'success': true,
               'message': data['message'] ?? 'Mã OTP đã được gửi đến số điện thoại của bạn',
               'data': data['data'],
             };
           } else {
-            // TODO: Bỏ comment khi cần debug - Hiển thị chi tiết lỗi từ server
+          
             String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
             // String debugInfo = '';
             // 
@@ -409,7 +363,7 @@ class AuthService {
             //   debugInfo += '\nDebug: ${jsonEncode(data['debug'])}';
             // }
             // 
-            // print('❌ [forgotPasswordSMS] Server error: $errorMessage$debugInfo');
+          
             
             return {
               'success': false,
@@ -418,12 +372,7 @@ class AuthService {
             };
           }
         } catch (e /*, stackTrace*/) {
-          // TODO: Bỏ comment khi cần debug
-          // print('❌ [forgotPasswordSMS] Lỗi parse JSON: $e');
-          // print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
-          // print('❌ [forgotPasswordSMS] Response body (raw): ${response.body}');
-          // print('❌ [forgotPasswordSMS] Response body length: ${response.body.length}');
-          
+        
           return {
             'success': false,
             'message': 'Lỗi xử lý dữ liệu từ server',
@@ -434,17 +383,12 @@ class AuthService {
           };
         }
       } else {
-        // TODO: Bỏ comment khi cần debug
-        // print('❌ [forgotPasswordSMS] Response is null');
         return {
           'success': false,
           'message': 'Lỗi kết nối server',
         };
       }
     } catch (e /*, stackTrace*/) {
-      // TODO: Bỏ comment khi cần debug
-      // print('❌ [forgotPasswordSMS] Exception: $e');
-      // print('❌ [forgotPasswordSMS] Stack trace: $stackTrace');
       return {
         'success': false,
         'message': 'Lỗi kết nối server',
@@ -473,7 +417,6 @@ class AuthService {
           final data = jsonDecode(response.body);
           
           if (data['success'] == true) {
-            print('✅ Đổi mật khẩu thành công');
             return {
               'success': true,
               'message': data['message'] ?? 'Đổi mật khẩu thành công',
@@ -485,7 +428,6 @@ class AuthService {
             };
           }
         } catch (e) {
-          print('❌ Lỗi parse JSON verify OTP response: $e');
           return {
             'success': false,
             'message': 'Lỗi xử lý dữ liệu từ server',
@@ -498,7 +440,6 @@ class AuthService {
         };
       }
     } catch (e) {
-      print('❌ Lỗi verify OTP reset password: $e');
       return {
         'success': false,
         'message': 'Lỗi kết nối server',

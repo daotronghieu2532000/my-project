@@ -45,7 +45,7 @@ class _MobileBannerSectionState extends State<MobileBannerSection> {
           _isLoading = false;
         });
       }
-      print('❌ Lỗi khi tải banner mobile: $e');
+     
     }
   }
 
@@ -78,7 +78,7 @@ class _MobileBannerSectionState extends State<MobileBannerSection> {
                 onTap: () {
                   if (banner.link.isNotEmpty) {
                     // TODO: Navigate to link
-                    print('Banner clicked: ${banner.link}');
+                  
                   }
                 },
                 child: Container(

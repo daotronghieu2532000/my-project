@@ -66,7 +66,6 @@ class _VoucherDialogState extends State<VoucherDialog> {
         });
       }
     } catch (e) {
-      print('❌ Lỗi khi tải voucher: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

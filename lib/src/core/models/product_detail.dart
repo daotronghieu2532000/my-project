@@ -43,7 +43,7 @@ class ProductDetail {
   final String? category;
   final double? rating;
   final int? sold;
-  final int? reviews;
+  final int? reviewsCount;
   final String? shopId;
   final String? shopName;
   final String? shopLogo;
@@ -58,6 +58,7 @@ class ProductDetail {
   final Map<String, dynamic>? shopInfo;
   final bool isFavorited;
   final Map<String, dynamic>? flashSaleInfo;
+  final List<Map<String, dynamic>>? reviews;
 
   const ProductDetail({
     required this.id,
@@ -75,7 +76,7 @@ class ProductDetail {
     this.category,
     this.rating,
     this.sold,
-    this.reviews,
+    this.reviewsCount,
     this.shopId,
     this.shopName,
     this.shopLogo,
@@ -90,6 +91,7 @@ class ProductDetail {
     this.shopInfo,
     this.isFavorited = false,
     this.flashSaleInfo,
+    this.reviews,
   });
 
   factory ProductDetail.fromJson(Map<String, dynamic> json) {
@@ -136,37 +138,36 @@ class ProductDetail {
       return defaultValue;
     }
 
-    // Parse images array
+
     List<String> parseImages(dynamic imagesData) {
-      // print('🔍 parseImages input: $imagesData');
-      // print('🔍 parseImages type: ${imagesData.runtimeType}');
+     
       
       if (imagesData == null) {
-        // print('🔍 parseImages: null data, returning empty list');
+    
         return [];
       }
       if (imagesData is List) {
         final result = imagesData.map((e) => _fixImageUrl(e.toString())).toList();
-        // print('🔍 parseImages: List result: $result');
+       
         return result;
       }
       if (imagesData is String) {
-        // Check if string contains comma-separated paths
+        
         if (imagesData.contains(',')) {
           final result = imagesData.split(',').map((e) => _fixImageUrl(e.trim())).where((e) => e.isNotEmpty).toList();
-          // print('🔍 parseImages: Comma-separated string result: $result');
+         
           return result;
         } else {
           final result = [_fixImageUrl(imagesData)];
-          // print('🔍 parseImages: Single string result: $result');
+          
           return result;
         }
       }
-      // print('🔍 parseImages: Unknown type, returning empty list');
+     
       return [];
     }
 
-    // Parse variants
+   
     List<ProductVariant> parseVariants(dynamic variantsData) {
       if (variantsData == null) return [];
       if (variantsData is List) {
@@ -200,19 +201,16 @@ class ProductDetail {
       shortDescription: json['short_description'] as String? ?? json['mo_ta_ngan'] as String?,
       highlights: json['noi_bat'] as String?,
       images: () {
-        // print('🔍 API Response - images: ${json['images']}');
-        // print('🔍 API Response - anh: ${json['anh']}');
-        // print('🔍 API Response - minh_hoa: ${json['minh_hoa']}');
-        // Ưu tiên lấy từ anh (gallery images), sau đó từ images.gallery, cuối cùng từ minh_hoa
+      
         final galleryData = json['anh'] ?? json['images']?['gallery'] ?? json['minh_hoa'];
-        // print('🔍 Gallery data to parse: $galleryData');
+       
         return parseImages(galleryData);
       }(),
       thumbnail: () {
-        // print('🔍 Thumbnail data: ${json['images']?['main']}');
+       
         final thumbnailUrl = json['images']?['main'] as String? ?? json['images']?['thumb'] as String? ?? json['thumbnail'] as String? ?? json['hinh_dai_dien'] as String?;
         final fixedUrl = thumbnailUrl != null ? _fixImageUrl(thumbnailUrl) : null;
-        // print('🔍 Fixed thumbnail URL: $fixedUrl');
+       
         return fixedUrl;
       }(),
       price: safeParseInt(json['price']) ?? safeParseInt(json['gia_moi']) ?? safeParseInt(json['gia']) ?? 0,
@@ -223,7 +221,7 @@ class ProductDetail {
       category: json['category'] as String? ?? json['danh_muc'] as String?,
       rating: safeParseDouble(json['rating']) ?? safeParseDouble(json['danh_gia']),
       sold: safeParseInt(json['sold']) ?? safeParseInt(json['da_ban']) ?? safeParseInt(json['luot_ban']),
-      reviews: safeParseInt(json['reviews']) ?? safeParseInt(json['danh_gia_count']) ?? safeParseInt(json['luot_danh_gia']),
+      reviewsCount: safeParseInt(json['total_reviews']) ?? safeParseInt(json['reviews_count']) ?? safeParseInt(json['danh_gia_count']) ?? safeParseInt(json['luot_danh_gia']),
       shopId: parsedShopId,
       shopName: parsedShopName,
       shopLogo: json['shop_logo'] as String? ?? json['logo_shop'] as String? ?? shopInfoMap?['avatar'] as String?,
@@ -238,6 +236,12 @@ class ProductDetail {
       shopInfo: safeParseMap(json['shop_info']),
       isFavorited: safeParseBool(json['is_favorited']),
       flashSaleInfo: safeParseMap(json['flash_sale_info']),
+      reviews: () {
+        if (json['reviews'] is List) {
+          return List<Map<String, dynamic>>.from(json['reviews']);
+        }
+        return null;
+      }(),
     );
   }
 
@@ -258,7 +262,7 @@ class ProductDetail {
       'category': category,
       'rating': rating,
       'sold': sold,
-      'reviews': reviews,
+      'reviews_count': reviewsCount,
       'shop_id': shopId,
       'shop_name': shopName,
       'shop_logo': shopLogo,
@@ -273,6 +277,7 @@ class ProductDetail {
       'shop_info': shopInfo,
       'is_favorited': isFavorited,
       'flash_sale_info': flashSaleInfo,
+      'reviews': reviews,
     };
   }
 

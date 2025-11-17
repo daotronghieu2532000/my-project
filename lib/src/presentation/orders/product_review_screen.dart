@@ -61,20 +61,29 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
 
   Future<void> _pickImage(int productId) async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
+      // Cho phép chọn nhiều ảnh một lần
+      final List<XFile> images = await _picker.pickMultiImage(
         maxWidth: 1024,
         maxHeight: 1024,
         imageQuality: 85,
       );
-      if (image != null) {
+      
+    if (images.isNotEmpty) {
+        final List<String> newImages = [];
+        for (var image in images) {
         final bytes = await image.readAsBytes();
         final base64Image = base64Encode(bytes);
         final mimeType = image.path.toLowerCase().endsWith('.png') ? 'png' : 'jpeg';
         final dataUri = 'data:image/$mimeType;base64,$base64Image';
+          newImages.add(dataUri);
+        }
         
         setState(() {
-          _images[productId]?.add(dataUri);
+          final currentImages = _images[productId] ?? [];
+          final remainingSlots = 5 - currentImages.length;
+          if (remainingSlots > 0) {
+            _images[productId] = [...currentImages, ...newImages.take(remainingSlots)];
+          }
         });
       }
     } catch (e) {
@@ -145,6 +154,38 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
 
       if (!mounted) return;
 
+      // Debug: Log debug info từ API
+      final debugInfo = result?['data']?['debug'] as Map<String, dynamic>?;
+      if (debugInfo != null) {
+        print('🔍 DEBUG INFO từ API:');
+        print('   variant_id_from_request: ${debugInfo['variant_id_from_request']}');
+        print('   variant_id_final: ${debugInfo['variant_id_final']}');
+        print('   variant_id_sql: ${debugInfo['variant_id_sql']}');
+        print('   order_id: ${debugInfo['order_id']}');
+        print('   has_order_id: ${debugInfo['has_order_id']}');
+        if (debugInfo['found_matching_product'] == true) {
+          print('   ✅ Found matching product!');
+          print('   matching_key: ${debugInfo['matching_key']}');
+          print('   item_pl: ${debugInfo['item_pl']}');
+          print('   variant_id_source: ${debugInfo['variant_id_source']}');
+          if (debugInfo['available_fields'] != null) {
+            print('   available_fields: ${debugInfo['available_fields']}');
+          }
+        } else {
+          print('   ❌ Không tìm thấy sản phẩm khớp trong đơn hàng');
+          if (debugInfo['no_order_id'] == true) {
+            print('   - Lý do: Không có order_id');
+          } else if (debugInfo['order_check_failed'] == true) {
+            print('   - Lý do: Không tìm thấy đơn hàng');
+          } else if (debugInfo['order_products_json_empty'] == true) {
+            print('   - Lý do: JSON sản phẩm trong đơn hàng rỗng');
+          } else if (debugInfo['order_products_not_array'] == true) {
+            print('   - Lý do: JSON sản phẩm không phải array');
+          }
+        }
+        print('   Full debug: $debugInfo');
+      }
+
       if (result?['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -162,11 +203,6 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
         widget.onReviewSubmitted?.call();
         Navigator.pop(context);
       } else {
-        // Log debug info nếu có
-        if (result?['debug'] != null) {
-          print('❌ Review Error Debug Info:');
-          print('   ${jsonEncode(result?['debug'])}');
-        }
         
         final errorMessage = result?['message'] ?? 'Có lỗi xảy ra';
         final debugInfo = result?['debug'] != null 
@@ -204,7 +240,7 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
           style: TextStyle(
             fontSize: 16,
             color: Colors.black87,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w600,
           ),
         ),
         backgroundColor: Colors.white,
@@ -227,9 +263,16 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
           final productImage = product['image'] ?? '';
           final color = product['color'] ?? '';
           final size = product['size'] ?? '';
+          final variantName = product['variant_name'] ?? '';
+          final shopName = product['shop_name'] ?? '';
           final fixedImage = productImage.startsWith('http')
               ? productImage
               : (productImage.isEmpty ? '' : 'https://socdo.vn$productImage');
+          
+          // Tạo text phân loại: ưu tiên variant_name, sau đó từ color/size
+          final variantDisplay = variantName.isNotEmpty 
+              ? variantName 
+              : [color, size].where((e) => e.toString().isNotEmpty).join(' • ');
 
           return Container(
             margin: const EdgeInsets.only(bottom: 20),
@@ -277,15 +320,48 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          if (color.isNotEmpty || size.isNotEmpty) ...[
+                          if (variantDisplay.isNotEmpty) ...[
                             const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Text(
+                                  'Phân loại: ',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                             Text(
-                              [color, size].where((e) => e.toString().isNotEmpty).join(' • '),
+                                  variantDisplay,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[700],
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (shopName.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.store, size: 14, color: Colors.grey),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    shopName,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[600],
                                 height: 1.3,
                               ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ],
@@ -474,22 +550,25 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    _buildRadioOption(
+                    _buildCheckboxOption(
                       productId,
+                      'will_buy',
                       'yes',
                       'Có',
                       _willBuyAgain[productId] == 'yes',
                     ),
                     const SizedBox(width: 12),
-                    _buildRadioOption(
+                    _buildCheckboxOption(
                       productId,
+                      'will_buy',
                       'no',
                       'Không',
                       _willBuyAgain[productId] == 'no',
                     ),
                     const SizedBox(width: 12),
-                    _buildRadioOption(
+                    _buildCheckboxOption(
                       productId,
+                      'will_buy',
                       'maybe',
                       'Sẽ cân nhắc',
                       _willBuyAgain[productId] == 'maybe',
@@ -651,51 +730,10 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
     );
   }
 
-  Widget _buildRadioOption(int productId, String value, String label, bool isSelected) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _willBuyAgain[productId] = isSelected ? null : value;
-        });
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 18,
-            height: 18,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isSelected ? const Color(0xFFFF6B35) : Colors.grey[400]!,
-                width: 2,
-              ),
-              color: isSelected ? const Color(0xFFFF6B35) : Colors.transparent,
-            ),
-            child: isSelected
-                ? const Center(
-                    child: Icon(Icons.circle, size: 10, color: Colors.white),
-                  )
-                : null,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isSelected ? const Color(0xFFFF6B35) : Colors.black87,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCheckboxOption(
     int productId,
     String type,
-    bool value,
+    dynamic value, // Changed from bool to dynamic to support 'yes', 'no', 'maybe'
     String label,
     bool isSelected,
   ) {
@@ -703,9 +741,11 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
       onTap: () {
         setState(() {
           if (type == 'matches') {
-            _matchesDescription[productId] = isSelected ? null : value;
+            _matchesDescription[productId] = isSelected ? null : (value as bool);
           } else if (type == 'satisfied') {
-            _isSatisfied[productId] = isSelected ? null : value;
+            _isSatisfied[productId] = isSelected ? null : (value as bool);
+          } else if (type == 'will_buy') {
+            _willBuyAgain[productId] = isSelected ? null : (value as String);
           }
         });
       },

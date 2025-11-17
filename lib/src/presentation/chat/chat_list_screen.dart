@@ -39,7 +39,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   void _startPolling() {
     _stopPolling();
-    print('🔄 [ChatListScreen] Starting polling for chat sessions...');
+  
     _pollingTimer = Timer.periodic(const Duration(seconds: 6), (timer) {
       _loadChatSessionsSilently();
     });
@@ -69,13 +69,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
         final uniqueSessions = groupedSessions.values.toList()
           ..sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
         
-        print('📨 [ChatListScreen] Polling found ${response.sessions.length} sessions, grouped into ${uniqueSessions.length} unique shops');
         setState(() {
           _sessions = uniqueSessions;
         });
       }
     } catch (e) {
-      print('❌ [ChatListScreen] Silent polling error: $e');
+      // Silent polling error
     }
   }
 
@@ -83,37 +82,29 @@ class _ChatListScreenState extends State<ChatListScreen> {
     if (_pollingTimer != null) {
       _pollingTimer!.cancel();
       _pollingTimer = null;
-      print('⏹️ [ChatListScreen] Stopped polling');
     }
   }
 
   void _setupSocketIO() {
     // Set up Socket.io callbacks for real-time updates
     _socketIOService.onConnected = () {
-      print('🔌 [ChatListScreen] Socket.io connected');
       // ✅ Dừng polling khi Socket.IO đã connect (realtime)
       _stopPolling();
-      print('✅ [ChatListScreen] Stopped polling - using Socket.IO realtime');
     };
 
     _socketIOService.onDisconnected = () {
-      print('🔌 [ChatListScreen] Socket.io disconnected');
       // ✅ Start polling lại khi Socket.IO disconnect (fallback)
       _startPolling();
-      print('🔄 [ChatListScreen] Started polling - Socket.IO disconnected');
     };
 
     _socketIOService.onError = (error) {
-      print('❌ [ChatListScreen] Socket.io error: $error');
       // ✅ Start polling khi Socket.IO có lỗi (fallback)
       if (!_socketIOService.isConnected) {
         _startPolling();
-        print('🔄 [ChatListScreen] Started polling - Socket.IO error');
       }
     };
 
     _socketIOService.onMessage = (message) {
-      print('📨 [ChatListScreen] Received message: $message');
       // Refresh chat sessions when new message received
       _loadChatSessions();
     };
@@ -137,7 +128,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted && !_socketIOService.isConnected) {
             _startPolling();
-            print('🔄 [ChatListScreen] Started polling - Socket.IO not connected yet');
           }
         });
       } else {
@@ -184,8 +174,6 @@ class _ChatListScreenState extends State<ChatListScreen> {
           _sessions = uniqueSessions;
           _isLoading = false;
         });
-        
-        print('📋 [ChatListScreen] Grouped ${response.sessions.length} sessions into ${uniqueSessions.length} unique shops');
       }
     } catch (e) {
       if (mounted) {

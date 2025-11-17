@@ -27,7 +27,6 @@ class ShippingQuoteService {
     if (useCache) {
       final cached = await _getCachedQuote(userId, items);
       if (cached != null) {
-        print('✅ [ShippingQuote] Sử dụng cache');
         return cached;
       }
     }
@@ -38,7 +37,6 @@ class ShippingQuoteService {
 
     for (int attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
-        print('🔄 [ShippingQuote] Attempt $attempt/$_maxRetries');
         
         result = await _callApiWithTimeout(
           userId: userId,
@@ -50,12 +48,10 @@ class ShippingQuoteService {
           if (useCache) {
             await _saveCachedQuote(userId, items, result);
           }
-          print('✅ [ShippingQuote] Thành công sau $attempt lần thử');
           return result;
         }
       } catch (e) {
         lastError = e is Exception ? e : Exception(e.toString());
-        print('❌ [ShippingQuote] Attempt $attempt failed: $e');
         
         // Chờ trước khi retry (trừ lần cuối)
         if (attempt < _maxRetries) {
@@ -66,11 +62,9 @@ class ShippingQuoteService {
 
     // ✅ 3. Nếu tất cả retry đều fail, dùng fallback
     if (enableFallback) {
-      print('⚠️ [ShippingQuote] API failed, sử dụng fallback calculation');
       return _calculateFallbackQuote(userId, items, lastError);
     }
 
-    print('❌ [ShippingQuote] Tất cả attempts đều failed và fallback bị tắt');
     return null;
   }
 
@@ -103,7 +97,6 @@ class ShippingQuoteService {
     List<Map<String, dynamic>> items,
     Exception? error,
   ) {
-    print('🔄 [ShippingQuote] Tính toán fallback...');
 
     // ✅ Tính tổng giá trị đơn hàng từ giá thực tế (nếu có) hoặc ước tính
     int totalValue = 0;
@@ -172,7 +165,6 @@ class ShippingQuoteService {
       },
     };
 
-    print('✅ [ShippingQuote] Fallback calculated: $fallbackFee₫');
     return fallbackQuote;
   }
 
@@ -198,16 +190,13 @@ class ShippingQuoteService {
         final expiryTime = timestamp + _cacheExpiry.inMilliseconds;
 
         if (DateTime.now().millisecondsSinceEpoch < expiryTime) {
-          print('✅ [ShippingQuote] Cache hit');
           return cached['data'] as Map<String, dynamic>?;
         } else {
           // Cache đã hết hạn, xóa
           await prefs.remove(cacheKey);
-          print('⏰ [ShippingQuote] Cache expired');
         }
       }
     } catch (e) {
-      print('⚠️ [ShippingQuote] Cache read error: $e');
     }
     return null;
   }
@@ -226,9 +215,7 @@ class ShippingQuoteService {
         'data': quote,
       };
       await prefs.setString(cacheKey, jsonEncode(cacheData));
-      print('💾 [ShippingQuote] Cached successfully');
     } catch (e) {
-      print('⚠️ [ShippingQuote] Cache save error: $e');
     }
   }
 
@@ -258,9 +245,7 @@ class ShippingQuoteService {
           }
         }
       }
-      print('🗑️ [ShippingQuote] Cache cleared');
     } catch (e) {
-      print('⚠️ [ShippingQuote] Cache clear error: $e');
     }
   }
 
@@ -277,7 +262,6 @@ class ShippingQuoteService {
       );
       return result != null;
     } catch (e) {
-      print('❌ [ShippingQuote] Health check failed: $e');
       return false;
     }
   }

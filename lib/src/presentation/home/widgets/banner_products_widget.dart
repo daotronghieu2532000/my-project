@@ -178,7 +178,7 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
     try {
       // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi scroll)
       if (_hasLoadedOnce && _bannerProducts != null) {
-        print('🎯 Banner products already loaded, skipping reload');
+    
         return;
       }
       
@@ -204,21 +204,20 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
             _bannerProducts = bannerProduct;
             _hasLoadedOnce = true; // Đánh dấu đã load
           });
-          
-          print('✅ Banner products loaded from cache (${widget.position})');
+        
         } else {
           setState(() {
             _isLoading = false;
             _bannerProducts = null;
           });
-          print('⚠️ No valid cached banner products for ${widget.position}');
+         
         }
       } else {
         setState(() {
           _isLoading = false;
           _bannerProducts = null;
         });
-        print('⚠️ No cached banner products for ${widget.position}');
+       
       }
     } catch (e) {
       if (mounted) {
@@ -226,7 +225,7 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
           _isLoading = false;
         });
       }
-      print('❌ Error loading banner products from cache: $e');
+     
     }
   }
 
@@ -245,21 +244,15 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
 
       if (!mounted) return;
 
-      print(
-        '🔍 Banner Products Widget [${widget.position}]: result = $result',
-      );
+    
 
       if (result != null && result.containsKey(widget.position)) {
         final bannerProduct = result[widget.position];
-        print(
-          '🔍 Banner Products Widget [${widget.position}]: bannerProduct = $bannerProduct',
-        );
+      
 
         // Kiểm tra banner còn hiệu lực không
         if (bannerProduct != null) {
-          print(
-            '🔍 Banner Products Widget [${widget.position}]: isValid = ${bannerProduct.isValid}, displayEnd = ${bannerProduct.displayEnd}, now = ${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
-          );
+         
 
           if (bannerProduct.isValid) {
             setState(() {
@@ -267,31 +260,23 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
               _isLoading = false;
               _hasLoadedOnce = true; // Đánh dấu đã load
             });
-            print(
-              '✅ Banner Products Widget [${widget.position}]: Loaded successfully',
-            );
+          
           } else {
-            print(
-              '⚠️ Banner Products Widget [${widget.position}]: Banner expired',
-            );
+          
             setState(() {
               _bannerProducts = null;
               _isLoading = false;
             });
           }
         } else {
-          print(
-            '⚠️ Banner Products Widget [${widget.position}]: bannerProduct is null',
-          );
+         
           setState(() {
             _bannerProducts = null;
             _isLoading = false;
           });
         }
       } else {
-        print(
-          '⚠️ Banner Products Widget [${widget.position}]: result is null or does not contain position',
-        );
+       
         setState(() {
           _bannerProducts = null;
           _isLoading = false;
@@ -303,7 +288,7 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
           _isLoading = false;
         });
       }
-      print('❌ Error loading banner products: $e');
+    
     }
   }
 
@@ -366,7 +351,7 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      print('❌ Lỗi khi mở link banner: $e');
+     
     }
   }
 }

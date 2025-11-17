@@ -23,14 +23,12 @@ class MemoryCacheService {
     _cleanupTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       _cleanupExpiredCache();
     });
-    print('✅ MemoryCacheService initialized');
   }
 
   /// Dispose service
   void dispose() {
     _cleanupTimer?.cancel();
     _cache.clear();
-    print('🔄 MemoryCacheService disposed');
   }
 
   /// Lưu dữ liệu vào cache
@@ -44,7 +42,6 @@ class MemoryCacheService {
       createdAt: DateTime.now(),
     );
     
-    print('💾 Cached data for key: $key (expires in ${cacheDuration.inMinutes}m)');
   }
 
   /// Lấy dữ liệu từ cache
@@ -52,17 +49,14 @@ class MemoryCacheService {
     final item = _cache[key];
     
     if (item == null) {
-      print('❌ Cache miss for key: $key');
       return null;
     }
     
     if (item.isExpired) {
-      print('⏰ Cache expired for key: $key');
       _cache.remove(key);
       return null;
     }
     
-    print('✅ Cache hit for key: $key');
     return item.data as T?;
   }
 
@@ -82,13 +76,11 @@ class MemoryCacheService {
   /// Xóa cache theo key
   void remove(String key) {
     _cache.remove(key);
-    print('🗑️ Removed cache for key: $key');
   }
 
   /// Xóa tất cả cache
   void clear() {
     _cache.clear();
-    print('🧹 Cleared all cache');
   }
 
   /// Xóa cache hết hạn
@@ -106,7 +98,6 @@ class MemoryCacheService {
     }
     
     if (expiredKeys.isNotEmpty) {
-      print('🧹 Cleaned up ${expiredKeys.length} expired cache entries');
     }
   }
 

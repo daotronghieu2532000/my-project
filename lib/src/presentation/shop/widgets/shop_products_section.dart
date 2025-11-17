@@ -50,21 +50,11 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
   @override
   void didUpdateWidget(ShopProductsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    print('🔍 [ShopProductsSection] didUpdateWidget called');
-    print('🔍 [ShopProductsSection] Old searchKeyword: "${oldWidget.searchKeyword}"');
-    print('🔍 [ShopProductsSection] New searchKeyword: "${widget.searchKeyword}"');
-    print('🔍 [ShopProductsSection] Old shopId: ${oldWidget.shopId}');
-    print('🔍 [ShopProductsSection] New shopId: ${widget.shopId}');
-    
     // Reload products khi searchKeyword thay đổi
     final oldKeyword = oldWidget.searchKeyword ?? '';
     final newKeyword = widget.searchKeyword ?? '';
     if (oldKeyword != newKeyword) {
-      print('🔍 [ShopProductsSection] Search keyword changed from "$oldKeyword" to "$newKeyword"');
-      print('🔍 [ShopProductsSection] Reloading products with search keyword: "$newKeyword"');
       _loadProducts();
-    } else {
-      print('🔍 [ShopProductsSection] Search keyword unchanged, skipping reload');
     }
   }
 
@@ -96,8 +86,7 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
 
     try {
       final searchQuery = widget.searchKeyword?.isNotEmpty == true ? widget.searchKeyword : null;
-      print('🔍 [ShopProductsSection] Loading products - shopId: ${widget.shopId}, searchQuery: "$searchQuery", page: ${loadMore ? _currentPage + 1 : 1}');
-      
+
       final result = await _cachedApiService.getShopProductsPaginatedCached(
         shopId: widget.shopId,
         categoryId: widget.categoryId?.toString(),
@@ -106,22 +95,11 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
         limit: 50,
       );
 
-      print('🔍 [ShopProductsSection] API response received: ${result != null ? "SUCCESS" : "NULL"}');
-
       if (mounted && result != null) {
         final productsData = result['products'] as List? ?? [];
         final pagination = result['pagination'] as Map<String, dynamic>? ?? {};
         
-        print('🔍 [ShopProductsSection] Products count: ${productsData.length}');
-        print('🔍 [ShopProductsSection] Pagination: $pagination');
-        
         final newProducts = productsData.map((data) => ShopProduct.fromJson(data)).toList();
-        
-        print('🔍 [ShopProductsSection] Parsed products: ${newProducts.length}');
-        if (newProducts.isNotEmpty) {
-          print('🔍 [ShopProductsSection] First product: ${newProducts.first.name}');
-        }
-        
         setState(() {
           if (loadMore) {
             _products.addAll(newProducts);
@@ -136,9 +114,9 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
           _isLoadingMore = false;
         });
         
-        print('🔍 [ShopProductsSection] State updated - Total products: ${_products.length}, Has more: $_hasMore');
+        
       } else if (mounted) {
-        print('⚠️ [ShopProductsSection] API returned null or error');
+     
         setState(() {
           _isLoading = false;
           _isLoadingMore = false;
@@ -146,7 +124,7 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
         });
       }
     } catch (e) {
-      print('❌ [ShopProductsSection] Error loading products: $e');
+  
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -165,7 +143,7 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
 
   @override
   Widget build(BuildContext context) {
-    print('🔍 [ShopProductsSection] build() called with searchKeyword: "${widget.searchKeyword}"');
+   
     if (_isLoading) {
       return const Center(
         child: Column(

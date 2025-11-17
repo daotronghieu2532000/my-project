@@ -76,8 +76,7 @@ class QuickActions extends StatelessWidget {
                         width: 40,
                         height: 40,
                         errorBuilder: (context, error, stackTrace) {
-                          print('❌ Error loading image: ${items[i].imagePath}');
-                          print('Error: $error');
+                       
                           return Icon(
                             Icons.error_outline,
                             color: items[i].iconColor,

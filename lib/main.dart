@@ -12,9 +12,9 @@ void main() async {
   // KHỞI TẠO FIREBASE TRƯỚC TIÊN
   try {
     await Firebase.initializeApp();
-    print('✅ Firebase initialized');
+   
   } catch (e) {
-    print('❌ Error initializing Firebase: $e');
+   
   }
   
   // Khởi tạo app services
@@ -25,7 +25,7 @@ void main() async {
 
 Future<void> _initializeApp() async {
   try {
-    print('🚀 Đang khởi tạo ứng dụng...');
+   
     
     // Khởi tạo AppLifecycleManager (không blocking)
     final lifecycleManager = AppLifecycleManager();
@@ -34,17 +34,12 @@ Future<void> _initializeApp() async {
     // Khởi tạo token (chạy background, không block UI)
     final initService = AppInitializationService();
     initService.initializeApp().then((success) {
-      if (success) {
-        print('✅ Khởi tạo ứng dụng thành công');
-      } else {
-        print('⚠️ Khởi tạo ứng dụng thất bại, tiếp tục chạy app');
-      }
+     
     });
     
     // KHÔNG delay - vào Flutter splash screen NGAY LẬP TỨC
     
   } catch (e) {
-    print('❌ Lỗi khởi tạo ứng dụng: $e');
-    // Vẫn tiếp tục chạy app dù có lỗi
+   
   }
 }

@@ -41,18 +41,14 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
 
     try {
       final result = await _affiliateService.getOrders(userId: _currentUserId);
-      print('🔍 [DEBUG] API Result: $result');
       
       if (mounted) {
         setState(() {
           _isLoading = false;
           if (result != null && result['data'] != null && result['data']['orders'] != null) {
             _orders = result['data']['orders'] ?? [];
-            print('🔍 [DEBUG] Orders loaded: ${_orders.length} orders');
-            print('🔍 [DEBUG] Orders data: $_orders');
           } else {
             _orders = [];
-            print('🔍 [DEBUG] API failed or no data - result: $result');
           }
         });
       }
@@ -69,7 +65,6 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print('🔍 [DEBUG] Build - isLoading: $_isLoading, error: $_error, orders.length: ${_orders.length}');
     return Scaffold(
       appBar: AppBar(
         title: const Text('Đơn hàng Affiliate'),

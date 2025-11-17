@@ -46,25 +46,12 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
       // Lấy userId từ AuthService (user đã đăng nhập) để sử dụng personalized suggestions
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
-      
-      if (userId != null) {
-        print('👤 Đang tải gợi ý cá nhân hóa cho user_id: $userId');
-      } else {
-        print('👤 User chưa đăng nhập - sử dụng gợi ý chung');
-      }
-      
-      // Sử dụng cached API service với userId (nếu có)
-      // Nếu có userId, sẽ gọi API với type='user_based' để lấy gợi ý dựa trên hành vi
       final suggestionsData = await _cachedApiService.getHomeSuggestions(
         limit: 100,
         userId: userId,
         forceRefresh: false, // Chỉ load từ cache
       );
-      
-      if (userId != null) {
-        print('📦 Đã nhận ${suggestionsData.length} sản phẩm gợi ý cá nhân hóa');
-      }
-      
+
       if (mounted && suggestionsData.isNotEmpty) {
         // Convert Map to ProductSuggest
         final products = suggestionsData.map((data) => ProductSuggest.fromJson(data)).toList();
@@ -75,13 +62,13 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
           _hasLoadedOnce = true; // Đánh dấu đã load
         });
         
-        print('✅ Product suggestions loaded successfully (${products.length} products)');
+      
       } else if (mounted) {
         setState(() {
           _isLoading = false;
           _error = 'Không có sản phẩm gợi ý';
         });
-        print('⚠️ No product suggestions found');
+    
       }
     } catch (e) {
       if (mounted) {
@@ -89,7 +76,7 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
           _isLoading = false;
         });
       }
-      print('❌ Error loading product suggestions: $e');
+     
     }
   }
 

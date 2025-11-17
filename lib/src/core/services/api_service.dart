@@ -47,18 +47,14 @@ class ApiService {
         if (data['success'] == true && data['token'] != null) {
           final token = data['token'] as String;
           await _tokenManager.saveToken(token);
-          print('✅ Lấy token thành công: ${token.substring(0, 20)}...');
           return token;
         } else {
-          print('❌ API trả về lỗi: ${data['message']}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy token: $e');
       return null;
     }
   }
@@ -109,7 +105,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('❌ Lỗi đăng ký affiliate: $e');
       return null;
     }
   }
@@ -473,19 +468,6 @@ class ApiService {
       final uri = Uri.parse('$baseUrl/product_reviews');
       final token = await getValidToken();
       
-      // Log request để debug
-      print('📥 Product Review API Request:');
-      print('   URL: $uri');
-      print('   Product ID: $productId');
-      print('   Shop ID: $shopId');
-      print('   User ID: $userId');
-      print('   Rating: $rating');
-      print('   Content Length: ${content.length}');
-      print('   Variant ID: $variantId');
-      print('   Order ID: $orderId');
-      print('   Has Token: ${token != null}');
-      print('   Images Count: ${images?.length ?? 0}');
-      
       // Build request body
       final body = <String, dynamic>{
         'user_id': userId,
@@ -545,20 +527,11 @@ class ApiService {
         body: jsonEncode(body),
       );
       
-      // Log response để debug
-      print('📤 Product Review API Response:');
-      print('   Status Code: ${res.statusCode}');
-      print('   Body: ${res.body}');
-      
       if (res.statusCode == 200) {
         try {
           final data = jsonDecode(res.body) as Map<String, dynamic>;
-          if (data['debug'] != null) {
-            print('   Debug Info: ${jsonEncode(data['debug'])}');
-          }
           return data;
         } catch (e) {
-          print('   ❌ JSON Parse Error: $e');
           return {
             'success': false,
             'message': 'Lỗi parse JSON: $e',
@@ -569,14 +542,8 @@ class ApiService {
         // Try to parse error response
         try {
           final errorData = jsonDecode(res.body) as Map<String, dynamic>;
-          print('   Error Response: ${jsonEncode(errorData)}');
-          if (errorData['debug'] != null) {
-            print('   Debug Info: ${jsonEncode(errorData['debug'])}');
-          }
           return errorData;
         } catch (e) {
-          print('   ❌ Error Response Parse Failed: $e');
-          print('   Raw Error Body: ${res.body}');
           return {
             'success': false,
             'message': 'HTTP ${res.statusCode}',
@@ -585,9 +552,6 @@ class ApiService {
         }
       }
     } catch (e, stackTrace) {
-      print('❌ Product Review API Exception:');
-      print('   Error: $e');
-      print('   Stack: $stackTrace');
       return {
         'success': false,
         'message': e.toString(),
@@ -668,8 +632,11 @@ class ApiService {
     required int productId,
     int page = 1,
     int limit = 20,
-    int? rating, // 0 = all, 1-5 = filter by rating
-    String sort = 'latest', // latest, oldest, highest, lowest
+    int rating = 0,
+    int hasImages = 0,
+    String isSatisfied = '',
+    String matchesDescription = '',
+    String sort = 'latest',
     int? variantId,
   }) async {
     try {
@@ -678,7 +645,10 @@ class ApiService {
         'page': page.toString(),
         'limit': limit.toString(),
         'sort': sort,
-        if (rating != null && rating > 0) 'rating': rating.toString(),
+        if (rating > 0) 'rating': rating.toString(),
+        if (hasImages > 0) 'has_images': hasImages.toString(),
+        if (isSatisfied.isNotEmpty) 'is_satisfied': isSatisfied,
+        if (matchesDescription.isNotEmpty) 'matches_description': matchesDescription,
         if (variantId != null && variantId > 0) 'variant_id': variantId.toString(),
       };
       final uri = Uri.parse('$baseUrl/product_reviews').replace(queryParameters: query);
@@ -713,36 +683,63 @@ class ApiService {
   // Cập nhật đánh giá
   Future<Map<String, dynamic>?> updateProductReview({
     required int commentId,
+    required int userId,
     String? content,
     int? rating,
     List<String>? images,
+    int? deliveryRating,
+    int? shopRating,
+    bool? matchesDescription,
+    bool? isSatisfied,
+    String? willBuyAgain,
   }) async {
     try {
       final token = await getValidToken();
-      final uri = Uri.parse('https://api.socdo.vn/home/themes/socdo/action/process/product_review_update.php');
+      final uri = Uri.parse('$baseUrl/product_reviews');
       
       final body = <String, dynamic>{
         'comment_id': commentId,
+        'user_id': userId,
       };
       if (content != null) body['content'] = content;
       if (rating != null) body['rating'] = rating;
       if (images != null) body['images'] = images;
+      if (deliveryRating != null) body['delivery_rating'] = deliveryRating;
+      if (shopRating != null) body['shop_rating'] = shopRating;
+      if (matchesDescription != null) body['matches_description'] = matchesDescription ? 1 : 0;
+      if (isSatisfied != null) body['is_satisfied'] = isSatisfied ? 1 : 0;
+      if (willBuyAgain != null) body['will_buy_again'] = willBuyAgain;
+
+ 
 
       final response = await http.put(
         uri,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token != null ? 'Bearer $token' : '',
+          if (token != null) 'Authorization': 'Bearer $token',
         },
         body: jsonEncode(body),
       );
 
+ 
+
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        try {
+          return jsonDecode(response.body) as Map<String, dynamic>;
+        } catch (e) {
+          return {
+            'success': false,
+            'message': 'Lỗi HTTP ${response.statusCode}',
+          };
+        }
       }
-      return null;
     } catch (e) {
-      return null;
+      return {
+        'success': false,
+        'message': 'Lỗi kết nối: $e',
+      };
     }
   }
 
@@ -904,21 +901,15 @@ class ApiService {
         'user_id': userId,
         'items': items,
       };
-      print('📤 POST /shipping_quote body: ${jsonEncode(reqBody)}');
       final response = await post('/shipping_quote', body: reqBody);
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Debug: in ra để theo dõi trả về từ server
-        print('🚚 shipping_quote raw: $data');
         if (data['success'] == true && data['data'] != null) {
           final Map<String, dynamic> d = Map<String, dynamic>.from(data['data']);
           // Chuẩn hoá trả về đơn giản cho UI: fee/provider/eta_text
           final Map<String, dynamic> bestSimple = Map<String, dynamic>.from(
               (d['best_simple'] ?? const {'fee': 0, 'provider': '', 'eta_text': ''}) as Map
           );
-          if (d['debug'] != null) {
-            try { print('🐞 shipping_quote debug: ${jsonEncode(d['debug'])}'); } catch (_) {}
-          }
           return {
             'success': true,
             'fee': bestSimple['fee'] ?? 0,
@@ -931,15 +922,10 @@ class ApiService {
             'best': d['best'],
             'debug': d['debug'],
           };
-        } else {
-          print('❌ shipping_quote error: ${data['message']}');
         }
-      } else {
-        print('❌ HTTP ${response?.statusCode} /shipping_quote body: ${response?.body}');
       }
       return null;
     } catch (e) {
-      print('❌ Exception getShippingQuote: $e');
       return null;
     }
   }
@@ -1071,16 +1057,13 @@ class ApiService {
         'xa': xa,
         if (email != null && email.isNotEmpty) 'email': email,
       };
-      print('🔧 updateAddress sending body: $body');
       final response = await post('/user_profile', body: body);
       if (response != null) {
         final data = jsonDecode(response.body);
-        print('🔧 updateAddress response: ${response.statusCode} - ${response.body}');
         return data['success'] == true;
       }
       return false;
     } catch (e) {
-      print('❌ updateAddress error: $e');
       return false;
     }
   }
@@ -1114,7 +1097,6 @@ class ApiService {
   }) async {
     final token = await getValidToken();
     if (token == null) {
-      print('❌ Không thể lấy token');
       return null;
     }
 
@@ -1148,7 +1130,6 @@ class ApiService {
           throw Exception('Unsupported HTTP method: $method');
       }
     } catch (e) {
-      print('❌ Lỗi API call: $e');
       return null;
     }
   }
@@ -1191,7 +1172,6 @@ class ApiService {
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('🔍 API Response: $data'); // Debug log
         
         if (data['success'] == true && data['data'] != null) {
           // Kiểm tra kiểu dữ liệu trả về
@@ -1212,37 +1192,25 @@ class ApiService {
               productsJson = dataField.values.toList();
             }
           } else {
-            print('❌ Kiểu dữ liệu không mong đợi: ${dataField.runtimeType}');
             return null;
           }
           
           final List<FreeShipProduct> products = productsJson
               .map((json) {
-                print('🔍 Parsing product: ${json['id']} - ${json['name']}');
-                print('  - voucherIcon: ${json['voucher_icon']}');
-                print('  - freeshipIcon: ${json['freeship_icon']}');
-                print('  - chinhhangIcon: ${json['chinhhang_icon']}');
-                print('  - warehouseName: ${json['warehouse_name']}');
-                print('  - provinceName: ${json['province_name']}');
                 return FreeShipProduct.fromJson(json as Map<String, dynamic>);
               })
               .toList();
           
-          print('✅ Lấy ${products.length} sản phẩm miễn phí ship thành công');
           return products;
         } else if (data['success'] == false) {
-          print('⚠️ API trả về success=false, thử dùng dữ liệu mẫu');
           return _getMockFreeShipProducts();
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockFreeShipProducts();
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy sản phẩm miễn phí ship: $e, thử dùng dữ liệu mẫu');
       return _getMockFreeShipProducts();
     }
   }
@@ -1329,15 +1297,11 @@ class ApiService {
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('🔍 Platform Vouchers Response: $data');
-        
         return _parseVoucherResponse(data);
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockPlatformVouchers();
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy voucher sàn: $e, thử dùng dữ liệu mẫu');
       return _getMockPlatformVouchers();
     }
   }
@@ -1356,7 +1320,6 @@ class ApiService {
       if (shopId != null && shopId.isNotEmpty) {
         endpoint += '&shop_id=$shopId';
       } else {
-        print('❌ shopId không được để trống cho voucher shop');
         return _getMockShopVouchers();
       }
       
@@ -1368,29 +1331,22 @@ class ApiService {
         endpoint += '&user_id=1';
       }
       
-      print('🔍 Shop Vouchers API Endpoint: $endpoint');
-      
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('🔍 Shop Vouchers Response: $data');
-        
         final vouchers = _parseVoucherResponse(data);
         
         // Nếu không có voucher từ shop đầu tiên, thử shop khác
         if (vouchers == null || vouchers.isEmpty) {
-          print('⚠️ Không có voucher từ shop, thử shop khác...');
           return _getMockShopVouchers();
         }
         
         return vouchers;
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockShopVouchers();
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy voucher shop: $e, thử dùng dữ liệu mẫu');
       return _getMockShopVouchers();
     }
   }
@@ -1398,8 +1354,6 @@ class ApiService {
   /// Lấy danh sách shop có voucher
   Future<List<Map<String, dynamic>>?> getShopsWithVouchers() async {
     try {
-      print('🔄 Đang lấy danh sách shop có voucher từ API...');
-      
       // Sử dụng API voucher_list để lấy tất cả voucher shop
       final response = await get('/voucher_list?type=shop&page=1&limit=100');
       
@@ -1434,19 +1388,11 @@ class ApiService {
             }
             
             final shops = shopMap.values.toList();
-            print('✅ Tìm thấy ${shops.length} shop có voucher từ API voucher_list');
-            
-            // Debug: In ra từng shop
-            for (final shop in shops) {
-              print('🏪 Shop ${shop['id']} (${shop['name']}): ${shop['voucher_count']} voucher');
-            }
-            
             return shops;
           }
         }
       }
       
-      print('⚠️ API voucher_list không trả về dữ liệu, thử phương pháp khác...');
       
       // Fallback: Thử một số shop ID phổ biến
       final List<int> commonShopIds = [23933, 11100, 31503, 31504, 31505, 31506];
@@ -1473,25 +1419,20 @@ class ApiService {
                   'avatar': shopInfo?['avatar'],
                 });
                 
-                print('✅ Shop $shopId ($shopName) có ${vouchers.length} voucher');
               }
             }
           }
         } catch (e) {
-          print('⚠️ Không thể kiểm tra shop $shopId: $e');
           continue;
         }
       }
       
       if (shops.isNotEmpty) {
-        print('✅ Tìm thấy ${shops.length} shop có voucher từ fallback method');
         return shops;
       } else {
-        print('❌ Không tìm thấy shop nào có voucher');
         return [];
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy danh sách shop: $e');
       return [];
     }
   }
@@ -1528,7 +1469,6 @@ class ApiService {
         }
       }
     } catch (e) {
-      print('⚠️ Không thể khám phá shop từ sản phẩm: $e');
     }
     return ids.toList();
   }
@@ -1544,7 +1484,6 @@ class ApiService {
       final shops = await getShopsWithVouchers();
       
       if (shops == null || shops.isEmpty) {
-        print('⚠️ Không có shop nào, dùng mock data');
         return _getMockShopVouchers();
       }
       
@@ -1555,8 +1494,6 @@ class ApiService {
         final shopId = shop['id'].toString();
         final shopName = shop['name'] ?? 'Unknown Shop';
         
-        print('🔍 Đang lấy voucher từ shop $shopId ($shopName)...');
-        
         final vouchers = await getShopVouchers(
           shopId: shopId,
           userId: userId,
@@ -1566,21 +1503,15 @@ class ApiService {
         
         if (vouchers != null && vouchers.isNotEmpty) {
           allVouchers.addAll(vouchers);
-          print('✅ Lấy ${vouchers.length} voucher từ shop $shopName');
-        } else {
-          print('⚠️ Shop $shopName không có voucher hoặc đã hết hạn');
         }
       }
       
       if (allVouchers.isNotEmpty) {
-        print('✅ Tổng cộng ${allVouchers.length} voucher từ ${shops.length} shop');
         return allVouchers;
       } else {
-        print('⚠️ Không có voucher shop nào, dùng mock data');
         return _getMockShopVouchers();
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy tất cả voucher shop: $e, thử dùng dữ liệu mẫu');
       return _getMockShopVouchers();
     }
   }
@@ -1602,7 +1533,6 @@ class ApiService {
           vouchersJson = dataField.values.toList();
         }
       } else {
-        print('❌ Kiểu dữ liệu không mong đợi: ${dataField.runtimeType}');
         return null;
       }
       
@@ -1610,10 +1540,8 @@ class ApiService {
           .map((json) => Voucher.fromJson(json as Map<String, dynamic>))
           .toList();
       
-      print('✅ Lấy ${vouchers.length} voucher thành công');
       return vouchers;
     } else {
-      print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
       return null;
     }
   }
@@ -1763,37 +1691,30 @@ class ApiService {
         endpoint += '&shop=$shop';
       }
       
-      // Tắt logging để tránh spam terminal
-      // print('🔍 Flash Sale Deals API Endpoint: $endpoint');
-      // print('🕐 Requesting timeline: $timeSlot');
+   
       
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Tắt logging để tránh spam terminal
-        // print('🔍 Flash Sale Deals Response: $data');
+       
         
         final deals = _parseFlashSaleDealsResponse(data);
         if (deals != null) {
-          // Tắt logging để tránh spam terminal
-          // print('✅ Parsed ${deals.length} deals for timeline $timeSlot');
-          // Filter deals theo timeline nếu cần
+         
           final filteredDeals = deals.where((deal) => 
             timeSlot == null || deal.timeline == timeSlot
           ).toList();
-          // print('🎯 Filtered to ${filteredDeals.length} deals for timeline $timeSlot');
+         
           return filteredDeals;
         }
         return deals;
       } else {
-        // Tắt logging để tránh spam terminal
-        // print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
+       
         return _getMockFlashSaleDeals(timeSlot: timeSlot);
       }
     } catch (e) {
-      // Tắt logging để tránh spam terminal
-      // print('❌ Lỗi khi lấy flash sale deals: $e, thử dùng dữ liệu mẫu');
+      
       return _getMockFlashSaleDeals(timeSlot: timeSlot);
     }
   }
@@ -1822,21 +1743,17 @@ class ApiService {
         endpoint += '&shop=$shop';
       }
       
-      print('🔍 Flash Sale API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('🔍 Flash Sale Response: $data');
         
         return _parseFlashSaleResponse(data);
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockFlashSaleProducts(timeSlot: timeSlot);
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy flash sale: $e, thử dùng dữ liệu mẫu');
       return _getMockFlashSaleProducts(timeSlot: timeSlot);
     }
   }
@@ -1851,15 +1768,13 @@ class ApiService {
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // print('🔍 Product Suggest Response: $data');
+        
         
         return _parseProductSuggestResponse(data);
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockProductSuggests();
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy product suggest: $e, thử dùng dữ liệu mẫu');
       return _getMockProductSuggests();
     }
   }
@@ -1892,7 +1807,6 @@ class ApiService {
           dealsJson = dataField.values.toList();
         }
       } else {
-        print('❌ Kiểu dữ liệu không mong đợi: ${dataField.runtimeType}');
         return null;
       }
       
@@ -1900,10 +1814,8 @@ class ApiService {
           .map((json) => FlashSaleDeal.fromJson(json as Map<String, dynamic>))
           .toList();
       
-      print('✅ Lấy ${deals.length} flash sale deals thành công');
       return deals;
     } else {
-      print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
       return null;
     }
   }
@@ -1928,7 +1840,6 @@ class ApiService {
           dealsJson = dataField.values.toList();
         }
       } else {
-        print('❌ Kiểu dữ liệu không mong đợi: ${dataField.runtimeType}');
         return null;
       }
       
@@ -1943,7 +1854,6 @@ class ApiService {
           final dealId = _safeParseInt(dealMap['id']) ?? 0;
           final dealTitle = dealMap['tieu_de'] as String? ?? 'Flash Sale';
           
-          print('🔍 Processing deal: $dealTitle (ID: $dealId)');
           
           // Parse main_product để lấy danh sách ID sản phẩm
           List<String> mainProductIds = [];
@@ -1951,7 +1861,6 @@ class ApiService {
             final mainProductStr = dealMap['main_product'] as String;
             if (mainProductStr.isNotEmpty) {
               mainProductIds = mainProductStr.split(',').map((id) => id.trim()).toList();
-              print('🔍 Main product IDs: $mainProductIds');
             }
           }
           
@@ -1969,7 +1878,6 @@ class ApiService {
               subProducts = dealMap['sub_product'] as Map<String, dynamic>?;
             }
           } catch (e) {
-            print('❌ Lỗi parse sub_product: $e');
             subProducts = null;
           }
           
@@ -1987,7 +1895,6 @@ class ApiService {
           
           // Ưu tiên sử dụng main_products và sub_products từ API response
           if (mainProducts.isNotEmpty) {
-            print('🔍 Using main_products from API response: ${mainProducts.length} products');
             for (var productData in mainProducts) {
               final product = FlashSaleProduct(
                 id: _safeParseInt(productData['id']) ?? 0,
@@ -2018,7 +1925,6 @@ class ApiService {
             }
           } else if (subProducts != null && mainProductIds.isNotEmpty) {
             // Fallback: parse từ sub_product JSON và main_product IDs
-            print('🔍 Using sub_product JSON parsing: ${mainProductIds.length} product IDs');
             for (var productId in mainProductIds) {
               if (productId.isEmpty) continue;
               
@@ -2027,7 +1933,6 @@ class ApiService {
                 // Lấy variant đầu tiên làm đại diện với safe parsing
                 final variantMap = productVariants.first;
                 if (variantMap is! Map<String, dynamic>) {
-                  print('❌ Variant không phải Map: ${variantMap.runtimeType}');
                   continue;
                 }
                 final variant = variantMap;
@@ -2099,23 +2004,18 @@ class ApiService {
             products.add(product);
           }
         } catch (e) {
-          print('❌ Lỗi parse deal: $e');
-          print('❌ Deal data: $deal');
           continue;
         }
       }
       
-      print('✅ Lấy ${products.length} flash sale products thành công');
       
       // Nếu không parse được sản phẩm nào, dùng mock data
       if (products.isEmpty) {
-        print('⚠️ Không parse được sản phẩm nào, dùng mock data');
         return _getMockFlashSaleProducts(timeSlot: null);
       }
       
       return products;
     } else {
-      print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
       return null;
     }
   }
@@ -2137,7 +2037,6 @@ class ApiService {
           productsJson = dataField.values.toList();
         }
       } else {
-        print('❌ Kiểu dữ liệu không mong đợi: ${dataField.runtimeType}');
         return null;
       }
       
@@ -2145,10 +2044,8 @@ class ApiService {
           .map((json) => ProductSuggest.fromJson(json as Map<String, dynamic>))
           .toList();
       
-      print('✅ Lấy ${products.length} product suggests thành công');
       return products;
     } else {
-      print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
       return null;
     }
   }
@@ -2333,19 +2230,11 @@ class ApiService {
     // Filter theo timeSlot nếu có
     if (timeSlot != null) {
       final filteredDeals = allDeals.where((deal) => deal.timeline == timeSlot).toList();
-      // Tắt logging để tránh spam terminal
-      // print('🎯 Mock data: Filtered ${filteredDeals.length} deals for timeline $timeSlot');
       return filteredDeals;
     }
-
-    // Nếu không có timeSlot, trả về deals của timeline hiện tại
     final currentDeals = allDeals.where((deal) => deal.timeline == currentTimeline).toList();
-    // Tắt logging để tránh spam terminal
-    // print('🎯 Mock data: Returning ${currentDeals.length} deals for current timeline $currentTimeline');
     return currentDeals;
   }
-
-  /// Tạo dữ liệu mẫu cho flash sale
   List<FlashSaleProduct> _getMockFlashSaleProducts({String? timeSlot}) {
     final now = DateTime.now();
     final List<FlashSaleProduct> allProducts = [
@@ -2547,7 +2436,6 @@ class ApiService {
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('🔍 Categories Response: $data');
         
         if (data['success'] == true && data['data'] != null) {
           final dataField = data['data'];
@@ -2562,23 +2450,18 @@ class ApiService {
               categoriesJson = dataField.values.toList();
             }
           } else {
-            print('❌ Kiểu dữ liệu không mong đợi: ${dataField.runtimeType}');
             return _getMockCategories();
           }
           
           final categories = List<Map<String, dynamic>>.from(categoriesJson);
-          print('✅ Lấy ${categories.length} danh mục thành công');
           return categories;
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return _getMockCategories();
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockCategories();
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy danh mục: $e, thử dùng dữ liệu mẫu');
       return _getMockCategories();
     }
   }
@@ -2665,60 +2548,45 @@ class ApiService {
     try {
       // URL encode keyword để xử lý tiếng Việt
       final encodedKeyword = Uri.encodeComponent(keyword);
-      print('🔍 Original keyword: "$keyword"');
-      print('🔍 Encoded keyword: "$encodedKeyword"');
       
       // Xây dựng endpoint với userId nếu có
       String endpoint = '/search_products?keyword=$encodedKeyword&page=$page&limit=$limit';
       if (userId != null && userId > 0) {
         endpoint += '&user_id=$userId';
-        print('👤 Search with user_id: $userId');
       }
       
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('🔍 [API] Search Products Response: $data');
         
         if (data['success'] == true && data['data'] != null) {
           final products = data['data']['products'] as List?;
           final pagination = data['data']['pagination'] as Map?;
           final shops = data['data']['shops'] as List?;
           
-          print('✅ [API] Tìm kiếm thành công với từ khóa: $keyword');
-          print('📊 [API] Số sản phẩm trả về: ${products?.length ?? 0}');
-          print('📊 [API] Total products: ${pagination?['total_products'] ?? 0}');
-          print('🏪 [API] Số shops trả về: ${shops?.length ?? 0}');
           
           if (shops != null && shops.isNotEmpty) {
-            print('🏪 [API] Shops data: $shops');
             for (var shop in shops) {
-              print('🏪 [API] Shop: ${shop.toString()}');
             }
           } else {
-            print('⚠️ [API] Không có shops trong response');
           }
           
           // Nếu API trả về products rỗng nhưng có shops, vẫn return data gốc (có shops)
           // Chỉ dùng mock data khi cả products và shops đều rỗng
           if ((products == null || products.isEmpty) && (shops == null || shops.isEmpty)) {
-            print('⚠️ [API] API trả về products và shops đều rỗng, dùng mock data');
             return _getMockSearchResult(keyword, page, limit);
           }
           
           // Nếu có shops hoặc products, return data gốc từ API
           return data;
         } else {
-          print('❌ [API] API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return _getMockSearchResult(keyword, page, limit);
         }
       } else {
-        print('❌ [API] HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockSearchResult(keyword, page, limit);
       }
     } catch (e) {
-      print('❌ Lỗi khi tìm kiếm: $e, thử dùng dữ liệu mẫu');
       return _getMockSearchResult(keyword, page, limit);
     }
   }
@@ -2917,20 +2785,13 @@ class ApiService {
       final isMatch = matchesName || matchesCategory || matchesRelated || matchesWords;
       
       if (isMatch) {
-        print('🔍 Match found: "${product['name']}" - Category: "${product['category']}"');
       }
       
       return isMatch;
     }).toList();
     
-    print('🔍 Search keyword: "$keyword"');
-    print('🔍 Total mock products: ${mockProducts.length}');
-    print('🔍 Filtered products: ${filteredProducts.length}');
     if (filteredProducts.isNotEmpty) {
-      print('🔍 First result: ${filteredProducts.first['name']}');
     } else {
-      print('🔍 No results found for keyword: "$keyword"');
-      print('🔍 Available categories: ${mockProducts.map((p) => p['category']).toSet().toList()}');
     }
 
     // Phân trang
@@ -2988,7 +2849,6 @@ class ApiService {
       // Fallback to mock suggestions if API fails
       return _getMockSuggestions(keyword, limit);
     } catch (e) {
-      print('❌ Lỗi khi lấy gợi ý từ khóa: $e');
       return _getMockSuggestions(keyword, limit);
     }
   }
@@ -3073,7 +2933,6 @@ class ApiService {
     String sort = 'newest', // 'newest', 'price_asc', 'price_desc', 'popular'
   }) async {
     try {
-      print('🚀 SMART LOADING: Starting for parent category $parentCategoryId, page $page');
       
       // Step 1: Get child categories (limit to top 10 for faster loading)
       final categoriesResponse = await getCategoriesList(
@@ -3087,7 +2946,6 @@ class ApiService {
       
       if (categoriesResponse == null || categoriesResponse.isEmpty) {
         // If no child categories, just get products from parent category
-        print('🚀 SMART LOADING: No child categories, loading from parent only');
         return await getProductsByCategory(
           categoryId: parentCategoryId,
           page: page,
@@ -3115,7 +2973,6 @@ class ApiService {
         }
       }
       
-      print('🚀 SMART LOADING: Loading from top ${priorityCategoryIds.length} categories: $priorityCategoryIds');
       
       // Step 4: Load products in parallel from priority categories
       final List<Future<Map<String, dynamic>?>> futures = priorityCategoryIds.map((categoryId) {
@@ -3192,7 +3049,6 @@ class ApiService {
       
       final totalPages = (finalProducts.length / limit).ceil();
       
-      print('🚀 SMART LOADING: Got ${finalProducts.length} products, showing ${paginatedProducts.length} on page $page');
       
       return {
         'success': true,
@@ -3221,7 +3077,6 @@ class ApiService {
       };
       
     } catch (e) {
-      print('❌ Lỗi khi lấy sản phẩm theo danh mục cha: $e');
       return _getMockProductsByCategory(parentCategoryId, page, limit);
     }
   }
@@ -3235,7 +3090,6 @@ class ApiService {
     String sort = 'newest',
   }) async {
     try {
-      print('🚀 LOAD MORE: Loading from remaining categories for parent $parentCategoryId');
       
       // Get all child categories
       final categoriesResponse = await getCategoriesList(
@@ -3258,7 +3112,6 @@ class ApiService {
       }).toList();
       
       if (remainingCategories.isEmpty) {
-        print('🚀 LOAD MORE: No more categories to load');
         return null;
       }
       
@@ -3280,7 +3133,6 @@ class ApiService {
         }
       }
       
-      print('🚀 LOAD MORE: Loading from next ${nextCategoryIds.length} categories: $nextCategoryIds');
       
       // Load products in parallel
       final List<Future<Map<String, dynamic>?>> futures = nextCategoryIds.map((categoryId) {
@@ -3354,7 +3206,6 @@ class ApiService {
       final startIndex = (page - 1) * limit;
       final paginatedProducts = finalProducts.skip(startIndex).take(limit).toList();
       
-      print('🚀 LOAD MORE: Got ${finalProducts.length} additional products, showing ${paginatedProducts.length}');
       
       return {
         'success': true,
@@ -3375,7 +3226,6 @@ class ApiService {
       };
       
     } catch (e) {
-      print('❌ Lỗi khi load thêm sản phẩm: $e');
       return null;
     }
   }
@@ -3395,18 +3245,14 @@ class ApiService {
        
         
         if (data['success'] == true && data['data'] != null) {
-          print('✅ Lấy ${data['data']['products'].length} sản phẩm cho danh mục ID: $categoryId');
           return data;
         }
         
-        print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
         return _getMockProductsByCategory(categoryId, page, limit);
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockProductsByCategory(categoryId, page, limit);
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy sản phẩm theo danh mục: $e, thử dùng dữ liệu mẫu');
       return _getMockProductsByCategory(categoryId, page, limit);
     }
   }
@@ -3526,14 +3372,11 @@ class ApiService {
           }
         }
         
-        print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
         return _getMockCategoriesList(type, parentId);
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}, thử dùng dữ liệu mẫu');
         return _getMockCategoriesList(type, parentId);
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy danh sách danh mục: $e, thử dùng dữ liệu mẫu');
       return _getMockCategoriesList(type, parentId);
     }
   }
@@ -3693,14 +3536,12 @@ class ApiService {
         endpoint += '&product_id=$productId';
       }
       
-      print('🔍 Vouchers API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // print('🔍 Vouchers Response: $data');
-        
+    
         if (data['success'] == true && data['data'] != null) {
           final vouchersData = data['data']['vouchers'] as List?;
           if (vouchersData != null && vouchersData.isNotEmpty) {
@@ -3710,29 +3551,22 @@ class ApiService {
             // Debug chi tiết từng voucher
             try {
               for (final v in vouchers) {
-                print('🎫 voucher: id=${v.id}, code=${v.code}, shopId=${v.shopId}, shopName=${v.shopName}, type=${v.type}, discount=${v.discountValue}${v.discountType}');
                 if (v.applicableProductsDetail != null) {
                   final ids = v.applicableProductsDetail!.map((e) => e['id']).join(',');
-                  print('   ↳ applicable_products: [$ids]');
                 } else if (v.applicableProducts != null) {
-                  print('   ↳ applicable_products(csv): ${v.applicableProducts}');
                 }
               }
             } catch (_) {}
-            print('✅ Lấy danh sách voucher thành công: ${vouchers.length} voucher');
             return vouchers;
           }
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
       }
       
       // Fallback: trả về danh sách rỗng nếu API lỗi
       return [];
     } catch (e) {
-      print('❌ Lỗi khi lấy danh sách voucher: $e');
       return [];
     }
   }
@@ -3770,34 +3604,28 @@ class ApiService {
         endpoint += '&is_member=${isMember ? 1 : 0}';
       }
       
-      print('🔍 Product Suggestions API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // print('🔍 Product Suggestions Response: $data');
-        
+       
         if (data['success'] == true && data['data'] != null) {
           final productsData = data['data']['products'] as List?;
           if (productsData != null && productsData.isNotEmpty) {
             final products = productsData
                 .map((productJson) => ProductSuggest.fromJson(productJson as Map<String, dynamic>))
                 .toList();
-            print('✅ Lấy gợi ý sản phẩm thành công: ${products.length} sản phẩm');
             return products;
           }
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
       }
       
       // Fallback: trả về danh sách rỗng nếu API lỗi
       return [];
     } catch (e) {
-      print('❌ Lỗi khi lấy gợi ý sản phẩm: $e');
       return [];
     }
   }
@@ -3815,22 +3643,17 @@ class ApiService {
         endpoint += '&is_member=${isMember ? 1 : 0}';
       }
       
-      print('🔍 Product Detail API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
-        // print('🔍 Product Detail Response: $decoded');
-
-        // Trường hợp đặc biệt: API trả về List ở top-level
+     
         if (decoded is List) {
           if (decoded.isNotEmpty && decoded.first is Map<String, dynamic>) {
             final first = decoded.first as Map<String, dynamic>;
-            print('✅ Lấy chi tiết sản phẩm (top-level list) thành công: ${first['tieu_de'] ?? first['name'] ?? ''}');
             return ProductDetail.fromJson(first);
           } else {
-            print('❌ product_detail trả về List nhưng rỗng/không đúng định dạng');
             return null;
           }
         }
@@ -3841,25 +3664,19 @@ class ApiService {
         if (success && rawData != null) {
           if (rawData is List && rawData.isNotEmpty) {
             final first = rawData.first as Map<String, dynamic>;
-            print('✅ Lấy chi tiết sản phẩm (list) thành công: ${first['tieu_de'] ?? first['name'] ?? ''}');
             return ProductDetail.fromJson(first);
           } else if (rawData is Map<String, dynamic>) {
-            print('✅ Lấy chi tiết sản phẩm (map) thành công: ${rawData['tieu_de'] ?? rawData['name'] ?? ''}');
             return ProductDetail.fromJson(rawData);
           } else {
-            print('❌ Dữ liệu product_detail không đúng định dạng');
             return null;
           }
         } else {
-          print('❌ API trả về lỗi: ${(decoded is Map && decoded['message'] != null) ? decoded['message'] : 'Unknown error'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy chi tiết sản phẩm: $e');
       return null;
     }
   }
@@ -3893,27 +3710,21 @@ class ApiService {
         endpoint += '&exclude_product_id=$excludeProductId';
       }
       
-      print('🔍 Products Same Shop API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
       if (response != null && response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // print('🔍 Products Same Shop Response: $data');
-        
+    
         if (data['success'] == true && data['data'] != null) {
-          print('✅ Lấy sản phẩm cùng shop thành công');
           return data;
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy sản phẩm cùng shop: $e');
       return null;
     }
   }
@@ -3932,7 +3743,6 @@ class ApiService {
         endpoint += '&shop_id=$shopId';
       }
       
-      print('🔍 Related Products API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
@@ -3948,19 +3758,15 @@ class ApiService {
                 .map((product) => RelatedProduct.fromJson(product as Map<String, dynamic>))
                 .toList();
             
-            print('✅ Lấy sản phẩm liên quan thành công: ${relatedProducts.length} sản phẩm');
             return relatedProducts;
           }
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy sản phẩm liên quan: $e');
       return null;
     }
     
@@ -3984,7 +3790,6 @@ class ApiService {
         endpoint += '&shop_id=$shopId';
       }
       
-      print('🔍 Banners API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
@@ -4000,19 +3805,15 @@ class ApiService {
                 .map((banner) => BannerModel.fromJson(banner as Map<String, dynamic>))
                 .toList();
             
-            print('✅ Lấy banners thành công: ${banners.length} banners');
             return banners;
           }
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy banners: $e');
       return null;
     }
     
@@ -4024,7 +3825,6 @@ class ApiService {
     try {
       const endpoint = '/splash_screen';
       
-      print('🔍 Splash Screen API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
@@ -4037,22 +3837,17 @@ class ApiService {
             final splashData = data['data'] as Map<String, dynamic>;
             final splashScreen = SplashScreenModel.fromJson(splashData);
             
-            print('✅ Lấy splash screen thành công: ${splashScreen.title}');
             return splashScreen;
           } else {
-            print('ℹ️ Không có splash screen nào đang active');
             return null;
           }
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy splash screen: $e');
       return null;
     }
   }
@@ -4069,7 +3864,6 @@ class ApiService {
         endpoint += '?exclude_id=$excludeIdsString';
       }
       
-      print('🔍 Popup Banner API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
@@ -4082,19 +3876,15 @@ class ApiService {
           if (popupData != null) {
             final popupBanner = PopupBanner.fromJson(popupData);
             
-            print('✅ Lấy popup banner thành công: ${popupBanner.title}');
             return popupBanner;
           }
         } else {
-          print('ℹ️ Không có popup banner nào: ${data['message'] ?? 'Unknown'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy popup banner: $e');
       return null;
     }
     
@@ -4106,41 +3896,30 @@ class ApiService {
     try {
       String endpoint = '/popup_banners';
       
-      print('🔍 Popup Banner Click API Endpoint: $endpoint, popup_id: $popupId');
       
       final response = await post(endpoint, body: {
         'popup_id': popupId,
       });
       
       if (response != null) {
-        print('📥 Response status: ${response.statusCode}');
-        print('📥 Response body: ${response.body}');
         
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           
           if (data['success'] == true) {
-            print('✅ Tăng click_count thành công: ${data['data']?['click_count'] ?? 'N/A'}');
             return true;
           } else {
-            print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown'}');
             if (data['debug'] != null) {
-              print('🔍 Debug info: ${data['debug']}');
             }
             return false;
           }
         } else {
-          print('❌ HTTP Error: ${response.statusCode}');
-          print('❌ Response body: ${response.body}');
           return false;
         }
       } else {
-        print('❌ Response is null');
         return false;
       }
     } catch (e, stackTrace) {
-      print('❌ Lỗi khi tăng click_count: $e');
-      print('❌ Stack trace: $stackTrace');
       return false;
     }
   }
@@ -4170,7 +3949,6 @@ class ApiService {
         endpoint += '&sort=$sort';
       }
       
-      print('🔍 Featured Brands API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
@@ -4185,19 +3963,15 @@ class ApiService {
                 .map((brand) => Brand.fromJson(brand as Map<String, dynamic>))
                 .toList();
             
-            print('✅ Lấy featured brands thành công: ${brands.length} brands');
             return brands;
           }
         } else {
-          print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy featured brands: $e');
       return null;
     }
     
@@ -4217,7 +3991,6 @@ class ApiService {
         endpoint += '?vi_tri_hien_thi=$viTriHienThi';
       }
       
-      print('🔍 Banner Products API Endpoint: $endpoint');
       
       final response = await get(endpoint);
       
@@ -4230,19 +4003,12 @@ class ApiService {
           // Nếu có vi_tri_hien_thi, trả về 1 item hoặc null
           if (viTriHienThi != null && viTriHienThi.isNotEmpty) {
             if (dataField == null) {
-              print('⚠️ Banner products data is null for position: $viTriHienThi');
               return null;
             }
-            print('✅ Parsing banner product for position: $viTriHienThi');
-            print('📦 Data field type: ${dataField.runtimeType}');
-            print('📦 Data field: $dataField');
             try {
               final bannerProduct = BannerProducts.fromJson(dataField as Map<String, dynamic>);
-              print('✅ Parsed banner product: id=${bannerProduct.id}, type=${bannerProduct.bannerType}, products=${bannerProduct.products.length}, isValid=${bannerProduct.isValid}');
               return {viTriHienThi: bannerProduct};
             } catch (e) {
-              print('❌ Error parsing banner product: $e');
-              print('❌ Data field: $dataField');
               return null;
             }
           }
@@ -4260,26 +4026,20 @@ class ApiService {
               }
             }
             
-            print('✅ Lấy banner products thành công: ${result.length} vị trí');
-            print('📦 Result details: dau_trang=${result['dau_trang'] != null ? result['dau_trang']!.id : 'null'}, giua_trang=${result['giua_trang'] != null ? result['giua_trang']!.id : 'null'}, cuoi_trang=${result['cuoi_trang'] != null ? result['cuoi_trang']!.id : 'null'}');
             return result;
           }
         } else {
           // Kiểm tra nếu message là thành công nhưng data null
           final message = data['message']?.toString() ?? '';
           if (message.contains('thành công')) {
-            print('⚠️ API trả về thành công nhưng data null: $message');
           } else {
-            print('❌ API trả về lỗi: $message');
           }
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy banner products: $e');
       return null;
     }
     
@@ -4300,7 +4060,6 @@ class ApiService {
     try {
       final token = await getValidToken();
       if (token == null) {
-        print('❌ Không có token hợp lệ');
         return null;
       }
 
@@ -4318,7 +4077,6 @@ class ApiService {
       } else if (username != null && username.isNotEmpty) {
         queryParams['username'] = username;
       } else {
-        print('❌ Phải cung cấp shop_id hoặc username');
         return null;
       }
 
@@ -4328,7 +4086,6 @@ class ApiService {
         queryParameters: queryParams,
       );
 
-      print('🔍 Gọi API shop detail: $uri');
 
       final response = await http.get(
         uri,
@@ -4344,15 +4101,12 @@ class ApiService {
         if (data['success'] == true && data['data'] != null) {
           return ShopDetail.fromJson(data['data'] as Map<String, dynamic>);
         } else {
-          print('❌ API trả về lỗi: ${data['message']}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy thông tin shop: $e');
       return null;
     }
   }
@@ -4369,7 +4123,6 @@ class ApiService {
     try {
       final token = await getValidToken();
       if (token == null) {
-        print('❌ Không có token hợp lệ');
         return null;
       }
 
@@ -4387,7 +4140,6 @@ class ApiService {
         queryParameters: queryParams,
       );
 
-      print('🔍 Gọi API favorite products: $uri');
 
       final response = await http.get(
         uri,
@@ -4401,18 +4153,14 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['success'] == true) {
-          print('✅ Lấy danh sách sản phẩm yêu thích thành công');
           return data;
         } else {
-          print('❌ API trả về lỗi: ${data['message']}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy danh sách sản phẩm yêu thích: $e');
       return null;
     }
   }
@@ -4425,11 +4173,9 @@ class ApiService {
     try {
       final token = await getValidToken();
       if (token == null) {
-        print('❌ Không có token hợp lệ');
         return null;
       }
 
-      print('🔍 Thêm sản phẩm vào yêu thích: userId=$userId, productId=$productId');
 
       final response = await http.post(
         Uri.parse('https://api.socdo.vn/v1/add_favorite'),
@@ -4446,18 +4192,14 @@ class ApiService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['success'] == true) {
-          print('✅ Thêm sản phẩm vào yêu thích thành công');
           return data;
         } else {
-          print('❌ API trả về lỗi: ${data['message']}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi thêm sản phẩm vào yêu thích: $e');
       return null;
     }
   }
@@ -4470,11 +4212,9 @@ class ApiService {
     try {
       final token = await getValidToken();
       if (token == null) {
-        print('❌ Không có token hợp lệ');
         return null;
       }
 
-      print('🔍 Xóa sản phẩm khỏi yêu thích: userId=$userId, productId=$productId');
 
       final response = await http.delete(
         Uri.parse('https://api.socdo.vn/v1/add_favorite'),
@@ -4492,18 +4232,14 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['success'] == true) {
-          print('✅ Xóa sản phẩm khỏi yêu thích thành công');
           return data;
         } else {
-          print('❌ API trả về lỗi: ${data['message']}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi xóa sản phẩm khỏi yêu thích: $e');
       return null;
     }
   }
@@ -4515,19 +4251,14 @@ class ApiService {
     int quantity = 1,
     String? variant,
   }) async {
-    print('🛒 [ApiService] addToCart called: userId=$userId, productId=$productId, quantity=$quantity, variant=$variant');
     
     try {
-      print('🛒 [ApiService] Getting token...');
       final token = await getValidToken();
       if (token == null) {
-        print('❌ [ApiService] Không có token hợp lệ');
         return null;
       }
       
-      print('🛒 [ApiService] Token obtained, calling API...');
 
-      print('🛒 [ApiService] POST /add_to_cart with: userId=$userId, productId=$productId, quantity=$quantity, variant=$variant');
 
       final response = await post(
         '/add_to_cart',
@@ -4539,25 +4270,16 @@ class ApiService {
         },
       );
 
-      print('🛒 [ApiService] API response received: statusCode=${response?.statusCode}');
       
       if (response != null && response.statusCode == 200) {
-        print('🛒 [ApiService] Response body: ${response.body}');
         final data = jsonDecode(response.body);
         if (data['success'] == true) {
-          print('✅ [ApiService] Cart behavior saved successfully');
           return data;
         } else {
-          print('❌ [ApiService] API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
-          print('❌ [ApiService] Full response: $data');
         }
       } else {
-        print('❌ [ApiService] HTTP Error: ${response?.statusCode}');
-        print('❌ [ApiService] Response body: ${response?.body}');
       }
     } catch (e, stackTrace) {
-      print('❌ [ApiService] Lỗi khi lưu cart behavior: $e');
-      print('❌ [ApiService] Stack trace: $stackTrace');
     }
     return null;
   }
@@ -4570,11 +4292,9 @@ class ApiService {
     try {
       final token = await getValidToken();
       if (token == null) {
-        print('❌ Không có token hợp lệ');
         return null;
       }
 
-      print('🔍 Toggle favorite: userId=$userId, productId=$productId');
 
       final response = await http.put(
         Uri.parse('https://api.socdo.vn/v1/add_favorite'),
@@ -4591,18 +4311,14 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['success'] == true) {
-          print('✅ Toggle favorite thành công');
           return data;
         } else {
-          print('❌ API trả về lỗi: ${data['message']}');
           return null;
         }
       } else {
-        print('❌ HTTP Error: ${response.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi toggle favorite: $e');
       return null;
     }
   }
@@ -4627,10 +4343,8 @@ class ApiService {
       }
       if (searchQuery != null && searchQuery.isNotEmpty) {
         url += '&search=${Uri.encodeComponent(searchQuery)}';
-        print('🔍 [ApiService] Adding search parameter: "$searchQuery"');
       }
       
-      print('🔍 [ApiService] Final URL: $url');
       final response = await get(url);
       
       if (response != null && response.statusCode == 200) {
@@ -4653,14 +4367,11 @@ class ApiService {
           };
         }
         
-        print('❌ API trả về lỗi: ${data['message'] ?? 'Unknown error'}');
         return null;
       } else {
-        print('❌ HTTP Error: ${response?.statusCode}');
         return null;
       }
     } catch (e) {
-      print('❌ Lỗi khi lấy sản phẩm shop: $e');
       return null;
     }
   }
@@ -4688,7 +4399,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('❌ Lỗi submit rating: $e');
       return null;
     }
   }
@@ -4715,7 +4425,6 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('❌ Lỗi submit report: $e');
       return null;
     }
   }
@@ -4745,7 +4454,6 @@ class ApiService {
       }
       return false;
     } catch (e) {
-      print('❌ Lỗi register device token: $e');
       return false;
     }
   }

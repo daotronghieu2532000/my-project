@@ -73,14 +73,14 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
   }
 
   Future<void> _showEditAddressDialog(Map<String, dynamic> address) async {
-    print('🔧 _showEditAddressDialog called for address: ${address['ho_ten']}');
+   
     final dynamic rawId = address['id'];
     final int addressId = rawId is int
         ? rawId
         : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
 
     if (addressId <= 0) {
-      print('❌ Invalid address ID: $addressId');
+    
       return;
     }
 
@@ -346,16 +346,13 @@ class _AddressBookScreenState extends State<AddressBookScreen> {
   }
 
   Future<void> _showDeleteConfirmDialog(Map<String, dynamic> address) async {
-    print(
-      '🗑️ _showDeleteConfirmDialog called for address: ${address['ho_ten']}',
-    );
+  
     final dynamic rawId = address['id'];
     final int addressId = rawId is int
         ? rawId
         : (rawId is String ? int.tryParse(rawId) ?? 0 : (rawId as num).toInt());
 
     if (addressId <= 0) {
-      print('❌ Invalid address ID: $addressId');
       return;
     }
 

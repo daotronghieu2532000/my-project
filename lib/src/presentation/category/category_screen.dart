@@ -61,7 +61,6 @@ class _CategoryScreenState extends State<CategoryScreen>
         setState(() => _isLoading = false);
       }
     } catch (e) {
-      print('❌ Lỗi khi tải danh mục cha: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -73,7 +72,6 @@ class _CategoryScreenState extends State<CategoryScreen>
       // Kiểm tra xem parent category có children không
       final children = parentCategory['children'] as List?;
       if (children != null && children.isNotEmpty) {
-        print('🔍 Loaded ${children.length} child categories from parent: ${parentCategory['name'] ?? parentCategory['cat_tieude']}');
         
         // Kiểm tra xem children có đủ thông tin không (có image field)
         final firstChild = children.first as Map<String, dynamic>;
@@ -84,15 +82,12 @@ class _CategoryScreenState extends State<CategoryScreen>
         if (hasImageInfo) {
           // Sử dụng children từ parent data
           for (var child in children) {
-            print('  - ${child['name'] ?? child['cat_tieude']} (ID: ${child['id'] ?? child['cat_id']})');
-            print('    Image: image=${child['image']}, cat_minhhoa=${child['cat_minhhoa']}, cat_img=${child['cat_img']}');
           }
           setState(() {
             _childCategories = List<Map<String, dynamic>>.from(children);
           });
         } else {
           // Children không có đủ thông tin, gọi API riêng
-          print('⚠️ Children không có đủ thông tin, gọi API riêng');
           final parentId = parentCategory['id'] ?? parentCategory['cat_id'];
           _loadChildCategories(parentId);
         }
@@ -102,7 +97,6 @@ class _CategoryScreenState extends State<CategoryScreen>
         _loadChildCategories(parentId);
       }
     } catch (e) {
-      print('❌ Lỗi khi load children from parent: $e');
       // Fallback to API call
       final parentId = parentCategory['id'] ?? parentCategory['cat_id'];
       _loadChildCategories(parentId);
@@ -119,16 +113,14 @@ class _CategoryScreenState extends State<CategoryScreen>
       );
       
       if (childrenData.isNotEmpty && mounted) {
-        // print('🔍 Loaded ${childrenData.length} child categories for parent ID: $parentId');
+      
         for (var child in childrenData) {
-          print('  - ${child['name'] ?? child['cat_tieude']} (ID: ${child['id'] ?? child['cat_id']})');
         }
         setState(() {
           _childCategories = childrenData;
         });
       }
     } catch (e) {
-      print('❌ Lỗi khi tải danh mục con: $e');
     }
   }
 

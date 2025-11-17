@@ -39,9 +39,7 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
           });
         }
       } else {
-        // Khi hết giờ, reload flash sale để lấy timeline mới
-        // Tắt logging để tránh spam terminal
-        // print('⏰ Timeline ended, reloading flash sale...');
+      
         if (mounted) {
           _loadFlashSaleDeals();
         }
@@ -61,7 +59,6 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
     try {
       // Nếu đã load rồi và có dữ liệu, không load lại (tránh gọi API khi scroll)
       if (_hasLoadedOnce && _deals.isNotEmpty) {
-        print('⚡ Flash sale already loaded, skipping reload');
         return;
       }
       
@@ -103,14 +100,11 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
           final remaining = slotEnd.difference(nowTs).inSeconds;
           _timeLeft = Duration(seconds: remaining > 0 ? remaining : 0);
         });
-        
-        print('✅ Flash sale loaded from cache (${deals.length} deals)');
       } else {
         setState(() {
           _isLoading = false;
           _error = 'Không có flash sale trong cache';
         });
-        print('⚠️ No cached flash sale');
       }
     } catch (e) {
       if (mounted) {
@@ -119,7 +113,6 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
           _error = 'Lỗi kết nối: $e';
         });
       }
-      print('❌ Error loading flash sale from cache: $e');
     }
   }
 
@@ -144,8 +137,6 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
         currentTimeline = '16:00';
       }
 
-      print('🕐 Current timeline: $currentTimeline (hour: $hour)');
-
       // Sử dụng cached API service
       final flashSaleData = await _cachedApiService.getHomeFlashSale();
       
@@ -164,14 +155,11 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
           final remaining = slotEnd.difference(nowTs).inSeconds;
           _timeLeft = Duration(seconds: remaining > 0 ? remaining : 0);
         });
-        
-        print('✅ Flash sale loaded successfully (${deals.length} deals)');
       } else {
         setState(() {
           _isLoading = false;
           _error = 'Không có flash sale cho khung giờ $currentTimeline';
         });
-        print('⚠️ No flash sale found for timeline $currentTimeline');
       }
     } catch (e) {
       if (mounted) {
@@ -180,7 +168,6 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
           _error = 'Lỗi kết nối: $e';
         });
       }
-      print('❌ Error loading flash sale: $e');
     }
   }
 
@@ -277,11 +264,7 @@ class _FlashSaleSectionState extends State<FlashSaleSection> with AutomaticKeepA
     }
     final deduplicatedProducts = uniqueProducts.values.toList();
     
-    // Tắt logging để tránh spam terminal
-    // if (deduplicatedProducts.length != allProducts.length) {
-    //   print('⚠️ Found ${allProducts.length - deduplicatedProducts.length} duplicate products');
-    // }
-    // print('🎯 Flash Sale: ${deduplicatedProducts.length} unique products for timeline $currentTimeline');
+    
 
     if (deduplicatedProducts.isEmpty) {
       return Padding(

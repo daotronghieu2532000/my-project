@@ -21,12 +21,6 @@ class ChatService {
   // Headers cho API calls
   Future<Map<String, String>> get _headers async {
     final token = await _token;
-    // print('🔑 [DEBUG] Token status:');
-    // print('   Token exists: ${token != null}');
-    // if (token != null) {
-    //   print('   Token length: ${token.length}');
-    //   print('   Token preview: ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
-    // }
     
     final headers = {
       'Content-Type': 'application/json',
@@ -72,15 +66,11 @@ class ChatService {
     
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ [DEBUG] Successfully parsed response: $data');
         return ChatSessionResponse.fromJson(data);
       } else {
-        print('❌ [DEBUG] HTTP Error: ${response.statusCode}');
-        print('   Error Body: ${response.body}');
         throw Exception('HTTP ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
-      print('💥 [DEBUG] Exception in createSession: $e');
       throw Exception('Lỗi tạo phiên chat: $e');
     }
   }
@@ -166,7 +156,6 @@ class ChatService {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        print('✅ [DEBUG] Parsed response data: $data');
         return ChatSendResponse.fromJson(data);
       } else {
         throw Exception('HTTP ${response.statusCode}: ${response.body}');

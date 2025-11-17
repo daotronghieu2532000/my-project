@@ -73,8 +73,7 @@ class _ShopSearchResultsScreenState extends State<ShopSearchResultsScreen> {
     }
 
     try {
-      print('🔍 [ShopSearchResultsScreen] Loading products - shopId: ${widget.shopId}, searchKeyword: "${widget.searchKeyword}", page: ${loadMore ? _currentPage + 1 : 1}');
-      
+   
       final result = await _cachedApiService.getShopProductsPaginatedCached(
         shopId: widget.shopId,
         categoryId: null,
@@ -83,21 +82,12 @@ class _ShopSearchResultsScreenState extends State<ShopSearchResultsScreen> {
         limit: 50,
       );
 
-      print('🔍 [ShopSearchResultsScreen] API response received: ${result != null ? "SUCCESS" : "NULL"}');
+    
 
       if (mounted && result != null) {
         final productsData = result['products'] as List? ?? [];
         final pagination = result['pagination'] as Map<String, dynamic>? ?? {};
-        
-        print('🔍 [ShopSearchResultsScreen] Products count: ${productsData.length}');
-        print('🔍 [ShopSearchResultsScreen] Pagination: $pagination');
-        
         final newProducts = productsData.map((data) => ShopProduct.fromJson(data)).toList();
-        
-        print('🔍 [ShopSearchResultsScreen] Parsed products: ${newProducts.length}');
-        if (newProducts.isNotEmpty) {
-          print('🔍 [ShopSearchResultsScreen] First product: ${newProducts.first.name}');
-        }
         
         setState(() {
           if (loadMore) {
@@ -113,9 +103,8 @@ class _ShopSearchResultsScreenState extends State<ShopSearchResultsScreen> {
           _isLoadingMore = false;
         });
         
-        print('🔍 [ShopSearchResultsScreen] State updated - Total products: ${_products.length}, Has more: $_hasMore');
       } else if (mounted) {
-        print('⚠️ [ShopSearchResultsScreen] API returned null or error');
+  
         setState(() {
           _isLoading = false;
           _isLoadingMore = false;
@@ -123,7 +112,7 @@ class _ShopSearchResultsScreenState extends State<ShopSearchResultsScreen> {
         });
       }
     } catch (e) {
-      print('❌ [ShopSearchResultsScreen] Error loading products: $e');
+     
       if (mounted) {
         setState(() {
           _isLoading = false;

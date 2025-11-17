@@ -20,11 +20,10 @@ class ShopDetail {
   });
 
   factory ShopDetail.fromJson(Map<String, dynamic> json) {
-    print('🔍 Debug ShopDetail.fromJson: ${json.keys}');
+  
 
     try {
-      // Debug từng field
-      print('🔍 shop_info type: ${json['shop_info'].runtimeType}');
+    
       final shopInfo = ShopInfo.fromJson(json['shop_info'] as Map<String, dynamic>);
 
       final List<ShopProduct> products = (json['products'] as List?)
@@ -64,8 +63,7 @@ class ShopDetail {
         parameters: ShopParameters.empty(),
       );
     } catch (e) {
-      print('❌ Lỗi ShopDetail.fromJson: $e');
-      print('❌ JSON data: $json');
+     
       rethrow;
     }
   }
@@ -526,7 +524,7 @@ class ShopStatistics {
 
   factory ShopStatistics.fromJson(Map<String, dynamic> json) {
     try {
-      print('🔍 Debug ShopStatistics.fromJson: ${json.keys}');
+     
 
       return ShopStatistics(
         totalProducts: json['total_products'] as int,
@@ -536,8 +534,7 @@ class ShopStatistics {
         totalCategories: json['total_categories'] as int,
       );
     } catch (e) {
-      print('❌ Lỗi ShopStatistics.fromJson: $e');
-      print('❌ JSON data: $json');
+     
       rethrow;
     }
   }
@@ -576,7 +573,7 @@ class ShopParameters {
 
   factory ShopParameters.fromJson(Map<String, dynamic> json) {
     try {
-      print('🔍 Debug ShopParameters.fromJson: ${json.keys}');
+     
 
       return ShopParameters(
         shopId: json['shop_id'] as int,
@@ -589,8 +586,7 @@ class ShopParameters {
         productsLimit: json['products_limit'] as int,
       );
     } catch (e) {
-      print('❌ Lỗi ShopParameters.fromJson: $e');
-      print('❌ JSON data: $json');
+     
       rethrow;
     }
   }

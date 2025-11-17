@@ -125,10 +125,6 @@ class _SearchScreenState extends State<SearchScreen> {
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
       
-      if (userId != null) {
-        print('👤 Search with user_id: $userId for keyword: "$keyword"');
-      }
-      
       // Sử dụng cached API service cho search products
       final result = await _cachedApiService.searchProductsCached(
         keyword: keyword,
@@ -140,7 +136,6 @@ class _SearchScreenState extends State<SearchScreen> {
       // Nếu cache không có data, fallback về ApiService
       Map<String, dynamic>? searchResult;
       if (result == null || result.isEmpty) {
-        print('🔄 Cache miss, fetching from ApiService...');
         searchResult = await _apiService.searchProducts(
           keyword: keyword,
           page: page,
@@ -148,21 +143,15 @@ class _SearchScreenState extends State<SearchScreen> {
           userId: userId,
         );
       } else {
-        print('🔍 Using cached search results');
         searchResult = result;
       }
 
       if (searchResult != null && mounted) {
         final searchResultObj = SearchResult.fromJson(searchResult);
-
-        print(
-          '🔍 Search result: ${searchResultObj.products.length} products, total: ${searchResultObj.pagination.total}',
-        );
         
         // Nếu user đã đăng nhập và search thành công, clear cache của personalized suggestions
         // để khi quay về trang chủ, sẽ thấy gợi ý mới dựa trên search keywords
         if (userId != null && !isLoadMore) {
-          print('🔄 Clearing personalized suggestions cache after search...');
           _cachedApiService.clearCachePattern('home_suggestions');
         }
 
@@ -237,7 +226,7 @@ class _SearchScreenState extends State<SearchScreen> {
         _searchHistory = history;
       });
     } catch (e) {
-      print('Lỗi khi load lịch sử tìm kiếm: $e');
+      // Error loading search history
     }
   }
 
@@ -247,7 +236,7 @@ class _SearchScreenState extends State<SearchScreen> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setStringList('search_history', _searchHistory);
     } catch (e) {
-      print('Lỗi khi save lịch sử tìm kiếm: $e');
+      // Error saving search history
     }
   }
 
@@ -342,7 +331,6 @@ class _SearchScreenState extends State<SearchScreen> {
         });
       }
     } catch (e) {
-      print('❌ Lỗi khi load danh mục nổi bật: $e');
       if (mounted) {
         setState(() {
           _randomCategories = [];
@@ -354,8 +342,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadSearchSuggestions(String keyword) async {
     if (_isLoadingSuggestions) return;
-    
-    print('🔍 [DEBUG] _loadSearchSuggestions called with keyword: "$keyword"');
     
     setState(() {
       _isLoadingSuggestions = true;
@@ -372,24 +358,18 @@ class _SearchScreenState extends State<SearchScreen> {
       // Nếu cache không có data, fallback về ApiService
       List<String>? suggestionsList;
       if (suggestions == null || suggestions.isEmpty) {
-        print('🔄 [DEBUG] Cache miss, fetching suggestions from ApiService...');
         suggestionsList = await _apiService.getSearchSuggestions(
           keyword: keyword,
           limit: 5,
         );
       } else {
-        print('💡 [DEBUG] Using cached search suggestions');
         suggestionsList = suggestions;
       }
       
-      print('🔍 [DEBUG] Keyword suggestions count: ${suggestionsList?.length ?? 0}');
-      
       // Load shop suggestions từ search products API
-      print('🏪 [DEBUG] Loading shop suggestions...');
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
       
-      print('🏪 [DEBUG] Calling searchProducts API with keyword: "$keyword", userId: $userId');
       final searchResult = await _apiService.searchProducts(
         keyword: keyword,
         page: 1,
@@ -397,26 +377,20 @@ class _SearchScreenState extends State<SearchScreen> {
         userId: userId,
       );
       
-      print('🏪 [DEBUG] searchProducts API response: ${searchResult != null ? "SUCCESS" : "NULL"}');
-      
       List<ShopSuggestion> shopSuggestionsList = [];
       if (searchResult != null && searchResult['success'] == true) {
-        print('🏪 [DEBUG] API returned success, parsing shops...');
         final data = searchResult['data'] as Map<String, dynamic>?;
-        print('🏪 [DEBUG] Data keys: ${data?.keys.toList()}');
         
         if (data != null && data['shops'] != null) {
           final shopsJson = data['shops'] as List<dynamic>?;
-          print('🏪 [DEBUG] Shops JSON type: ${shopsJson.runtimeType}, count: ${shopsJson?.length ?? 0}');
           
           if (shopsJson != null && shopsJson.isNotEmpty) {
             for (var shopJson in shopsJson) {
               try {
                 final shop = ShopSuggestion.fromJson(shopJson as Map<String, dynamic>);
                 shopSuggestionsList.add(shop);
-                print('🏪 [DEBUG] Parsed shop: ${shop.name} (ID: ${shop.shopId}, Handle: ${shop.handle})');
               } catch (e) {
-                print('❌ [DEBUG] Error parsing shop: $e, shop data: $shopJson');
+                // Error parsing shop
               }
             }
             
@@ -450,18 +424,9 @@ class _SearchScreenState extends State<SearchScreen> {
               return a.name.compareTo(b.name);
             });
             
-            print('🏪 [DEBUG] Shops sorted: ${shopSuggestionsList.map((s) => s.name).join(", ")}');
-          } else {
-            print('⚠️ [DEBUG] Shops JSON is empty or null');
           }
-        } else {
-          print('⚠️ [DEBUG] No shops key in data or data is null');
         }
-      } else {
-        print('❌ [DEBUG] API returned error or null: ${searchResult?['message'] ?? "No message"}');
       }
-      
-      print('🏪 [DEBUG] Total shops parsed: ${shopSuggestionsList.length}');
       
       if (mounted) {
         setState(() {
@@ -470,12 +435,8 @@ class _SearchScreenState extends State<SearchScreen> {
           _isLoadingSuggestions = false;
           _isLoadingShopSuggestions = false;
         });
-        
-        print('✅ [DEBUG] State updated - Keyword suggestions: ${_searchSuggestions.length}, Shop suggestions: ${_shopSuggestions.length}');
       }
     } catch (e, stackTrace) {
-      print('❌ [DEBUG] Error in _loadSearchSuggestions: $e');
-      print('❌ [DEBUG] Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _searchSuggestions = [];
@@ -488,8 +449,6 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _navigateToShopDetail(ShopSuggestion shop) {
-    print('🏪 [DEBUG] Navigating to shop detail: ${shop.name} (ID: ${shop.shopId}, Username: ${shop.username})');
-    
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1198,14 +1157,8 @@ class _SearchScreenState extends State<SearchScreen> {
         // Hiển thị gợi ý shop nếu đang nhập
         Builder(
           builder: (context) {
-            print('🏪 [DEBUG UI] Building shop suggestions section');
-            print('🏪 [DEBUG UI] _searchController.text: "${_searchController.text}"');
-            print('🏪 [DEBUG UI] _shopSuggestions.length: ${_shopSuggestions.length}');
-            print('🏪 [DEBUG UI] _isLoadingShopSuggestions: $_isLoadingShopSuggestions');
-            
             if (_searchController.text.isNotEmpty) {
               if (_isLoadingShopSuggestions) {
-                print('🏪 [DEBUG UI] Showing loading indicator');
                 return Column(
                   children: [
                     _SectionTitle(icon: Icons.store, title: 'Shops'),
@@ -1220,7 +1173,6 @@ class _SearchScreenState extends State<SearchScreen> {
                   ],
                 );
               } else if (_shopSuggestions.isNotEmpty) {
-                print('🏪 [DEBUG UI] Showing ${_shopSuggestions.length} shops');
                 return Column(
                   children: [
                     Row(
@@ -1252,7 +1204,6 @@ class _SearchScreenState extends State<SearchScreen> {
                       shops: _shopSuggestions,
                       isLoading: _isLoadingShopSuggestions,
                       onTap: (shop) {
-                        print('🏪 [DEBUG] Tap shop: ${shop.name}');
                         _navigateToShopDetail(shop);
                       },
                     ),
@@ -1260,11 +1211,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   ],
                 );
               } else {
-                print('🏪 [DEBUG UI] No shops to display');
                 return const SizedBox.shrink();
               }
             } else {
-              print('🏪 [DEBUG UI] Search text is empty, hiding shop suggestions');
               return const SizedBox.shrink();
             }
           },
@@ -1753,10 +1702,7 @@ class _ShopSuggestionsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('🏪 [DEBUG _ShopSuggestionsList] Building with ${shops.length} shops, isLoading: $isLoading');
-    
     if (isLoading) {
-      print('🏪 [DEBUG _ShopSuggestionsList] Showing loading indicator');
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -1766,17 +1712,14 @@ class _ShopSuggestionsList extends StatelessWidget {
     }
 
     if (shops.isEmpty) {
-      print('🏪 [DEBUG _ShopSuggestionsList] No shops to display');
       return const SizedBox.shrink();
     }
 
     // Chỉ hiển thị tối đa 4 shop đầu tiên
     final displayShops = shops.take(4).toList();
-    print('🏪 [DEBUG _ShopSuggestionsList] Displaying ${displayShops.length} shops');
 
     return Column(
       children: displayShops.map((shop) {
-        print('🏪 [DEBUG _ShopSuggestionsList] Rendering shop: ${shop.name} (Avatar: ${shop.avatar})');
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           child: ListTile(
@@ -1788,7 +1731,6 @@ class _ShopSuggestionsList extends StatelessWidget {
                       height: 48,
                       fit: BoxFit.cover,
                       placeholder: (context, url) {
-                        print('🏪 [DEBUG _ShopSuggestionsList] Loading avatar for ${shop.name} from: $url');
                         return Container(
                           width: 48,
                           height: 48,
@@ -1802,7 +1744,6 @@ class _ShopSuggestionsList extends StatelessWidget {
                         );
                       },
                       errorWidget: (context, url, error) {
-                        print('❌ [DEBUG _ShopSuggestionsList] Error loading avatar for ${shop.name}: $error, URL: $url');
                         return Container(
                           width: 48,
                           height: 48,
@@ -1846,7 +1787,6 @@ class _ShopSuggestionsList extends StatelessWidget {
               color: Colors.grey[400],
             ),
             onTap: () {
-              print('🏪 [DEBUG _ShopSuggestionsList] Shop tapped: ${shop.name}');
               onTap(shop);
             },
             shape: RoundedRectangleBorder(

@@ -43,7 +43,7 @@ class _PartnerBannerSectionState extends State<PartnerBannerSection> {
           _isLoading = false;
         });
       }
-      print('❌ Lỗi khi tải banner đối tác: $e');
+   
     }
   }
 
@@ -87,8 +87,6 @@ class _PartnerBannerSectionState extends State<PartnerBannerSection> {
                 return GestureDetector(
                   onTap: () {
                     if (banner.link.isNotEmpty) {
-                      // TODO: Navigate to link
-                      print('Partner banner clicked: ${banner.link}');
                     }
                   },
                   child: Container(

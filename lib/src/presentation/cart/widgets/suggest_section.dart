@@ -66,7 +66,6 @@ class _SuggestSectionState extends State<SuggestSection> {
         }
       }
     } catch (e) {
-      print('❌ Lỗi khi tải gợi ý sản phẩm: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;

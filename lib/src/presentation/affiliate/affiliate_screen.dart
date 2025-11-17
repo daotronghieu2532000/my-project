@@ -108,7 +108,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
 
   /// Callback khi trạng thái đăng nhập thay đổi
   void _onAuthStateChanged() {
-    print('🔔 [AffiliateScreen] Auth state changed - reloading user...');
     // Reload user khi có thay đổi trạng thái đăng nhập
     if (mounted) {
       _initUser();
@@ -121,7 +120,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     
     // Chỉ update nếu userId thay đổi
     if (_currentUserId != newUserId) {
-      print('🔄 [AffiliateScreen] User ID changed: $_currentUserId -> $newUserId');
       setState(() {
         _currentUserId = newUserId;
       });
@@ -163,7 +161,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         });
       }
     } catch (e) {
-      print('❌ Lỗi check affiliate status: $e');
     }
   }
 
@@ -431,15 +428,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       
       if (dashboardData != null && dashboardData.isNotEmpty) {
         // Sử dụng dữ liệu từ cache
-        print('💰 Using cached dashboard data');
         if (dashboardData['data'] != null) {
           dashboard = AffiliateDashboard.fromJson(dashboardData['data']);
         }
       } else {
         // Cache miss, gọi API trực tiếp
-        print('🔄 Cache miss, fetching from AffiliateService...');
         dashboard = await _affiliateService.getDashboard(userId: _currentUserId);
-        print('📊 Dashboard loaded: $dashboard');
       }
       
       if (mounted) {
@@ -461,7 +455,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
 
   Future<void> _loadProducts({bool refresh = false}) async {
     if (_currentUserId == null) {
-      print('❌ [AFFILIATE] Cannot load products: no user ID');
       return;
     }
     
@@ -469,12 +462,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     final isFirstLoad = _products.isEmpty;
     final shouldRefresh = refresh || isFirstLoad;
     
-    print('🔄 [AFFILIATE] Loading products - refresh: $refresh, isFirstLoad: $isFirstLoad, shouldRefresh: $shouldRefresh');
-    print('🔄 [AFFILIATE] Current state - page: $_currentPage, products: ${_products.length}, loading: $_isProductsLoading, loadingMore: $_isLoadingMore');
     
     // Prevent multiple simultaneous loads
     if (!shouldRefresh && (_isProductsLoading || _isLoadingMore)) {
-      print('⏸️ [AFFILIATE] Already loading, skipping...');
       return;
     }
     
@@ -496,7 +486,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       });
     }
     try {
-      print('🌐 [AFFILIATE] Calling API - page: $_currentPage, limit: $_itemsPerPage, search: "$_searchQuery", sortBy: $_sortBy, onlyFollowing: $_onlyFollowed');
       
       final result = await _affiliateService.getProducts(
         userId: _currentUserId,
@@ -507,12 +496,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         onlyFollowing: _onlyFollowed,
       );
       
-      print('📦 [AFFILIATE] API Response received - result: ${result != null ? "not null" : "null"}');
       
       if (mounted) {
         if (result != null && result['products'] != null) {
           final newProducts = result['products'] as List<AffiliateProduct>;
-          print('✅ [AFFILIATE] Received ${newProducts.length} products');
           
           setState(() {
             if (shouldRefresh) {
@@ -540,10 +527,8 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             _isLoadingMore = false;
           });
           
-          print('✅ [AFFILIATE] Products updated - total: ${_products.length}, filtered: ${_filteredProducts.length}, hasMore: $_hasMoreData, nextPage: $_currentPage');
         } else {
           // No products returned
-          print('⚠️ [AFFILIATE] No products in response');
           setState(() {
             _hasMoreData = false;
             _isProductsLoading = false;
@@ -552,8 +537,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         }
       }
     } catch (e, stackTrace) {
-      print('❌ [AFFILIATE] Error loading products: $e');
-      print('❌ [AFFILIATE] Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _productsError = 'Lỗi khi tải sản phẩm: $e';

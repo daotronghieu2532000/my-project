@@ -137,14 +137,8 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
 
     try {
       // Sử dụng cached API service cho products
-      print('🔍 Starting _loadProducts: refresh=$refresh, page=$_currentPage');
-      print('🔍 User ID: $_currentUserId');
-      print('🔍 Search query: "$_searchQuery"');
-      print('🔍 Sort by: $_sortBy');
-      print('🔍 Only following: $_onlyFollowed');
       
       // Không dùng cache, gọi API trực tiếp để đảm bảo data luôn mới nhất
-      print('🔄 Fetching from AffiliateService (no cache)...');
       final result = await _affiliateService.getProducts(
         userId: _currentUserId,
         page: _currentPage,
@@ -154,15 +148,10 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
         onlyFollowing: _onlyFollowed,
       );
      
-      
-      // print('🔍 Final result: $result');
-      // print('🔍 Final result products: ${result?['products']?.length ?? 0}');
-      
       if (mounted) {
         setState(() {
           if (result != null && result['products'] != null) {
             final newProducts = result['products'] as List<AffiliateProduct>;
-            print('📦 Loaded ${newProducts.length} products from API');
             if (refresh) {
               _products = newProducts;
             } else {
@@ -173,13 +162,8 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
             final pagination = result['pagination'];
             _hasMoreData = _currentPage < pagination['total_pages'];
             _currentPage++;
-            
-            // Debug: Check if products have links
-            // for (final product in newProducts) {
-            //   print('📦 Product ${product.id}: hasLink=${product.hasLink}, shortLink=${product.shortLink}');
-            // }
+  
           } else {
-            print('❌ No products found in result: $result');
           }
           _isLoading = false;
         });
@@ -213,9 +197,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
 
   Future<void> _createAffiliateLink(AffiliateProduct product) async {
     try {
-      print('🟠 [UI] Rút gọn link cho sp_id=${product.id}');
-      print('🧩 [UI] productUrl: ${product.productUrl}');
-      print('🧩 [UI] affiliateUrl: ${_buildAffiliateUrl(product)}');
       final longAffiliate = _buildAffiliateUrl(product);
       final result = await _affiliateService.createLink(
         userId: _currentUserId ?? 0,
@@ -224,12 +205,9 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
       );
 
       if (mounted) {
-        print('🔗 [UI] Create Link Result: $result');
         if (result != null && result['short_link'] != null) {
           final short = result['short_link'] as String;
           final longUrl = _buildAffiliateUrl(product);
-          print('✅ [UI] short_link=$short');
-          print('✅ [UI] expected_redirect=$longUrl');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Đã tạo link: $short'),
@@ -259,7 +237,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
           // Mở dialog chia sẻ luôn để trải nghiệm nhanh
           _showShareDialog(product);
         } else {
-          print('❌ [UI] Create link fail or missing short_link');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Tạo link thất bại'),
@@ -270,7 +247,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        print('❌ [UI] Exception when creating link: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lỗi: $e'),
@@ -914,98 +890,70 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
     final shareText = _buildShareText(product);
     final shareUrl = _buildAffiliateUrl(product);
     
-    print('🚀 [SHARE] Starting share for product: ${product.title}');
-    print('🖼️ [SHARE] Image URL: ${product.image}');
-    print('📝 [SHARE] Share text length: ${shareText.length}');
-    print('🔗 [SHARE] Share URL: $shareUrl');
     
     try {
       // Try to share with image if available
       if (product.image.isNotEmpty) {
-        print('🖼️ [SHARE] Attempting to share with image: ${product.image}');
         
         // Download image to temporary file
         final imageFile = await _downloadImageToTemp(product.image);
         if (imageFile != null) {
-          print('✅ [SHARE] Image downloaded successfully: ${imageFile.path}');
-          print('📊 [SHARE] Image file size: ${await imageFile.length()} bytes');
           
           // Method 1: Try sharing both together (preferred)
           try {
-            print('📤 [SHARE] Method 1: Sharing both together...');
             await Share.shareXFiles(
               [XFile(imageFile.path)],
               text: '$shareText\n\n$shareUrl',
               subject: product.title,
             );
-            print('✅ [SHARE] Combined sharing completed');
             return;
           } catch (e) {
-            print('❌ [SHARE] Combined sharing failed: $e');
-            print('🔄 [SHARE] Trying sequential method...');
           }
           
           // Method 2: Try sharing text first, then image (fallback)
           try {
-            print('📤 [SHARE] Method 2: Sharing text first...');
             // Share text first
             await Share.share(
               '$shareText\n\n$shareUrl',
               subject: product.title,
             );
-            print('✅ [SHARE] Text shared successfully');
             
             // Small delay then share image
-            print('⏳ [SHARE] Waiting 2 seconds before sharing image...');
             await Future.delayed(const Duration(milliseconds: 2000));
             
             // Share image separately
-            print('📤 [SHARE] Method 2: Sharing image separately...');
             await Share.shareXFiles(
               [XFile(imageFile.path)],
               text: '',
             );
-            print('✅ [SHARE] Image shared successfully');
-            print('✅ [SHARE] Sequential sharing completed');
             return;
           } catch (e) {
-            print('❌ [SHARE] Sequential sharing failed: $e');
-            print('🔄 [SHARE] Falling back to text-only...');
           }
         } else {
-          print('❌ [SHARE] Failed to download image, falling back to text-only');
         }
       } else {
-        print('⚠️ [SHARE] No image available, using text-only sharing');
       }
       
       // Fallback to text-only sharing
-      print('📤 [SHARE] Fallback: Text-only sharing...');
       Share.share(
         '$shareText\n\n$shareUrl',
         subject: product.title,
       );
-      print('✅ [SHARE] Text-only sharing completed');
     } catch (e) {
-      print('❌ [SHARE] Error sharing: $e');
-      print('🔄 [SHARE] Final fallback: Text-only sharing...');
       // If image sharing fails, fallback to text-only
       Share.share(
         '$shareText\n\n$shareUrl',
         subject: product.title,
       );
-      print('✅ [SHARE] Final fallback completed');
     }
   }
 
 
   Future<File?> _downloadImageToTemp(String imageUrl) async {
     try {
-      print('📥 [DOWNLOAD] Starting download: $imageUrl');
       
       // Validate URL
       if (!imageUrl.startsWith('http')) {
-        print('❌ [DOWNLOAD] Invalid URL format: $imageUrl');
         return null;
       }
       
@@ -1018,9 +966,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
         },
       ).timeout(const Duration(seconds: 30));
       
-      print('📊 [DOWNLOAD] HTTP Status: ${response.statusCode}');
-      print('📊 [DOWNLOAD] Content-Type: ${response.headers['content-type']}');
-      print('📊 [DOWNLOAD] Content-Length: ${response.headers['content-length']}');
       
       if (response.statusCode == 200) {
         final tempDir = await getTemporaryDirectory();
@@ -1029,23 +974,16 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
         await file.writeAsBytes(response.bodyBytes);
         
         final fileSize = await file.length();
-        print('✅ [DOWNLOAD] Image saved to: ${file.path}');
-        print('📊 [DOWNLOAD] File size: $fileSize bytes');
         
         // Validate file size
         if (fileSize < 100) {
-          print('⚠️ [DOWNLOAD] File size too small, might be corrupted');
           return null;
         }
         
         return file;
       } else {
-        print('❌ [DOWNLOAD] HTTP error: ${response.statusCode}');
-        print('❌ [DOWNLOAD] Response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
       }
     } catch (e) {
-      print('❌ [DOWNLOAD] Error downloading image: $e');
-      print('❌ [DOWNLOAD] Error type: ${e.runtimeType}');
     }
     return null;
   }
@@ -1141,7 +1079,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
                 _searchDebounceTimer?.cancel();
                 _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
                   if (value.trim().isNotEmpty) {
-                    print('🔍 [SEARCH] Debounced search triggered for: "$value"');
                     _loadProducts(refresh: true);
                   }
                 });
@@ -1149,7 +1086,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
               onSubmitted: (_) {
                 // Ẩn bàn phím sau khi submit tìm kiếm
                 FocusScope.of(context).unfocus();
-                print('🔍 [SEARCH] Manual search submitted for: "$_searchQuery"');
                 _loadProducts(refresh: true);
               },
             ),

@@ -146,7 +146,7 @@ class _OrdersScreenState extends State<OrdersScreen>
         ),
       ),
       body: _userId == null
-          ? const _LoggedOutView()
+          ? _LoggedOutView(onLoginSuccess: _init)
           : TabBarView(
               controller: _tabController,
               children: [
@@ -441,7 +441,17 @@ class _OrdersListState extends State<_OrdersList> {
   Widget _buildOrderCard(Map<String, dynamic> o) {
     final List products = (o['products'] as List?) ?? [];
     final Map<String, dynamic>? first = products.isNotEmpty ? (products.first as Map).cast<String, dynamic>() : null;
-    final int count = _toInt(o['product_count']) ?? products.length;
+    // Tính tổng số lượng từ tất cả sản phẩm
+    int count = 0;
+    for (var p in products) {
+      final product = (p as Map).cast<String, dynamic>();
+      final quantity = _toInt(product['quantity'] ?? product['qty'] ?? product['so_luong']) ?? 1;
+      count += quantity;
+    }
+    // Fallback nếu không tính được
+    if (count == 0) {
+      count = _toInt(o['product_count']) ?? products.length;
+    }
     final Color statusColor = _statusColor(_toInt(o['status']));
     final String shopName = first?['shop_name']?.toString() ?? '';
     final String etaText = o['delivery_eta_text']?.toString() ?? '';
@@ -1074,7 +1084,8 @@ class _EmptyOrderState extends StatelessWidget {
 }
 
 class _LoggedOutView extends StatelessWidget {
-  const _LoggedOutView();
+  final VoidCallback onLoginSuccess;
+  const _LoggedOutView({required this.onLoginSuccess});
   
   @override
   Widget build(BuildContext context) {
@@ -1172,7 +1183,13 @@ class _LoggedOutView extends StatelessWidget {
                   ],
                 ),
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pushNamed(context, '/login'),
+                  onPressed: () async {
+                    final result = await Navigator.pushNamed(context, '/login');
+                    // Nếu đăng nhập thành công, reload trạng thái
+                    if (result == true && context.mounted) {
+                      onLoginSuccess();
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,

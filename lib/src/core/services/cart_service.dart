@@ -138,7 +138,6 @@ class CartService extends ChangeNotifier {
       if (_currentUserId == null && newUserId != null && _items.isNotEmpty) {
         // Lưu cart guest trước khi clear
         guestCartItems = List.from(_items);
-        print('🛒 [CartService] Đang đăng nhập, giữ lại ${guestCartItems.length} items từ cart guest');
       }
       
       // Clear giỏ hàng hiện tại
@@ -150,12 +149,10 @@ class CartService extends ChangeNotifier {
       
       // ✅ Nếu user mới chưa có cart (items rỗng) và có cart guest, merge vào
       if (newUserId != null && _items.isEmpty && guestCartItems.isNotEmpty) {
-        print('🛒 [CartService] User mới chưa có cart, merge ${guestCartItems.length} items từ cart guest');
         _items.addAll(guestCartItems);
         await _saveCartForUser(newUserId); // Lưu cart đã merge
       } else if (newUserId != null && _items.isNotEmpty && guestCartItems.isNotEmpty) {
         // ✅ Nếu user đã có cart, merge items từ guest cart (tránh duplicate)
-        print('🛒 [CartService] User đã có cart, merge ${guestCartItems.length} items từ cart guest');
         for (final guestItem in guestCartItems) {
           final existingItem = _items.firstWhere(
             (item) => item.id == guestItem.id && item.variant == guestItem.variant,
@@ -231,7 +228,6 @@ class CartService extends ChangeNotifier {
 
   // Add item to cart
   void addItem(CartItem item) {
-    print('🛒 [CartService] addItem called: product_id=${item.id}, quantity=${item.quantity}, variant=${item.variant}');
     
     // Check if item already exists (same id and variant)
     final existingIndex = _items.indexWhere(
@@ -243,13 +239,11 @@ class CartService extends ChangeNotifier {
 
     if (existingIndex != -1) {
       // Update quantity if item exists
-      print('🛒 [CartService] Item exists, updating quantity');
       _items[existingIndex] = _items[existingIndex].copyWith(
         quantity: _items[existingIndex].quantity + item.quantity,
       );
     } else {
       // Add new item
-      print('🛒 [CartService] Adding new item to cart');
       _items.add(item);
     }
 
@@ -259,7 +253,6 @@ class CartService extends ChangeNotifier {
     }
     
     // Lưu cart behavior vào database (chạy async, không ảnh hưởng UI)
-    print('🛒 [CartService] Calling _saveCartBehavior...');
     _saveCartBehavior(item);
     
     notifyListeners();
@@ -268,17 +261,13 @@ class CartService extends ChangeNotifier {
   
   // Lưu cart behavior vào database
   Future<void> _saveCartBehavior(CartItem item) async {
-    print('🛒 [CartService] _saveCartBehavior called: product_id=${item.id}, quantity=${item.quantity}, variant=${item.variant}');
     
     try {
-      print('🛒 [CartService] Getting current user...');
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
       
-      print('🛒 [CartService] User: ${user != null ? "logged in" : "null"}, userId: $userId');
       
       if (userId != null) {
-        print('🛒 [CartService] Calling API addToCart: userId=$userId, productId=${item.id}, quantity=${item.quantity}, variant=${item.variant}');
         
         // Gọi API để lưu cart behavior (chạy async, không chờ kết quả)
         _apiService.addToCart(
@@ -287,46 +276,32 @@ class CartService extends ChangeNotifier {
           quantity: item.quantity,
           variant: item.variant,
         ).then((result) {
-          print('🛒 [CartService] API response received: $result');
           if (result != null && result['success'] == true) {
-            print('✅ [CartService] Cart behavior saved successfully for product_id=${item.id}');
             
             // ===== CẢI THIỆN: Cache invalidation =====
             // Clear cache home suggestions để gợi ý mới được cập nhật
             _clearHomeSuggestionsCache(userId);
           } else {
-            print('⚠️ [CartService] Failed to save cart behavior for product_id=${item.id}');
-            print('⚠️ [CartService] Response: $result');
           }
         }).catchError((error) {
-          print('❌ [CartService] Error saving cart behavior: $error');
-          print('❌ [CartService] Stack trace: ${StackTrace.current}');
         });
       } else {
-        print('⚠️ [CartService] User not logged in - cannot save cart behavior');
-        print('⚠️ [CartService] User object: $user');
       }
     } catch (e, stackTrace) {
-      print('❌ [CartService] Error in _saveCartBehavior: $e');
-      print('❌ [CartService] Stack trace: $stackTrace');
     }
   }
   
   // ===== CẢI THIỆN: Clear cache home suggestions khi có hành vi mới =====
   void _clearHomeSuggestionsCache(int? userId) {
     try {
-      print('🔄 [CartService] Clearing home suggestions cache for userId=$userId');
       // Gọi getHomeSuggestions với forceRefresh=true để clear cache
       _cachedApiService.getHomeSuggestions(
         userId: userId,
         forceRefresh: true,
       ).then((_) {
-        print('✅ [CartService] Home suggestions cache cleared for userId=$userId');
       }).catchError((error) {
-        print('⚠️ [CartService] Error clearing cache: $error');
       });
     } catch (e) {
-      print('⚠️ [CartService] Error in _clearHomeSuggestionsCache: $e');
     }
   }
 
@@ -532,7 +507,6 @@ class CartService extends ChangeNotifier {
       final cartJson = _items.map((item) => item.toJson()).toList();
       await prefs.setString(cartKey, jsonEncode(cartJson));
     } catch (e) {
-      print('❌ Lỗi khi lưu giỏ hàng: $e');
     }
   }
 
@@ -562,7 +536,6 @@ class CartService extends ChangeNotifier {
         _currentUserId = userId;
       }
     } catch (e) {
-      print('❌ Lỗi khi load giỏ hàng: $e');
     } finally {
       _isLoading = false; // Hoàn tất load
     }

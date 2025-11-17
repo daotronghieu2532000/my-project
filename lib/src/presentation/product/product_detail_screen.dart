@@ -6,8 +6,7 @@ import 'widgets/variant_selection_dialog.dart';
 import 'widgets/simple_purchase_dialog.dart';
 import 'widgets/row_tile.dart';
 import 'widgets/voucher_row.dart';
-import 'widgets/rating_preview.dart';
-import 'widgets/fake_review_generator.dart';
+import 'widgets/product_reviews_section.dart';
 import 'widgets/shop_bar.dart';
 import 'widgets/section_header.dart';
 import 'widgets/specs_table.dart';
@@ -75,6 +74,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final AuthService _authService = AuthService();
   bool _isFavorite = false;
   bool _isTogglingFavorite = false;
+  
+  // Rating và reviews từ API product_reviews (dữ liệu thật)
+  double? _realRating;
+  int? _realReviewsCount;
   
   Future<void> _toggleFavorite() async {
     if (_isTogglingFavorite || widget.productId == null) return;
@@ -164,12 +167,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   
     
     if (shopId == null || shopId == 0) {
-      print('❌ [DEBUG] Invalid shop ID, showing error');
+     
       _showSnack('Không thể xác định shop để chat', background: Colors.red);
       return;
     }
-    
-    print('✅ [DEBUG] Valid shop ID, navigating to chat');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -234,6 +235,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         if (productDetail != null) {
           _loadSameShopProducts();
           _loadRelatedProducts();
+          _loadRatingStats(); // Load rating và reviewsCount từ API product_reviews (dữ liệu thật)
         }
       }
     } catch (e) {
@@ -263,13 +265,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       // Nếu cache không có data, fallback về ApiService
       Map<String, dynamic>? response;
       if (responseData == null || responseData.isEmpty) {
-        print('🔄 Cache miss, fetching same shop products from ApiService...');
+       
         response = await _apiService.getProductsSameShop(
           productId: widget.productId!,
           limit: 10,
         );
       } else {
-        print('🏪 Using cached same shop products data');
+      
         response = responseData;
       }
       
@@ -298,7 +300,33 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           _isLoadingSameShop = false;
         });
       }
-      print('❌ Lỗi khi lấy sản phẩm cùng shop: $e');
+     
+    }
+  }
+
+  Future<void> _loadRatingStats() async {
+    if (widget.productId == null) return;
+    
+    try {
+      // Lấy rating và reviewsCount từ API product_reviews (dữ liệu thật)
+      final reviewsData = await _apiService.getProductReviews(
+        productId: widget.productId!,
+        page: 1,
+        limit: 1, // Chỉ cần lấy stats, không cần reviews
+      );
+      
+      if (mounted && reviewsData != null && reviewsData['success'] == true) {
+        final data = reviewsData['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          setState(() {
+            _realRating = (data['average_rating'] as num?)?.toDouble();
+            _realReviewsCount = data['total_reviews'] as int?;
+          });
+        }
+      }
+    } catch (e) {
+      // Lỗi không ảnh hưởng đến hiển thị, chỉ log
+      print('Error loading rating stats: $e');
     }
   }
 
@@ -320,14 +348,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       // Nếu cache không có data, fallback về ApiService
       List<RelatedProduct>? relatedProducts;
       if (relatedProductsData == null || relatedProductsData.isEmpty) {
-        print('🔄 Cache miss, fetching related products from ApiService...');
+      
         relatedProducts = await _apiService.getRelatedProducts(
           productId: widget.productId!,
           limit: 8,
           type: 'auto',
         );
       } else {
-        print('🔗 Using cached related products data');
+      
         // Convert cached data to RelatedProduct list
         relatedProducts = relatedProductsData
             .map((data) => RelatedProduct.fromJson(data))
@@ -350,7 +378,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           _isLoadingRelatedProducts = false;
         });
       }
-      print('❌ Lỗi khi lấy sản phẩm liên quan: $e');
+     
     }
   }
 
@@ -387,7 +415,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // Xử lý MUA NGAY cho sản phẩm có biến thể
   void _handleBuyNow(ProductVariant variant, int quantity) {
-    print('🛒 MUA NGAY - Variant: ${variant.name}, Quantity: $quantity');
+   
     
     final product = _productDetail!;
     
@@ -404,8 +432,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : (widget.initialShopName ?? 'Unknown Shop'),
       addedAt: DateTime.now(),
     );
-    
-    print('🛒 Adding to cart: ${cartItem.name}');
     _cartService.addItem(cartItem);
     
     // Hiển thị thông báo an toàn sau frame
@@ -459,8 +485,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   // Xử lý MUA NGAY cho sản phẩm không có biến thể
   void _handleBuyNowSimple(ProductDetail product, int quantity) {
-    print('🛒 MUA NGAY SIMPLE - Product: ${product.name}, Quantity: $quantity');
-    
+   
     // Thêm sản phẩm vào giỏ hàng
     final cartItem = CartItem(
       id: product.id,
@@ -473,8 +498,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : (widget.initialShopName ?? 'Unknown Shop'),
       addedAt: DateTime.now(),
     );
-    
-    print('🛒 Adding to cart: ${cartItem.name}');
+
     _cartService.addItem(cartItem);
     
     _showSnack('Đã thêm ${product.name} vào giỏ hàng', background: Colors.green);
@@ -586,8 +610,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           );
         },
         errorBuilder: (context, error, stackTrace) {
-          print('❌ Image load error: $error');
-          print('❌ Image URL that failed: $imageUrl');
+         
           return Container(
             color: Colors.grey[200],
             child: Center(
@@ -611,7 +634,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         imageUrl,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print('❌ Asset image error: $error');
+         
           return Container(
             color: Colors.grey[200],
             child: const Center(
@@ -688,6 +711,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final price = _selectedVariant?.price ?? product?.price ?? widget.price ?? 0;
     final oldPrice = _selectedVariant?.oldPrice ?? product?.oldPrice;
     return Scaffold(
+      backgroundColor: Colors.white,
       bottomNavigationBar: BottomActions(
         price: price,
         shopId: int.tryParse(_productDetail?.shopId ?? '0'),
@@ -1111,30 +1135,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       couponCode: product!.couponCode,
                       couponDetails: product.couponDetails,
                     ),
-                  const SizedBox(height: 20),
-                  Builder(
-                    builder: (context) {
-                      // Generate fake reviews và rating
-                      if (product?.id != null) {
-                        final productId = product!.id;
-                        final fakeReviews = FakeReviewGenerator.generateFakeReviews(productId);
-                        final fakeRating = FakeReviewGenerator.calculateAverageRating(fakeReviews);
-                        final fakeReviewCount = FakeReviewGenerator.calculateReviewCount(productId);
-                        
-                        return RatingPreview(
-                          rating: fakeRating,
-                          reviewCount: fakeReviewCount,
-                          productId: productId,
-                        );
-                      }
-                      return const RatingPreview();
-                    },
-                  ),
-                  const SizedBox(height: 12),
                 ],
               ),
             ),
           ),
+          // Hiển thị đánh giá thật - full width (tách ra khỏi padding)
+          if (product?.reviews != null && (product!.reviews as List).isNotEmpty)
+            SliverToBoxAdapter(
+              child: ProductReviewsSection(
+                reviews: product.reviews as List<Map<String, dynamic>>,
+                productId: product.id,
+                totalReviews: _realReviewsCount ?? product.reviewsCount, // Ưu tiên dữ liệu thật từ product_reviews API
+                rating: _realRating ?? product.rating, // Ưu tiên dữ liệu thật từ product_reviews API
+              ),
+            ),
           ShopBar(
             shopName: product?.shopNameFromInfo,
             shopAvatar: product?.shopAvatar,

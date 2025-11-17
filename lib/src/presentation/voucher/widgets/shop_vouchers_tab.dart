@@ -49,10 +49,10 @@ class _ShopVouchersTabState extends State<ShopVouchersTab> {
         setState(() {
           _shops = shops;
         });
-        print('✅ Loaded ${_shops.length} shops');
+      
       }
     } catch (e) {
-      print('❌ Lỗi khi load shops: $e');
+    
     }
   }
 
@@ -70,11 +70,6 @@ class _ShopVouchersTabState extends State<ShopVouchersTab> {
         _isLoading = _currentPage == 1;
         _error = null;
       });
-
-      print('🔄 Loading vouchers - Shop: ${_selectedShopId ?? "All"}, Page: $_currentPage');
-
-      // Khi chọn shop cụ thể: lấy voucher của shop đó
-      // Khi chọn "Tất cả": lấy từng shop và gộp lại
       List<Voucher>? vouchers = [];
       if (_selectedShopId != null) {
         vouchers = await _cachedApiService.getShopVouchersCached(
@@ -84,17 +79,13 @@ class _ShopVouchersTabState extends State<ShopVouchersTab> {
           forceRefresh: isRefresh,
         );
       } else {
-        // Tối ưu: Sử dụng API để lấy tất cả voucher shop trong 1 lần gọi
-        print('🔄 Loading all shop vouchers...');
-        
-        // Gọi API với limit lớn để lấy tất cả voucher shop
+
         vouchers = await _cachedApiService.getShopVouchersCached(
           page: _currentPage,
           limit: 100, // Tăng limit để lấy nhiều voucher hơn
           forceRefresh: isRefresh,
         );
-        
-        print('📊 Total vouchers loaded: ${vouchers?.length ?? 0}');
+  
       }
       
       if (mounted) {

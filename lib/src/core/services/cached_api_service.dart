@@ -27,7 +27,6 @@ class CachedApiService {
   /// Khởi tạo service
   void initialize() {
     _cache.initialize();
-    print('✅ CachedApiService initialized');
   }
 
   /// Dispose service
@@ -65,13 +64,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cached = _cache.get<ShopDetail>(cacheKey);
       if (cached != null) {
-        print('🏪 Using cached shop detail for $shopId/$username');
         return cached;
       }
     }
 
     try {
-      print('🌐 Fetching shop detail from API for $shopId/$username...');
       final detail = await _apiService.getShopDetail(
         shopId: shopId,
         username: username,
@@ -85,14 +82,11 @@ class CachedApiService {
 
       if (detail != null) {
         _cache.set(cacheKey, detail, duration: cacheDuration ?? _defaultCacheDuration);
-        print('✅ Shop detail cached successfully for $shopId/$username');
       }
       return detail;
     } catch (e) {
-      print('❌ Error fetching shop detail: $e');
       final cached = _cache.get<ShopDetail>(cacheKey);
       if (cached != null) {
-        print('🔄 Using stale cache for shop detail $shopId/$username');
         return cached;
       }
       rethrow;
@@ -110,13 +104,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('📱 Using cached home banners');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching home banners from API...');
       final banners = await _apiService.getBanners(
         position: 'banner_index_mobile',
         limit: 10,
@@ -128,15 +120,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, bannersData, duration: cacheDuration ?? _defaultCacheDuration);
       
-      print('✅ Home banners cached successfully');
       return bannersData;
     } catch (e) {
-      print('❌ Error fetching home banners: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for home banners');
         return cachedData;
       }
       
@@ -173,13 +162,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached home flash sale');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching home flash sale from API for slot: $currentTimeline...');
       final flashSaleDeals = await _apiService.getFlashSaleDeals(
         timeSlot: currentTimeline,
         status: 'active',
@@ -192,15 +179,12 @@ class CachedApiService {
       // Lưu vào cache với thời gian ngắn hơn vì flash sale thay đổi nhanh
       _cache.set(cacheKey, flashSaleData, duration: cacheDuration ?? _shortCacheDuration);
       
-      print('✅ Home flash sale cached successfully');
       return flashSaleData;
     } catch (e) {
-      print('❌ Error fetching home flash sale: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for home flash sale');
         return cachedData;
       }
       
@@ -219,13 +203,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🤝 Using cached partner banners');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching partner banners from API...');
       final banners = await _apiService.getBanners(
         position: 'banner_doitac',
         limit: 10,
@@ -237,15 +219,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, bannersData, duration: cacheDuration ?? _longCacheDuration);
       
-      print('✅ Partner banners cached successfully');
       return bannersData;
     } catch (e) {
-      print('❌ Error fetching partner banners: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for partner banners');
         return cachedData;
       }
       
@@ -264,13 +243,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🏷️ Using cached featured brands');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching featured brands from API...');
       final brands = await _apiService.getFeaturedBrands(
         getAll: true, // Lấy tất cả thương hiệu
         sort: 'order',
@@ -282,15 +259,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, brandsData, duration: cacheDuration ?? _longCacheDuration);
       
-      print('✅ Featured brands cached successfully');
       return brandsData;
     } catch (e) {
-      print('❌ Error fetching featured brands: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for featured brands');
         return cachedData;
       }
       
@@ -319,30 +293,24 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('💡 Using cached home suggestions${userId != null ? " for user $userId" : ""}');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching home suggestions from API${userId != null ? " (personalized for user $userId)" : ""}...');
       
       // Nếu có userId, sử dụng personalized suggestions (user_based)
       // Nếu không có userId, sử dụng home_suggest như cũ
       List<ProductSuggest>? suggestions;
       
       if (userId != null) {
-        print('🔍 Gọi API với type=user_based và user_id=$userId');
         suggestions = await _apiService.getProductSuggestions(
           type: 'user_based',
           userId: userId,
           limit: limit,
         );
-        print('📦 API trả về ${suggestions?.length ?? 0} sản phẩm cho user $userId');
       } else {
-        print('🔍 Gọi API với type=home_suggest (user chưa đăng nhập)');
         suggestions = await _apiService.getProductSuggests(limit: limit);
-        print('📦 API trả về ${suggestions?.length ?? 0} sản phẩm gợi ý chung');
       }
       
       // Convert ProductSuggest to Map
@@ -351,15 +319,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, suggestionsData, duration: cacheDuration ?? _defaultCacheDuration);
       
-      print('✅ Home suggestions cached successfully${userId != null ? " (personalized)" : ""}');
       return suggestionsData;
     } catch (e) {
-      print('❌ Error fetching home suggestions: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for home suggestions');
         return cachedData;
       }
       
@@ -388,13 +353,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('📂 Using cached category products');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching category products from API...');
       // Note: Cần implement method getCategoryProducts trong ApiService
       // Tạm thời return empty list
       final products = <Map<String, dynamic>>[];
@@ -402,15 +365,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, products, duration: cacheDuration ?? _defaultCacheDuration);
       
-      print('✅ Category products cached successfully');
       return products;
     } catch (e) {
-      print('❌ Error fetching category products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for category products');
         return cachedData;
       }
       
@@ -434,13 +394,11 @@ class CachedApiService {
       _cache.remove(key);
     }
     
-    print('🧹 Cleared cache pattern: $pattern (${keysToRemove.length} entries)');
   }
 
   /// Xóa tất cả cache
   void clearAllCache() {
     _cache.clear();
-    print('🧹 Cleared all cache');
   }
 
   /// Lấy thông tin cache (để debug)
@@ -468,13 +426,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('📂 Using cached categories list');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching categories list from API...');
       final categories = await _apiService.getCategoriesList(
         type: type,
         parentId: parentId ?? 0,
@@ -488,15 +444,12 @@ class CachedApiService {
       // Lưu vào cache với thời gian dài vì categories ít thay đổi
       _cache.set(cacheKey, categoriesData, duration: cacheDuration ?? _longCacheDuration);
       
-      print('✅ Categories list cached successfully');
       return categoriesData;
     } catch (e) {
-      print('❌ Error fetching categories list: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for categories list');
         return cachedData;
       }
       
@@ -524,13 +477,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('📦 Using cached category products (page $page)');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching category products from API (page $page)...');
       final response = await _apiService.getProductsByCategory(
         categoryId: categoryId,
         page: page,
@@ -541,15 +492,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, response, duration: cacheDuration ?? _defaultCacheDuration);
       
-      print('✅ Category products cached successfully (page $page)');
       return response;
     } catch (e) {
-      print('❌ Error fetching category products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for category products (page $page)');
         return cachedData;
       }
       
@@ -560,7 +508,6 @@ class CachedApiService {
   /// Xóa cache của category cụ thể
   void clearCategoryCache(int categoryId) {
     clearCachePattern('category_products:{"categoryId":$categoryId');
-    print('🧹 Cleared cache for category $categoryId');
   }
 
   /// Lấy affiliate dashboard với cache
@@ -577,13 +524,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('💰 Using cached affiliate dashboard');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching affiliate dashboard from API...');
       final dashboard = await _affiliateService.getDashboard(userId: userId);
       
       if (dashboard != null) {
@@ -595,18 +540,15 @@ class CachedApiService {
         
         // Lưu vào cache với thời gian ngắn vì dashboard thay đổi thường xuyên
         _cache.set(cacheKey, dashboardMap, duration: cacheDuration ?? _shortCacheDuration);
-        print('✅ Affiliate dashboard cached successfully');
         return dashboardMap;
       }
       
       return null;
     } catch (e) {
-      print('❌ Error fetching affiliate dashboard: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for affiliate dashboard');
         return cachedData;
       }
       
@@ -638,13 +580,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔗 Using cached affiliate links (page $page)');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching affiliate links from API (page $page)...');
       final result = await _affiliateService.getMyLinks(
         userId: userId,
         page: page,
@@ -657,17 +597,14 @@ class CachedApiService {
       if (result != null) {
         // Lưu vào cache
         _cache.set(cacheKey, result, duration: cacheDuration ?? _defaultCacheDuration);
-        print('✅ Affiliate links cached successfully (page $page)');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error fetching affiliate links: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for affiliate links (page $page)');
         return cachedData;
       }
       
@@ -699,15 +636,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('📦 Using cached affiliate products (page $page)');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching affiliate products from API (page $page)...');
-      print('🔍 Cache key: $cacheKey');
-      print('🔍 Parameters: userId=$userId, page=$page, limit=$limit, search=$search, sortBy=$sortBy, onlyFollowing=$onlyFollowing');
       
       final result = await _affiliateService.getProducts(
         userId: userId,
@@ -718,28 +651,19 @@ class CachedApiService {
         onlyFollowing: onlyFollowing,
       );
       
-      print('🔍 API result: $result');
-      print('🔍 API result type: ${result.runtimeType}');
-      print('🔍 API result is null: ${result == null}');
-      print('🔍 API result isEmpty: ${result?.isEmpty}');
       
       if (result != null) {
-        print('🔍 Products in result: ${result['products']?.length ?? 0}');
         // Lưu vào cache
         _cache.set(cacheKey, result, duration: cacheDuration ?? _defaultCacheDuration);
-        print('✅ Affiliate products cached successfully (page $page)');
       } else {
-        print('❌ API returned null result');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error fetching affiliate products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for affiliate products (page $page)');
         return cachedData;
       }
       
@@ -752,19 +676,16 @@ class CachedApiService {
     clearCachePattern('affiliate_dashboard:{"userId":$userId');
     clearCachePattern('affiliate_links:{"userId":$userId');
     clearCachePattern('affiliate_products:{"userId":$userId');
-    print('🧹 Cleared cache for affiliate user $userId');
   }
 
   /// Xóa cache của affiliate links cụ thể
   void clearAffiliateLinksCache(int userId) {
     clearCachePattern('affiliate_links:{"userId":$userId');
-    print('🧹 Cleared affiliate links cache for user $userId');
   }
 
   /// Xóa cache của affiliate products cụ thể
   void clearAffiliateProductsCache(int userId) {
     clearCachePattern('affiliate_products:{"userId":$userId');
-    print('🧹 Cleared affiliate products cache for user $userId');
   }
 
   /// Xóa tất cả cache của affiliate
@@ -772,7 +693,6 @@ class CachedApiService {
     clearCachePattern('affiliate_dashboard');
     clearCachePattern('affiliate_links');
     clearCachePattern('affiliate_products');
-    print('🧹 Cleared all affiliate cache');
   }
 
   /// Lấy chi tiết sản phẩm với cache
@@ -791,29 +711,23 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedProduct = _cache.get<ProductDetail>(cacheKey);
       if (cachedProduct != null) {
-        print('📦 Using cached product detail for ID: $productId, userId: $userId');
         return cachedProduct;
       }
     }
 
     try {
-      print('🌐 Fetching product detail from API for ID: $productId, userId: $userId...');
       final product = await _apiService.getProductDetail(productId, userId: userId);
       
       // Lưu trực tiếp ProductDetail object vào cache
       if (product != null) {
         _cache.set(cacheKey, product, duration: cacheDuration ?? _longCacheDuration);
-        print('✅ Product detail cached successfully for ID: $productId, userId: $userId');
       }
       
       return product;
     } catch (e) {
-      // print('❌ Error fetching product detail: $e');
-      
-      // Fallback về cache cũ nếu có
+    
       final cachedProduct = _cache.get<ProductDetail>(cacheKey);
       if (cachedProduct != null) {
-        print('🔄 Using stale cache for product detail ID: $productId, userId: $userId');
         return cachedProduct;
       }
       
@@ -837,13 +751,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🏪 Using cached same shop products for product ID: $productId');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching same shop products from API for product ID: $productId...');
       final response = await _apiService.getProductsSameShop(
         productId: productId,
         limit: limit,
@@ -852,15 +764,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, response, duration: cacheDuration ?? _defaultCacheDuration);
       
-      print('✅ Same shop products cached successfully for product ID: $productId');
       return response;
     } catch (e) {
-      print('❌ Error fetching same shop products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for same shop products ID: $productId');
         return cachedData;
       }
       
@@ -886,13 +795,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔗 Using cached related products for product ID: $productId');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching related products from API for product ID: $productId...');
       final relatedProducts = await _apiService.getRelatedProducts(
         productId: productId,
         limit: limit,
@@ -905,15 +812,12 @@ class CachedApiService {
       // Lưu vào cache
       _cache.set(cacheKey, relatedProductsData, duration: cacheDuration ?? _defaultCacheDuration);
       
-      print('✅ Related products cached successfully for product ID: $productId');
       return relatedProductsData;
     } catch (e) {
-      print('❌ Error fetching related products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for related products ID: $productId');
         return cachedData;
       }
       
@@ -926,7 +830,6 @@ class CachedApiService {
     clearCachePattern('product_detail:{"id":$productId');
     clearCachePattern('same_shop_products:{"productId":$productId');
     clearCachePattern('related_products:{"productId":$productId');
-    print('🧹 Cleared cache for product $productId');
   }
 
   /// Xóa tất cả cache của products
@@ -934,7 +837,6 @@ class CachedApiService {
     clearCachePattern(CacheKeys.productDetail);
     clearCachePattern(CacheKeys.sameShopProducts);
     clearCachePattern(CacheKeys.relatedProducts);
-    print('🧹 Cleared all product cache');
   }
 
   /// Force refresh tất cả cache của home
@@ -956,7 +858,6 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🎯 Using cached banner products${viTriHienThi != null ? " for position: $viTriHienThi" : ""}');
         
         // Parse cached data back to Map<String, BannerProducts?>
         try {
@@ -988,14 +889,12 @@ class CachedApiService {
           }
           return result;
         } catch (e) {
-          print('❌ Error parsing cached banner products: $e');
           // Fall through to fetch from API
         }
       }
     }
 
     try {
-      print('🌐 Fetching banner products from API${viTriHienThi != null ? " for position: $viTriHienThi" : ""}...');
       final result = await _apiService.getBannerProducts(viTriHienThi: viTriHienThi);
       
       if (result != null) {
@@ -1012,17 +911,14 @@ class CachedApiService {
         // Lưu vào cache
         _cache.set(cacheKey, cacheData, duration: cacheDuration ?? _defaultCacheDuration);
         
-        print('✅ Banner products cached successfully${viTriHienThi != null ? " for position: $viTriHienThi" : ""}');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error fetching banner products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for banner products');
         try {
           final result = <String, BannerProducts?>{};
           if (viTriHienThi != null && viTriHienThi.isNotEmpty) {
@@ -1050,7 +946,6 @@ class CachedApiService {
           }
           return result;
         } catch (parseError) {
-          print('❌ Error parsing stale cache: $parseError');
         }
       }
       
@@ -1059,7 +954,6 @@ class CachedApiService {
   }
 
   Future<void> refreshHomeCache() async {
-    print('🔄 Force refreshing home cache...');
     
     try {
       await Future.wait([
@@ -1070,9 +964,7 @@ class CachedApiService {
         getBannerProductsCached(forceRefresh: true),
       ]);
       
-      print('✅ Home cache refreshed successfully');
     } catch (e) {
-      print('❌ Error refreshing home cache: $e');
     }
   }
 
@@ -1087,13 +979,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🚚 Using cached freeship products');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching freeship products from API...');
       final products = await _apiService.getFreeShipProducts();
       
       // Convert FreeShipProduct list to Map list for caching
@@ -1102,15 +992,12 @@ class CachedApiService {
       // Lưu vào cache với thời gian dài vì freeship products ít thay đổi
       _cache.set(cacheKey, productsData, duration: cacheDuration ?? _longCacheDuration);
       
-      print('✅ Freeship products cached successfully');
       return productsData;
     } catch (e) {
-      print('❌ Error fetching freeship products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for freeship products');
         return cachedData;
       }
       
@@ -1121,7 +1008,6 @@ class CachedApiService {
   /// Xóa cache của freeship products
   void clearFreeshipCache() {
     _cache.remove(CacheKeys.freeshipProducts);
-    print('🧹 Cleared freeship products cache');
   }
 
   /// Tìm kiếm sản phẩm với cache
@@ -1145,15 +1031,12 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔍 Using cached search results for keyword: "$keyword" (page $page)');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching search results from API for keyword: "$keyword" (page $page)...');
       if (userId != null) {
-        print('👤 Search with user_id: $userId - will save search behavior');
       }
       
       final result = await _apiService.searchProducts(
@@ -1166,15 +1049,12 @@ class CachedApiService {
       // Lưu vào cache với thời gian ngắn vì search results thay đổi thường xuyên
       _cache.set(cacheKey, result, duration: cacheDuration ?? _shortCacheDuration);
       
-      print('✅ Search results cached successfully for keyword: "$keyword" (page $page)');
       return result;
     } catch (e) {
-      print('❌ Error fetching search results: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for search keyword: "$keyword" (page $page)');
         return cachedData;
       }
       
@@ -1198,13 +1078,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<String>>(cacheKey);
       if (cachedData != null) {
-        print('💡 Using cached search suggestions for keyword: "$keyword"');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching search suggestions from API for keyword: "$keyword"...');
       final suggestions = await _apiService.getSearchSuggestions(
         keyword: keyword,
         limit: limit,
@@ -1213,15 +1091,12 @@ class CachedApiService {
       // Lưu vào cache với thời gian ngắn vì suggestions thay đổi thường xuyên
       _cache.set(cacheKey, suggestions, duration: cacheDuration ?? _shortCacheDuration);
       
-      print('✅ Search suggestions cached successfully for keyword: "$keyword"');
       return suggestions;
     } catch (e) {
-      print('❌ Error fetching search suggestions: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<String>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for search suggestions keyword: "$keyword"');
         return cachedData;
       }
       
@@ -1233,14 +1108,12 @@ class CachedApiService {
   void clearSearchCache(String keyword) {
     clearCachePattern('search_products:{"keyword":"$keyword"');
     clearCachePattern('search_suggestions:{"keyword":"$keyword"');
-    print('🧹 Cleared search cache for keyword: "$keyword"');
   }
 
   /// Xóa tất cả cache của search
   void clearAllSearchCache() {
     clearCachePattern(CacheKeys.searchProducts);
     clearCachePattern(CacheKeys.searchSuggestions);
-    print('🧹 Cleared all search cache');
   }
 
   /// Lấy flash sale deals với cache
@@ -1261,13 +1134,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached flash sale deals for timeSlot: $timeSlot');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching flash sale deals from API for timeSlot: $timeSlot...');
       final deals = await _apiService.getFlashSaleDeals(
         timeSlot: timeSlot,
         status: status,
@@ -1280,15 +1151,12 @@ class CachedApiService {
       // Lưu vào cache với thời gian ngắn vì flash sale thay đổi thường xuyên
       _cache.set(cacheKey, dealsData, duration: cacheDuration ?? _shortCacheDuration);
       
-      print('✅ Flash sale deals cached successfully for timeSlot: $timeSlot');
       return dealsData;
     } catch (e) {
-      print('❌ Error fetching flash sale deals: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for flash sale deals timeSlot: $timeSlot');
         return cachedData;
       }
       
@@ -1299,13 +1167,11 @@ class CachedApiService {
   /// Xóa cache của flash sale cụ thể
   void clearFlashSaleCache(String timeSlot) {
     clearCachePattern('flash_sale_deals:{"timeSlot":"$timeSlot"');
-    print('🧹 Cleared flash sale cache for timeSlot: $timeSlot');
   }
 
   /// Xóa tất cả cache của flash sale
   void clearAllFlashSaleCache() {
     clearCachePattern(CacheKeys.flashSaleDeals);
-    print('🧹 Cleared all flash sale cache');
   }
 
   /// Lấy platform vouchers với cache
@@ -1324,13 +1190,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedVouchers = _cache.get<List<Voucher>>(cacheKey);
       if (cachedVouchers != null) {
-        print('🎫 Using cached platform vouchers for page: $page');
         return cachedVouchers;
       }
     }
 
     try {
-      print('🌐 Fetching platform vouchers from API for page: $page...');
       final vouchers = await _apiService.getVouchers(
         type: 'platform',
         page: page,
@@ -1340,17 +1204,14 @@ class CachedApiService {
       // Lưu vào cache với thời gian ngắn vì voucher thay đổi thường xuyên
       if (vouchers != null) {
         _cache.set(cacheKey, vouchers, duration: cacheDuration ?? _shortCacheDuration);
-        print('✅ Platform vouchers cached successfully for page: $page');
       }
       
       return vouchers;
     } catch (e) {
-      print('❌ Error fetching platform vouchers: $e');
       
       // Fallback về cache cũ nếu có
       final cachedVouchers = _cache.get<List<Voucher>>(cacheKey);
       if (cachedVouchers != null) {
-        print('🔄 Using stale cache for platform vouchers page: $page');
         return cachedVouchers;
       }
       
@@ -1376,13 +1237,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedVouchers = _cache.get<List<Voucher>>(cacheKey);
       if (cachedVouchers != null) {
-        print('🏪 Using cached shop vouchers for shopId: $shopId, page: $page');
         return cachedVouchers;
       }
     }
 
     try {
-      print('🌐 Fetching shop vouchers from API for shopId: $shopId, page: $page...');
       final vouchers = await _apiService.getVouchers(
         type: 'shop',
         shopId: shopId != null ? int.tryParse(shopId) : null,
@@ -1393,17 +1252,14 @@ class CachedApiService {
       // Lưu vào cache với thời gian ngắn vì voucher thay đổi thường xuyên
       if (vouchers != null) {
         _cache.set(cacheKey, vouchers, duration: cacheDuration ?? _shortCacheDuration);
-        print('✅ Shop vouchers cached successfully for shopId: $shopId, page: $page');
       }
       
       return vouchers;
     } catch (e) {
-      print('❌ Error fetching shop vouchers: $e');
       
       // Fallback về cache cũ nếu có
       final cachedVouchers = _cache.get<List<Voucher>>(cacheKey);
       if (cachedVouchers != null) {
-        print('🔄 Using stale cache for shop vouchers shopId: $shopId, page: $page');
         return cachedVouchers;
       }
       
@@ -1422,29 +1278,24 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedShops = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedShops != null) {
-        print('🏪 Using cached voucher shops');
         return cachedShops;
       }
     }
 
     try {
-      print('🌐 Fetching voucher shops from API...');
       final shops = await _apiService.getShopsWithVouchers();
       
       // Lưu vào cache với thời gian dài vì danh sách shop ít thay đổi
       if (shops != null) {
         _cache.set(cacheKey, shops, duration: cacheDuration ?? _longCacheDuration);
-        print('✅ Voucher shops cached successfully');
       }
       
       return shops;
     } catch (e) {
-      print('❌ Error fetching voucher shops: $e');
       
       // Fallback về cache cũ nếu có
       final cachedShops = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedShops != null) {
-        print('🔄 Using stale cache for voucher shops');
         return cachedShops;
       }
       
@@ -1455,31 +1306,26 @@ class CachedApiService {
   /// Xóa cache của platform vouchers cụ thể
   void clearPlatformVoucherCache(int page) {
     clearCachePattern('platform_vouchers:{"page":$page"');
-    print('🧹 Cleared platform voucher cache for page: $page');
   }
 
   /// Xóa tất cả cache của platform vouchers
   void clearAllPlatformVoucherCache() {
     clearCachePattern(CacheKeys.platformVouchers);
-    print('🧹 Cleared all platform voucher cache');
   }
 
   /// Xóa cache của shop vouchers cụ thể
   void clearShopVoucherCache(String? shopId, int page) {
     clearCachePattern('shop_vouchers:{"shopId":"$shopId","page":$page"');
-    print('🧹 Cleared shop voucher cache for shopId: $shopId, page: $page');
   }
 
   /// Xóa tất cả cache của shop vouchers
   void clearAllShopVoucherCache() {
     clearCachePattern('shop_vouchers');
-    print('🧹 Cleared all shop voucher cache');
   }
 
   /// Xóa cache của voucher shops
   void clearVoucherShopsCache() {
     _cache.remove(CacheKeys.voucherShops);
-    print('🧹 Cleared voucher shops cache');
   }
 
   /// Xóa tất cả cache của voucher
@@ -1487,7 +1333,6 @@ class CachedApiService {
     clearCachePattern(CacheKeys.platformVouchers);
     clearCachePattern('shop_vouchers');
     _cache.remove(CacheKeys.voucherShops);
-    print('🧹 Cleared all voucher cache');
   }
 
   // =============== FAVORITE PRODUCTS ===============
@@ -1512,13 +1357,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('❤️ Using cached favorite products (page $page)');
         return cachedData;
       }
     }
 
     try {
-      print('🌐 Fetching favorite products from API (page $page)...');
       final result = await _apiService.getFavoriteProducts(
         userId: userId,
         page: page,
@@ -1529,17 +1372,14 @@ class CachedApiService {
       if (result != null) {
         // Lưu vào cache với thời gian ngắn vì favorite có thể thay đổi thường xuyên
         _cache.set(cacheKey, result, duration: cacheDuration ?? _shortCacheDuration);
-        print('✅ Favorite products cached successfully (page $page)');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error fetching favorite products: $e');
       
       // Fallback về cache cũ nếu có
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('🔄 Using stale cache for favorite products (page $page)');
         return cachedData;
       }
       
@@ -1561,12 +1401,10 @@ class CachedApiService {
       if (result != null && result['success'] == true) {
         // Xóa cache của favorite products để refresh
         clearFavoriteProductsCache(userId);
-        print('✅ Added favorite product and cleared cache');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error adding favorite product: $e');
       rethrow;
     }
   }
@@ -1585,12 +1423,10 @@ class CachedApiService {
       if (result != null && result['success'] == true) {
         // Xóa cache của favorite products để refresh
         clearFavoriteProductsCache(userId);
-        print('✅ Removed favorite product and cleared cache');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error removing favorite product: $e');
       rethrow;
     }
   }
@@ -1609,12 +1445,10 @@ class CachedApiService {
       if (result != null && result['success'] == true) {
         // Xóa cache của favorite products để refresh
         clearFavoriteProductsCache(userId);
-        print('✅ Toggled favorite product and cleared cache');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error toggling favorite product: $e');
       rethrow;
     }
   }
@@ -1622,13 +1456,11 @@ class CachedApiService {
   /// Xóa cache của favorite products cho user cụ thể
   void clearFavoriteProductsCache(int userId) {
     clearCachePattern('favorite_products:{"userId":$userId');
-    print('🧹 Cleared favorite products cache for user: $userId');
   }
 
   /// Xóa tất cả cache của favorite products
   void clearAllFavoriteProductsCache() {
     clearCachePattern(CacheKeys.favoriteProducts);
-    print('🧹 Cleared all favorite products cache');
   }
 
   /// Lấy sản phẩm shop với pagination và cache
@@ -1651,25 +1483,19 @@ class CachedApiService {
       'searchQuery': searchQuery ?? '',
     });
     
-    print('🔍 [CachedApiService] Cache key: $cacheKey');
-    print('🔍 [CachedApiService] Search query in cache key: "$searchQuery"');
     
     // Kiểm tra cache trước - nhưng không dùng cache khi có search query để đảm bảo kết quả mới nhất
     if (!forceRefresh && (searchQuery == null || searchQuery.isEmpty) && _cache.has(cacheKey)) {
       final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached shop products for page: $page (no search query)');
         return cachedData;
       }
     }
     
     if (searchQuery != null && searchQuery.isNotEmpty) {
-      print('🔍 [CachedApiService] Force refresh cache for search query: "$searchQuery"');
     }
 
     try {
-      print('🔄 Fetching shop products from API for page: $page');
-      print('🔍 [CachedApiService] Search query: "$searchQuery"');
       final result = await _apiService.getShopProductsPaginated(
         shopId: shopId,
         page: page,
@@ -1681,7 +1507,6 @@ class CachedApiService {
       
       if (result != null) {
         final products = result['products'] as List? ?? [];
-        print('🔍 [CachedApiService] API returned ${products.length} products');
       }
       
       if (result != null) {
@@ -1690,12 +1515,10 @@ class CachedApiService {
           cacheKey,
           result,
         );
-        print('💾 Cached shop products for page: $page');
       }
       
       return result;
     } catch (e) {
-      print('❌ Error fetching shop products: $e');
       rethrow;
     }
   }
@@ -1703,7 +1526,6 @@ class CachedApiService {
   /// Xóa cache của shop products
   void clearShopProductsCache(int shopId) {
     clearCachePattern('shop_products_paginated:{"shopId":$shopId');
-    print('🧹 Cleared shop products cache for shop: $shopId');
   }
 
   /// Lấy flash sales của shop với cache riêng
@@ -1719,13 +1541,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached shop flash sales');
         return cachedData;
       }
     }
 
     try {
-      print('🔄 Fetching shop flash sales from API');
       final result = await _apiService.getShopDetail(
         shopId: shopId,
         includeProducts: 0,
@@ -1751,13 +1571,11 @@ class CachedApiService {
           cacheKey,
           flashSales,
         );
-        print('💾 Cached shop flash sales');
         return flashSales;
       }
       
       return [];
     } catch (e) {
-      print('❌ Error fetching shop flash sales: $e');
       return [];
     }
   }
@@ -1775,13 +1593,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached shop vouchers');
         return cachedData;
       }
     }
 
     try {
-      print('🔄 Fetching shop vouchers from API');
       final result = await _apiService.getShopDetail(
         shopId: shopId,
         includeProducts: 0,
@@ -1818,13 +1634,11 @@ class CachedApiService {
           cacheKey,
           vouchers,
         );
-        print('💾 Cached shop vouchers');
         return vouchers;
       }
       
       return [];
     } catch (e) {
-      print('❌ Error fetching shop vouchers: $e');
       return [];
     }
   }
@@ -1842,13 +1656,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached shop warehouses');
         return cachedData;
       }
     }
 
     try {
-      print('🔄 Fetching shop warehouses from API');
       final result = await _apiService.getShopDetail(
         shopId: shopId,
         includeProducts: 0,
@@ -1888,13 +1700,11 @@ class CachedApiService {
           cacheKey,
           warehouses,
         );
-        print('💾 Cached shop warehouses');
         return warehouses;
       }
       
       return [];
     } catch (e) {
-      print('❌ Error fetching shop warehouses: $e');
       return [];
     }
   }
@@ -1912,13 +1722,11 @@ class CachedApiService {
     if (!forceRefresh && _cache.has(cacheKey)) {
       final cachedData = _cache.get<List<Map<String, dynamic>>>(cacheKey);
       if (cachedData != null) {
-        print('⚡ Using cached shop categories');
         return cachedData;
       }
     }
 
     try {
-      print('🔄 Fetching shop categories from API');
       final result = await _apiService.getShopDetail(
         shopId: shopId,
         includeProducts: 0,
@@ -1952,13 +1760,11 @@ class CachedApiService {
           cacheKey,
           categories,
         );
-        print('💾 Cached shop categories');
         return categories;
       }
       
       return [];
     } catch (e) {
-      print('❌ Error fetching shop categories: $e');
       return [];
     }
   }
@@ -1971,6 +1777,5 @@ class CachedApiService {
     clearCachePattern('shop_warehouses:{"shopId":$shopId');
     clearCachePattern('shop_categories:{"shopId":$shopId');
     clearCachePattern('shop_detail:{"shopId":$shopId');
-    print('🧹 Cleared all cache for shop: $shopId');
   }
 }

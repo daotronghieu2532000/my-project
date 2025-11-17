@@ -78,7 +78,6 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
 
     try {
       // Không dùng cache, gọi API trực tiếp để đảm bảo data luôn mới nhất
-      print('🔄 Fetching from AffiliateService (no cache)...');
       final result = await _affiliateService.getMyLinks(
         userId: _currentUserId,
         page: _currentPage,
@@ -718,100 +717,70 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
 
   void _shareWithImage(AffiliateLink link, String shareText, String affiliateUrl) async {
     // Debug: Check if productImage is available
-    print('🚀 [SHARE] Starting share for link: ${link.productTitle}');
-    print('🔍 [DEBUG] Product Image URL: ${link.productImage}');
-    print('🔍 [DEBUG] Product Image Empty: ${link.productImage.isEmpty}');
-    print('🔍 [DEBUG] Product Title: ${link.productTitle}');
-    print('🔍 [DEBUG] Affiliate URL: $affiliateUrl');
-    print('📝 [SHARE] Share text length: ${shareText.length}');
     
     try {
       // Try to share with image if available
       if (link.productImage.isNotEmpty) {
-        print('🖼️ [SHARE] Attempting to share with image: ${link.productImage}');
         
         // Download image to temporary file
         final imageFile = await _downloadImageToTemp(link.productImage);
         if (imageFile != null) {
-          print('✅ [SHARE] Image downloaded successfully: ${imageFile.path}');
-          print('📊 [SHARE] Image file size: ${await imageFile.length()} bytes');
           
           // Method 1: Try sharing both together (preferred)
           try {
-            print('📤 [SHARE] Method 1: Sharing both together...');
             await Share.shareXFiles(
               [XFile(imageFile.path)],
               text: '$shareText\n\n$affiliateUrl',
               subject: link.productTitle,
             );
-            print('✅ [SHARE] Combined sharing completed');
             return;
           } catch (e) {
-            print('❌ [SHARE] Combined sharing failed: $e');
-            print('🔄 [SHARE] Trying sequential method...');
           }
           
           // Method 2: Try sharing text first, then image (fallback)
           try {
-            print('📤 [SHARE] Method 2: Sharing text first...');
             // Share text first
             await Share.share(
               '$shareText\n\n$affiliateUrl',
               subject: link.productTitle,
             );
-            print('✅ [SHARE] Text shared successfully');
             
             // Small delay then share image
-            print('⏳ [SHARE] Waiting 2 seconds before sharing image...');
             await Future.delayed(const Duration(milliseconds: 2000));
             
             // Share image separately
-            print('📤 [SHARE] Method 2: Sharing image separately...');
             await Share.shareXFiles(
               [XFile(imageFile.path)],
               text: '',
             );
-            print('✅ [SHARE] Image shared successfully');
-            print('✅ [SHARE] Sequential sharing completed');
             return;
           } catch (e) {
-            print('❌ [SHARE] Sequential sharing failed: $e');
-            print('🔄 [SHARE] Falling back to text-only...');
           }
         } else {
-          print('❌ [SHARE] Failed to download image, falling back to text-only');
         }
       } else {
-        print('⚠️ [SHARE] No image available, using text-only sharing');
       }
       
       // Fallback to text-only sharing
-      print('📤 [SHARE] Fallback: Text-only sharing...');
       Share.share(
         '$shareText\n\n$affiliateUrl',
         subject: link.productTitle,
       );
-      print('✅ [SHARE] Text-only sharing completed');
     } catch (e) {
-      print('❌ [SHARE] Error sharing: $e');
-      print('🔄 [SHARE] Final fallback: Text-only sharing...');
       // If image sharing fails, fallback to text-only
       Share.share(
         '$shareText\n\n$affiliateUrl',
         subject: link.productTitle,
       );
-      print('✅ [SHARE] Final fallback completed');
     }
   }
 
 
   Future<File?> _downloadImageToTemp(String imageUrl) async {
     try {
-      print('📥 [DOWNLOAD] Starting download: $imageUrl');
       
       // Validate URL
       if (!imageUrl.startsWith('http')) {
-        print('❌ [DOWNLOAD] Invalid URL format: $imageUrl');
         return null;
       }
       
@@ -824,9 +793,6 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
         },
       ).timeout(const Duration(seconds: 30));
       
-      print('📊 [DOWNLOAD] HTTP Status: ${response.statusCode}');
-      print('📊 [DOWNLOAD] Content-Type: ${response.headers['content-type']}');
-      print('📊 [DOWNLOAD] Content-Length: ${response.headers['content-length']}');
       
       if (response.statusCode == 200) {
         final tempDir = await getTemporaryDirectory();
@@ -835,23 +801,16 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
         await file.writeAsBytes(response.bodyBytes);
         
         final fileSize = await file.length();
-        print('✅ [DOWNLOAD] Image saved to: ${file.path}');
-        print('📊 [DOWNLOAD] File size: $fileSize bytes');
         
         // Validate file size
         if (fileSize < 100) {
-          print('⚠️ [DOWNLOAD] File size too small, might be corrupted');
           return null;
         }
         
         return file;
       } else {
-        print('❌ [DOWNLOAD] HTTP error: ${response.statusCode}');
-        print('❌ [DOWNLOAD] Response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
       }
     } catch (e) {
-      print('❌ [DOWNLOAD] Error downloading image: $e');
-      print('❌ [DOWNLOAD] Error type: ${e.runtimeType}');
     }
     return null;
   }

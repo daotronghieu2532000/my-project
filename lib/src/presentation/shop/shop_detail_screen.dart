@@ -182,13 +182,10 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
               );
             },
             onSearch: (keyword) {
-              print('🔍 [ShopDetailScreen] Search keyword received: "$keyword"');
-              print('🔍 [ShopDetailScreen] Old _searchKeyword: "$_searchKeyword"');
+            
               setState(() {
                 _searchKeyword = keyword;
               });
-              print('🔍 [ShopDetailScreen] New _searchKeyword: "$_searchKeyword"');
-              print('🔍 [ShopDetailScreen] TabBarView key will be: "tab_view_${widget.shopId ?? shopInfo.shopId}_$_searchKeyword"');
             },
           ),
           

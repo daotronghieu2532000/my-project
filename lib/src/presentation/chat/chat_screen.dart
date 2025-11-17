@@ -67,7 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startPolling() {
     _stopPolling();
-    print('🔄 [ChatScreen] Starting polling for new messages...');
     // ✅ Tăng interval từ 3s lên 5s để giảm tải server
     // 3s là quá nhanh và tốn băng thông
     _pollingTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
@@ -79,7 +78,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_pollingTimer != null) {
       _pollingTimer!.cancel();
       _pollingTimer = null;
-      print('⏹️ [ChatScreen] Stopped polling');
     }
   }
 
@@ -89,7 +87,6 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final response = await _chatService.getMessages(_phien!);
       if (response.success && response.messages.length > _lastMessageCount) {
-        print('📨 [ChatScreen] Polling found ${response.messages.length - _lastMessageCount} new messages');
         _lastMessageCount = response.messages.length;
         
         // Get current user to determine isOwn for each message
@@ -119,7 +116,7 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       }
     } catch (e) {
-      print('❌ [ChatScreen] Polling error: $e');
+      // Polling error
     }
   }
 
@@ -240,41 +237,33 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // Set up Socket.io callbacks
     _socketIOService.onConnected = () {
-      print('🔌 [Socket.io] Connected successfully');
       if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
         setState(() { _isConnected = true; });
       // ✅ Dừng polling khi Socket.IO đã connect (realtime)
       _stopPolling();
-      print('✅ [ChatScreen] Stopped polling - using Socket.IO realtime');
     };
 
     _socketIOService.onDisconnected = () {
-      print('🔌 [Socket.io] Disconnected');
       if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
         setState(() { _isConnected = false; });
       // ✅ Start polling lại khi Socket.IO disconnect (fallback)
       _startPolling();
-      print('🔄 [ChatScreen] Started polling - Socket.IO disconnected');
     };
 
     _socketIOService.onError = (error) {
-      print('❌ [Socket.io] Error: $error');
       if (!mounted) return; // ✅ Không làm gì nếu widget đã dispose
         setState(() { _isConnected = false; });
       // ✅ Start polling khi Socket.IO có lỗi (fallback)
       if (!_socketIOService.isConnected) {
         _startPolling();
-        print('🔄 [ChatScreen] Started polling - Socket.IO error');
       }
     };
 
     _socketIOService.onMessage = (message) {
-      print('📨 [Socket.io] Received message: $message');
       _handleSocketIOMessage(message);
     };
 
     // Connect to Socket.io
-    print('🔌 [Socket.io] Connecting to phien: $_phien');
     _socketIOService.connect(_phien!);
     
     // ✅ Chỉ start polling nếu Socket.IO chưa connect (fallback)
@@ -282,7 +271,6 @@ class _ChatScreenState extends State<ChatScreen> {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted && !_socketIOService.isConnected) {
     _startPolling();
-        print('🔄 [ChatScreen] Started polling - Socket.IO not connected yet');
       }
     });
   }
@@ -293,8 +281,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _handleNewMessage(Map<String, dynamic> message) async {
-    print('🔄 [ChatScreen] _handleNewMessage called with: $message');
-    
     // Socket.io có thể gửi message trực tiếp hoặc trong 'message' field
     // ✅ Kiểm tra nếu message['message'] là Map thì dùng nó, nếu là String thì dùng message
     Map<String, dynamic> messageData;
@@ -305,18 +291,13 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     
     if (messageData.isEmpty) {
-      print('❌ [ChatScreen] messageData is empty');
       return;
     }
-    
-    print('📝 [ChatScreen] Processing messageData: $messageData');
     
     // Get current user to determine if message is own
     final currentUser = await _authService.getCurrentUser();
     final senderId = int.tryParse(messageData['sender_id']?.toString() ?? messageData['customer_id']?.toString() ?? '0') ?? 0;
     final isOwn = currentUser != null && senderId == currentUser.userId;
-    
-    print('👤 [ChatScreen] Current user: ${currentUser?.userId}, Sender: $senderId, IsOwn: $isOwn');
     
     // Create ChatMessage object
     // ✅ Lấy content từ message hoặc content field
@@ -357,7 +338,6 @@ class _ChatScreenState extends State<ChatScreen> {
     
     // ✅ Nếu message đã tồn tại, bỏ qua
     if (isDuplicate) {
-      print('⚠️ [ChatScreen] Duplicate message detected, skipping: $content (id: $messageId, isOwn: $isOwn, senderId: $senderId)');
       return;
     }
     
@@ -374,12 +354,9 @@ class _ChatScreenState extends State<ChatScreen> {
       isOwn: isOwn,
     );
     
-    print('💬 [ChatScreen] Created ChatMessage: ${chatMessage.content}');
-    
     if (mounted) {
       setState(() {
         _messages.add(chatMessage);
-        print('📊 [ChatScreen] Total messages: ${_messages.length}');
       });
     }
     
@@ -474,12 +451,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final content = _messageController.text.trim();
     if (content.isEmpty || _isSending || _phien == null) return;
     
-    print('📤 [ChatScreen] Sending message: $content');
     setState(() { _isSending = true; });
     
     try {
       // Send via API first (to save to database)
-      print('🌐 [ChatScreen] Sending via API...');
       final response = await _chatService.sendMessage(
         phien: _phien!,
         content: content,
@@ -487,12 +462,10 @@ class _ChatScreenState extends State<ChatScreen> {
       );
       
       if (response.success) {
-        print('✅ [ChatScreen] API send successful');
         // Clear input
         _messageController.clear();
         
         // Also send via Socket.io for real-time
-        print('📡 [ChatScreen] Sending via Socket.io...');
         _socketIOService.sendMessage(content, senderType: 'customer');
         
         // Add message to UI immediately
@@ -512,7 +485,6 @@ class _ChatScreenState extends State<ChatScreen> {
         if (mounted) {
           setState(() {
             _messages.add(newMessage);
-            print('📊 [ChatScreen] Added message to UI, total: ${_messages.length}');
           });
         }
         
@@ -533,7 +505,6 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() { _isSending = false; });
       
     } catch (e) {
-      print('❌ [ChatScreen] Send message error: $e');
       setState(() { _isSending = false; });
       
       // Show error
@@ -1075,14 +1046,13 @@ class _ChatScreenState extends State<ChatScreen> {
       // Fix avatar URL - add base URL if it's a relative path
       if (!avatarUrl.startsWith('http')) {
         avatarUrl = 'https://socdo.vn$avatarUrl';
-        print('🔗 [ChatScreen] Fixed avatar URL: $avatarUrl');
       }
       return CircleAvatar(
         radius: 16,
         backgroundImage: NetworkImage(avatarUrl),
         backgroundColor: Colors.pink[100],
         onBackgroundImageError: (exception, stackTrace) {
-          print('❌ Error loading shop avatar: $exception');
+          // Error loading shop avatar
         },
       );
     }

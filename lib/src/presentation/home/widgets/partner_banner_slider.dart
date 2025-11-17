@@ -51,13 +51,13 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> with Automati
             _hasLoadedOnce = true; // Đánh dấu đã load
           });
           
-          // print('✅ Partner banners loaded from cache (${banners.length} banners)');
+        
         } else {
           // Fallback nếu không có cache
           setState(() {
             _isLoading = false;
           });
-          // print('⚠️ No cached partner banners');
+      
         }
       }
     } catch (e) {
@@ -66,7 +66,7 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> with Automati
           _isLoading = false;
         });
       }
-      // print('❌ Error loading partner banners from cache: $e');
+    
     }
   }
 
@@ -149,7 +149,7 @@ class _PartnerBannerSliderState extends State<PartnerBannerSlider> with Automati
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      // print('❌ Lỗi khi mở link banner: $e');
+    
     }
   }
 

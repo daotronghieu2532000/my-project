@@ -29,13 +29,13 @@ class SearchResult {
               final parsedProduct = SearchProduct.fromJson(product as Map<String, dynamic>);
               // Chỉ filter out sản phẩm có ID = 0 (không có ID)
               if (parsedProduct.id == 0) {
-                print('⚠️ Filtering out product with ID = 0');
+              
                 return null;
               }
-              print('✅ Parsed product: ${parsedProduct.name} (ID: ${parsedProduct.id})');
+            
               return parsedProduct;
             } catch (e) {
-              print('❌ Lỗi parse product: $e, product data: $product');
+           
               return null;
             }
           })
@@ -47,7 +47,7 @@ class SearchResult {
             try {
               return ShopSuggestion.fromJson(shop as Map<String, dynamic>);
             } catch (e) {
-              print('❌ Lỗi parse shop: $e, shop data: $shop');
+            
               return null;
             }
           })

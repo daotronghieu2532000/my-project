@@ -21,12 +21,9 @@ class TokenManager {
       final expiryTime = _getTokenExpiry(token);
       if (expiryTime != null) {
         await prefs.setInt(_tokenExpiryKey, expiryTime.millisecondsSinceEpoch);
-        print('✅ Token được lưu, hết hạn: ${expiryTime.toString()}');
       } else {
-        print('⚠️ Không thể decode thời gian hết hạn của token');
       }
     } catch (e) {
-      print('❌ Lỗi khi lưu token: $e');
     }
   }
 
@@ -36,7 +33,6 @@ class TokenManager {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString(_tokenKey);
     } catch (e) {
-      print('❌ Lỗi khi lấy token: $e');
       return null;
     }
   }
@@ -51,14 +47,12 @@ class TokenManager {
     try {
       final token = await getToken();
       if (token == null) {
-        print('⚠️ Token is null - user chưa đăng nhập');
         return null;
       }
       
       // Decode JWT payload
       final parts = token.split('.');
       if (parts.length != 3) {
-        print('⚠️ Token không đúng format (không phải JWT)');
         return null;
       }
       
@@ -72,7 +66,6 @@ class TokenManager {
       final payloadMap = json.decode(decodedPayload) as Map<String, dynamic>;
       
       // Debug: In ra toàn bộ payload để kiểm tra
-      print('🔍 JWT Payload: $payloadMap');
       
       // Thử lấy user_id từ nhiều vị trí có thể
       int? userId;
@@ -101,14 +94,11 @@ class TokenManager {
       }
       
       if (userId != null) {
-        print('✅ Lấy được userId từ token: $userId');
       } else {
-        print('⚠️ Không tìm thấy user_id trong token payload');
       }
       
       return userId;
     } catch (e) {
-      print('❌ Lỗi khi decode userId từ token: $e');
       return null;
     }
   }
@@ -123,12 +113,10 @@ class TokenManager {
       final isValid = now.isBefore(expiryTime.subtract(const Duration(minutes: 5))); // Buffer 5 phút
       
       if (!isValid) {
-        print('⚠️ Token đã hết hạn: ${expiryTime.toString()}');
       }
       
       return isValid;
     } catch (e) {
-      print('❌ Lỗi khi kiểm tra token: $e');
       return false;
     }
   }
@@ -148,9 +136,7 @@ class TokenManager {
         await prefs.commit();
       }
       
-      print('✅ Token đã được xóa');
     } catch (e) {
-      print('❌ Lỗi khi xóa token: $e');
     }
   }
 
@@ -190,7 +176,6 @@ class TokenManager {
       
       return null;
     } catch (e) {
-      print('❌ Lỗi khi decode JWT: $e');
       return null;
     }
   }
@@ -220,7 +205,6 @@ class TokenManager {
       final decoded = utf8.decode(base64Url.decode(payload));
       return jsonDecode(decoded) as Map<String, dynamic>;
     } catch (e) {
-      print('❌ Lỗi khi decode token payload: $e');
       return null;
     }
   }

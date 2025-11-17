@@ -52,7 +52,6 @@ class _AppReportScreenState extends State<AppReportScreen> {
     try {
       final token = await _apiService.getValidToken();
       if (token == null) {
-        print('❌ Không có token');
         return [];
       }
 
@@ -85,21 +84,16 @@ class _AppReportScreenState extends State<AppReportScreen> {
               final imageUrl = data['data']['image_url'] as String?;
               if (imageUrl != null && imageUrl.isNotEmpty) {
                 uploadedUrls.add(imageUrl);
-                print('✅ Upload success: $imageUrl');
               }
             }
           } else {
-            print('❌ Upload failed: ${response.statusCode} - ${response.body}');
           }
         } catch (e) {
-          print('❌ Lỗi upload image: $e');
         }
       }
     } catch (e) {
-      print('❌ Lỗi: $e');
     }
 
-    print('📤 Total uploaded: ${uploadedUrls.length}/${_selectedImages.length} images');
     return uploadedUrls;
   }
 

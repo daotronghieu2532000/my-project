@@ -68,15 +68,12 @@ class _ShopBannerHeaderState extends State<ShopBannerHeader> {
   }
 
   void _onSearchChanged(String value) {
-    print('🔍 [ShopBannerHeader] Search keyword changed: "$value"');
     
     // Cancel previous timer
     _debounceTimer?.cancel();
     
     // Debounce: chỉ search sau 500ms khi user ngừng gõ
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      print('🔍 [ShopBannerHeader] Debounce timer fired, navigating to search results with: "$value"');
-      
       // Nếu có từ khóa, điều hướng đến màn hình kết quả tìm kiếm
       if (value.trim().isNotEmpty) {
         Navigator.push(
@@ -94,7 +91,6 @@ class _ShopBannerHeaderState extends State<ShopBannerHeader> {
       // Vẫn gọi callback nếu có (để tương thích với code cũ)
       if (widget.onSearch != null) {
         widget.onSearch!(value);
-        print('🔍 [ShopBannerHeader] onSearch callback called with: "$value"');
       }
     });
   }

@@ -300,115 +300,40 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   Future<void> _refreshData() async {
-    final startTime = DateTime.now();
-    print('🔄 ========== BẮT ĐẦU REFRESH TRANG CHỦ ==========');
-    print('⏰ Thời gian: ${startTime.toString()}');
-    
     try {
       // Clear cache và load lại dữ liệu
-      print('🧹 Đang xóa cache home...');
       _cachedApiService.clearCachePattern('home_');
-      print('✅ Đã xóa cache home');
       
       // Lấy userId từ AuthService (user đã đăng nhập) để refresh personalized suggestions
-      print('👤 Đang lấy thông tin user...');
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
-      print('✅ User ID: ${userId ?? "null (chưa đăng nhập)"}');
-      
-      print('📡 Đang gọi các API refresh...');
-      final apiStartTime = DateTime.now();
       
       // Gọi từng API riêng để có thể debug từng cái
-      print('1️⃣ Đang refresh Home Banners...');
-      final bannersStart = DateTime.now();
       await _cachedApiService.getHomeBanners(forceRefresh: true);
-      print('✅ Home Banners hoàn thành (${DateTime.now().difference(bannersStart).inMilliseconds}ms)');
-      
-      print('2️⃣ Đang refresh Flash Sale...');
-      final flashSaleStart = DateTime.now();
       await _cachedApiService.getHomeFlashSale(forceRefresh: true);
-      print('✅ Flash Sale hoàn thành (${DateTime.now().difference(flashSaleStart).inMilliseconds}ms)');
-      
-      print('3️⃣ Đang refresh Partner Banners...');
-      final partnerBannersStart = DateTime.now();
       await _cachedApiService.getHomePartnerBanners(forceRefresh: true);
-      print('✅ Partner Banners hoàn thành (${DateTime.now().difference(partnerBannersStart).inMilliseconds}ms)');
-      
-      print('4️⃣ Đang refresh Featured Brands...');
-      final featuredBrandsStart = DateTime.now();
       await _cachedApiService.getHomeFeaturedBrands(forceRefresh: true);
-      print('✅ Featured Brands hoàn thành (${DateTime.now().difference(featuredBrandsStart).inMilliseconds}ms)');
-      
-      print('5️⃣ Đang refresh Home Suggestions...');
-      final suggestionsStart = DateTime.now();
       await _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true, userId: userId);
-      print('✅ Home Suggestions hoàn thành (${DateTime.now().difference(suggestionsStart).inMilliseconds}ms)');
       
-      print('6️⃣ Đang refresh Banner Products (3 vị trí)...');
-      final bannerProductsStart = DateTime.now();
       // Gọi riêng từng vị trí để đảm bảo lấy được dữ liệu (API không trả về đúng khi gọi chung)
-      final bannerProductsResults = await Future.wait([
+      await Future.wait([
         _cachedApiService.getBannerProductsCached(viTriHienThi: 'dau_trang', forceRefresh: true),
         _cachedApiService.getBannerProductsCached(viTriHienThi: 'giua_trang', forceRefresh: true),
         _cachedApiService.getBannerProductsCached(viTriHienThi: 'cuoi_trang', forceRefresh: true),
       ]);
-      final bannerProductsDuration = DateTime.now().difference(bannerProductsStart).inMilliseconds;
-      
-      // Kiểm tra kết quả từng vị trí
-      final dauTrang = bannerProductsResults[0]?['dau_trang'];
-      final giuaTrang = bannerProductsResults[1]?['giua_trang'];
-      final cuoiTrang = bannerProductsResults[2]?['cuoi_trang'];
-      
-      print('✅ Banner Products hoàn thành (${bannerProductsDuration}ms)');
-      if (dauTrang != null) {
-        print('   ✅ dau_trang: có dữ liệu (${dauTrang.products.length} sản phẩm)');
-      } else {
-        print('   ⚠️ dau_trang: null');
-      }
-      if (giuaTrang != null) {
-        print('   ✅ giua_trang: có dữ liệu (${giuaTrang.products.length} sản phẩm)');
-      } else {
-        print('   ⚠️ giua_trang: null');
-      }
-      if (cuoiTrang != null) {
-        print('   ✅ cuoi_trang: có dữ liệu (${cuoiTrang.products.length} sản phẩm)');
-      } else {
-        print('   ⚠️ cuoi_trang: null');
-      }
-      
-      final apiDuration = DateTime.now().difference(apiStartTime).inMilliseconds;
-      print('✅ Tất cả API hoàn thành (tổng: ${apiDuration}ms)');
       
       // Reload popup banner khi refresh
-      print('7️⃣ Đang reload Popup Banner...');
-      final popupStart = DateTime.now();
       await _loadPopupBanner();
-      print('✅ Popup Banner hoàn thành (${DateTime.now().difference(popupStart).inMilliseconds}ms)');
       
       // Trigger reload các widget con bằng cách thay đổi refreshKey
       if (mounted) {
-        print('🔄 Đang cập nhật UI (refreshKey: $_refreshKey -> ${_refreshKey + 1})...');
         setState(() {
           _refreshKey++;
         });
-        print('✅ UI đã được cập nhật');
-      } else {
-        print('⚠️ Widget không còn mounted, bỏ qua setState');
       }
       
-      final totalDuration = DateTime.now().difference(startTime);
-      print('✅ ========== REFRESH HOÀN TẤT ==========');
-      print('⏱️ Tổng thời gian: ${totalDuration.inMilliseconds}ms (${totalDuration.inSeconds}s)');
-      print('');
     } catch (e, stackTrace) {
-      final totalDuration = DateTime.now().difference(startTime);
-      print('❌ ========== LỖI KHI REFRESH ==========');
-      print('⏱️ Thời gian trước khi lỗi: ${totalDuration.inMilliseconds}ms');
-      print('❌ Lỗi: $e');
-      print('📋 Stack trace: $stackTrace');
-      print('❌ ======================================');
-      print('');
+      // Error refreshing data
     }
   }
 
