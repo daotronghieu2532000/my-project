@@ -299,38 +299,38 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
               );
             } : null,
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    fixedImage,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  fixedImage,
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
                     width: 80,
                     height: 80,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 80,
-                      height: 80,
-                      color: const Color(0xFFF5F5F5),
-                      child: const Icon(Icons.image_not_supported, size: 30),
-                    ),
+                    color: const Color(0xFFF5F5F5),
+                    child: const Icon(Icons.image_not_supported, size: 30),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        productName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      productName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                           color: productId != null ? Colors.blue : Colors.black87,
-                        ),
                       ),
+                    ),
                     if (variant.isNotEmpty) ...[
                       const SizedBox(height: 4),
                       Row(
@@ -511,41 +511,16 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                   itemCount: (review['images'] as List).length,
                   itemBuilder: (context, imageIndex) {
                     final img = (review['images'] as List)[imageIndex];
-                    final imgStr = img.toString();
-                    Widget imageWidget;
-                    
-                    // Nếu là base64
-                    if (imgStr.startsWith('data:image/')) {
-                      try {
-                        final base64String = imgStr.split(',').last;
-                        final imageBytes = base64Decode(base64String);
-                        imageWidget = Image.memory(
-                          imageBytes,
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 80,
-                            height: 80,
-                            color: const Color(0xFFF5F5F5),
-                            child: const Icon(Icons.image_not_supported, size: 20),
-                          ),
-                        );
-                      } catch (e) {
-                        imageWidget = Container(
-                          width: 80,
-                          height: 80,
-                          color: const Color(0xFFF5F5F5),
-                          child: const Icon(Icons.image_not_supported, size: 20),
-                        );
-                      }
-                    } else {
-                      // Nếu là URL
-                      final imageUrl = imgStr.startsWith('http')
-                          ? imgStr
-                          : 'https://socdo.vn${imgStr.startsWith('/') ? imgStr : '/$imgStr'}';
-                      imageWidget = Image.network(
-                        imageUrl,
+                  final imgStr = img.toString();
+                  Widget imageWidget;
+                  
+                  // Nếu là base64
+                  if (imgStr.startsWith('data:image/')) {
+                    try {
+                      final base64String = imgStr.split(',').last;
+                      final imageBytes = base64Decode(base64String);
+                      imageWidget = Image.memory(
+                        imageBytes,
                         width: 80,
                         height: 80,
                         fit: BoxFit.cover,
@@ -556,8 +531,33 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                           child: const Icon(Icons.image_not_supported, size: 20),
                         ),
                       );
+                    } catch (e) {
+                      imageWidget = Container(
+                        width: 80,
+                        height: 80,
+                        color: const Color(0xFFF5F5F5),
+                        child: const Icon(Icons.image_not_supported, size: 20),
+                      );
                     }
-                    
+                  } else {
+                    // Nếu là URL
+                    final imageUrl = imgStr.startsWith('http')
+                        ? imgStr
+                        : 'https://socdo.vn${imgStr.startsWith('/') ? imgStr : '/$imgStr'}';
+                    imageWidget = Image.network(
+                      imageUrl,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 80,
+                        height: 80,
+                        color: const Color(0xFFF5F5F5),
+                        child: const Icon(Icons.image_not_supported, size: 20),
+                      ),
+                    );
+                  }
+                  
                     return GestureDetector(
                       onTap: () {
                         // Chuyển đổi danh sách ảnh thành List<String>
@@ -584,11 +584,11 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                       child: Container(
                         margin: const EdgeInsets.only(right: 8),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: imageWidget,
+                    borderRadius: BorderRadius.circular(8),
+                    child: imageWidget,
                         ),
                       ),
-                    );
+                  );
                   },
                 ),
               ),
@@ -613,12 +613,12 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                         );
                       },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
+                      borderRadius: BorderRadius.circular(4),
                         border: Border.all(color: const Color.fromARGB(255, 0, 139, 253)),
-                      ),
+                    ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -630,9 +630,9 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                           SizedBox(width: 2),
                           Text(
                             'Đã mua',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
                               color: Color.fromARGB(255, 0, 139, 253),
                             ),
                           ),
@@ -673,8 +673,8 @@ class _ReviewHistoryScreenState extends State<ReviewHistoryScreen>
                           color: Colors.grey,
                         ),
                       ],
-                    ),
                   ),
+                ),
               ],
             ),
           ] else ...[

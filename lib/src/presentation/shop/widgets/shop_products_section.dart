@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/models/shop_detail.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../shared/widgets/product_badges.dart';
@@ -231,28 +230,7 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
     );
   }
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int productId, int price) {
-    final random = Random(productId);
-    final isExpensive = price >= 1000000;
-    
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(95) + 10);
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(90) + 15);
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
-
   Widget _buildProductCard(ShopProduct product, BuildContext context) {
-    final fakeData = _generateFakeData(product.id, product.price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -462,15 +440,15 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
                               ),
                     ],
                   ),
-                              // Rating and sold with fake data
-                  const SizedBox(height: 3),
+                              // Rating and sold - dữ liệu thật từ API
+                              const SizedBox(height: 3),
                               Row(
                                 children: [
                       Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
                                   const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                                    '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                                    _buildRatingSoldText(product),
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,
@@ -738,5 +716,22 @@ class _ShopProductsSectionState extends State<ShopProductsSection> {
       }
     }
     return false;
+  }
+
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText(ShopProduct product) {
+    final rating = product.rating;
+    final reviews = product.totalReviews;
+    final sold = product.sold;
+    
+    // Nếu có rating > 0, hiển thị rating và reviews
+    if (rating > 0 && reviews > 0) {
+      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else if (rating > 0) {
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else {
+      // Nếu không có rating, chỉ hiển thị sold
+      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
+    }
   }
 }

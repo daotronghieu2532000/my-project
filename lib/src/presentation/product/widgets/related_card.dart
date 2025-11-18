@@ -14,37 +14,12 @@ class RelatedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final products = [
-      {
-        'name': 'Kem tẩy lông Balea 125ml',
-        'currentPrice': '190.000₫',
-        'originalPrice': '239.000₫',
-        'discount': '-21%',
-        'rating': '4.8',
-        'sold': '5',
-        'image': 'lib/src/core/assets/images/product_1.png',
-      },
-      {
-        'name': 'Kem Chống Nắng TABAHA Sunscreen 60ml SPF50+ P...',
-        'currentPrice': '139.000₫',
-        'originalPrice': '219.000₫',
-        'discount': '-37%',
-        'rating': '5',
-        'sold': '3',
-        'image': 'lib/src/core/assets/images/product_2.png',
-      },
-      {
-        'name': 'Sữa Neut',
-        'currentPrice': '310.000₫',
-        'originalPrice': '340.000₫',
-        'discount': '-9%',
-        'rating': '5',
-        'sold': '2',
-        'image': 'lib/src/core/assets/images/product_3.png',
-      },
-    ];
+    // Nếu không có product data từ API, không hiển thị gì
+    if (product == null) {
+      return const SizedBox.shrink();
+    }
     
-    final productData = product ?? products[index % products.length];
+    final productData = product!;
     
     return GestureDetector(
       onTap: onTap,

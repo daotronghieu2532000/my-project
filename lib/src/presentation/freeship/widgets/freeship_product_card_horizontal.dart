@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/services/cached_api_service.dart';
 import '../../../core/models/freeship_product.dart';
 import '../../../core/models/product_detail.dart';
@@ -20,29 +19,8 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
     required this.product,
   });
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    final random = Random(product.id);
-    final isExpensive = price >= 1000000;
-    
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(95) + 10);
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(90) + 15);
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    final fakeData = _generateFakeData(product.price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -253,7 +231,7 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                               ),
                     ],
                   ),
-                  // Rating and sold with fake data
+                  // Rating and sold - sử dụng dữ liệu thật từ API
                   const SizedBox(height: 3),
                               Row(
                                 children: [
@@ -261,7 +239,7 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                                   const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                                    '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                                    '${(product.rating ?? 0.0).toStringAsFixed(1)} (${product.totalReviews ?? 0}) | Đã bán ${product.sold ?? 0}',
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,

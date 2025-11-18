@@ -17,7 +17,6 @@ import '../common/widgets/go_top_button.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
-import '../../core/services/app_lifecycle_manager.dart';
 import '../../core/models/popup_banner.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -35,13 +34,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
   final ApiService _apiService = ApiService();
-  final AppLifecycleManager _lifecycleManager = AppLifecycleManager();
   bool _isPreloading = true;
   int _refreshKey = 0; // Key để trigger reload các widget con
   PopupBanner? _popupBanner;
   bool _showPopup = false;
-  bool _hasRestoredScroll = false;
-  Timer? _scrollSaveTimer; // Timer để debounce việc lưu scroll position
+  Timer? _scrollSaveTimer; // Timer để debounce việc lưu scroll position (không dùng nữa)
 
   @override
   void initState() {
@@ -54,39 +51,41 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     _preloadData();
     _loadPopupBanner();
     
-    // Restore scroll position sau khi data đã load (đợi ListView build xong)
-    _restoreScrollPositionAfterLoad();
+    // KHÔNG restore scroll position - luôn bắt đầu từ đầu trang chủ
+    // _restoreScrollPositionAfterLoad();
   }
   
-  /// Restore scroll position sau khi data đã load và ListView đã build
-  Future<void> _restoreScrollPositionAfterLoad() async {
-    // Đợi preload xong (đợi _isPreloading = false)
-    while (_isPreloading && mounted) {
-      await Future.delayed(const Duration(milliseconds: 50));
-    }
-    
-    if (!mounted) return;
-    
-    // Đợi thêm để ListView build xong (sau khi setState _isPreloading = false)
-    await Future.delayed(const Duration(milliseconds: 300));
-    
-    // Đợi ListView render xong
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Đợi thêm vài frame để đảm bảo ListView đã render hoàn toàn
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted) {
-          _restoreScrollPosition();
-        }
-      });
-    });
-  }
+  // KHÔNG restore scroll position - luôn bắt đầu từ đầu
+  // /// Restore scroll position sau khi data đã load và ListView đã build
+  // Future<void> _restoreScrollPositionAfterLoad() async {
+  //   // Đợi preload xong (đợi _isPreloading = false)
+  //   while (_isPreloading && mounted) {
+  //     await Future.delayed(const Duration(milliseconds: 50));
+  //   }
+  //   
+  //   if (!mounted) return;
+  //   
+  //   // Đợi thêm để ListView build xong (sau khi setState _isPreloading = false)
+  //   await Future.delayed(const Duration(milliseconds: 300));
+  //   
+  //   // Đợi ListView render xong
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     // Đợi thêm vài frame để đảm bảo ListView đã render hoàn toàn
+  //     Future.delayed(const Duration(milliseconds: 500), () {
+  //       if (mounted) {
+  //         _restoreScrollPosition();
+  //       }
+  //     });
+  //   });
+  // }
   
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _scrollController.removeListener(_onScroll);
     _scrollSaveTimer?.cancel();
-    _saveScrollPosition();
+    // KHÔNG lưu scroll position khi dispose
+    // _saveScrollPosition();
     _scrollController.dispose();
     super.dispose();
   }
@@ -95,88 +94,92 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.paused) {
-      // Lưu scroll position khi app bị pause
-      _saveScrollPosition();
+      // KHÔNG lưu scroll position - luôn bắt đầu từ đầu khi mở lại
+      // _saveScrollPosition();
     } else if (state == AppLifecycleState.resumed) {
-      // Reset flag để có thể restore lại khi resume
-      _hasRestoredScroll = false;
-      // Restore scroll position khi app resume (nếu trong 3 phút)
-      _restoreScrollPosition();
-    }
-  }
-  
-  /// Lưu scroll position vào AppLifecycleManager
-  void _saveScrollPosition() {
-    if (_scrollController.hasClients) {
-      final position = _scrollController.offset;
-      if (position > 0) {
-        _lifecycleManager.saveScrollPosition(0, position); // Tab 0 = Home
+      // KHÔNG restore scroll position - luôn bắt đầu từ đầu
+      // Reset scroll về đầu khi app resume
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
       }
     }
   }
   
-  /// Restore scroll position từ AppLifecycleManager
-  Future<void> _restoreScrollPosition() async {
-    if (_hasRestoredScroll) return;
-    
-    try {
-      final savedPosition = await _lifecycleManager.getSavedScrollPosition(0); // Tab 0 = Home
-      if (savedPosition != null && savedPosition > 0) {
-        // Retry với delay tăng dần và max retries lớn hơn
-        int retryCount = 0;
-        const maxRetries = 20;
-        
-        void tryRestore() {
-          if (!mounted) return;
-          
-          if (_scrollController.hasClients) {
-            try {
-              final position = _scrollController.position;
-              final maxScroll = position.maxScrollExtent;
-              
-              // Chỉ restore nếu maxScrollExtent > 0 (ListView đã render content)
-              if (maxScroll > 0) {
-                final targetPosition = savedPosition > maxScroll ? maxScroll : savedPosition;
-                _scrollController.jumpTo(targetPosition);
-                _hasRestoredScroll = true;
-              } else if (retryCount < maxRetries) {
-                // maxScrollExtent = 0 nghĩa là ListView chưa render xong
-                retryCount++;
-                final delay = retryCount * 50; // Delay tăng dần: 50ms, 100ms, 150ms...
-                Future.delayed(Duration(milliseconds: delay), tryRestore);
-              }
-            } catch (e) {
-              // Ignore error
-            }
-          } else if (retryCount < maxRetries) {
-            retryCount++;
-            final delay = retryCount * 50;
-            Future.delayed(Duration(milliseconds: delay), tryRestore);
-          }
-        }
-        
-        // Thử restore ngay
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          tryRestore();
-        });
-      }
-    } catch (e) {
-      // Ignore error
-    }
-  }
+  // KHÔNG lưu scroll position - luôn bắt đầu từ đầu
+  // /// Lưu scroll position vào AppLifecycleManager
+  // void _saveScrollPosition() {
+  //   if (_scrollController.hasClients) {
+  //     final position = _scrollController.offset;
+  //     if (position > 0) {
+  //       _lifecycleManager.saveScrollPosition(0, position); // Tab 0 = Home
+  //     }
+  //   }
+  // }
+  
+  // KHÔNG restore scroll position - luôn bắt đầu từ đầu
+  // /// Restore scroll position từ AppLifecycleManager
+  // Future<void> _restoreScrollPosition() async {
+  //   if (_hasRestoredScroll) return;
+  //   
+  //   try {
+  //     final savedPosition = await _lifecycleManager.getSavedScrollPosition(0); // Tab 0 = Home
+  //     if (savedPosition != null && savedPosition > 0) {
+  //       // Retry với delay tăng dần và max retries lớn hơn
+  //       int retryCount = 0;
+  //       const maxRetries = 20;
+  //       
+  //       void tryRestore() {
+  //         if (!mounted) return;
+  //         
+  //         if (_scrollController.hasClients) {
+  //           try {
+  //             final position = _scrollController.position;
+  //             final maxScroll = position.maxScrollExtent;
+  //             
+  //             // Chỉ restore nếu maxScrollExtent > 0 (ListView đã render content)
+  //             if (maxScroll > 0) {
+  //               final targetPosition = savedPosition > maxScroll ? maxScroll : savedPosition;
+  //               _scrollController.jumpTo(targetPosition);
+  //               _hasRestoredScroll = true;
+  //             } else if (retryCount < maxRetries) {
+  //               // maxScrollExtent = 0 nghĩa là ListView chưa render xong
+  //               retryCount++;
+  //               final delay = retryCount * 50; // Delay tăng dần: 50ms, 100ms, 150ms...
+  //               Future.delayed(Duration(milliseconds: delay), tryRestore);
+  //             }
+  //           } catch (e) {
+  //             // Ignore error
+  //           }
+  //         } else if (retryCount < maxRetries) {
+  //           retryCount++;
+  //           final delay = retryCount * 50;
+  //           Future.delayed(Duration(milliseconds: delay), tryRestore);
+  //         }
+  //       }
+  //       
+  //       // Thử restore ngay
+  //       WidgetsBinding.instance.addPostFrameCallback((_) {
+  //         tryRestore();
+  //       });
+  //     }
+  //   } catch (e) {
+  //     // Ignore error
+  //   }
+  // }
   
   /// Lưu scroll position khi user scroll (với debounce)
   void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    
-    final position = _scrollController.offset;
-    if (position <= 0) return;
-    
-    // Debounce: chỉ lưu sau 500ms khi user ngừng scroll
-    _scrollSaveTimer?.cancel();
-    _scrollSaveTimer = Timer(const Duration(milliseconds: 500), () {
-      _lifecycleManager.saveScrollPosition(0, position);
-    });
+    // KHÔNG lưu scroll position - luôn bắt đầu từ đầu khi mở lại
+    // if (!_scrollController.hasClients) return;
+    // 
+    // final position = _scrollController.offset;
+    // if (position <= 0) return;
+    // 
+    // // Debounce: chỉ lưu sau 500ms khi user ngừng scroll
+    // _scrollSaveTimer?.cancel();
+    // _scrollSaveTimer = Timer(const Duration(milliseconds: 500), () {
+    //   _lifecycleManager.saveScrollPosition(0, position);
+    // });
   }
   
   Future<void> _loadPopupBanner() async {
@@ -332,7 +335,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         });
       }
       
-    } catch (e, stackTrace) {
+    } catch (e) {
       // Error refreshing data
     }
   }
@@ -361,19 +364,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               Expanded(
                 child: RefreshIndicator(
                   onRefresh: _refreshData,
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (ScrollNotification notification) {
-                      // Khi ListView đã scroll được (tức là đã ready), thử restore nếu chưa restore
-                      if (notification is ScrollUpdateNotification && !_hasRestoredScroll) {
-                        // Đợi một chút rồi restore (đảm bảo ListView đã render xong)
-                        Future.delayed(const Duration(milliseconds: 100), () {
-                          if (mounted && !_hasRestoredScroll) {
-                            _restoreScrollPosition();
-                          }
-                        });
-                      }
-                      return false;
-                    },
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (ScrollNotification notification) {
+                        // KHÔNG restore scroll position - luôn bắt đầu từ đầu
+                        return false;
+                      },
                     child: ListView(
                       controller: _scrollController,
                       padding: EdgeInsets.zero,

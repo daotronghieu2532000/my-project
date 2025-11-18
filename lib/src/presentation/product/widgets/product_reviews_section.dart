@@ -22,16 +22,16 @@ class ProductReviewsSection extends StatelessWidget {
     if (reviews == null || reviews!.isEmpty) {
       return const SizedBox.shrink();
     }
-
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Tiêu đề "Đánh giá sản phẩm" với rating, total reviews và nút "Xem tất cả" ở bên phải
         Padding(
           padding: const EdgeInsets.only(top: 0, left: 12, right: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
               Expanded(
                 child: Row(
                   children: [
@@ -71,34 +71,34 @@ class ProductReviewsSection extends StatelessWidget {
               ),
               if (totalReviews != null && (totalReviews as int) > 2)
                 TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProductReviewsScreen(productId: productId),
-                      ),
-                    );
-                  },
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductReviewsScreen(productId: productId),
+                            ),
+                          );
+                        },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
                       Text(
                         'Tất cả',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFFFF6B35),
-                          fontWeight: FontWeight.w600,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Color(0xFFFF6B35),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
                       SizedBox(width: 4),
                       Icon(
                         Icons.keyboard_arrow_right_outlined,
                         size: 16,
                         color: Color(0xFFFF6B35),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                ],
+              ),
+            ),
             ],
           ),
         ),
@@ -114,7 +114,7 @@ class ProductReviewsSection extends StatelessWidget {
                 final review = reviews![index];
                 return _buildReviewItem(review);
               },
-            ),
+        ),
       ],
     );
   }

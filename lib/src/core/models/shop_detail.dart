@@ -166,6 +166,8 @@ class ShopProduct {
   final String chinhhangIcon;
   final String warehouseName;
   final String provinceName;
+  final double rating;
+  final int totalReviews;
 
   const ShopProduct({
     required this.id,
@@ -196,6 +198,8 @@ class ShopProduct {
     required this.chinhhangIcon,
     required this.warehouseName,
     required this.provinceName,
+    this.rating = 0.0,
+    this.totalReviews = 0,
   });
 
   factory ShopProduct.fromJson(Map<String, dynamic> json) {
@@ -228,6 +232,8 @@ class ShopProduct {
       chinhhangIcon: json['chinhhang_icon'] as String? ?? '',
       warehouseName: json['warehouse_name'] as String? ?? '',
       provinceName: json['province_name'] as String? ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      totalReviews: json['total_reviews'] as int? ?? json['reviews_count'] as int? ?? 0,
     );
   }
 }

@@ -46,6 +46,7 @@ class FlashSaleProduct {
   final String? timeSlot; // 06:00, 12:00, 18:00, 00:00
   final String? status; // 'active', 'upcoming', 'ended'
   final double? rating;
+  final int? totalReviews;
   final int? sold;
 
   const FlashSaleProduct({
@@ -66,6 +67,7 @@ class FlashSaleProduct {
     this.timeSlot,
     this.status,
     this.rating,
+    this.totalReviews,
     this.sold,
   });
 
@@ -134,7 +136,8 @@ class FlashSaleProduct {
       timeSlot: json['time_slot'] as String? ?? json['slot'] as String? ?? json['timeline'] as String?,
       status: json['status'] as String? ?? json['flash_status'] as String? ?? json['deal_status'] as String?,
       rating: safeParseDouble(json['rating']) ?? safeParseDouble(json['average_rating']),
-      sold: safeParseInt(json['sold']) ?? safeParseInt(json['sold_count']) ?? safeParseInt(json['quantity_sold']),
+      totalReviews: safeParseInt(json['total_reviews']) ?? safeParseInt(json['reviews_count']),
+      sold: safeParseInt(json['sold']) ?? safeParseInt(json['sold_count']) ?? safeParseInt(json['ban']) ?? safeParseInt(json['quantity_sold']),
     );
   }
 
@@ -157,6 +160,7 @@ class FlashSaleProduct {
       'time_slot': timeSlot,
       'status': status,
       'rating': rating,
+      'total_reviews': totalReviews,
       'sold': sold,
     };
   }
@@ -179,6 +183,7 @@ class FlashSaleProduct {
     String? timeSlot,
     String? status,
     double? rating,
+    int? totalReviews,
     int? sold,
   }) {
     return FlashSaleProduct(
@@ -199,6 +204,7 @@ class FlashSaleProduct {
       timeSlot: timeSlot ?? this.timeSlot,
       status: status ?? this.status,
       rating: rating ?? this.rating,
+      totalReviews: totalReviews ?? this.totalReviews,
       sold: sold ?? this.sold,
     );
   }

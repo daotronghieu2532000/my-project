@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/models/related_product.dart';
 import '../../../core/models/product_detail.dart';
+import '../../../core/utils/format_utils.dart';
 import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
@@ -19,29 +19,8 @@ class RelatedProductCardHorizontal extends StatelessWidget {
     required this.product,
   });
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    final random = Random(product.id);
-    final isExpensive = price >= 1000000;
-    
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(95) + 10);
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(90) + 15);
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    final fakeData = _generateFakeData(product.price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -245,14 +224,14 @@ class RelatedProductCardHorizontal extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Rating and sold
+                  // Rating and sold - dữ liệu thật từ API
                               Row(
                                 children: [
                       Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
                                   const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                                    '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                                    _buildRatingSoldText(),
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,
@@ -524,6 +503,23 @@ class RelatedProductCardHorizontal extends StatelessWidget {
           ),
         ),
       );
+    }
+  }
+
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText() {
+    final rating = product.avgRating;
+    final reviews = product.totalReviews;
+    final sold = product.totalSold;
+    
+    // Nếu có rating > 0, hiển thị rating và reviews
+    if (rating > 0 && reviews > 0) {
+      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else if (rating > 0) {
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else {
+      // Nếu không có rating, chỉ hiển thị sold
+      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
     }
   }
 }

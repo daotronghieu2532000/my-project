@@ -148,6 +148,7 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
             const SizedBox(height: 8),
             // Sản phẩm - cuộn ngang với height tự động
             _BannerProductsHorizontalList(
+              key: ValueKey('banner_products_horizontal_${widget.position}'),
               products: banner.products,
               cardWidth: (screenWidth - 16) / 2,
             ),
@@ -501,21 +502,10 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
         Expanded(
           child: SizedBox(
             height: bannerHeight,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              itemCount: widget.products.length,
-              itemBuilder: (context, index) {
-                final product = widget.products[index];
-                return Container(
-                  width: widget.cardWidth,
-                  margin: const EdgeInsets.only(right: 8),
-                  child: BannerProductCard(
-                    product: product,
-                    index: index,
-                  ),
-                );
-              },
+            child: _BannerProductsHorizontalList(
+              key: ValueKey('banner_products_vertical_horizontal'),
+              products: widget.products,
+              cardWidth: widget.cardWidth,
             ),
           ),
         ),
@@ -530,6 +520,7 @@ class _BannerProductsHorizontalList extends StatefulWidget {
   final double cardWidth;
 
   const _BannerProductsHorizontalList({
+    super.key,
     required this.products,
     required this.cardWidth,
   });
@@ -541,21 +532,68 @@ class _BannerProductsHorizontalList extends StatefulWidget {
 class _BannerProductsHorizontalListState extends State<_BannerProductsHorizontalList> {
   double? _measuredHeight;
   final GlobalKey _measureKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
+  int _measureAttempts = 0;
+  static const int _maxMeasureAttempts = 5;
 
   @override
   void initState() {
     super.initState();
-    // Đo height sau khi widget được build
+    // Reset scroll về đầu khi init
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resetScrollPosition();
       _measureCardHeight();
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset scroll mỗi khi widget được build lại (khi app resume hoặc widget được giữ lại)
+    // Đảm bảo scroll luôn bắt đầu từ đầu
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resetScrollPosition();
+    });
+  }
+
+  void _resetScrollPosition() {
+    if (_scrollController.hasClients && mounted) {
+      _scrollController.jumpTo(0);
+    } else if (mounted) {
+      // Nếu chưa có clients, thử lại sau
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients && mounted) {
+          _scrollController.jumpTo(0);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
   void _measureCardHeight() {
     final RenderBox? renderBox = _measureKey.currentContext?.findRenderObject() as RenderBox?;
-    if (renderBox != null && mounted) {
+    if (renderBox != null && renderBox.hasSize && mounted) {
       setState(() {
         _measuredHeight = renderBox.size.height;
+        _measureAttempts = 0; // Reset counter khi đo thành công
+      });
+    } else if (renderBox != null && !renderBox.hasSize && mounted && _measureAttempts < _maxMeasureAttempts) {
+      // Nếu chưa có size, đợi thêm một frame nữa (giới hạn số lần thử)
+      _measureAttempts++;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _measureCardHeight();
+        }
+      });
+    } else if (_measureAttempts >= _maxMeasureAttempts && mounted) {
+      // Nếu đã thử quá nhiều lần mà vẫn không đo được, sử dụng giá trị mặc định
+      setState(() {
+        _measuredHeight = 200.0; // Giá trị mặc định
       });
     }
   }
@@ -586,6 +624,7 @@ class _BannerProductsHorizontalListState extends State<_BannerProductsHorizontal
     return SizedBox(
       height: _measuredHeight,
       child: ListView.builder(
+        controller: _scrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         itemCount: widget.products.length,

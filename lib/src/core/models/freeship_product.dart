@@ -42,6 +42,7 @@ class FreeShipProduct {
   final String? category;
   final int? shopId;
   final String? shopName;
+  final int? totalReviews; // Số lượng đánh giá
   
   // Thông tin freeship chi tiết
   final int freeShipMode; // 0, 1, 2, 3
@@ -73,6 +74,7 @@ class FreeShipProduct {
     this.category,
     this.shopId,
     this.shopName,
+    this.totalReviews,
     this.freeShipMode = 0,
     this.freeShipType = 'unknown',
     this.freeShipLabel = '',
@@ -99,6 +101,7 @@ class FreeShipProduct {
       oldPrice: json['old_price'] as int? ?? json['original_price'] as int? ?? json['list_price'] as int?,
       rating: (json['rating'] as num?)?.toDouble() ?? (json['average_rating'] as num?)?.toDouble(),
       sold: json['sold'] as int? ?? json['sold_count'] as int? ?? json['quantity_sold'] as int?,
+      totalReviews: json['total_reviews'] as int? ?? json['review_count'] as int?,
       description: json['description'] as String? ?? json['desc'] as String?,
       brand: json['brand'] as String? ?? json['manufacturer'] as String?,
       isFreeship: json['is_freeship'] as bool? ?? json['free_shipping'] as bool? ?? (shippingInfo?['has_free_shipping'] as bool? ?? true),
@@ -131,6 +134,7 @@ class FreeShipProduct {
       'old_price': oldPrice,
       'rating': rating,
       'sold': sold,
+      'total_reviews': totalReviews,
       'description': description,
       'brand': brand,
       'is_freeship': isFreeship,

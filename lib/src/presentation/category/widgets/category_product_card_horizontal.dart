@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/services/api_service.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/utils/format_utils.dart';
@@ -18,33 +17,12 @@ class CategoryProductCardHorizontal extends StatelessWidget {
     required this.product,
   });
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    final random = Random(product['id'] ?? 0);
-    final isExpensive = price >= 1000000;
-    
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(95) + 10);
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(90) + 15);
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    final fakeData = _generateFakeData(product['price'] ?? 0);
-    final image = product['image'] ?? '';
-    final name = product['name'] ?? 'Sản phẩm';
-    final price = product['price'] ?? 0;
-    final discountPercent = product['discount_percent'] ?? 0;
+    final image = product['minh_hoa'] ?? product['image'] ?? '';
+    final name = product['tieu_de'] ?? product['name'] ?? 'Sản phẩm';
+    final price = _safeParseInt(product['gia_moi'] ?? product['price']) ?? 0;
+    final discountPercent = _safeParseInt(product['discount_percent']) ?? 0;
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -255,7 +233,7 @@ class CategoryProductCardHorizontal extends StatelessWidget {
                                 ),
                     ],
                   ),
-                  // Rating and sold with fake data
+                  // Rating and sold - dữ liệu thật từ API
                   const SizedBox(height: 3),
                                 Row(
                                   children: [
@@ -263,7 +241,7 @@ class CategoryProductCardHorizontal extends StatelessWidget {
                                     const SizedBox(width: 2),
                                     Flexible(
                                       child: Text(
-                                        '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                                        _buildRatingSoldText(),
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,
@@ -494,5 +472,40 @@ class CategoryProductCardHorizontal extends StatelessWidget {
       }
     }
     return false;
+  }
+
+  // Helper method để parse int an toàn
+  int? _safeParseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    if (value is double) return value.toInt();
+    return null;
+  }
+
+  // Helper method để parse double an toàn
+  double? _safeParseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText() {
+    final rating = _safeParseDouble(product['rating'] ?? product['average_rating'] ?? product['avg_rating']) ?? 0.0;
+    final reviews = _safeParseInt(product['reviews_count'] ?? product['total_reviews']) ?? 0;
+    final sold = _safeParseInt(product['sold_count'] ?? product['ban']) ?? 0;
+    
+    // Nếu có rating > 0, hiển thị rating và reviews
+    if (rating > 0 && reviews > 0) {
+      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else if (rating > 0) {
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else {
+      // Nếu không có rating, chỉ hiển thị sold
+      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
+    }
   }
 }

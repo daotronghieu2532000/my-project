@@ -67,16 +67,10 @@ class PurchasedProduct {
         ? ((oldPrice - price) / oldPrice * 100).round()
         : 0;
 
-    // Fake rating và review count (giống favorite_product_card)
-    final random = productJson['id'] as int? ?? 0;
-    final isExpensive = price >= 1000000;
-    final reviews = isExpensive 
-        ? ((random % 21) + 5) // 5-25 for expensive products
-        : ((random % 95) + 10); // 10-104 for normal products
-    
-    final sold = isExpensive
-        ? ((random % 21) + 5) // 5-25 for expensive products
-        : ((random % 90) + 15); // 15-104 for normal products
+    // Parse rating và reviews từ API (dữ liệu thật)
+    final rating = _parseDouble(productJson['rating']) ?? 0.0;
+    final reviewCount = _parseInt(productJson['total_reviews'] ?? productJson['reviews_count']) ?? 0;
+    final soldCount = _parseInt(productJson['sold_count']) ?? 0;
 
     // Parse badges từ product data hoặc tạo mặc định
     final badges = <String>[];
@@ -92,8 +86,8 @@ class PurchasedProduct {
       imageUrl: productJson['image'] as String? ?? 'https://socdo.vn/images/no-images.jpg',
       price: price,
       oldPrice: oldPrice > 0 ? oldPrice : null,
-      rating: 5.0,
-      reviewCount: reviews,
+      rating: rating,
+      reviewCount: reviewCount,
       isInStock: true, // Sản phẩm đã mua nên giả sử còn hàng
       productCode: null,
       shopId: int.tryParse(productJson['shop_name']?.toString() ?? '0'),
@@ -106,7 +100,7 @@ class PurchasedProduct {
       provinceName: null, // Có thể lấy từ order nếu có
       productUrl: productJson['product_url'] as String? ?? '',
       discountPercent: discountPercent,
-      soldCount: sold,
+      soldCount: soldCount,
       quantity: productJson['quantity'] as int? ?? 1,
       size: productJson['size'] as String?,
       color: productJson['color'] as String?,
@@ -140,6 +134,28 @@ class PurchasedProduct {
       'order_id': orderId,
       'order_date': orderDate,
     };
+  }
+
+  // Helper methods để parse an toàn
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    if (value is num) return value.toDouble();
+    return null;
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value);
+    }
+    if (value is num) return value.toInt();
+    return null;
   }
 }
 

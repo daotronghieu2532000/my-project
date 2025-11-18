@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/models/shop_detail.dart';
 import '../../../core/services/cached_api_service.dart';
 import '../../../core/utils/format_utils.dart';
@@ -383,8 +382,10 @@ class _FlashSaleProductCardHelper extends StatelessWidget {
     final voucherIcon = productInfo['voucher_icon'] as String? ?? '';
     final freeshipIcon = productInfo['freeship_icon'] as String? ?? '';
     final chinhhangIcon = productInfo['chinhhang_icon'] as String? ?? '';
+    final rating = (productInfo['rating'] as num?)?.toDouble() ?? 0.0;
+    final totalReviews = productInfo['total_reviews'] as int? ?? 0;
+    final sold = productInfo['sold'] as int? ?? 0;
     
-    final fakeData = _generateFakeData(productId, price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -591,14 +592,14 @@ class _FlashSaleProductCardHelper extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 3), // Giảm từ 4 xuống 3
-                  // Rating and sold with fake data (giống flash_sale_product_card_horizontal.dart)
+                  // Rating and sold - dữ liệu thật từ API
                   Row(
                     children: [
                       Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
                       const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                          '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                          _buildRatingSoldText(rating, totalReviews, sold),
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,
@@ -651,23 +652,15 @@ class _FlashSaleProductCardHelper extends StatelessWidget {
     );
   }
 
-  Map<String, dynamic> _generateFakeData(int productId, int price) {
-    final random = Random(productId);
-    final isExpensive = price >= 1000000;
-    
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(95) + 10);
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(90) + 15);
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText(double rating, int reviews, int sold) {
+    if (rating > 0 && reviews > 0) {
+      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else if (rating > 0) {
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else {
+      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
+    }
   }
 
   void _showPurchaseDialog(BuildContext context, int productId) async {

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/models/search_result.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/utils/format_utils.dart';
@@ -20,29 +19,8 @@ class SearchProductCardHorizontal extends StatelessWidget {
     required this.product,
   });
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    final random = Random(product.id);
-    final isExpensive = price >= 1000000;
-    
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(95) + 10);
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(90) + 15);
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    final fakeData = _generateFakeData(product.price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -253,7 +231,7 @@ class SearchProductCardHorizontal extends StatelessWidget {
                               ),
                     ],
                   ),
-                  // Rating and sold with fake data
+                  // Rating and sold - dữ liệu thật từ API
                   const SizedBox(height: 3),
                               Row(
                                 children: [
@@ -261,7 +239,7 @@ class SearchProductCardHorizontal extends StatelessWidget {
                                   const SizedBox(width: 2),
                       Flexible(
                         child: Text(
-                                    '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                                    _buildRatingSoldText(),
                           style: TextStyle(
                             fontSize: screenWidth < 360 ? 10 : 11,
                             color: Colors.grey,
@@ -543,5 +521,21 @@ class SearchProductCardHorizontal extends StatelessWidget {
       return true;
     }
     return false;
+  }
+
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText() {
+    final rating = product.rating;
+    final sold = product.sold;
+    
+    // Nếu có rating > 0, hiển thị rating và reviews
+    if (rating > 0) {
+      // Lấy reviews từ total_reviews nếu có, nếu không thì dùng 0
+      // Note: SearchProduct model có thể cần thêm field total_reviews
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else {
+      // Nếu không có rating, chỉ hiển thị sold
+      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
+    }
   }
 }

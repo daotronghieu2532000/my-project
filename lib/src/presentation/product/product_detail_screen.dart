@@ -31,6 +31,7 @@ import '../chat/chat_screen.dart';
 import '../../core/services/cart_service.dart';
 import '../../core/services/auth_service.dart';
 import '../common/widgets/go_top_button.dart';
+import '../account/support_center_screen.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final int? productId;
@@ -182,6 +183,301 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           shopAvatar: _productDetail!.shopAvatar,
         ),
       ),
+    );
+  }
+
+  void _showReturnPolicyDialog() {
+    if (_productDetail == null) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Title
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Đổi trả hàng trong vòng 15 ngày',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Policy information
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildPolicyItem(
+                    icon: Icons.verified_user_outlined,
+                    text: 'Bạn có thể hoàn toàn được đồng kiểm sản phẩm khi nhân đơn hàng.',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPolicyItem(
+                    icon: Icons.camera_alt_outlined,
+                    text: 'Khi yêu cầu đổi trả vui lòng cung cấp video, hình ảnh sản phẩm, lý do đổi trả.',
+                  ),
+                  const SizedBox(height: 12),
+                  _buildPolicyItem(
+                    icon: Icons.local_shipping_outlined,
+                    text: 'Miễn phí trả hàng trong 15 ngày, bạn hoàn toàn yên tâm khi mua hàng.',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Shop info (giống ShopBar nhưng thay nút xem shop bằng nút chat)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF8F9FA),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(60),
+                      ),
+                      child: _productDetail!.shopAvatar.isNotEmpty
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(60),
+                              child: Image.network(
+                                _productDetail!.shopAvatar,
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => ClipRRect(
+                                  borderRadius: BorderRadius.circular(60),
+                                  child: Image.asset(
+                                    'assets/images/shop.jpg',
+                                    width: 70,
+                                    height: 70,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : ClipRRect(
+                              borderRadius: BorderRadius.circular(60),
+                              child: Image.asset(
+                                'assets/images/shop.jpg',
+                                width: 70,
+                                height: 70,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            _productDetail!.shopNameFromInfo.isNotEmpty
+                                ? _productDetail!.shopNameFromInfo
+                                : 'Shop',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          if (_productDetail!.shopInfo?['total_products'] != null &&
+                              (_productDetail!.shopInfo!['total_products'] as int) > 0) ...[
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.inventory_2_outlined,
+                                  size: 14,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${_productDetail!.shopInfo!['total_products']} sản phẩm',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                          Text(
+                            _productDetail!.shopAddress.isNotEmpty
+                                ? _productDetail!.shopAddress
+                                : '',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Chat button thay vì "Xem Shop"
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context); // Đóng dialog
+                        _navigateToChat(); // Mở chat
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFE53E3E), Color(0xFFC53030)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.red.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble_outline,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              'Chat',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Contact Socdo section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  Text(
+                    'Nếu không thể liên hệ với Nhà bán, hãy liên lạc chúng tôi',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[700],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context); // Đóng dialog
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const SupportCenterScreen(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color.fromARGB(255, 255, 2, 2),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.headset_mic, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            'Liên hệ ngay với Socdo',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPolicyItem({required IconData icon, required String text}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: const Color(0xFF4CAF50),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -1127,7 +1423,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   //   const SizedBox(height: 16),
                   // ],
                   const SizedBox(height: 12),
-                  RowTile(icon: Icons.autorenew, title: 'Đổi trả hàng trong vòng 15 ngày'),
+                  RowTile(
+                    icon: Icons.autorenew,
+                    title: 'Đổi trả hàng trong vòng 15 ngày',
+                    onTap: () => _showReturnPolicyDialog(),
+                  ),
                   const SizedBox(height: 8),
                   // Hiển thị mã giảm giá nếu có
                   if (product?.hasCoupon == true)

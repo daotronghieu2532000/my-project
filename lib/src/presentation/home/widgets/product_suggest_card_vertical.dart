@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
@@ -20,30 +19,6 @@ class ProductSuggestCardVertical extends StatelessWidget {
     required this.product,
     required this.index,
   });
-
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    // Sử dụng product ID làm seed để đảm bảo dữ liệu cố định
-    final random = Random(product.id);
-    
-    // Check if it's expensive (>= 1,000,000)
-    final isExpensive = price >= 1000000;
-    
-    // Generate fake data based on price with fixed seed
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(95) + 10); // 10-104 for normal products
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(90) + 15); // 15-104 for normal products
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -221,22 +196,17 @@ class ProductSuggestCardVertical extends StatelessWidget {
                   
                   const SizedBox(height: 0),
                   
-                  // Rating and sold with fake data
-                  Builder(
-                    builder: (context) {
-                      final fakeData = _generateFakeData(product.price);
-                      return Row(
-                        children: [
-                          const Icon(Icons.star, size: 12, color: Colors.amber), // Giảm từ 13 xuống 12px
-                          const SizedBox(width: 1),
-                          Text(
-                            '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
-                            style: const TextStyle(fontSize: 12, color: Colors.grey), // Giảm từ 13 xuống 12px
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      );
-                    },
+                  // Rating and sold with real data
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 12, color: Colors.amber),
+                      const SizedBox(width: 1),
+                      Text(
+                        '${(product.rating ?? 0.0).toStringAsFixed(1)} (${product.totalReviews ?? 0}) | Đã bán ${product.sold ?? 0}',
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                   
                   const SizedBox(height: 0),

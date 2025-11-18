@@ -39,7 +39,7 @@ class ActionRow extends StatelessWidget {
         return Colors.orange;
       case 'Sản phẩm yêu thích':
         return Colors.red;
-      case 'Sản phẩm đã mua':
+      case 'Mua lại':
         return Colors.blue;
       case 'Sổ địa chỉ':
         return Colors.green;
@@ -81,7 +81,7 @@ class ActionRow extends StatelessWidget {
           ),
         );
         break;
-      case 'Sản phẩm đã mua':
+      case 'Mua lại':
         Navigator.push(
           context,
           MaterialPageRoute(

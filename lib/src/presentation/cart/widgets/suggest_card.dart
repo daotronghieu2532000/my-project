@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/models/product_suggest.dart';
 import '../../product/product_detail_screen.dart';
@@ -14,28 +13,19 @@ class SuggestCard extends StatelessWidget {
     this.onTap,
   });
 
-  // Helper function to generate fake rating and sold data (giống flash sale)
-  Map<String, dynamic> _generateFakeData(int price) {
-    // Sử dụng product ID làm seed để đảm bảo dữ liệu cố định
-    final random = Random(product.id);
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText() {
+    final rating = product.rating ?? 0.0;
+    final reviews = product.totalReviews ?? 0;
+    final sold = product.sold ?? 0;
     
-    // Check if it's expensive (>= 1,000,000)
-    final isExpensive = price >= 1000000;
-    
-    // Generate fake data based on price with fixed seed
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(95) + 10); // 10-104 for normal products
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(90) + 15); // 15-104 for normal products
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
+    if (rating > 0 && reviews > 0) {
+      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else if (rating > 0) {
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else {
+      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
+    }
   }
 
   @override
@@ -118,22 +108,19 @@ class SuggestCard extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Rating and sold with fake data (giống flash sale)
-                  Builder(
-                    builder: (context) {
-                      final fakeData = _generateFakeData(product.price);
-                      return Row(
-                        children: [
-                          const Icon(Icons.star, size: 12, color: Colors.amber),
-                          const SizedBox(width: 2),
-                          Text(
-                            '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
-                            style: const TextStyle(fontSize: 10, color: Colors.grey),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      );
-                    },
+                  // Rating and sold - dữ liệu thật từ API
+                  Row(
+                    children: [
+                      const Icon(Icons.star, size: 12, color: Colors.amber),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          _buildRatingSoldText(),
+                          style: const TextStyle(fontSize: 10, color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

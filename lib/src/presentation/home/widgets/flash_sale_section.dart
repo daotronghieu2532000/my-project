@@ -420,14 +420,45 @@ class _FlashSaleHorizontalList extends StatefulWidget {
 class _FlashSaleHorizontalListState extends State<_FlashSaleHorizontalList> {
   double? _measuredHeight;
   final GlobalKey _measureKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
-    // Đo height sau khi widget được build
+    // Reset scroll về đầu khi init
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resetScrollPosition();
       _measureCardHeight();
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reset scroll mỗi khi widget được build lại (khi app resume hoặc widget được giữ lại)
+    // Đảm bảo scroll luôn bắt đầu từ đầu
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resetScrollPosition();
+    });
+  }
+
+  void _resetScrollPosition() {
+    if (_scrollController.hasClients && mounted) {
+      _scrollController.jumpTo(0);
+    } else if (mounted) {
+      // Nếu chưa có clients, thử lại sau
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients && mounted) {
+          _scrollController.jumpTo(0);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _measureCardHeight() {
@@ -460,6 +491,7 @@ class _FlashSaleHorizontalListState extends State<_FlashSaleHorizontalList> {
     return SizedBox(
       height: _measuredHeight,
       child: ListView.builder(
+        controller: _scrollController,
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 4),
         itemCount: widget.products.length,

@@ -421,25 +421,109 @@ class _ChatListScreenState extends State<ChatListScreen> {
         ),
       ),
       confirmDismiss: (direction) async {
-        // ✅ Hiển thị dialog xác nhận
+        // ✅ Hiển thị dialog xác nhận với màu nền đẹp
         return await showDialog<bool>(
           context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Xóa cuộc trò chuyện'),
-            content: Text('Bạn có chắc chắn muốn xóa cuộc trò chuyện với ${session.shopName}?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Hủy'),
+          barrierColor: Colors.black54,
+          builder: (context) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.red,
-                ),
-                child: const Text('Xóa'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon xóa
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.delete_outline,
+                      color: Colors.red[600],
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  // Title
+                  const Text(
+                    'Xóa cuộc trò chuyện',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Content
+                  Text(
+                    'Bạn có chắc chắn muốn xóa cuộc trò chuyện với ${session.shopName}?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey[700],
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            side: BorderSide(color: Colors.grey[300]!),
+                          ),
+                          child: const Text(
+                            'Hủy',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red[600],
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Xóa',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ) ?? false;
       },

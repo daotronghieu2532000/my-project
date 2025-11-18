@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../models/purchased_product.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/services/api_service.dart';
@@ -29,28 +28,19 @@ class PurchasedProductCard extends StatefulWidget {
 class _PurchasedProductCardState extends State<PurchasedProductCard> {
   bool _isAddingToCart = false;
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    // Sử dụng product ID làm seed để đảm bảo dữ liệu cố định
-    final random = Random(widget.product.id);
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText() {
+    final rating = widget.product.rating;
+    final reviews = widget.product.reviewCount;
+    final sold = widget.product.soldCount;
     
-    // Check if it's expensive (>= 1,000,000)
-    final isExpensive = price >= 1000000;
-    
-    // Generate fake data based on price with fixed seed
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(95) + 10); // 10-104 for normal products
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(90) + 15); // 15-104 for normal products
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
+    if (rating > 0 && reviews > 0) {
+      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else if (rating > 0) {
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+    } else {
+      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
+    }
   }
 
   // Helper function to build full image URL
@@ -215,22 +205,19 @@ class _PurchasedProductCardState extends State<PurchasedProductCard> {
                           ],
                         ),
                         const SizedBox(height: 6),
-                        // Rating và đã bán
-                        Builder(
-                          builder: (context) {
-                            final fakeData = _generateFakeData(widget.product.price);
-                            return Row(
-                              children: [
-                                const Icon(Icons.star, size: 14, color: Colors.amber),
-                                const SizedBox(width: 2),
-                                Text(
-                                  '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            );
-                          },
+                        // Rating và đã bán - dữ liệu thật từ API
+                        Row(
+                          children: [
+                            const Icon(Icons.star, size: 14, color: Colors.amber),
+                            const SizedBox(width: 2),
+                            Flexible(
+                              child: Text(
+                                _buildRatingSoldText(),
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 6),
                         // Badge "Đã mua" với icon tích v

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'dart:math';
 import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
@@ -23,33 +22,8 @@ class ProductCardHorizontal extends StatelessWidget {
     required this.index,
   });
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    // Sử dụng product ID làm seed để đảm bảo dữ liệu cố định
-    final random = Random(product.id);
-    
-    // Check if it's expensive (>= 1,000,000)
-    final isExpensive = price >= 1000000;
-    
-    // Generate fake data based on price with fixed seed
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(95) + 10); // 10-104 for normal products
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5) // 5-25 for expensive products
-        : (random.nextInt(90) + 15); // 15-104 for normal products
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    final fakeData = _generateFakeData(product.price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -280,7 +254,7 @@ class ProductCardHorizontal extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ],
-                              // Rating and sold with fake data
+                              // Rating and sold with real data
                               const SizedBox(height: 3),
                               Row(
                                 children: [
@@ -288,16 +262,16 @@ class ProductCardHorizontal extends StatelessWidget {
                                   const SizedBox(width: 2),
                                   Flexible(
                                     child: Text(
-                                    '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                                      '${(product.rating ?? 0.0).toStringAsFixed(1)} (${product.totalReviews ?? 0}) | Đã bán ${product.sold ?? 0}',
                                       style: TextStyle(
                                         fontSize: screenWidth < 360 ? 10 : 11,
                                         color: Colors.grey,
                                       ),
-                                    overflow: TextOverflow.ellipsis,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
+                                ],
                               ),
-                            ],
-                          ),
                           // Badge kho ở đáy box
                               const SizedBox(height: 3),
                           ProductLocationBadge(

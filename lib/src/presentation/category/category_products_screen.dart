@@ -65,6 +65,14 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     return 0;
   }
 
+  // Helper method để parse double an toàn
+  double _safeParseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
 
   // Helper method để parse bool an toàn
   bool _safeParseBool(dynamic value) {
@@ -120,8 +128,11 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
               'price': _safeParseInt(product['gia_moi']),
               'old_price': _safeParseInt(product['gia_cu']),
               'discount_percent': _safeParseInt(product['discount_percent']),
-              'rating': 5.0, // Default rating
-              'sold': _safeParseInt(product['ban']),
+              'rating': _safeParseDouble(product['rating'] ?? product['average_rating'] ?? product['avg_rating']),
+              'reviews_count': _safeParseInt(product['reviews_count'] ?? product['total_reviews']),
+              'total_reviews': _safeParseInt(product['reviews_count'] ?? product['total_reviews']),
+              'sold': _safeParseInt(product['ban'] ?? product['sold_count']),
+              'sold_count': _safeParseInt(product['ban'] ?? product['sold_count']),
               'view': _safeParseInt(product['view']),
               'shop_id': product['shop']?.toString() ?? '',
               'shop_name': product['shop_name']?.toString() ?? 'Shop',

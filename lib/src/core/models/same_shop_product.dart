@@ -25,6 +25,11 @@ class SameShopProduct {
   final String priceFormatted;
   final String oldPriceFormatted;
   
+  // Rating và reviews từ database thật
+  final int totalReviews;
+  final double avgRating;
+  final int soldCount;
+  
   // Thông tin badges từ API (giống ProductSuggest)
   final String? voucherIcon;
   final String? freeshipIcon;
@@ -58,6 +63,9 @@ class SameShopProduct {
     required this.updatedAt,
     required this.priceFormatted,
     required this.oldPriceFormatted,
+    this.totalReviews = 0,
+    this.avgRating = 0.0,
+    this.soldCount = 0,
     this.voucherIcon,
     this.freeshipIcon,
     this.chinhhangIcon,
@@ -107,6 +115,15 @@ class SameShopProduct {
       return {};
     }
 
+    // Helper function to safely parse double
+    double safeParseDouble(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? 0.0;
+      return 0.0;
+    }
+
     return SameShopProduct(
       id: safeParseInt(json['id']),
       name: json['name'] as String? ?? '',
@@ -133,6 +150,10 @@ class SameShopProduct {
       updatedAt: safeParseInt(json['updated_at']),
       priceFormatted: json['price_formatted'] as String? ?? '',
       oldPriceFormatted: json['old_price_formatted'] as String? ?? '',
+      // Parse rating và reviews từ API (dữ liệu thật)
+      totalReviews: safeParseInt(json['reviews_count'] ?? json['total_reviews']),
+      avgRating: safeParseDouble(json['rating'] ?? json['average_rating'] ?? json['avg_rating']) ?? 0.0,
+      soldCount: safeParseInt(json['sold_count'] ?? json['ban']),
       // Parse badges từ API
       voucherIcon: json['voucher_icon'] as String?,
       freeshipIcon: json['freeship_icon'] as String?,
@@ -169,6 +190,9 @@ class SameShopProduct {
       'updated_at': updatedAt,
       'price_formatted': priceFormatted,
       'old_price_formatted': oldPriceFormatted,
+      'total_reviews': totalReviews,
+      'avg_rating': avgRating,
+      'sold_count': soldCount,
       'voucher_icon': voucherIcon,
       'freeship_icon': freeshipIcon,
       'chinhhang_icon': chinhhangIcon,

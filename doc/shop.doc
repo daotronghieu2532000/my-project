@@ -1,0 +1,1382 @@
+https://api.socdo.vn/v1/shop_detail?include_products=1&include_flash_sale=1&include_vouchers=1&include_warehouses=1&include_categories=1&products_limit=20&shop_id=11100 :
+
+{
+    "success": true,
+    "message": "Lấy thông tin shop thành công",
+    "data": {
+        "shop_info": {
+            "shop_id": 11100,
+            "parent_shop_id": 0,
+            "username": "0984031936",
+            "name": "Cỏ Cây Hoa Lá",
+            "email": "ltinh123@gmail.com",
+            "mobile": "0984031936",
+            "address": "417",
+            "about": "",
+            "avatar_url": "https://socdo.vn//uploads/avatar/co-cay-hoa-la-1757143046.png",
+            "shop_url": "https://socdo.vn/shop/0984031936",
+            "is_ctv": 1,
+            "is_dropship": 1,
+            "is_leader": 1,
+            "created_at": 1746757163,
+            "created_at_formatted": "09/05/2025 09:19:23",
+            "updated_at": 1746757163,
+            "last_login": 0,
+            "last_online": 0,
+            "total_products": 24
+        },
+        "products": [
+            {
+                "id": 5861,
+                "name": "Bộ Dầu Gội Xả Gừng Sả Thảo Dược 500g Cỏ Cây Hoa Lá – Giảm Bết Dầu, Cho Tóc Suôn Mượt Tự Nhiên",
+                "slug": "bo-dau-goi-xa-gung-sa-thao-duoc-500g-co-cay-hoa-la-giam-bet-dau-cho-toc-suon-muot-tu-nhien",
+                "price": 239000,
+                "old_price": 525000,
+                "ctv_price": 0,
+                "discount_percent": 54,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 300,
+                "sold": 0,
+                "views": 90,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-dau-goi-xa-thao-duoc-gung-sa-co-cay-hoa-la-500g-cham-soc-toc-bet-dau-1757142284.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-dau-goi-xa-thao-duoc-gung-sa-co-cay-hoa-la-500g-cham-soc-toc-bet-dau-1757142284.webp",
+                "product_url": "https://socdo.vn/san-pham/5861/bo-dau-goi-xa-gung-sa-thao-duoc-500g-co-cay-hoa-la-giam-bet-dau-cho-toc-suon-muot-tu-nhien.html",
+                "badges": [
+                    "Giảm 54%"
+                ],
+                "voucher_icon": "Voucher",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1759825741,
+                "price_formatted": "239.000 ₫",
+                "old_price_formatted": "525.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5857,
+                "name": "Combo Dầu Gội Xả Bưởi Trà Cỏ Cây Hoa Lá 350g – Phục Hồi & Chăm Sóc Tóc Hư Tổn",
+                "slug": "combo-dau-goi-xa-buoi-tra-co-cay-hoa-la-350g-phuc-hoi-cham-soc-toc-hu-ton",
+                "price": 359000,
+                "old_price": 515000,
+                "ctv_price": 0,
+                "discount_percent": 30,
+                "category_ids": [
+                    11,
+                    216
+                ],
+                "brand_id": 2547,
+                "stock": 50,
+                "sold": 0,
+                "views": 38,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-goi-xa-buoi-tra-co-cay-hoa-la-350g-phuc-hoi-toc-hu-ton-1747034847.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-goi-xa-buoi-tra-co-cay-hoa-la-350g-phuc-hoi-toc-hu-ton-1747034847.webp",
+                "product_url": "https://socdo.vn/san-pham/5857/combo-dau-goi-xa-buoi-tra-co-cay-hoa-la-350g-phuc-hoi-cham-soc-toc-hu-ton.html",
+                "badges": [
+                    "Giảm 30%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1759807513,
+                "price_formatted": "359.000 ₫",
+                "old_price_formatted": "515.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5131,
+                "name": "Combo Chăm Sóc Da Toàn Diện Đậu Đỏ Cỏ Cây Hoa Lá – Dưỡng Ẩm, Làm Sáng Da, Ngăn Ngừa Lão Hóa",
+                "slug": "combo-cham-soc-da-toan-dien-dau-do-co-cay-hoa-la-duong-am-lam-sang-da-ngan-ngua-lao-hoa",
+                "price": 519000,
+                "old_price": 680000,
+                "ctv_price": 0,
+                "discount_percent": 24,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 12,
+                "sold": 0,
+                "views": 53,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-cham-soc-da-toan-dien-dau-do-co-cay-hoa-la-1746776919.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-cham-soc-da-toan-dien-dau-do-co-cay-hoa-la-1746776919.webp",
+                "product_url": "https://socdo.vn/san-pham/5131/combo-cham-soc-da-toan-dien-dau-do-co-cay-hoa-la-duong-am-lam-sang-da-ngan-ngua-lao-hoa.html",
+                "badges": [
+                    "Giảm 24%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152811,
+                "price_formatted": "519.000 ₫",
+                "old_price_formatted": "680.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5132,
+                "name": "Dung Dịch Vệ Sinh Phụ Nữ Gel X2 Nano Nghệ Cỏ Cây Hoa Lá Phiên Bản Mới 150ml – Làm Sạch, Ngừa Vi Khuẩn",
+                "slug": "dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-phien-ban-moi-150ml-lam-sach-ngua-vi-khuan",
+                "price": 209000,
+                "old_price": 340000,
+                "ctv_price": 0,
+                "discount_percent": 39,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 100,
+                "sold": 0,
+                "views": 37,
+                "image": "https://socdo.vn//uploads/minh-hoa/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-phien-ban-moi-150ml-lam-sach-ngua-vi-khuan-1746776665.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-phien-ban-moi-150ml-lam-sach-ngua-vi-khuan-1746776665.webp",
+                "product_url": "https://socdo.vn/san-pham/5132/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-phien-ban-moi-150ml-lam-sach-ngua-vi-khuan.html",
+                "badges": [
+                    "Giảm 39%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152811,
+                "price_formatted": "209.000 ₫",
+                "old_price_formatted": "340.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5133,
+                "name": "Sữa Tắm Gừng Nghệ Thảo Dược 500g Cỏ Cây Hoa Lá – Thanh Lọc Da, Ngừa Mụn, Giữ Da Khỏe Mạnh",
+                "slug": "sua-tam-gung-nghe-thao-duoc-500g-co-cay-hoa-la-thanh-loc-da-ngua-mun-giu-da-khoe-manh",
+                "price": 269000,
+                "old_price": 400000,
+                "ctv_price": 0,
+                "discount_percent": 33,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 100,
+                "sold": 0,
+                "views": 58,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-dau-goi-xa-thao-duoc-gung-sa-co-cay-hoa-la-500g-cham-soc-toc-bet-dau--1746775845.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-dau-goi-xa-thao-duoc-gung-sa-co-cay-hoa-la-500g-cham-soc-toc-bet-dau--1746775845.webp",
+                "product_url": "https://socdo.vn/san-pham/5133/sua-tam-gung-nghe-thao-duoc-500g-co-cay-hoa-la-thanh-loc-da-ngua-mun-giu-da-khoe-manh.html",
+                "badges": [
+                    "Giảm 33%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152811,
+                "price_formatted": "269.000 ₫",
+                "old_price_formatted": "400.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5130,
+                "name": "Dung Dịch Vệ Sinh Phụ Nữ Gel X2 Nano Nghệ Hương Trà Xanh Cỏ Cây Hoa Lá 150ml – Củng Cố Lợi Khuẩn, Ngừa Nấm",
+                "slug": "dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-huong-tra-xanh-co-cay-hoa-la-150ml-cung-co-loi-khuan-ngua-nam",
+                "price": 159000,
+                "old_price": 270000,
+                "ctv_price": 0,
+                "discount_percent": 41,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 100,
+                "sold": 0,
+                "views": 44,
+                "image": "https://socdo.vn//uploads/minh-hoa/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-huong-tra-xanh-co-cay-hoa-la-150ml-cung-co-loi-khuan-ngua-nam-1746777311.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-huong-tra-xanh-co-cay-hoa-la-150ml-cung-co-loi-khuan-ngua-nam-1746777311.webp",
+                "product_url": "https://socdo.vn/san-pham/5130/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-huong-tra-xanh-co-cay-hoa-la-150ml-cung-co-loi-khuan-ngua-nam.html",
+                "badges": [
+                    "Giảm 41%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152810,
+                "price_formatted": "159.000 ₫",
+                "old_price_formatted": "270.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5127,
+                "name": "Bộ Sản Phẩm Chăm Sóc Da Đậu Đỏ Phiên Bản Mini – Tiện Lợi, Dưỡng Da Sáng Mịn",
+                "slug": "bo-san-pham-cham-soc-da-dau-do-phien-ban-mini",
+                "price": 149000,
+                "old_price": 250000,
+                "ctv_price": 0,
+                "discount_percent": 40,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 100,
+                "sold": 0,
+                "views": 44,
+                "image": "https://socdo.vn//uploads/minh-hoa/bo-san-pham-cham-soc-da-dau-do-phien-ban-mini-1746778097.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/bo-san-pham-cham-soc-da-dau-do-phien-ban-mini-1746778097.webp",
+                "product_url": "https://socdo.vn/san-pham/5127/bo-san-pham-cham-soc-da-dau-do-phien-ban-mini.html",
+                "badges": [
+                    "Giảm 40%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152786,
+                "price_formatted": "149.000 ₫",
+                "old_price_formatted": "250.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5128,
+                "name": "Dầu Gội Thảo Dược Hà Thủ Ô 2in1 Cỏ Cây Hoa Lá 450g – Cải Thiện Tóc Gãy Rụng, Nuôi Dưỡng Chắc Khỏe",
+                "slug": "dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-450g-cai-thien-toc-gay-rung",
+                "price": 159000,
+                "old_price": 270000,
+                "ctv_price": 0,
+                "discount_percent": 41,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 12,
+                "sold": 0,
+                "views": 64,
+                "image": "https://socdo.vn//uploads/minh-hoa/dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-450g-cai-thien-toc-gay-rung-1746777899.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-450g-cai-thien-toc-gay-rung-1746777899.webp",
+                "product_url": "https://socdo.vn/san-pham/5128/dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-450g-cai-thien-toc-gay-rung.html",
+                "badges": [
+                    "Giảm 41%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152786,
+                "price_formatted": "159.000 ₫",
+                "old_price_formatted": "270.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5129,
+                "name": "Dung Dịch Vệ Sinh Phụ Nữ Gel X2 Nano Nghệ Cỏ Cây Hoa Lá 150g – Làm Sạch Dịu Nhẹ, Ngừa Vi Khuẩn",
+                "slug": "dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-150g-lam-sach-diu-nhe-ngua-vi-khuan",
+                "price": 159000,
+                "old_price": 270000,
+                "ctv_price": 0,
+                "discount_percent": 41,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 12,
+                "sold": 0,
+                "views": 50,
+                "image": "https://socdo.vn//uploads/minh-hoa/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-150g-lam-sach-ngua-vi-khuan-1746777592.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-150g-lam-sach-ngua-vi-khuan-1746777592.webp",
+                "product_url": "https://socdo.vn/san-pham/5129/dung-dich-ve-sinh-phu-nu-gel-x2-nano-nghe-co-cay-hoa-la-150g-lam-sach-diu-nhe-ngua-vi-khuan.html",
+                "badges": [
+                    "Giảm 41%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152786,
+                "price_formatted": "159.000 ₫",
+                "old_price_formatted": "270.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5120,
+                "name": "Dầu Gội Xả Thảo Dược Gừng Dừa Cỏ Cây Hoa Lá 650g – Trị Gàu Ngứa, Ngăn Rụng Tóc Hiệu Quả",
+                "slug": "dau-goi-xa-thao-duoc-gung-dua-co-cay-hoa-la-650g-tri-gau-ngua-ngan-rung-toc-hieu-qua",
+                "price": 659000,
+                "old_price": 990000,
+                "ctv_price": 0,
+                "discount_percent": 33,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 888,
+                "sold": 0,
+                "views": 41,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-dau-goi-xa-thao-duoc-gung-dua-co-cay-hoa-la-650g-tri-gau-ngua-ngan-rung-toc-1746780659.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-dau-goi-xa-thao-duoc-gung-dua-co-cay-hoa-la-650g-tri-gau-ngua-ngan-rung-toc-1746780659.webp",
+                "product_url": "https://socdo.vn/san-pham/5120/dau-goi-xa-thao-duoc-gung-dua-co-cay-hoa-la-650g-tri-gau-ngua-ngan-rung-toc-hieu-qua.html",
+                "badges": [
+                    "Giảm 33%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "659.000 ₫",
+                "old_price_formatted": "990.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5121,
+                "name": "Toner Đậu Đỏ 150g Cỏ Cây Hoa Lá – Cấp Ẩm, Làm Dịu Da, Cân Bằng pH Hiệu Quả",
+                "slug": "toner-dau-do-150g-co-cay-hoa-la-cap-am-lam-diu-da-can-bang-ph-hieu-qua",
+                "price": 199000,
+                "old_price": 295000,
+                "ctv_price": 0,
+                "discount_percent": 33,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 200,
+                "sold": 0,
+                "views": 44,
+                "image": "https://socdo.vn//uploads/minh-hoa/toner-dau-do-co-cay-hoa-la-150g-am-muot-mem-mai-can-bang-ph-1746780127.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/toner-dau-do-co-cay-hoa-la-150g-am-muot-mem-mai-can-bang-ph-1746780127.webp",
+                "product_url": "https://socdo.vn/san-pham/5121/toner-dau-do-150g-co-cay-hoa-la-cap-am-lam-diu-da-can-bang-ph-hieu-qua.html",
+                "badges": [
+                    "Giảm 33%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "199.000 ₫",
+                "old_price_formatted": "295.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5122,
+                "name": "Sữa Rửa Mặt Tạo Bọt Đậu Đỏ Cỏ Cây Hoa Lá 150g – Làm Sạch Dịu Nhẹ, Ngừa Mụn, Cho Da Mềm Mại",
+                "slug": "sua-rua-mat-tao-bot-dau-do-co-cay-hoa-la-150g-lam-sach-diu-nhe-ngua-mun-cho-da-mem-mai",
+                "price": 219000,
+                "old_price": 295000,
+                "ctv_price": 0,
+                "discount_percent": 26,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 100,
+                "sold": 0,
+                "views": 52,
+                "image": "https://socdo.vn//uploads/minh-hoa/sua-rua-mat-tao-bot-dau-do-co-cay-hoa-la-150g-sach-diu-nhe-mem-mai-da-giup-ngua-mun-1746779849.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/sua-rua-mat-tao-bot-dau-do-co-cay-hoa-la-150g-sach-diu-nhe-mem-mai-da-giup-ngua-mun-1746779849.webp",
+                "product_url": "https://socdo.vn/san-pham/5122/sua-rua-mat-tao-bot-dau-do-co-cay-hoa-la-150g-lam-sach-diu-nhe-ngua-mun-cho-da-mem-mai.html",
+                "badges": [
+                    "Giảm 26%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "219.000 ₫",
+                "old_price_formatted": "295.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5123,
+                "name": "Túi Refill Dầu Gội Thảo Dược Gừng Sả 1000g Cỏ Cây Hoa Lá – Ngăn Tóc Bết Dầu, Giữ Tóc Sạch Khỏe",
+                "slug": "tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la",
+                "price": 409000,
+                "old_price": 610000,
+                "ctv_price": 0,
+                "discount_percent": 33,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 100,
+                "sold": 0,
+                "views": 48,
+                "image": "https://socdo.vn//uploads/minh-hoa/tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la-1746779712.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la-1746779712.webp",
+                "product_url": "https://socdo.vn/san-pham/5123/tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la.html",
+                "badges": [
+                    "Giảm 33%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "409.000 ₫",
+                "old_price_formatted": "610.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5124,
+                "name": "Mặt Nạ Tẩy Tế Bào Chết Đậu Đỏ Cỏ Cây Hoa Lá 150g – Cấp Ẩm, Dưỡng Da Sáng Mịn, Khỏe Mạnh",
+                "slug": "mat-na-tay-te-bao-chet-dau-do-co-cay-hoa-la-150g-cap-am-duong-da-sang-min-khoe-manh",
+                "price": 199000,
+                "old_price": 265000,
+                "ctv_price": 0,
+                "discount_percent": 25,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 12,
+                "sold": 0,
+                "views": 39,
+                "image": "https://socdo.vn//uploads/minh-hoa/mat-na-tay-te-bao-chet-dau-do-co-cay-hoa-la-150g-cap-am-duong-da-sang-min-khoe-manh-1746779431.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/mat-na-tay-te-bao-chet-dau-do-co-cay-hoa-la-150g-cap-am-duong-da-sang-min-khoe-manh-1746779431.webp",
+                "product_url": "https://socdo.vn/san-pham/5124/mat-na-tay-te-bao-chet-dau-do-co-cay-hoa-la-150g-cap-am-duong-da-sang-min-khoe-manh.html",
+                "badges": [
+                    "Giảm 25%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "199.000 ₫",
+                "old_price_formatted": "265.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5125,
+                "name": "Combo Chăm Sóc Cơ Thể Mẹ Bầu Toàn Diện Cỏ Cây Hoa Lá – An Toàn, Dịu Nhẹ, Dưỡng Da Khỏe Mạnh",
+                "slug": "combo-cham-soc-co-the-me-bau-toan-dien-co-cay-hoa-la-an-toan-diu-nhe-duong-da-khoe-manh",
+                "price": 419000,
+                "old_price": 700000,
+                "ctv_price": 0,
+                "discount_percent": 40,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 200,
+                "sold": 0,
+                "views": 43,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-cham-soc-co-the-me-bau-toan-dien-co-cay-hoa-la-1746779051.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-cham-soc-co-the-me-bau-toan-dien-co-cay-hoa-la-1746779051.webp",
+                "product_url": "https://socdo.vn/san-pham/5125/combo-cham-soc-co-the-me-bau-toan-dien-co-cay-hoa-la-an-toan-diu-nhe-duong-da-khoe-manh.html",
+                "badges": [
+                    "Giảm 40%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "419.000 ₫",
+                "old_price_formatted": "700.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5126,
+                "name": "Sữa Tắm Thảo Dược Gừng Nghệ Cỏ Cây Hoa Lá 1000g Làm Sạch Sâu, Ngăn Ngừa Mụn Trên Da",
+                "slug": "sua-tam-thao-duoc-gung-nghe-co-cay-hoa-la-1000g-lam-sach-sau-ngan-ngua-mun-tren-da",
+                "price": 269000,
+                "old_price": 520000,
+                "ctv_price": 0,
+                "discount_percent": 48,
+                "category_ids": [
+                    152,
+                    193
+                ],
+                "brand_id": 2547,
+                "stock": 100,
+                "sold": 0,
+                "views": 44,
+                "image": "https://socdo.vn//uploads/minh-hoa/sua-tam-thao-duoc-gung-nghe-co-cay-hoa-la-1000g-lam-sach-sau-ngan-ngua-mun-tren-da-1746778371.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/sua-tam-thao-duoc-gung-nghe-co-cay-hoa-la-1000g-lam-sach-sau-ngan-ngua-mun-tren-da-1746778371.webp",
+                "product_url": "https://socdo.vn/san-pham/5126/sua-tam-thao-duoc-gung-nghe-co-cay-hoa-la-1000g-lam-sach-sau-ngan-ngua-mun-tren-da.html",
+                "badges": [
+                    "Giảm 48%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "269.000 ₫",
+                "old_price_formatted": "520.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5111,
+                "name": "Dầu Gội Thảo Dược Túi Refill Gừng Sả 1000ml - Ngăn Tóc Bết Dầu - Cỏ Cây Hoa Lá",
+                "slug": "dau-goi-thao-duoc-tui-refill-gung-sa-1000ml-ngan-toc-bet-dau-co-cay-hoa-la",
+                "price": 370000,
+                "old_price": 585000,
+                "ctv_price": 0,
+                "discount_percent": 37,
+                "category_ids": [
+                    11,
+                    216
+                ],
+                "brand_id": 2547,
+                "stock": 50,
+                "sold": 0,
+                "views": 51,
+                "image": "https://socdo.vn//uploads/minh-hoa/tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la--1747105582.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la--1747105582.webp",
+                "product_url": "https://socdo.vn/san-pham/5111/dau-goi-thao-duoc-tui-refill-gung-sa-1000ml-ngan-toc-bet-dau-co-cay-hoa-la.html",
+                "badges": [
+                    "Giảm 37%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "370.000 ₫",
+                "old_price_formatted": "585.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5112,
+                "name": "Combo Dầu Gội & Xả Thảo Dược Bưởi Trà 500g - Phục Hồi Tóc Hư Tổn - Cỏ Cây Hoa Lá",
+                "slug": "combo-dau-goi-xa-thao-duoc-buoi-tra-500g-phuc-hoi-toc-hu-ton-co-cay-hoa-la",
+                "price": 279000,
+                "old_price": 880000,
+                "ctv_price": 0,
+                "discount_percent": 68,
+                "category_ids": [
+                    11,
+                    216
+                ],
+                "brand_id": 2547,
+                "stock": 12,
+                "sold": 0,
+                "views": 60,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-dau-goi-xa-thao-duoc-buoi-tra-co-cay-hoa-la-500g-phuc-hoi-toc-hu-ton-1747104977.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-dau-goi-xa-thao-duoc-buoi-tra-co-cay-hoa-la-500g-phuc-hoi-toc-hu-ton-1747104977.webp",
+                "product_url": "https://socdo.vn/san-pham/5112/combo-dau-goi-xa-thao-duoc-buoi-tra-500g-phuc-hoi-toc-hu-ton-co-cay-hoa-la.html",
+                "badges": [
+                    "Giảm 68%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "279.000 ₫",
+                "old_price_formatted": "880.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5113,
+                "name": "Combo Dầu gội thảo dược Hà thủ ô dành cho nam và nữ - ngăn ngừa rụng và kích mọc tóc",
+                "slug": "combo-dau-goi-thao-duoc-ha-thu-o-danh-cho-nam-va-nu-ngan-ngua-rung-va-kich-moc-toc",
+                "price": 499000,
+                "old_price": 930000,
+                "ctv_price": 0,
+                "discount_percent": 46,
+                "category_ids": [
+                    11,
+                    216
+                ],
+                "brand_id": 2547,
+                "stock": 12,
+                "sold": 0,
+                "views": 34,
+                "image": "https://socdo.vn//uploads/minh-hoa/combo-dau-goi-thao-duoc-ha-thu-o-danh-cho-nam-va-nu-ngan-ngua-rung-va-kich-moc-toc-1747043187.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/combo-dau-goi-thao-duoc-ha-thu-o-danh-cho-nam-va-nu-ngan-ngua-rung-va-kich-moc-toc-1747043187.webp",
+                "product_url": "https://socdo.vn/san-pham/5113/combo-dau-goi-thao-duoc-ha-thu-o-danh-cho-nam-va-nu-ngan-ngua-rung-va-kich-moc-toc.html",
+                "badges": [
+                    "Giảm 46%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "499.000 ₫",
+                "old_price_formatted": "930.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            },
+            {
+                "id": 5114,
+                "name": "Xịt Dưỡng Tóc Thảo Dược Hà Thủ Ô Đỏ 100g - Ngăn Tóc Gãy Rụng - Kích Mọc Tóc - Cỏ Cây Hoa Lá",
+                "slug": "xit-duong-toc-thao-duoc-ha-thu-o-do-100g-ngan-toc-gay-rung-kich-moc-toc-co-cay-hoa-la",
+                "price": 179000,
+                "old_price": 300000,
+                "ctv_price": 0,
+                "discount_percent": 40,
+                "category_ids": [
+                    11,
+                    216
+                ],
+                "brand_id": 2547,
+                "stock": 12,
+                "sold": 0,
+                "views": 56,
+                "image": "https://socdo.vn//uploads/minh-hoa/xit-duong-toc-ha-thu-o-do-co-cay-hoa-la-100g-ngan-toc-gay-rung-kich-moc-toc-1747043004.webp",
+                "thumb": "https://socdo.vn//uploads/thumbs/sanpham_anh_340x340/xit-duong-toc-ha-thu-o-do-co-cay-hoa-la-100g-ngan-toc-gay-rung-kich-moc-toc-1747043004.webp",
+                "product_url": "https://socdo.vn/san-pham/5114/xit-duong-toc-thao-duoc-ha-thu-o-do-100g-ngan-toc-gay-rung-kich-moc-toc-co-cay-hoa-la.html",
+                "badges": [
+                    "Giảm 40%"
+                ],
+                "voucher_icon": "",
+                "freeship_icon": "Ưu đãi ship",
+                "chinhhang_icon": "Chính hãng",
+                "warehouse_name": "",
+                "province_name": "Thành phố Hà Nội",
+                "is_bestseller": 0,
+                "is_featured": 0,
+                "is_flash_sale": 0,
+                "created_at": 1757152785,
+                "price_formatted": "179.000 ₫",
+                "old_price_formatted": "300.000 ₫",
+                "ctv_price_formatted": "0 ₫"
+            }
+        ],
+        "flash_sales": [
+            {
+                "id": 1087,
+                "title": "Cỏ cây hoa lá - 12h",
+                "main_products": [
+                    5118,
+                    5123,
+                    5127,
+                    5128,
+                    5131,
+                    5133,
+                    5857,
+                    5861
+                ],
+                "sub_products": {
+                    "5118": {
+                        "product_info": {
+                            "id": 5118,
+                            "name": "Dầu Gội Thảo Dược Hà Thủ Ô 2IN1 Cỏ Cây Hoa Lá 420G Dưỡng Tóc Mềm Mượt",
+                            "slug": "dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-420g-duong-toc-mem-muot",
+                            "image": "https://socdo.vn//uploads/minh-hoa/dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-420g-duong-toc-mem-muot-1746781496.webp",
+                            "product_url": "https://socdo.vn/san-pham/5118/dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-420g-duong-toc-mem-muot.html",
+                            "category_ids": [
+                                "14254"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 12,
+                            "sold": 0,
+                            "views": 69,
+                            "discount_percent": 0,
+                            "voucher_icon": "",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "5940",
+                                "color": "Màu xanh lá cây",
+                                "size": "",
+                                "gia_cu": "540000",
+                                "gia": "529000",
+                                "so_luong": "10"
+                            }
+                        ]
+                    },
+                    "5123": {
+                        "product_info": {
+                            "id": 5123,
+                            "name": "Túi Refill Dầu Gội Thảo Dược Gừng Sả 1000g Cỏ Cây Hoa Lá – Ngăn Tóc Bết Dầu, Giữ Tóc Sạch Khỏe",
+                            "slug": "tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la",
+                            "image": "https://socdo.vn//uploads/minh-hoa/tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la-1746779712.webp",
+                            "product_url": "https://socdo.vn/san-pham/5123/tui-refill-dau-goi-thao-duoc-gung-sa-1000g-ngan-toc-bet-dau-co-cay-hoa-la.html",
+                            "category_ids": [
+                                "152",
+                                "193"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 100,
+                            "sold": 0,
+                            "views": 48,
+                            "discount_percent": 33,
+                            "voucher_icon": "",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "5943",
+                                "color": "Màu xanh lá cây",
+                                "size": "1000L",
+                                "gia_cu": "610000",
+                                "gia": "399000",
+                                "so_luong": "10"
+                            }
+                        ]
+                    },
+                    "5127": {
+                        "product_info": {
+                            "id": 5127,
+                            "name": "Bộ Sản Phẩm Chăm Sóc Da Đậu Đỏ Phiên Bản Mini – Tiện Lợi, Dưỡng Da Sáng Mịn",
+                            "slug": "bo-san-pham-cham-soc-da-dau-do-phien-ban-mini",
+                            "image": "https://socdo.vn//uploads/minh-hoa/bo-san-pham-cham-soc-da-dau-do-phien-ban-mini-1746778097.webp",
+                            "product_url": "https://socdo.vn/san-pham/5127/bo-san-pham-cham-soc-da-dau-do-phien-ban-mini.html",
+                            "category_ids": [
+                                "152",
+                                "193"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 100,
+                            "sold": 0,
+                            "views": 44,
+                            "discount_percent": 40,
+                            "voucher_icon": "",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "null",
+                                "color": "",
+                                "size": "",
+                                "gia_cu": "250000",
+                                "gia": "139000",
+                                "so_luong": "10"
+                            }
+                        ]
+                    },
+                    "5128": {
+                        "product_info": {
+                            "id": 5128,
+                            "name": "Dầu Gội Thảo Dược Hà Thủ Ô 2in1 Cỏ Cây Hoa Lá 450g – Cải Thiện Tóc Gãy Rụng, Nuôi Dưỡng Chắc Khỏe",
+                            "slug": "dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-450g-cai-thien-toc-gay-rung",
+                            "image": "https://socdo.vn//uploads/minh-hoa/dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-450g-cai-thien-toc-gay-rung-1746777899.webp",
+                            "product_url": "https://socdo.vn/san-pham/5128/dau-goi-thao-duoc-ha-thu-o-2in1-co-cay-hoa-la-450g-cai-thien-toc-gay-rung.html",
+                            "category_ids": [
+                                "152",
+                                "193"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 12,
+                            "sold": 0,
+                            "views": 64,
+                            "discount_percent": 41,
+                            "voucher_icon": "",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "null",
+                                "color": "",
+                                "size": "",
+                                "gia_cu": "270000",
+                                "gia": "149000",
+                                "so_luong": "10"
+                            }
+                        ]
+                    },
+                    "5131": {
+                        "product_info": {
+                            "id": 5131,
+                            "name": "Combo Chăm Sóc Da Toàn Diện Đậu Đỏ Cỏ Cây Hoa Lá – Dưỡng Ẩm, Làm Sáng Da, Ngăn Ngừa Lão Hóa",
+                            "slug": "combo-cham-soc-da-toan-dien-dau-do-co-cay-hoa-la-duong-am-lam-sang-da-ngan-ngua-lao-hoa",
+                            "image": "https://socdo.vn//uploads/minh-hoa/combo-cham-soc-da-toan-dien-dau-do-co-cay-hoa-la-1746776919.webp",
+                            "product_url": "https://socdo.vn/san-pham/5131/combo-cham-soc-da-toan-dien-dau-do-co-cay-hoa-la-duong-am-lam-sang-da-ngan-ngua-lao-hoa.html",
+                            "category_ids": [
+                                "152",
+                                "193"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 12,
+                            "sold": 0,
+                            "views": 53,
+                            "discount_percent": 24,
+                            "voucher_icon": "",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "5944",
+                                "color": "100g",
+                                "size": "+",
+                                "gia_cu": "680000",
+                                "gia": "499000",
+                                "so_luong": "10"
+                            }
+                        ]
+                    },
+                    "5133": {
+                        "product_info": {
+                            "id": 5133,
+                            "name": "Sữa Tắm Gừng Nghệ Thảo Dược 500g Cỏ Cây Hoa Lá – Thanh Lọc Da, Ngừa Mụn, Giữ Da Khỏe Mạnh",
+                            "slug": "sua-tam-gung-nghe-thao-duoc-500g-co-cay-hoa-la-thanh-loc-da-ngua-mun-giu-da-khoe-manh",
+                            "image": "https://socdo.vn//uploads/minh-hoa/combo-dau-goi-xa-thao-duoc-gung-sa-co-cay-hoa-la-500g-cham-soc-toc-bet-dau--1746775845.webp",
+                            "product_url": "https://socdo.vn/san-pham/5133/sua-tam-gung-nghe-thao-duoc-500g-co-cay-hoa-la-thanh-loc-da-ngua-mun-giu-da-khoe-manh.html",
+                            "category_ids": [
+                                "152",
+                                "193"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 100,
+                            "sold": 0,
+                            "views": 58,
+                            "discount_percent": 33,
+                            "voucher_icon": "",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "null",
+                                "color": "",
+                                "size": "",
+                                "gia_cu": "400000",
+                                "gia": "259000",
+                                "so_luong": "10"
+                            }
+                        ]
+                    },
+                    "5857": {
+                        "product_info": {
+                            "id": 5857,
+                            "name": "Combo Dầu Gội Xả Bưởi Trà Cỏ Cây Hoa Lá 350g – Phục Hồi & Chăm Sóc Tóc Hư Tổn",
+                            "slug": "combo-dau-goi-xa-buoi-tra-co-cay-hoa-la-350g-phuc-hoi-cham-soc-toc-hu-ton",
+                            "image": "https://socdo.vn//uploads/minh-hoa/combo-goi-xa-buoi-tra-co-cay-hoa-la-350g-phuc-hoi-toc-hu-ton-1747034847.webp",
+                            "product_url": "https://socdo.vn/san-pham/5857/combo-dau-goi-xa-buoi-tra-co-cay-hoa-la-350g-phuc-hoi-cham-soc-toc-hu-ton.html",
+                            "category_ids": [
+                                "11",
+                                "216"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 50,
+                            "sold": 0,
+                            "views": 38,
+                            "discount_percent": 30,
+                            "voucher_icon": "",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "6313",
+                                "color": "1.2L",
+                                "size": "+",
+                                "gia_cu": "515000",
+                                "gia": "329000",
+                                "so_luong": "10"
+                            }
+                        ]
+                    },
+                    "5861": {
+                        "product_info": {
+                            "id": 5861,
+                            "name": "Bộ Dầu Gội Xả Gừng Sả Thảo Dược 500g Cỏ Cây Hoa Lá – Giảm Bết Dầu, Cho Tóc Suôn Mượt Tự Nhiên",
+                            "slug": "bo-dau-goi-xa-gung-sa-thao-duoc-500g-co-cay-hoa-la-giam-bet-dau-cho-toc-suon-muot-tu-nhien",
+                            "image": "https://socdo.vn//uploads/minh-hoa/combo-dau-goi-xa-thao-duoc-gung-sa-co-cay-hoa-la-500g-cham-soc-toc-bet-dau-1757142284.webp",
+                            "product_url": "https://socdo.vn/san-pham/5861/bo-dau-goi-xa-gung-sa-thao-duoc-500g-co-cay-hoa-la-giam-bet-dau-cho-toc-suon-muot-tu-nhien.html",
+                            "category_ids": [
+                                "152",
+                                "193"
+                            ],
+                            "brand_id": 2547,
+                            "stock": 300,
+                            "sold": 0,
+                            "views": 90,
+                            "discount_percent": 54,
+                            "voucher_icon": "Voucher",
+                            "freeship_icon": "Ưu đãi ship",
+                            "chinhhang_icon": "Chính hãng",
+                            "warehouse_name": "",
+                            "province_name": "Thành phố Hà Nội"
+                        },
+                        "variants": [
+                            {
+                                "variant_id": "6321",
+                                "color": "Gội",
+                                "size": "+",
+                                "gia_cu": "490000",
+                                "gia": "229000",
+                                "so_luong": "10"
+                            },
+                            {
+                                "variant_id": "6322",
+                                "color": "Xả",
+                                "size": "+",
+                                "gia_cu": "490000",
+                                "gia": "229000",
+                                "so_luong": "10"
+                            },
+                            {
+                                "variant_id": "6323",
+                                "color": "Gội+Xả",
+                                "size": "+",
+                                "gia_cu": "525000",
+                                "gia": "379000",
+                                "so_luong": "100"
+                            }
+                        ]
+                    }
+                },
+                "start_time": 1759912200,
+                "end_time": 1767169800,
+                "timeline": "00:00",
+                "created_at": 1759911749,
+                "time_left": 6277219,
+                "is_active": true
+            },
+            {
+                "id": 1075,
+                "title": "Cỏ cây hoa lá - tháng 9",
+                "main_products": [
+                    79891,
+                    79893,
+                    79894,
+                    79895,
+                    79899,
+                    79904
+                ],
+                "sub_products": [],
+                "start_time": 1757922480,
+                "end_time": 1761119280,
+                "timeline": null,
+                "created_at": 1757922472,
+                "time_left": 226699,
+                "is_active": true
+            },
+            {
+                "id": 944,
+                "title": "Flash sale",
+                "main_products": [
+                    79891,
+                    79893,
+                    79894,
+                    79895,
+                    79899,
+                    79904,
+                    79913,
+                    79916,
+                    79923,
+                    79934
+                ],
+                "sub_products": [],
+                "start_time": 1746869340,
+                "end_time": 1766050140,
+                "timeline": null,
+                "created_at": 1746869388,
+                "time_left": 5157559,
+                "is_active": true
+            }
+        ],
+        "vouchers": [
+            {
+                "id": 910,
+                "code": "KH-11100-G6E07",
+                "discount_value": 5,
+                "max_discount": 500000,
+                "discount_type": "phantram",
+                "apply_type": "sanpham",
+                "product_ids": [
+                    5861
+                ],
+                "min_order_value": 0,
+                "start_time": 1759806000,
+                "end_time": 1762484400,
+                "description": null,
+                "image_url": "",
+                "min_price": 50000,
+                "max_price": 10000000,
+                "allow_combination": 1,
+                "max_uses_per_user": 10,
+                "max_global_uses": 1000,
+                "current_uses": 0,
+                "created_at": 1759808405,
+                "time_left": 1591819,
+                "is_active": true,
+                "discount_description": "Giảm 5% (tối đa 500,000đ)"
+            }
+        ],
+        "warehouses": [
+            {
+                "id": 49,
+                "warehouse_code": null,
+                "warehouse_name": null,
+                "contact_name": "Lê Văn Tỉnh",
+                "contact_phone": "0984031936",
+                "is_default": 1,
+                "is_pickup": 1,
+                "is_return": 1,
+                "latitude": 0,
+                "longitude": 0,
+                "address_detail": "417",
+                "province_id": 1,
+                "district_id": 21,
+                "ward_id": 343,
+                "province_name": "Thành phố Hà Nội",
+                "district_name": "Huyện Đan Phượng",
+                "ward_name": "Xã Thọ Xuân",
+                "full_address": "417, Xã Thọ Xuân, Huyện Đan Phượng, Thành phố Hà Nội",
+                "free_ship_mode": 3,
+                "free_ship_min_order": 0,
+                "free_ship_discount": 0,
+                "freeship_description": "Ưu đãi ship theo sản phẩm"
+            }
+        ],
+        "categories": [
+            {
+                "id": 14298,
+                "icon": "",
+                "title": "Chăm sóc mẹ bầu & mẹ sau sinh",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 1,
+                "link": "",
+                "image": "https://socdo.vn//uploads/minh-hoa/cham-soc-me-bau-me-sau-sinh-1747205581.png",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc mẹ bầu & mẹ sau sinh",
+                "seo_description": "Chăm sóc mẹ bầu & mẹ sau sinh",
+                "order": 1,
+                "socdo_category_ids": [
+                    152,
+                    193
+                ],
+                "socdo_category_name": "Mẹ và Bé",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14298.html"
+            },
+            {
+                "id": 14298,
+                "icon": "",
+                "title": "Chăm sóc mẹ bầu & mẹ sau sinh",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 1,
+                "link": "",
+                "image": "https://socdo.vn//uploads/minh-hoa/cham-soc-me-bau-me-sau-sinh-1747205581.png",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc mẹ bầu & mẹ sau sinh",
+                "seo_description": "Chăm sóc mẹ bầu & mẹ sau sinh",
+                "order": 1,
+                "socdo_category_ids": [
+                    152,
+                    193
+                ],
+                "socdo_category_name": "Phụ kiện mẹ bé",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14298.html"
+            },
+            {
+                "id": 14254,
+                "icon": "",
+                "title": "Chăm sóc tóc",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 1,
+                "link": "#",
+                "image": "https://socdo.vn//uploads/minh-hoa/cham-soc-toc-1747205658.png",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc tóc",
+                "seo_description": "Chăm sóc tóc",
+                "order": 2,
+                "socdo_category_ids": [
+                    11,
+                    216
+                ],
+                "socdo_category_name": "Sắc đẹp",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14254.html"
+            },
+            {
+                "id": 14254,
+                "icon": "",
+                "title": "Chăm sóc tóc",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 1,
+                "link": "#",
+                "image": "https://socdo.vn//uploads/minh-hoa/cham-soc-toc-1747205658.png",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc tóc",
+                "seo_description": "Chăm sóc tóc",
+                "order": 2,
+                "socdo_category_ids": [
+                    11,
+                    216
+                ],
+                "socdo_category_name": "Chăm sóc tóc",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14254.html"
+            },
+            {
+                "id": 14299,
+                "icon": "",
+                "title": "Chăm sóc cơ thể",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 0,
+                "link": "",
+                "image": "",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc cơ thể",
+                "seo_description": "",
+                "order": 3,
+                "socdo_category_ids": [
+                    11,
+                    207
+                ],
+                "socdo_category_name": "Sắc đẹp",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14299.html"
+            },
+            {
+                "id": 14299,
+                "icon": "",
+                "title": "Chăm sóc cơ thể",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 0,
+                "link": "",
+                "image": "",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc cơ thể",
+                "seo_description": "",
+                "order": 3,
+                "socdo_category_ids": [
+                    11,
+                    207
+                ],
+                "socdo_category_name": "Bảo vệ cơ thể",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14299.html"
+            },
+            {
+                "id": 14295,
+                "icon": "",
+                "title": "Chăm sóc da",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 0,
+                "link": "",
+                "image": "",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc da",
+                "seo_description": "",
+                "order": 4,
+                "socdo_category_ids": [
+                    11,
+                    207
+                ],
+                "socdo_category_name": "Sắc đẹp",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14295.html"
+            },
+            {
+                "id": 14295,
+                "icon": "",
+                "title": "Chăm sóc da",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 0,
+                "link": "",
+                "image": "",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc da",
+                "seo_description": "",
+                "order": 4,
+                "socdo_category_ids": [
+                    11,
+                    207
+                ],
+                "socdo_category_name": "Bảo vệ cơ thể",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14295.html"
+            },
+            {
+                "id": 14297,
+                "icon": "",
+                "title": "Chăm sóc nhà cửa",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 0,
+                "link": "",
+                "image": "",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc nhà cửa",
+                "seo_description": "",
+                "order": 5,
+                "socdo_category_ids": [
+                    338
+                ],
+                "socdo_category_name": "Chăm sóc nhà cửa khác",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14297.html"
+            },
+            {
+                "id": 14296,
+                "icon": "",
+                "title": "Chăm sóc sức khỏe nam giới",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 0,
+                "link": "",
+                "image": "",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc sức khỏe nam giới",
+                "seo_description": "",
+                "order": 6,
+                "socdo_category_ids": [
+                    11,
+                    207
+                ],
+                "socdo_category_name": "Sắc đẹp",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14296.html"
+            },
+            {
+                "id": 14296,
+                "icon": "",
+                "title": "Chăm sóc sức khỏe nam giới",
+                "description": "",
+                "parent_id": 0,
+                "is_index": 0,
+                "link": "",
+                "image": "",
+                "banner_image": "",
+                "left_image": "",
+                "seo_title": "Chăm sóc sức khỏe nam giới",
+                "seo_description": "",
+                "order": 6,
+                "socdo_category_ids": [
+                    11,
+                    207
+                ],
+                "socdo_category_name": "Bảo vệ cơ thể",
+                "category_url": "https://socdo.vn/shop/0984031936/danh-muc/14296.html"
+            }
+        ],
+        "statistics": {
+            "total_products": 24,
+            "total_flash_sales": 3,
+            "total_vouchers": 1,
+            "total_warehouses": 1,
+            "total_categories": 11
+        },
+        "parameters": {
+            "shop_id": 11100,
+            "username": "",
+            "include_products": 1,
+            "include_flash_sale": 1,
+            "include_vouchers": 1,
+            "include_warehouses": 1,
+            "include_categories": 1,
+            "products_limit": 20
+        }
+    }
+}
+
+- dữ liệu db :  
+` `deal` (`id`, `shop`, `tieu_de`, `main_product`, `sub_product`, `sub_id`, `date_start`, `date_end`, `loai`, `date_post`, `status`, `timeline`) VALUES (NULL, '11100', 'Flash sale', '79891,79893,79894,79895,79899,79904,79913,79916,79923,79934', '{\"79891\":[{\"variant_id\":\"3829\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"690000\",\"gia\":\"460000\",\"so_luong\":5}],\"79893\":[{\"variant_id\":\"3831\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"400000\",\"gia\":\"250000\",\"so_luong\":5}],\"79894\":[{\"variant_id\":\"3832\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"340000\",\"gia\":\"210000\",\"so_luong\":12}],\"79895\":[{\"variant_id\":\"3833\",\"color\":\"\",\"size\":\"100g\",\"gia_cu\":\"900000\",\"gia\":\"454000\",\"so_luong\":5}],\"79899\":[{\"variant_id\":\"3837\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"340000\",\"gia\":\"240000\",\"so_luong\":5}],\"79904\":[{\"variant_id\":\"3843\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"330000\",\"gia\":\"109000\",\"so_luong\":5}],\"79913\":[{\"variant_id\":\"3855\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"540000\",\"gia\":\"115000\",\"so_luong\":5}],\"79916\":[{\"variant_id\":\"3858\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"195000\",\"gia\":\"99000\",\"so_luong\":5}],\"79923\":[{\"variant_id\":\"3867\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"700000\",\"gia\":\"300000\",\"so_luong\":5}],\"79934\":[{\"variant_id\":\"4012\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"1328000\",\"gia\":\"960000\",\"so_luong\":5}]}', '4012,3867,3858,3855,3843,3837,3833,3832,3831,3829', '1746869340', '1766050140', 'flash_sale', '1746869388', '0', NULL), (NULL, '11100', 'Cỏ cây hoa lá - tháng 9', '79891,79893,79894,79895,79899,79904', '{\"79891\":[{\"variant_id\":\"7350\",\"color\":\"G\\u1ed9i\",\"size\":\"+\",\"gia_cu\":\"490000\",\"gia\":\"359000\",\"so_luong\":\"10\"},{\"variant_id\":\"7351\",\"color\":\"X\\u1ea3\",\"size\":\"+\",\"gia_cu\":\"490000\",\"gia\":\"279000\",\"so_luong\":\"10\"},{\"variant_id\":\"7352\",\"color\":\"G\\u1ed9i+X\\u1ea3\",\"size\":\"+\",\"gia_cu\":\"525000\",\"gia\":\"429000\",\"so_luong\":\"10\"}],\"79893\":[{\"variant_id\":\"null\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"400000\",\"gia\":\"259000\",\"so_luong\":\"10\"}],\"79894\":[{\"variant_id\":\"null\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"340000\",\"gia\":\"199000\",\"so_luong\":\"10\"}],\"79895\":[{\"variant_id\":\"3833\",\"color\":\"100g\",\"size\":\"+\",\"gia_cu\":\"680000\",\"gia\":\"499000\",\"so_luong\":\"10\"}],\"79899\":[{\"variant_id\":\"null\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"270000\",\"gia\":\"149000\",\"so_luong\":\"10\"}],\"79904\":[{\"variant_id\":\"null\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"270000\",\"gia\":\"149000\",\"so_luong\":\"10\"}]}', '7350,7351,7352,null,null,3833,null,null', '1757922480', '1761119280', 'flash_sale', '1757922472', '1', NULL), (NULL, '11100', 'Cỏ cây hoa lá - 12h', '5118,5123,5127,5128,5131,5133,5857,5861', '{\"5118\":[{\"variant_id\":\"5940\",\"color\":\"M\\u00e0u xanh l\\u00e1 c\\u00e2y\",\"size\":\"\",\"gia_cu\":\"540000\",\"gia\":\"529000\",\"so_luong\":\"10\"}],\"5123\":[{\"variant_id\":\"5943\",\"color\":\"M\\u00e0u xanh l\\u00e1 c\\u00e2y\",\"size\":\"1000L\",\"gia_cu\":\"610000\",\"gia\":\"399000\",\"so_luong\":\"10\"}],\"5127\":[{\"variant_id\":\"null\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"250000\",\"gia\":\"139000\",\"so_luong\":\"10\"}],\"5128\":[{\"variant_id\":\"null\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"270000\",\"gia\":\"149000\",\"so_luong\":\"10\"}],\"5131\":[{\"variant_id\":\"5944\",\"color\":\"100g\",\"size\":\"+\",\"gia_cu\":\"680000\",\"gia\":\"499000\",\"so_luong\":\"10\"}],\"5133\":[{\"variant_id\":\"null\",\"color\":\"\",\"size\":\"\",\"gia_cu\":\"400000\",\"gia\":\"259000\",\"so_luong\":\"10\"}],\"5857\":[{\"variant_id\":\"6313\",\"color\":\"1.2L\",\"size\":\"+\",\"gia_cu\":\"515000\",\"gia\":\"329000\",\"so_luong\":\"10\"}],\"5861\":[{\"variant_id\":\"6321\",\"color\":\"G\\u1ed9i\",\"size\":\"+\",\"gia_cu\":\"490000\",\"gia\":\"229000\",\"so_luong\":\"10\"},{\"variant_id\":\"6322\",\"color\":\"X\\u1ea3\",\"size\":\"+\",\"gia_cu\":\"490000\",\"gia\":\"229000\",\"so_luong\":\"10\"},{\"variant_id\":\"6323\",\"color\":\"G\\u1ed9i+X\\u1ea3\",\"size\":\"+\",\"gia_cu\":\"525000\",\"gia\":\"379000\",\"so_luong\":\"100\"}]}', '6321,6322,6323,6313,null,5944,null,null,6313,5944,5943,5940', '1759912200', '1767169800', 'flash_sale', '1759911749', '2', '00:00');

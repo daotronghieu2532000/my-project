@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
@@ -23,29 +22,8 @@ class FlashSaleProductCardHorizontal extends StatelessWidget {
     required this.countdownText,
   });
 
-  // Helper function to generate fake rating and sold data
-  Map<String, dynamic> _generateFakeData(int price) {
-    final random = Random(product.id);
-    final isExpensive = price >= 1000000;
-    
-    final reviews = isExpensive 
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(95) + 10);
-    
-    final sold = isExpensive
-        ? (random.nextInt(21) + 5)
-        : (random.nextInt(90) + 15);
-    
-    return {
-      'rating': '5.0',
-      'reviews': reviews,
-      'sold': sold,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
-    final fakeData = _generateFakeData(product.price);
     final screenWidth = MediaQuery.of(context).size.width;
     
     return Container(
@@ -253,14 +231,14 @@ class FlashSaleProductCardHorizontal extends StatelessWidget {
                     ),
                   ] else ...[
                     const SizedBox(height: 4),
-                    // Rating and sold with fake data (if no stock info)
+                    // Rating and sold - dữ liệu thật từ API
                     Row(
                       children: [
                         Icon(Icons.star, size: screenWidth < 360 ? 11 : 13, color: Colors.amber),
                         const SizedBox(width: 2),
                         Flexible(
                           child: Text(
-                            '${fakeData['rating']} (${fakeData['reviews']}) | Đã bán ${fakeData['sold']}',
+                            _buildRatingSoldText(),
                             style: TextStyle(
                               fontSize: screenWidth < 360 ? 10 : 11,
                               color: Colors.grey,
@@ -526,6 +504,23 @@ class FlashSaleProductCardHorizontal extends StatelessWidget {
           ),
         ),
       );
+    }
+  }
+
+  // Helper method để build text rating và sold từ dữ liệu thật
+  String _buildRatingSoldText() {
+    final rating = product.rating;
+    final reviews = product.totalReviews;
+    final sold = product.sold;
+    
+    // Nếu có rating > 0 và reviews > 0, hiển thị rating, reviews và sold
+    if (rating != null && rating > 0 && reviews != null && reviews > 0) {
+      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold ?? 0)}';
+    } else if (rating != null && rating > 0) {
+      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold ?? 0)}';
+    } else {
+      // Nếu không có rating, chỉ hiển thị sold
+      return 'Đã bán ${FormatUtils.formatNumber(sold ?? 0)}';
     }
   }
 }

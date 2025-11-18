@@ -37,6 +37,21 @@ echo [OK] Đã tìm thấy keystore.properties
 echo [OK] Đã tìm thấy keystore file
 echo.
 
+REM Hiển thị thông tin version
+echo ========================================
+echo THÔNG TIN VERSION
+echo ========================================
+for /f "tokens=2" %%a in ('findstr /r /c:"^version:" pubspec.yaml') do set VERSION=%%a
+echo Version hiện tại: %VERSION%
+echo.
+echo LƯU Ý: Nếu cần thay đổi version, hãy sửa file pubspec.yaml
+echo Format: version: X.Y.Z+BUILD_NUMBER
+echo   - X.Y.Z là version name (hiển thị cho người dùng)
+echo   - BUILD_NUMBER là version code (phải tăng mỗi lần upload)
+echo.
+pause
+echo.
+
 REM Clean build trước
 echo Đang clean build cũ...
 call flutter clean

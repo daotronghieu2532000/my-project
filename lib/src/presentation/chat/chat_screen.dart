@@ -377,40 +377,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _showMenuOptions() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.store, color: Colors.blue),
-              title: const Text('Xem hồ sơ shop'),
-              onTap: () {
-                Navigator.pop(context);
-                _navigateToShopDetail();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.search, color: Colors.orange),
-              title: const Text('Tìm kiếm tin nhắn'),
-              onTap: () {
-                Navigator.pop(context);
-                setState(() {
-                  _isSearching = true;
-                });
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
 
   void _navigateToShopDetail() {
     Navigator.push(
@@ -585,9 +551,58 @@ class _ChatScreenState extends State<ChatScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          IconButton(
+          PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            onPressed: _showMenuOptions,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: Colors.white,
+            elevation: 8,
+            onSelected: (value) {
+              if (value == 'shop_profile') {
+                _navigateToShopDetail();
+              } else if (value == 'search') {
+                setState(() {
+                  _isSearching = true;
+                });
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'shop_profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.store, color: Colors.blue[600], size: 22),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Xem hồ sơ shop',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'search',
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: Colors.orange[600], size: 22),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Tìm kiếm tin nhắn',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),

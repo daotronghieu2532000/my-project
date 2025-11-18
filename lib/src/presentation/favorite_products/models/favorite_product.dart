@@ -58,8 +58,8 @@ class FavoriteProduct {
       imageUrl: json['minh_hoa'] as String? ?? json['image_url'] as String? ?? 'https://socdo.vn/images/no-images.jpg',
       price: int.tryParse(json['gia_moi']?.toString() ?? '0') ?? 0,
       oldPrice: int.tryParse(json['gia_cu']?.toString() ?? '0'),
-      rating: (json['avg_rating'] as num?)?.toDouble() ?? 0.0,
-      reviewCount: json['total_reviews'] as int? ?? 0,
+      rating: _parseDouble(json['avg_rating']) ?? 0.0,
+      reviewCount: _parseInt(json['total_reviews']) ?? 0,
       isInStock: (int.tryParse(json['kho']?.toString() ?? '0') ?? 0) > 0,
       productCode: json['ma_sanpham'] as String?,
       shopId: int.tryParse(json['shop']?.toString() ?? '0'),
@@ -73,8 +73,30 @@ class FavoriteProduct {
       provinceName: json['province_name'] as String?,
       productUrl: json['product_url'] as String? ?? '',
       discountPercent: int.tryParse(json['discount_percent']?.toString() ?? '0') ?? 0,
-      soldCount: int.tryParse(json['sold_count']?.toString() ?? '0') ?? int.tryParse(json['ban']?.toString() ?? '0') ?? 0,
+      soldCount: _parseInt(json['sold_count']) ?? _parseInt(json['ban']) ?? 0,
     );
+  }
+
+  // Helper methods để parse an toàn
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    if (value is num) return value.toDouble();
+    return null;
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) {
+      return int.tryParse(value);
+    }
+    if (value is num) return value.toInt();
+    return null;
   }
 
   Map<String, dynamic> toJson() {
