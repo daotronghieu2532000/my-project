@@ -1,0 +1,21 @@
+📋 TÓM TẮT CÁC API AFFILIATE ĐÃ CÓ VÀ CHƯA CÓ:
+✅ CÁC API ĐÃ CÓ:
+Mục	API	URL Test	Trạng thái
+Dashboard	affiliate_dashboard.php	GET /v1/affiliate_dashboard?user_id=8050	✅ Hoàn thành
+Sản phẩm Affiliate	affiliate_products.php	GET /v1/affiliate_products?page=1&limit=20	✅ Hoàn thành
+Affiliate của tôi	affiliate_my_links.php	GET /v1/affiliate_my_links?user_id=8050&page=1&limit=20	✅ Hoàn thành
+Đơn hàng	affiliate_orders.php	GET /v1/affiliate_orders?user_id=8050&page=1&limit=20	✅ Hoàn thành
+Lịch sử hoa hồng	affiliate_orders.php	GET /v1/affiliate_orders?user_id=8050&page=1&limit=20	✅ Hoàn thành
+Lịch sử rút tiền	affiliate_withdrawal_history.php	GET /v1/affiliate_withdrawal_history?user_id=8050&page=1&limit=20	✅ Hoàn thành
+Tạo link	affiliate_create_link.php	POST /v1/affiliate_create_link	✅ Hoàn thành
+Yêu cầu rút tiền	affiliate_withdraw.php	POST /v1/affiliate_withdraw	✅ Hoàn thành
+Claim hoa hồng	affiliate_claim_commission.php	POST /v1/affiliate_claim_commission	✅ Hoàn thành
+❌ CÁC API CÒN THIẾU:
+Chức năng	API cần tạo	Lý do
+Quản lý tài khoản ngân hàng	affiliate_bank_accounts.php	Để liệt kê, thêm, sửa, xóa tài khoản ngân hàng
+Thông tin số dư chi tiết	Cập nhật affiliate_dashboard.php	Để hiển thị số dư có thể rút, đang chờ như trên giao diện
+🔗 URL TEST CÁC API HIỆN CÓ:
+1. Lịch sử (History):
+2. Đơn hàng (Orders):
+3. Rút tiền (Withdrawal):
+3a. Lấy thông tin số dư:

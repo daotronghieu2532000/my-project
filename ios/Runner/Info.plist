@@ -55,5 +55,9 @@
 		<string>Ứng dụng cần truy cập thư viện ảnh để bạn có thể chọn và tải ảnh lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
 		<key>NSCameraUsageDescription</key>
 		<string>Ứng dụng cần truy cập camera để bạn có thể chụp ảnh và tải lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
+		<!-- Export Compliance - Khai báo app không sử dụng encryption đặc biệt -->
+		<!-- Nếu app chỉ dùng HTTPS/SSL thông thường, set false -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
 	</dict>
 </plist>

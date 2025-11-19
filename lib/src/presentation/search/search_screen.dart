@@ -267,7 +267,7 @@ class _SearchScreenState extends State<SearchScreen> {
     await _saveSearchHistory();
   }
 
-  // Load danh mục nổi bật với ảnh từ categories API
+  // Load danh mục nổi bật với ảnh từ product_suggest API (dựa trên hành vi người dùng)
   Future<void> _loadRandomCategoriesFromSuggestions() async {
     if (_isLoadingCategories) return;
     
@@ -276,52 +276,20 @@ class _SearchScreenState extends State<SearchScreen> {
     });
 
     try {
-      // Lấy danh mục nổi bật từ API (cat_noibat = 1) hoặc tất cả danh mục có ảnh
-      final categories = await _apiService.getCategoriesList(
-        type: 'all',
-        includeChildren: false,
-        includeProductsCount: false,
-        limit: 100, // Lấy nhiều để random 4 cái
+      // Lấy userId từ auth service
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
+      // Gọi API để lấy danh mục dựa trên hành vi người dùng
+      // Nếu không có hành vi, API sẽ fallback về random categories
+      final categories = await _apiService.getUserCategoriesSuggestions(
+        userId: userId,
+        limit: 4,
       );
       
       if (mounted && categories != null && categories.isNotEmpty) {
-        // Lọc các danh mục có ảnh (cat_minhhoa hoặc image_url không rỗng)
-        final categoriesWithImage = categories.where((cat) {
-          final imageUrl = cat['image_url']?.toString() ?? '';
-          final thumbUrl = cat['thumb_url']?.toString() ?? '';
-          final minhhoa = cat['cat_minhhoa']?.toString() ?? '';
-          return (imageUrl.isNotEmpty || thumbUrl.isNotEmpty || minhhoa.isNotEmpty);
-        }).toList();
-        
-        // Ưu tiên danh mục nổi bật (cat_noibat = 1) trước
-        final featuredCategories = categoriesWithImage.where((cat) {
-          final isFeatured = cat['is_featured'] == true || 
-                           cat['cat_noibat'] == 1 || 
-                           cat['cat_noibat'] == '1';
-          return isFeatured;
-        }).toList();
-        
-        // Sử dụng danh mục nổi bật nếu có, nếu không thì dùng tất cả
-        final sourceCategories = featuredCategories.isNotEmpty 
-            ? featuredCategories 
-            : categoriesWithImage;
-        
-        // Random 4 danh mục dựa trên ngày hiện tại (thay đổi sau 24h)
-        final now = DateTime.now();
-        final seed = now.year * 10000 + now.month * 100 + now.day; // Seed từ ngày
-        final random = (seed % (sourceCategories.isNotEmpty ? sourceCategories.length : 1));
-        
-        List<Map<String, dynamic>> selectedCategories = [];
-        if (sourceCategories.isNotEmpty) {
-          // Lấy 4 danh mục từ vị trí random
-          for (int i = 0; i < 4 && i < sourceCategories.length; i++) {
-            final index = (random + i) % sourceCategories.length;
-            selectedCategories.add(sourceCategories[index]);
-          }
-        }
-        
         setState(() {
-          _randomCategories = selectedCategories;
+          _randomCategories = categories;
           _isLoadingCategories = false;
         });
       } else {

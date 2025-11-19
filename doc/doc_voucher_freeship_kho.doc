@@ -1,0 +1,36 @@
+Dựa trên phân tích code, tôi đã hiểu rõ logic của hệ thống. Bây giờ tôi sẽ kiểm tra API gợi ý sản phẩm của bạn:
+Phân tích Logic Hệ Thống:
+1. Logic Lấy Kho (Warehouse):
+Bảng sanpham: Có trường kho_id để liên kết với bảng transport
+Bảng transport: Chứa thông tin kho hàng với các trường:
+user_id: ID của shop
+is_default: Kho mặc định (1 = mặc định)
+is_pickup: Kho có thể lấy hàng (1 = có thể lấy)
+province, district, ward: Địa chỉ kho
+free_ship_all, free_ship_min_order, free_ship_discount: Cấu hình freeship
+2. Logic Check Voucher:
+Bảng coupon: Chứa thông tin voucher với các trường quan trọng:
+shop: ID shop (0 = voucher sàn)
+kieu: Loại voucher (all = toàn shop, sanpham = sản phẩm cụ thể)
+loai: Kiểu giảm giá (phantram = %, tru = trừ tiền)
+sanpham: Danh sách sản phẩm áp dụng (dạng chuỗi ID)
+start, expired: Thời gian hiệu lực
+max_uses_per_user, max_global_uses: Giới hạn sử dụng
+3. Logic Check Freeship và Các Mode:
+Mode 0: Giảm cố định (VD: -15,000đ)
+if ($free_ship_all == 0 && $base_price >= $free_ship_min_order && $free_ship_discount > 0) {
+    $ship_discount = $free_ship_discount; // Giảm cố định
+}
+Mode 1: Freeship hoàn toàn (100%)
+if ($free_ship_all == 1) {
+    $ship_discount = 0; // Miễn phí ship hoàn toàn
+    $is_freeship = true;
+}
+Mode 2: Giảm theo % (VD: -50%)
+if ($free_ship_all == 2 && $base_price >= $free_ship_min_order && $free_ship_discount > 0) {
+    $ship_discount = ($base_price * $free_ship_discount) / 100; // Giảm theo %
+}
+Mode 3: Freeship theo sản phẩm cụ thể
+if ($free_ship_all == 3 && !empty($fee_ship_products)) {
+    // Xử lý JSON trong fee_ship_products để lấy cấu hình theo sản phẩm
+}

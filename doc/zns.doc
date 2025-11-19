@@ -1,0 +1,61 @@
+2 mã token đó thì dùng mã nào , còn mã còn lại để làm gì : 
+- Access token : vTIrD3fpapFbqxGmFt2UC-7TlJO-PjX0ixYc1sr8nctCh8mzVGt1TTZzdn9bFTzpkioYU3zeqHgzoRjDEHVF4PVGl1GwVDrqW97v1njsqdQgkgqkA6BOUekUgmqjGDGBX92Z20CenL6vYky96rotGv2SrGP1RwPSsw_hLt5Vd2_XWkbHVK-N5DIKn5zVQveoyiRwTdyZYnUZslDc2IQvCBJPtKiLBxqhiylcMpSRjG6PviLO5n-z7uRzobex688mg-RnJWeAb2-lnj1h0cU7BjsGh6O4LkGTsVMKRc8PzXUvsB9KOWB9BFcYbNj1Oh9n-x3iALzmfqFveDv1UasEGgAj-Z8ONTbcmOAV74udvblomvybSmwwBgtImIfeTP9IzgZoBsbIerZxd_acSccXJQkMyYqIIRzxDEYL4Z8vRvG_
+- Refresh token : wWC1EMB-X53g100zP_s9KEuA2JjcwzbJZ4ikTMh0r1wNJ5CTNRU4BT8JTWSKxwWgdGrXBaoogJMfCb80VgBLBfG0LHbQg8SpeLLuF6Z_fIspKt4IGzEjUezlNLDRnQHiid1OScV9iLcgH3DY8VlqSDnoDaqdsVD_tKTtV3tmZtd7HGbDDypBFCH0AXOewl0TsaSP613cstRCJJfhElY-UzTmEb0DaliXXpT-4NEghI2DCNOUKAcl3zaBLpOiZgCjf2f65bINapAZRnDNVP3zE_4D8mf-a_SCkJ8K4a-BwIsrBnSPKfhFV8HdIqXmpfTC-4HvGop3vLd-FJzNSP_xR9m99mL4h_KIc30g95-Oq1AcDJHtVgxlTAmIBtXwlFLmja8qPLR9o72cNZPk8QB_IgyOUtk_px5SOUA3N0
+Câu hỏi của bạn rất hay — và đây là chỗ nhiều người mới làm Zalo API hay bị nhầm nhất 🔍
+
+Mình giải thích thật dễ hiểu, ngắn gọn nhất nhé 👇
+
+🧩 Zalo có 2 loại mã sau khi bạn cấp quyền xong:
+Loại	Tên	Dùng để làm gì
+🟩 Access Token	(mã chính, ngắn hạn)	Dùng để gọi API Zalo – ví dụ gửi ZNS OTP, lấy thông tin OA, gửi tin nhắn,…
+🟦 Refresh Token	(mã phụ, dài hạn)	Dùng để xin lại Access Token mới khi Access Token cũ hết hạn.
+🔹 Cụ thể hơn:
+1️⃣ Access Token
+
+Là mã mà bạn gửi kèm trong mỗi API request.
+
+Có hiệu lực ngắn (khoảng 1–2 tiếng).
+
+Khi hết hạn, nếu bạn cố gọi API → sẽ bị lỗi 401 Unauthorized.
+
+👉 Ví dụ khi bạn gọi API ZNS:
+
+POST https://business.openapi.zalo.me/message/template
+Header:
+Authorization: Bearer <ACCESS_TOKEN_CỦA_BẠN>
+
+2️⃣ Refresh Token
+
+Có hiệu lực dài hơn (vài chục ngày).
+
+Khi Access Token hết hạn, bạn dùng Refresh Token để xin lại token mới, mà không cần cấp quyền lại.
+
+👉 API để làm mới token là:
+
+POST https://oauth.zaloapp.com/v4/oa/access_token
+
+
+Body (x-www-form-urlencoded):
+
+app_id=YOUR_APP_ID
+app_secret=YOUR_APP_SECRET
+refresh_token=REFRESH_TOKEN_CỦA_BẠN
+grant_type=refresh_token
+
+
+Zalo sẽ trả về:
+
+{
+  "access_token": "token_moi",
+  "refresh_token": "refresh_token_moi",
+  "expires_in": 3600
+}
+
+🔹 Tóm tắt dễ nhớ
+Mã	Thời hạn	Mục đích	Khi nào dùng
+🔑 Access Token	~1–2 giờ	Gửi API (ZNS, OA, v.v.)	Mỗi khi gọi API
+♻️ Refresh Token	~30 ngày	Xin Access Token mới	Khi token hết hạn
+
+✅ Kết luận:
+👉 Bạn dùng Access Token để gọi API gửi OTP, gửi tin nhắn ZNS, v.v.
+👉 Bạn lưu Refresh Token lại (ví dụ trong database hoặc file .env) để xin Access Token mới mà không cần đăng nhập lại.

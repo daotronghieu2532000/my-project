@@ -2755,7 +2755,22 @@ class ApiService {
         },
       };
     } catch (e) {
-      return _getMockProductsByCategory(parentCategoryId, page, limit);
+      return {
+        'success': false,
+        'message': 'Không thể lấy danh sách sản phẩm: ${e.toString()}',
+        'data': {
+          'category': {'id': parentCategoryId, 'name': 'Danh mục $parentCategoryId'},
+          'products': [],
+          'pagination': {
+            'current_page': page,
+            'total_pages': 0,
+            'total_products': 0,
+            'limit': limit,
+            'has_next': false,
+            'has_prev': false,
+          },
+        },
+      };
     }
   }
 
@@ -2931,95 +2946,58 @@ class ApiService {
           return data;
         }
 
-        return _getMockProductsByCategory(categoryId, page, limit);
+        return {
+          'success': false,
+          'message': 'Không thể lấy danh sách sản phẩm',
+          'data': {
+            'category': {'id': categoryId, 'name': 'Danh mục $categoryId'},
+            'products': [],
+            'pagination': {
+              'current_page': page,
+              'total_pages': 0,
+              'total_products': 0,
+              'limit': limit,
+              'has_next': false,
+              'has_prev': false,
+            },
+          },
+        };
       } else {
-        return _getMockProductsByCategory(categoryId, page, limit);
+        return {
+          'success': false,
+          'message': 'Không thể lấy danh sách sản phẩm',
+          'data': {
+            'category': {'id': categoryId, 'name': 'Danh mục $categoryId'},
+            'products': [],
+            'pagination': {
+              'current_page': page,
+              'total_pages': 0,
+              'total_products': 0,
+              'limit': limit,
+              'has_next': false,
+              'has_prev': false,
+            },
+          },
+        };
       }
     } catch (e) {
-      return _getMockProductsByCategory(categoryId, page, limit);
-    }
-  }
-
-  // Mock products by category
-  Map<String, dynamic> _getMockProductsByCategory(
-    int categoryId,
-    int page,
-    int limit,
-  ) {
-    final mockProducts = [
-      {
-        'id': categoryId * 100 + 1,
-        'tieu_de': 'Sản phẩm mẫu 1 - Danh mục $categoryId',
-        'minh_hoa': 'https://socdo.vn/uploads/minh-hoa/product-1.jpg',
-        'gia_cu': 500000,
-        'gia_moi': 350000,
-        'discount_percent': 30,
-        'kho': 50,
-        'ban': 120,
-        'view': 500,
-        'thuong_hieu': 'Thương hiệu A',
-        'noi_ban': 'socdo',
-        'cat': categoryId.toString(),
-        'link': 'san-pham-mau-1',
-        'date_post': '2024-01-15',
-        'shop': 1001,
-        'status': 1,
-      },
-      {
-        'id': categoryId * 100 + 2,
-        'tieu_de': 'Sản phẩm mẫu 2 - Danh mục $categoryId',
-        'minh_hoa': 'https://socdo.vn/uploads/minh-hoa/product-2.jpg',
-        'gia_cu': 800000,
-        'gia_moi': 600000,
-        'discount_percent': 25,
-        'kho': 30,
-        'ban': 80,
-        'view': 300,
-        'thuong_hieu': 'Thương hiệu B',
-        'noi_ban': 'socdo',
-        'cat': categoryId.toString(),
-        'link': 'san-pham-mau-2',
-        'date_post': '2024-01-14',
-        'shop': 1002,
-        'status': 1,
-      },
-      {
-        'id': categoryId * 100 + 3,
-        'tieu_de': 'Sản phẩm mẫu 3 - Danh mục $categoryId',
-        'minh_hoa': 'https://socdo.vn/uploads/minh-hoa/product-3.jpg',
-        'gia_cu': 1200000,
-        'gia_moi': 900000,
-        'discount_percent': 25,
-        'kho': 20,
-        'ban': 45,
-        'view': 200,
-        'thuong_hieu': 'Thương hiệu C',
-        'noi_ban': 'socdo',
-        'cat': categoryId.toString(),
-        'link': 'san-pham-mau-3',
-        'date_post': '2024-01-13',
-        'shop': 1003,
-        'status': 1,
-      },
-    ];
-
-    return {
-      'success': true,
-      'message': 'Lấy danh sách sản phẩm theo danh mục thành công (Mock data)',
-      'data': {
-        'category': {'id': categoryId, 'name': 'Danh mục $categoryId'},
-        'products': mockProducts,
-        'pagination': {
-          'current_page': page,
-          'total_pages': 1,
-          'total_products': mockProducts.length,
-          'limit': limit,
-          'has_next': false,
-          'has_prev': false,
+      return {
+        'success': false,
+        'message': 'Không thể lấy danh sách sản phẩm: ${e.toString()}',
+        'data': {
+          'category': {'id': categoryId, 'name': 'Danh mục $categoryId'},
+          'products': [],
+          'pagination': {
+            'current_page': page,
+            'total_pages': 0,
+            'total_products': 0,
+            'limit': limit,
+            'has_next': false,
+            'has_prev': false,
+          },
         },
-        'filters': {'category_id': categoryId, 'sort': 'newest'},
-      },
-    };
+      };
+    }
   }
 
   // Get categories list with different types

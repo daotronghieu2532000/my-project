@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- CHỈ CHO PHÉP HTTPS - BẮT BUỘC CHO APP STORE -->
+    <!-- App Store sẽ từ chối nếu cho phép HTTP cleartext traffic -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust system certificates -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- Tất cả domains đều phải dùng HTTPS -->
+    <!-- Nếu cần HTTP cho development, chỉ dùng trong debug build -->
+</network-security-config>
+
