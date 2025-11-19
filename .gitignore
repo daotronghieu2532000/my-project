@@ -44,41 +44,41 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Exclude sensitive folders - TẠM THỜI MỞ KHÓA ĐỂ PUSH LÊN GIT
-# /api/
-# /android/
-# /admin_folder/
-# /database/
-# /doc/
-# /chat.socdo.vn/
+# Exclude sensitive folders - KHÓA LẠI SAU KHI CLONE
+/api/
+/android/
+/admin_folder/
+/database/
+/doc/
+/chat.socdo.vn/
 
-# Keystore files - TẠM THỜI MỞ KHÓA ĐỂ PUSH LÊN GIT
-# android/keystore.properties
-# android/app/*.jks
-# android/app/*.keystore
-# *.jks
-# *.keystore
+# Keystore files - QUAN TRỌNG: Không được commit lên Git!
+android/keystore.properties
+android/app/*.jks
+android/app/*.keystore
+*.jks
+*.keystore
 
 # Windows special device names - cannot be indexed by Git
 nul
 
-# Markdown documentation files - TẠM THỜI MỞ KHÓA ĐỂ PUSH LÊN GIT
-# *.md
+# Markdown documentation files
+*.md
 
-# Sensitive configuration files - TẠM THỜI MỞ KHÓA (TRỪ FILE JSON NHẠY CẢM)
-# **/fcm_config.php
-# **/zns_config.php
-# **/*config*.php
+# Sensitive configuration files - QUAN TRỌNG: Không được commit!
+**/fcm_config.php
+**/zns_config.php
+**/*config*.php
 **/socdomobile-*.json
-# **/google-services.json
-# **/*secret*.json
-# **/*credential*.json
-# **/*token*.json
-# **/*.pem
-# **/*.p12
-# **/*.key
-# **/*.env
-# **/*.env.*
-# **/debug_*.log
+**/google-services.json
+**/*secret*.json
+**/*credential*.json
+**/*token*.json
+**/*.pem
+**/*.p12
+**/*.key
+**/*.env
+**/*.env.*
+**/debug_*.log
 
 
