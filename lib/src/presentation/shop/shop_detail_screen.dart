@@ -64,6 +64,7 @@ class _ShopDetailScreenState extends State<ShopDetailScreen>
         includeVouchers: 1,
         includeWarehouses: 1,
         includeCategories: 1,
+        includeSuggestedProducts: 1,
         productsLimit: 50, // Tăng từ 20 lên 50
       );
 

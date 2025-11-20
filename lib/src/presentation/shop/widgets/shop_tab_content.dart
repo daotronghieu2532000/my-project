@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'shop_vouchers_horizontal.dart';
 import 'shop_flash_sales_tabs.dart';
 import 'shop_categories_horizontal.dart';
+import 'shop_suggested_products_section.dart';
 import '../../../core/services/cached_api_service.dart';
+import '../../../core/models/shop_detail.dart';
 
 class ShopTabContent extends StatelessWidget {
   final int shopId;
@@ -14,20 +16,31 @@ class ShopTabContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Voucher section - cuộn ngang
-          _VoucherSectionWithTitle(shopId: shopId),
-          
-          // Flash Sale section - tabs nếu có nhiều flash sale
-          _FlashSaleSectionWithTitle(shopId: shopId),
-          
-          // Categories section - cuộn ngang
-          _CategorySectionWithTitle(shopId: shopId),
-          const SizedBox(height: 16),
-        ],
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Clear cache và reload các section
+        final cachedApiService = CachedApiService();
+        cachedApiService.clearAllShopCache(shopId);
+        // Trigger rebuild bằng cách không làm gì cả, các widget con sẽ tự reload
+      },
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Voucher section - cuộn ngang
+            _VoucherSectionWithTitle(shopId: shopId),
+            
+            // Flash Sale section - tabs nếu có nhiều flash sale
+            _FlashSaleSectionWithTitle(shopId: shopId),
+            
+            // Suggested Products section - cuộn ngang
+            _SuggestedProductsSectionWithTitle(shopId: shopId),
+            
+            // Categories section - cuộn ngang
+            _CategorySectionWithTitle(shopId: shopId),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
@@ -166,25 +179,12 @@ class _FlashSaleSectionWithTitleState extends State<_FlashSaleSectionWithTitle> 
       children: [
         const SizedBox(height: 16),
         if (_hasFlashSales) ...[
-          _buildSectionTitle('Flash sale'),
-          const SizedBox(height: 8),
+          // Tiêu đề Flash sale cũ - đã ẩn vì có tiêu đề FLASH SALE mới
+          // _buildSectionTitle('Flash sale'),
+          // const SizedBox(height: 8),
         ],
         ShopFlashSalesTabs(shopId: widget.shopId),
       ],
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
     );
   }
 }
@@ -263,6 +263,74 @@ class _CategorySectionWithTitleState extends State<_CategorySectionWithTitle> {
           color: Colors.black87,
         ),
       ),
+    );
+  }
+}
+
+// Widget wrapper cho Suggested Products section
+class _SuggestedProductsSectionWithTitle extends StatefulWidget {
+  final int shopId;
+
+  const _SuggestedProductsSectionWithTitle({required this.shopId});
+
+  @override
+  State<_SuggestedProductsSectionWithTitle> createState() => _SuggestedProductsSectionWithTitleState();
+}
+
+class _SuggestedProductsSectionWithTitleState extends State<_SuggestedProductsSectionWithTitle> {
+  final CachedApiService _cachedApiService = CachedApiService();
+  List<ShopProduct> _suggestedProducts = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSuggestedProducts();
+  }
+
+  Future<void> _loadSuggestedProducts() async {
+    try {
+      final shopDetail = await _cachedApiService.getShopDetailCached(
+        shopId: widget.shopId,
+        includeSuggestedProducts: 1,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _suggestedProducts = shopDetail?.suggestedProducts ?? [];
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _suggestedProducts = [];
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const SizedBox.shrink();
+    }
+
+    if (_suggestedProducts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 16),
+        ShopSuggestedProductsSection(
+          shopId: widget.shopId,
+          suggestedProducts: _suggestedProducts,
+        ),
+      ],
     );
   }
 }

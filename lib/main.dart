@@ -12,9 +12,10 @@ void main() async {
   // KHỞI TẠO FIREBASE TRƯỚC TIÊN
   try {
     await Firebase.initializeApp();
-   
   } catch (e) {
-   
+    // Log lỗi để debug
+    print('Firebase initialization error: $e');
+    // Tiếp tục chạy app dù Firebase lỗi
   }
   
   // Khởi tạo app services

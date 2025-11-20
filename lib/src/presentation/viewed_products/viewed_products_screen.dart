@@ -10,17 +10,17 @@ class ViewedProductsScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.red, // Màu đỏ đồng bộ với theme app
+        backgroundColor: Colors.white, // Đổi thành trắng để title đen hiển thị rõ
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
         ),
         title: const Text(
           'Đã xem',
           style: TextStyle(
             fontSize: 16,
-            color: Colors.white,
+            color: Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -32,7 +32,7 @@ class ViewedProductsScreen extends StatelessWidget {
               children: [
                 const Icon(
                   Icons.shopping_cart_outlined,
-                  color: Colors.white,
+                  color: Colors.black,
                   size: 24,
                 ),
                 Positioned(
@@ -64,14 +64,20 @@ class ViewedProductsScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: ViewedProduct.sampleProducts.length,
-        separatorBuilder: (context, index) => const SizedBox(height: 16),
-        itemBuilder: (context, index) {
-          final product = ViewedProduct.sampleProducts[index];
-          return ViewedProductCard(product: product);
+      body: RefreshIndicator(
+        onRefresh: () async {
+          // TODO: Implement reload viewed products
+          await Future.delayed(const Duration(milliseconds: 500));
         },
+        child: ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: ViewedProduct.sampleProducts.length,
+          separatorBuilder: (context, index) => const SizedBox(height: 16),
+          itemBuilder: (context, index) {
+            final product = ViewedProduct.sampleProducts[index];
+            return ViewedProductCard(product: product);
+          },
+        ),
       ),
     );
   }

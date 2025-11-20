@@ -739,13 +739,16 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.zero,
-      itemCount: currentDeals.length,
-      itemBuilder: (context, index) {
-        final deal = currentDeals[index];
-        return _buildDealCard(deal, index);
-      },
+    return RefreshIndicator(
+      onRefresh: () => _loadTimeSlot(_selectedTab),
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: currentDeals.length,
+        itemBuilder: (context, index) {
+          final deal = currentDeals[index];
+          return _buildDealCard(deal, index);
+        },
+      ),
     );
   }
 

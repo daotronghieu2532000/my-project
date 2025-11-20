@@ -328,39 +328,42 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 
   Future<void> _refreshData() async {
     try {
-      // Clear cache và load lại dữ liệu
+      // Clear tất cả cache liên quan đến home trước khi refresh
       _cachedApiService.clearCachePattern('home_');
+      // Clear cache flash sale cụ thể (vì flash sale dùng cache key với timeline)
+      _cachedApiService.clearAllFlashSaleCache();
+      // Clear cache banner products
+      _cachedApiService.clearCachePattern('banner_products');
       
-      // Lấy userId từ AuthService (user đã đăng nhập) để refresh personalized suggestions
-      final user = await _authService.getCurrentUser();
-      final userId = user?.userId;
-      
-      // Gọi từng API riêng để có thể debug từng cái
-      await _cachedApiService.getHomeBanners(forceRefresh: true);
-      await _cachedApiService.getHomeFlashSale(forceRefresh: true);
-      await _cachedApiService.getHomePartnerBanners(forceRefresh: true);
-      await _cachedApiService.getHomeFeaturedBrands(forceRefresh: true);
-      await _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true, userId: userId);
-      
-      // Gọi riêng từng vị trí để đảm bảo lấy được dữ liệu (API không trả về đúng khi gọi chung)
-      await Future.wait([
-        _cachedApiService.getBannerProductsCached(viTriHienThi: 'dau_trang', forceRefresh: true),
-        _cachedApiService.getBannerProductsCached(viTriHienThi: 'giua_trang', forceRefresh: true),
-        _cachedApiService.getBannerProductsCached(viTriHienThi: 'cuoi_trang', forceRefresh: true),
-      ]);
-      
-      // Reload popup banner khi refresh
-      await _loadPopupBanner();
-      
-      // Trigger reload các widget con bằng cách thay đổi refreshKey
+      // Trigger reload các widget con sớm để UI update nhanh
       if (mounted) {
         setState(() {
           _refreshKey++;
         });
       }
       
+      // Lấy userId từ AuthService (user đã đăng nhập) để refresh personalized suggestions
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
+      // Gọi tất cả API song song để tối ưu thời gian
+      await Future.wait([
+        // API chính
+        _cachedApiService.getHomeBanners(forceRefresh: true),
+        _cachedApiService.getHomeFlashSale(forceRefresh: true),
+        _cachedApiService.getHomePartnerBanners(forceRefresh: true),
+        _cachedApiService.getHomeFeaturedBrands(forceRefresh: true),
+        _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true, userId: userId),
+        // Banner products - gọi song song với các API khác
+        _cachedApiService.getBannerProductsCached(viTriHienThi: 'dau_trang', forceRefresh: true),
+        _cachedApiService.getBannerProductsCached(viTriHienThi: 'giua_trang', forceRefresh: true),
+        _cachedApiService.getBannerProductsCached(viTriHienThi: 'cuoi_trang', forceRefresh: true),
+        // Popup banner - không chờ, load background
+        _loadPopupBanner(),
+      ]);
+      
     } catch (e) {
-      // Error refreshing data
+      // Error refreshing data - đã trigger reload widget rồi nên UI không bị đơ
     }
   }
 
@@ -418,14 +421,20 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         // const DedicationSection(),
                         
                         // Banner Products - Đầu trang (sau QuickActions, trước FlashSale)
-                        BannerProductsWidget(position: 'dau_trang'),
+                        BannerProductsWidget(
+                          key: ValueKey('banner_products_dau_trang_$_refreshKey'),
+                          position: 'dau_trang',
+                        ),
                         
                         // Flash Sale section
                         FlashSaleSection(key: ValueKey('flash_sale_$_refreshKey')),
                         const SizedBox(height: 4),
                         
                         // Banner Products - Giữa trang (sau FlashSale, trước FeaturedBrands)
-                        BannerProductsWidget(position: 'giua_trang'),
+                        BannerProductsWidget(
+                          key: ValueKey('banner_products_giua_trang_$_refreshKey'),
+                          position: 'giua_trang',
+                        ),
                         
                         // Featured Brands slider - Tách riêng với border
                         Container(
@@ -448,7 +457,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                               bottom: BorderSide(color: Colors.grey[200]!, width: 1),
                             ),
                           ),
-                          child: BannerProductsWidget(position: 'cuoi_trang'),
+                          child: BannerProductsWidget(
+                            key: ValueKey('banner_products_cuoi_trang_$_refreshKey'),
+                            position: 'cuoi_trang',
+                          ),
                         ),
                         
                         // Suggested products grid - Tách riêng với border

@@ -5,6 +5,7 @@ class ShopDetail {
   final List<ShopVoucher> vouchers;
   final List<ShopWarehouse> warehouses;
   final List<ShopCategory> categories;
+  final List<ShopProduct> suggestedProducts;
   final ShopStatistics statistics;
   final ShopParameters parameters;
 
@@ -15,6 +16,7 @@ class ShopDetail {
     required this.vouchers,
     required this.warehouses,
     required this.categories,
+    required this.suggestedProducts,
     required this.statistics,
     required this.parameters,
   });
@@ -51,6 +53,20 @@ class ShopDetail {
               .map((category) => ShopCategory.fromJson(category as Map<String, dynamic>))
               .toList()
           : <ShopCategory>[];
+      
+      final List<ShopProduct> suggestedProducts = json.containsKey('suggested_products') && json['suggested_products'] is List
+          ? (json['suggested_products'] as List)
+              .map((product) => ShopProduct.fromJson(product as Map<String, dynamic>))
+              .toList()
+          : <ShopProduct>[];
+      
+      final ShopStatistics statistics = json.containsKey('statistics') && json['statistics'] is Map
+          ? ShopStatistics.fromJson(json['statistics'] as Map<String, dynamic>)
+          : ShopStatistics.empty();
+      
+      final ShopParameters parameters = json.containsKey('parameters') && json['parameters'] is Map
+          ? ShopParameters.fromJson(json['parameters'] as Map<String, dynamic>)
+          : ShopParameters.empty();
      
       return ShopDetail(
         shopInfo: shopInfo,
@@ -59,8 +75,9 @@ class ShopDetail {
         vouchers: vouchers,
         warehouses: warehouses,
         categories: categories,
-        statistics: ShopStatistics.empty(),
-        parameters: ShopParameters.empty(),
+        suggestedProducts: suggestedProducts,
+        statistics: statistics,
+        parameters: parameters,
       );
     } catch (e) {
      
@@ -519,6 +536,7 @@ class ShopStatistics {
   final int totalVouchers;
   final int totalWarehouses;
   final int totalCategories;
+  final int totalSuggestedProducts;
 
   const ShopStatistics({
     required this.totalProducts,
@@ -526,6 +544,7 @@ class ShopStatistics {
     required this.totalVouchers,
     required this.totalWarehouses,
     required this.totalCategories,
+    required this.totalSuggestedProducts,
   });
 
   factory ShopStatistics.fromJson(Map<String, dynamic> json) {
@@ -533,11 +552,12 @@ class ShopStatistics {
      
 
       return ShopStatistics(
-        totalProducts: json['total_products'] as int,
-        totalFlashSales: json['total_flash_sales'] as int,
-        totalVouchers: json['total_vouchers'] as int,
-        totalWarehouses: json['total_warehouses'] as int,
-        totalCategories: json['total_categories'] as int,
+        totalProducts: json['total_products'] as int? ?? 0,
+        totalFlashSales: json['total_flash_sales'] as int? ?? 0,
+        totalVouchers: json['total_vouchers'] as int? ?? 0,
+        totalWarehouses: json['total_warehouses'] as int? ?? 0,
+        totalCategories: json['total_categories'] as int? ?? 0,
+        totalSuggestedProducts: json['total_suggested_products'] as int? ?? 0,
       );
     } catch (e) {
      
@@ -552,6 +572,7 @@ class ShopStatistics {
       totalVouchers: 0,
       totalWarehouses: 0,
       totalCategories: 0,
+      totalSuggestedProducts: 0,
     );
   }
 }

@@ -34,6 +34,21 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
   }
 
   @override
+  void didUpdateWidget(BannerProductsWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Nếu key thay đổi (refresh), reset và load lại
+    if (oldWidget.key != widget.key) {
+      setState(() {
+        _hasLoadedOnce = false;
+        _bannerProducts = null;
+        _isLoading = true;
+      });
+      // Load lại với force refresh
+      _loadBannerProducts();
+    }
+  }
+
+  @override
   void dispose() {
     _productsScrollController.dispose();
     super.dispose();

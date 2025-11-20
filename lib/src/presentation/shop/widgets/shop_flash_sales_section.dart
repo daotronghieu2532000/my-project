@@ -116,13 +116,33 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
       emptyMessage: 'Shop chưa có flash sale nào',
       emptyIcon: Icons.flash_on_outlined,
       onRetry: _loadFlashSales,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(8),
-        itemCount: _flashSales.length,
-        itemBuilder: (context, index) {
-          final flashSale = _flashSales[index];
-          return _buildFlashSaleCard(flashSale, context);
-        },
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          // Tiêu đề FLASH SALE giống trang chủ
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+            child: Row(
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.flash_on, color: Colors.pink, size: 20),
+                    const SizedBox(width: 4),
+                    Text('FLASH', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.pink)),
+                    const SizedBox(width: 4),
+                    Text('SALE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.orange)),
+                  ],
+                ),
+                // Bỏ countdown ở góc phải - chỉ giữ countdown trong từng flash sale
+              ],
+            ),
+          ),
+          // Danh sách flash sale cards
+          ..._flashSales.map((flashSale) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: _buildFlashSaleCard(flashSale, context),
+          )).toList(),
+        ],
       ),
     );
   }
@@ -147,52 +167,19 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header với countdown và expand button (ẩn tiêu đề flash sale)
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.red[400]!, Colors.red[600]!],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: const Color(0xFFFFF2F2), // Nền đỏ nhẹ giống trang chủ
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.flash_on, color: Colors.white, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    flashSale.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ),
-                // Small countdown on the right
-                if (isActive) ...[
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                      _formatTime(timeLeft),
-                    style: const TextStyle(
-                      color: Colors.white,
-                        fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
+                // Countdown đẹp với format Ngày : Giờ : Phút : Giây
+                if (isActive)
+                  _buildCountdownTimer(timeLeft),
+                const Spacer(),
                 // Expand/Collapse button
                 GestureDetector(
                   onTap: () {
@@ -203,12 +190,19 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 2,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
                     ),
                     child: Icon(
                       (_expandedMap[flashSale.id] ?? true) ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.white,
+                      color: Colors.grey[700],
                       size: 20,
                     ),
                   ),
@@ -229,7 +223,6 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                 children: [
                   // Danh sách sản phẩm - cuộn ngang như flash sale trang chủ
                   if (flashSale.subProducts.isNotEmpty) ...[
-                    const Divider(height: 1),
                     _buildFlashSaleProductsList(flashSale, context),
                   ],
                 ],
@@ -241,21 +234,102 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
     );
   }
 
-  String _formatTime(Duration duration) {
+  /// Build countdown timer đẹp với format Ngày : Giờ : Phút : Giây
+  Widget _buildCountdownTimer(Duration duration) {
     final days = duration.inDays;
     final hours = duration.inHours % 24;
     final minutes = duration.inMinutes % 60;
     final seconds = duration.inSeconds % 60;
     
-    if (days > 0) {
-      return '⌛ $days : $hours : $minutes : $seconds';
-    } else if (hours > 0) {
-      return '${hours}h ${minutes}m ${seconds}s';
-    } else if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    } else {
-      return '${seconds}s';
-    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: Colors.red[200]!,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Ngày
+          _buildTimeUnit(days.toString().padLeft(2, '0'), 'Ngày'),
+          _buildTimeSeparator(),
+          // Giờ
+          _buildTimeUnit(hours.toString().padLeft(2, '0'), 'Giờ'),
+          _buildTimeSeparator(),
+          // Phút
+          _buildTimeUnit(minutes.toString().padLeft(2, '0'), 'Phút'),
+          _buildTimeSeparator(),
+          // Giây
+          _buildTimeUnit(seconds.toString().padLeft(2, '0'), 'Giây'),
+        ],
+      ),
+    );
+  }
+  
+  /// Build box cho từng đơn vị thời gian với label
+  Widget _buildTimeUnit(String value, String label) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+          constraints: const BoxConstraints(
+            minWidth: 32,
+            minHeight: 28,
+          ),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(4),
+            border: Border.all(
+              color: Colors.red[300]!,
+              width: 1,
+            ),
+          ),
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+              height: 1.0,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 8,
+            color: Colors.red[700],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  /// Build separator giữa các số
+  Widget _buildTimeSeparator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      child: Text(
+        ':',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.red[400],
+          height: 1.0,
+        ),
+      ),
+    );
   }
 
   Widget _buildFlashSaleProductsList(ShopFlashSale flashSale, BuildContext context) {

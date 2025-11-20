@@ -117,21 +117,78 @@ class _ShopFlashSalesTabsState extends State<ShopFlashSalesTabs>
     }
   }
 
-  String _formatTime(Duration duration) {
+  /// Build countdown timer đẹp với format Ngày : Giờ : Phút : Giây (compact cho tab)
+  Widget _buildCountdownTimer(Duration duration) {
     final days = duration.inDays;
     final hours = duration.inHours % 24;
     final minutes = duration.inMinutes % 60;
     final seconds = duration.inSeconds % 60;
     
-    if (days > 0) {
-      return '⌛ $days : $hours : $minutes : $seconds';
-    } else if (hours > 0) {
-      return '${hours}h ${minutes}m ${seconds}s';
-    } else if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    } else {
-      return '${seconds}s';
-    }
+    // Version compact cho tab - chỉ hiển thị số, không có label
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Ngày
+        _buildCompactTimeBox(days.toString().padLeft(2, '0')),
+        _buildTimeSeparator(),
+        // Giờ
+        _buildCompactTimeBox(hours.toString().padLeft(2, '0')),
+        _buildTimeSeparator(),
+        // Phút
+        _buildCompactTimeBox(minutes.toString().padLeft(2, '0')),
+        _buildTimeSeparator(),
+        // Giây
+        _buildCompactTimeBox(seconds.toString().padLeft(2, '0')),
+      ],
+    );
+  }
+  
+  /// Build box compact cho tab (không có label)
+  Widget _buildCompactTimeBox(String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      constraints: const BoxConstraints(
+        minWidth: 32,
+        minHeight: 32,
+      ),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(3),
+        border: Border.all(
+          color: Colors.red[300]!,
+          width: 1,
+        ),
+      ),
+      child: Text(
+        value,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: Colors.red,
+          height: 1.0,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+  
+  /// Build separator giữa các số
+  Widget _buildTimeSeparator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: Text(
+        ':',
+        style: TextStyle(
+          fontSize: 8,
+          fontWeight: FontWeight.bold,
+          color: Colors.red[400],
+          height: 1.0,
+        ),
+      ),
+    );
   }
 
   @override
@@ -162,127 +219,141 @@ class _ShopFlashSalesTabsState extends State<ShopFlashSalesTabs>
       return const SizedBox.shrink();
     }
 
-    // Nếu chỉ có 1 flash sale, hiển thị trực tiếp không cần tabs
-    if (_flashSales.length == 1) {
-      return ShopFlashSaleProductsList(
-        flashSale: _flashSales[0],
-        shopId: widget.shopId,
-      );
-    }
-
-    // Nếu có nhiều flash sale, hiển thị dạng tabs
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Tab bar - căn trái, gọn vào góc màn hình
-        Container(
-          decoration: BoxDecoration(
-          color: Colors.white,
-            border: Border(
-              bottom: BorderSide(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
-            ),
-          ),
-          child: Stack(
+        // Tiêu đề FLASH SALE giống trang chủ
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+          child: Row(
             children: [
-              TabBar(
-            controller: _tabController,
-            isScrollable: true,
-                padding: const EdgeInsets.only(left: 0, right: 40), // Thêm padding phải cho icon
-            labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-            tabAlignment: TabAlignment.start,
-            labelColor: Colors.red,
-            unselectedLabelColor: Colors.grey,
-            indicatorColor: Colors.red,
-                indicatorWeight: 2,
-            tabs: _flashSales.map((flashSale) {
-              final timeLeft = _timeLeftMap[flashSale.id] ?? const Duration();
-              final isActive = timeLeft.inSeconds > 0;
-              return Tab(
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.grey.shade300,
-                          width: 1,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                        color: Colors.white,
-                      ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        flashSale.title,
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (isActive) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          _formatTime(timeLeft),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                      ),
+              Row(
+                children: [
+                  Icon(Icons.flash_on, color: Colors.pink, size: 20),
+                  const SizedBox(width: 4),
+                  Text('FLASH', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.pink)),
+                  const SizedBox(width: 4),
+                  Text('SALE', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.orange)),
+                ],
                 ),
-              );
-            }).toList(),
-          ),
-              // Icon ">" ở bên phải để chỉ ra có thể scroll
-              Positioned(
-                right: 0,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  width: 40,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [
-                        Colors.white.withOpacity(0),
-                        Colors.white.withOpacity(0.8),
-                        Colors.white,
-                      ],
-                    ),
-                  ),
-                  child: Center(
-                    child: Icon(
-                      Icons.chevron_right,
-                      color: Colors.grey.shade600,
-                      size: 24,
-                    ),
-                  ),
-                ),
-              ),
+                // Bỏ countdown ở góc phải - chỉ giữ countdown trong từng flash sale
             ],
           ),
         ),
-        // Tab content - sử dụng helper widget để đo height thực tế
-        _ShopFlashSaleTabBarView(
-          tabController: _tabController,
-          flashSales: _flashSales,
+        // Nếu chỉ có 1 flash sale, hiển thị trực tiếp không cần tabs
+        if (_flashSales.length == 1)
+          ShopFlashSaleProductsList(
+            flashSale: _flashSales[0],
+            shopId: widget.shopId,
+          )
+        else
+          // Nếu có nhiều flash sale, hiển thị dạng tabs
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tab bar - chỉ hiển thị countdown, ẩn tiêu đề
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: Colors.grey.shade300,
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    TabBar(
+                      controller: _tabController,
+                      isScrollable: true,
+                      padding: const EdgeInsets.only(left: 0, right: 40),
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      tabAlignment: TabAlignment.start,
+                      labelColor: Colors.red,
+                      unselectedLabelColor: Colors.grey,
+                      indicatorColor: Colors.red,
+                      indicatorWeight: 2,
+                      tabs: _flashSales.map((flashSale) {
+                        final timeLeft = _timeLeftMap[flashSale.id] ?? const Duration();
+                        final isActive = timeLeft.inSeconds > 0;
+                        return Tab(
+                          child: Container(
+                            margin: const EdgeInsets.only(right: 8, top: 2, bottom: 2),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: Colors.grey.shade300,
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              color: Colors.white,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Tiêu đề flash sale
+                                Flexible(
+                                  child: Text(
+                                    flashSale.title,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                // Countdown timer
+                                if (isActive) ...[
+                                  const SizedBox(width: 8),
+                                  _buildCountdownTimer(timeLeft),
+                                ],
+                              ],
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    // Icon ">" ở bên phải để chỉ ra có thể scroll
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 40,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Colors.white.withOpacity(0),
+                              Colors.white.withOpacity(0.8),
+                              Colors.white,
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.chevron_right,
+                            color: Colors.grey.shade600,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Tab content - sử dụng SizedBox với height cố định thay vì Expanded
+              _ShopFlashSaleTabBarView(
+                tabController: _tabController,
+                flashSales: _flashSales,
                 shopId: widget.shopId,
-        ),
+              ),
+            ],
+          ),
       ],
     );
   }

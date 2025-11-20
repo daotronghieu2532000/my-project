@@ -1023,10 +1023,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           SliverAppBar(
             pinned: true,
             expandedHeight: 340,
-            title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+            title: Text(
+              title, 
+              maxLines: 1, 
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             // Thêm padding để tránh bị cắt ảnh
             toolbarHeight: 56,
             collapsedHeight: 56,
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
             actions: [
               // Search button - Navigate to search screen
               IconButton(

@@ -32,6 +32,7 @@
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
+
 			dstSubfolderSpec = 10;
 			files = (
 			);

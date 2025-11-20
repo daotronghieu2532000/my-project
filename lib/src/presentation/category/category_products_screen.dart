@@ -407,12 +407,15 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
         if (_showFilters) _buildFilterPanel(),
         // Danh sách sản phẩm - Wrap 2 cột
         Expanded(
-          child: SingleChildScrollView(
-            controller: _scrollController,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-            child: Align(
-              alignment: Alignment.topLeft,
-              child: _buildProductsGrid(),
+          child: RefreshIndicator(
+            onRefresh: () => _loadProducts(),
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: _buildProductsGrid(),
+              ),
             ),
           ),
         ),

@@ -43,6 +43,7 @@ class CachedApiService {
     int includeVouchers = 1,
     int includeWarehouses = 1,
     int includeCategories = 1,
+    int includeSuggestedProducts = 1,
     int productsLimit = 50, // Tăng từ 20 lên 50
     bool forceRefresh = false,
     Duration? cacheDuration,
@@ -57,6 +58,7 @@ class CachedApiService {
         'v': includeVouchers,
         'w': includeWarehouses,
         'c': includeCategories,
+        'sp': includeSuggestedProducts,
         'limit': productsLimit,
       },
     );
@@ -77,6 +79,7 @@ class CachedApiService {
         includeVouchers: includeVouchers,
         includeWarehouses: includeWarehouses,
         includeCategories: includeCategories,
+        includeSuggestedProducts: includeSuggestedProducts,
         productsLimit: productsLimit,
       );
 

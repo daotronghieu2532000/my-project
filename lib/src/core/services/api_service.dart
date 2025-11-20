@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'token_manager.dart';
+import 'auth_service.dart';
 import '../models/freeship_product.dart';
 import '../models/voucher.dart';
 import '../models/flash_sale_product.dart';
@@ -4065,6 +4066,7 @@ class ApiService {
     int includeVouchers = 1,
     int includeWarehouses = 1,
     int includeCategories = 1,
+    int includeSuggestedProducts = 1,
     int productsLimit = 20,
   }) async {
     try {
@@ -4079,6 +4081,7 @@ class ApiService {
         'include_vouchers': includeVouchers.toString(),
         'include_warehouses': includeWarehouses.toString(),
         'include_categories': includeCategories.toString(),
+        'include_suggested_products': includeSuggestedProducts.toString(),
         'products_limit': productsLimit.toString(),
       };
 
@@ -4088,6 +4091,13 @@ class ApiService {
         queryParams['username'] = username;
       } else {
         return null;
+      }
+
+      // Thêm user_id nếu có để lấy suggested products
+      // Lấy AuthService lazy để tránh circular dependency
+      final user = await AuthService().getCurrentUser();
+      if (user?.userId != null && user!.userId > 0) {
+        queryParams['user_id'] = user.userId.toString();
       }
 
 
