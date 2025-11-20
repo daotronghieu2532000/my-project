@@ -198,15 +198,39 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             .toList();
       }
       
+      // Kiểm tra thời gian reset lần cuối
+      final lastResetTimeString = prefs.getString('popup_banner_last_reset_time');
+      DateTime? lastResetTime;
+      if (lastResetTimeString != null && lastResetTimeString.isNotEmpty) {
+        lastResetTime = DateTime.tryParse(lastResetTimeString);
+      }
+      
+      // Kiểm tra xem đã qua 24h chưa
+      final now = DateTime.now();
+      final shouldReset = lastResetTime == null || 
+          now.difference(lastResetTime).inHours >= 24;
+      
       // Gọi API với danh sách banner đã hiển thị để loại trừ tất cả
       PopupBanner? popupBanner = await _apiService.getPopupBanner(
         excludeIds: displayedBannerIds.isNotEmpty ? displayedBannerIds : null,
       );
       
-      // Nếu không có banner mới (đã hiển thị hết), reset danh sách và lấy banner đầu tiên
+      // Nếu không có banner mới (đã hiển thị hết), chỉ reset nếu đã qua 24h
       if (popupBanner == null || displayedBannerIds.contains(popupBanner.id)) {
-        displayedBannerIds.clear();
-        popupBanner = await _apiService.getPopupBanner(excludeIds: null);
+        if (shouldReset) {
+          // Reset danh sách và lấy banner đầu tiên
+          displayedBannerIds.clear();
+          popupBanner = await _apiService.getPopupBanner(excludeIds: null);
+          
+          // Lưu thời gian reset
+          await prefs.setString(
+            'popup_banner_last_reset_time',
+            now.toIso8601String(),
+          );
+        } else {
+          // Chưa qua 24h, không hiển thị banner
+          popupBanner = null;
+        }
       }
       
       if (mounted && popupBanner != null) {

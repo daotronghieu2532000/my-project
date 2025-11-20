@@ -118,9 +118,25 @@ class BannerProducts {
   }
 
   /// Kiểm tra có phải banner dọc không
-  bool get isVerticalBanner => bannerType == 'banner_doc';
+  bool get isVerticalBanner {
+    if (bannerType == 'banner_doc') return true;
+    // Nếu banner_type rỗng, tự động detect dựa vào tỉ lệ width/height
+    if (bannerType.isEmpty && bannerWidth > 0 && bannerHeight > 0) {
+      return bannerHeight > bannerWidth; // Chiều cao > chiều rộng = banner dọc
+    }
+    return false;
+  }
 
   /// Kiểm tra có phải banner ngang không
-  bool get isHorizontalBanner => bannerType == 'banner_ngang';
+  bool get isHorizontalBanner {
+    if (bannerType == 'banner_ngang') return true;
+    // Nếu banner_type rỗng, tự động detect dựa vào tỉ lệ width/height
+    if (bannerType.isEmpty && bannerWidth > 0 && bannerHeight > 0) {
+      return bannerWidth >= bannerHeight; // Chiều rộng >= chiều cao = banner ngang
+    }
+    // Mặc định là banner ngang nếu không xác định được
+    if (bannerType.isEmpty) return true;
+    return false;
+  }
 }
 
