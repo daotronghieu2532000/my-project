@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'api_service.dart';
 import 'affiliate_service.dart';
+import 'auth_service.dart';
 import 'memory_cache_service.dart';
 import '../models/product_detail.dart';
 import '../models/product_suggest.dart';
@@ -17,6 +18,7 @@ class CachedApiService {
 
   final ApiService _apiService = ApiService();
   final AffiliateService _affiliateService = AffiliateService();
+  final AuthService _authService = AuthService();
   final MemoryCacheService _cache = MemoryCacheService();
   
   // Cache duration cho từng loại API
@@ -48,6 +50,13 @@ class CachedApiService {
     bool forceRefresh = false,
     Duration? cacheDuration,
   }) async {
+    // Nếu có suggested products, cần lấy userId để phân biệt cache theo user
+    int? userId;
+    if (includeSuggestedProducts == 1) {
+      final user = await _authService.getCurrentUser();
+      userId = user?.userId;
+    }
+    
     final cacheKey = MemoryCacheService.createKey(
       CacheKeys.shopDetail,
       {
@@ -60,6 +69,8 @@ class CachedApiService {
         'c': includeCategories,
         'sp': includeSuggestedProducts,
         'limit': productsLimit,
+        // Thêm userId vào cache key khi có suggested products để phân biệt cache theo user
+        if (includeSuggestedProducts == 1 && userId != null) 'userId': userId,
       },
     );
 

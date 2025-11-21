@@ -357,51 +357,42 @@ class ShopSuggestedProductsSection extends StatelessWidget {
     try {
       // Dùng cache cho chi tiết sản phẩm
       final productDetail = await CachedApiService().getProductDetailCached(productId);
-      final parentContext = Navigator.of(context).context;
       
-      if (parentContext.mounted && productDetail != null) {
-        showModalBottomSheet(
-          context: parentContext,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) {
-            if (productDetail.variants.isNotEmpty) {
-              return VariantSelectionDialog(
-                product: productDetail,
-                selectedVariant: productDetail.variants.first,
-                onBuyNow: (variant, quantity) {
-                  _handleBuyNow(parentContext, productDetail, variant, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    Navigator.pop(parentContext);
-                  });
-                },
-                onAddToCart: (variant, quantity) {
-                  _handleAddToCart(parentContext, productDetail, variant, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    Navigator.pop(parentContext);
-                  });
-                },
-              );
-            } else {
-              return SimplePurchaseDialog(
-                product: productDetail,
-                onBuyNow: (product, quantity) {
-                  _handleBuyNowSimple(parentContext, productDetail, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    Navigator.pop(parentContext);
-                  });
-                },
-                onAddToCart: (product, quantity) {
-                  _handleAddToCartSimple(parentContext, productDetail, quantity);
-                  Future.delayed(const Duration(milliseconds: 500), () {
-                    Navigator.pop(parentContext);
-                  });
-                },
-              );
-            }
-          },
-        );
-      }
+      if (!context.mounted || productDetail == null) return;
+      
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (dialogContext) {
+          if (productDetail.variants.isNotEmpty) {
+            return VariantSelectionDialog(
+              product: productDetail,
+              selectedVariant: productDetail.variants.first,
+              onBuyNow: (variant, quantity) {
+                Navigator.pop(dialogContext); // Đóng dialog trước
+                _handleBuyNow(context, productDetail, variant, quantity);
+              },
+              onAddToCart: (variant, quantity) {
+                // Dialog sẽ tự đóng, không cần pop thêm
+                _handleAddToCart(context, productDetail, variant, quantity);
+              },
+            );
+          } else {
+            return SimplePurchaseDialog(
+              product: productDetail,
+              onBuyNow: (product, quantity) {
+                Navigator.pop(dialogContext); // Đóng dialog trước
+                _handleBuyNowSimple(context, productDetail, quantity);
+              },
+              onAddToCart: (product, quantity) {
+                // Dialog sẽ tự đóng, không cần pop thêm
+                _handleAddToCartSimple(context, productDetail, quantity);
+              },
+            );
+          }
+        },
+      );
     } catch (e) {
       // Handle error silently
     }
@@ -423,6 +414,7 @@ class ShopSuggestedProductsSection extends StatelessWidget {
     );
     cartService.addItem(cartItem);
     
+    // Chỉ navigate đến checkout, không tự động pop
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -432,6 +424,9 @@ class ShopSuggestedProductsSection extends StatelessWidget {
   }
 
   void _handleAddToCart(BuildContext context, ProductDetail product, ProductVariant variant, int quantity) {
+    // Đảm bảo context còn mounted
+    if (!context.mounted) return;
+    
     final cartService = CartService();
     final cartItem = CartItem(
       id: product.id,
@@ -447,22 +442,29 @@ class ShopSuggestedProductsSection extends StatelessWidget {
     );
     cartService.addItem(cartItem);
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Đã thêm vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'Xem giỏ hàng',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartScreen()),
-            );
-          },
+    // Chỉ hiển thị thông báo, KHÔNG navigate - vẫn ở trang shop hiện tại
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Đã thêm vào giỏ hàng'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: 'Xem giỏ hàng',
+            textColor: Colors.white,
+            onPressed: () {
+              // Chỉ navigate khi user click vào action, không tự động
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartScreen()),
+                );
+              }
+            },
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 
   void _handleBuyNowSimple(BuildContext context, ProductDetail product, int quantity) {
@@ -480,6 +482,7 @@ class ShopSuggestedProductsSection extends StatelessWidget {
     );
     cartService.addItem(cartItem);
     
+    // Chỉ navigate đến checkout, không tự động pop
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -489,6 +492,9 @@ class ShopSuggestedProductsSection extends StatelessWidget {
   }
 
   void _handleAddToCartSimple(BuildContext context, ProductDetail product, int quantity) {
+    // Đảm bảo context còn mounted
+    if (!context.mounted) return;
+    
     final cartService = CartService();
     final cartItem = CartItem(
       id: product.id,
@@ -503,22 +509,29 @@ class ShopSuggestedProductsSection extends StatelessWidget {
     );
     cartService.addItem(cartItem);
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Đã thêm vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'Xem giỏ hàng',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartScreen()),
-            );
-          },
+    // Chỉ hiển thị thông báo, KHÔNG navigate - vẫn ở trang shop hiện tại
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Đã thêm vào giỏ hàng'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+          action: SnackBarAction(
+            label: 'Xem giỏ hàng',
+            textColor: Colors.white,
+            onPressed: () {
+              // Chỉ navigate khi user click vào action, không tự động
+              if (context.mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartScreen()),
+                );
+              }
+            },
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
 }
 

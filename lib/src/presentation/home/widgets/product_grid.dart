@@ -28,6 +28,26 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
     super.initState();
     // Load từ cache ngay lập tức
     _loadProductSuggestsFromCache();
+    // Lắng nghe sự kiện đăng nhập để refresh
+    _authService.addAuthStateListener(_onAuthStateChanged);
+  }
+
+  @override
+  void dispose() {
+    _authService.removeAuthStateListener(_onAuthStateChanged);
+    super.dispose();
+  }
+
+  void _onAuthStateChanged() {
+    // Khi đăng nhập/logout, reset flag và refresh lại
+    if (mounted) {
+      setState(() {
+        _hasLoadedOnce = false;
+        _products = [];
+        _isLoading = true;
+      });
+      _loadProductSuggestsWithRefresh();
+    }
   }
 
   Future<void> _loadProductSuggestsFromCache() async {
@@ -77,6 +97,45 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
         });
       }
      
+    }
+  }
+
+  Future<void> _loadProductSuggestsWithRefresh() async {
+    try {
+      if (!mounted) return;
+      
+      // Lấy userId từ AuthService (user đã đăng nhập) để sử dụng personalized suggestions
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
+      // Force refresh để lấy dữ liệu mới theo user_id
+      final suggestionsData = await _cachedApiService.getHomeSuggestions(
+        limit: 100,
+        userId: userId,
+        forceRefresh: true, // Force refresh khi đăng nhập
+      );
+
+      if (mounted && suggestionsData.isNotEmpty) {
+        // Convert Map to ProductSuggest
+        final products = suggestionsData.map((data) => ProductSuggest.fromJson(data)).toList();
+        
+        setState(() {
+          _isLoading = false;
+          _products = products;
+          _hasLoadedOnce = true;
+        });
+      } else if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Không có sản phẩm gợi ý';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

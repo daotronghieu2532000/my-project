@@ -46,9 +46,11 @@
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UIStatusBarHidden</key>
-		<true/>
-		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<false/>
+		<key>UIViewControllerBasedStatusBarAppearance</key>
+		<true/>
+		<key>UIStatusBarStyle</key>
+		<string>UIStatusBarStyleDefault</string>
 		<!-- Privacy Permissions - BẮT BUỘC cho App Store -->
 		<!-- App sử dụng image_picker để chọn ảnh từ thư viện và camera -->
 		<key>NSPhotoLibraryUsageDescription</key>

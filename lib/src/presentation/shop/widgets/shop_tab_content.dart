@@ -4,6 +4,7 @@ import 'shop_flash_sales_tabs.dart';
 import 'shop_categories_horizontal.dart';
 import 'shop_suggested_products_section.dart';
 import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/models/shop_detail.dart';
 
 class ShopTabContent extends StatelessWidget {
@@ -279,6 +280,7 @@ class _SuggestedProductsSectionWithTitle extends StatefulWidget {
 
 class _SuggestedProductsSectionWithTitleState extends State<_SuggestedProductsSectionWithTitle> {
   final CachedApiService _cachedApiService = CachedApiService();
+  final AuthService _authService = AuthService();
   List<ShopProduct> _suggestedProducts = [];
   bool _isLoading = true;
 
@@ -286,13 +288,35 @@ class _SuggestedProductsSectionWithTitleState extends State<_SuggestedProductsSe
   void initState() {
     super.initState();
     _loadSuggestedProducts();
+    // Lắng nghe sự kiện đăng nhập để refresh
+    _authService.addAuthStateListener(_onAuthStateChanged);
   }
 
-  Future<void> _loadSuggestedProducts() async {
+  @override
+  void dispose() {
+    _authService.removeAuthStateListener(_onAuthStateChanged);
+    super.dispose();
+  }
+
+  void _onAuthStateChanged() {
+    // Khi đăng nhập/logout, refresh lại suggested products
+    if (mounted) {
+      _loadSuggestedProducts(forceRefresh: true);
+    }
+  }
+
+  Future<void> _loadSuggestedProducts({bool forceRefresh = false}) async {
     try {
+      if (!mounted) return;
+      
+      setState(() {
+        _isLoading = true;
+      });
+      
       final shopDetail = await _cachedApiService.getShopDetailCached(
         shopId: widget.shopId,
         includeSuggestedProducts: 1,
+        forceRefresh: forceRefresh, // Force refresh khi đăng nhập
       );
       
       if (mounted) {

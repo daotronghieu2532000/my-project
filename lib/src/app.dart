@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/services/notification_handler.dart';
@@ -16,6 +17,15 @@ class SocdoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Cấu hình status bar để hiển thị đúng trên iOS
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Trong suốt để hiển thị nền app
+        statusBarIconBrightness: Brightness.dark, // Icon màu đen (cho nền sáng)
+        statusBarBrightness: Brightness.light, // iOS
+      ),
+    );
+    
     return MaterialApp(
       navigatorKey: NotificationHandler.navigatorKey,
       title: 'Socdo',
