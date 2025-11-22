@@ -337,7 +337,7 @@ class _FavoriteProductsScreenState extends State<FavoriteProductsScreen> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
                         child: const Text(
-                          'Sản phẩm giành cho bạn',
+                          'Sản phẩm dành cho bạn',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

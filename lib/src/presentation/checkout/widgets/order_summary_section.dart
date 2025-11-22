@@ -127,7 +127,6 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       
       // Lấy phí ship gốc và hỗ trợ ship từ API response
         _originalShipFee = rawQuote?['fee'] as int? ?? 0; // Phí ship gốc
-        _shipSupport = rawQuote?['best']?['ship_support'] as int? ?? 0; // Hỗ trợ ship từ best
         
         // ✅ Lấy chi tiết phí ship từng kho (ưu tiên từ best, sau đó warehouse_shipping)
         List<dynamic>? warehouseDetailsList;
@@ -164,6 +163,194 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         } else {
           _warehouseDetails = null;
         }
+        
+        // ✅ Tính ship_support đúng: theo shop (mỗi shop chỉ tính một lần)
+        // Tránh lỗi tính ship_support theo sản phẩm (20.000 x 3 = 60.000)
+        // Đúng: ship_support = 20.000/tổng đơn hàng shop (không nhân với số lượng sản phẩm)
+        int calculatedShipSupport = 0;
+        final bestShipSupport = (rawQuote?['best']?['ship_support'] as num?)?.toInt() ?? 0;
+        
+        // 🔍 DEBUG: In ra thông tin để kiểm tra
+        print('🔍 [SHIP_SUPPORT_DEBUG] ==========================================');
+        print('🔍 [SHIP_SUPPORT_DEBUG] best[\'ship_support\'] từ API: $bestShipSupport');
+        print('🔍 [SHIP_SUPPORT_DEBUG] Số lượng items trong giỏ: ${items.length}');
+        print('🔍 [SHIP_SUPPORT_DEBUG] Items: ${items.map((i) => 'product_id=${i['product_id']}, qty=${i['quantity']}').join('; ')}');
+        
+        // ✅ Tính ship_support từ shop_freeship_details (nếu có)
+        // shop_freeship_details chứa thông tin ship_support theo shop
+        final debug = rawQuote?['debug'] as Map<String, dynamic>?;
+        final shopFreeshipDetails = debug?['shop_freeship_details'] as Map<String, dynamic>?;
+        
+        print('🔍 [SHIP_SUPPORT_DEBUG] shop_freeship_details: $shopFreeshipDetails');
+        print('🔍 [SHIP_SUPPORT_DEBUG] Số lượng shop trong shop_freeship_details: ${shopFreeshipDetails?.length ?? 0}');
+        
+        // ✅ Tạo map shop_id -> shipping_fee từ warehouse_details (cần cho mode 1, 2)
+        final Map<int, int> shopShippingFees = {};
+        if (_warehouseDetails != null && _warehouseDetails!.isNotEmpty) {
+          print('🔍 [SHIP_SUPPORT_DEBUG] Tạo map shopShippingFees từ warehouse_details:');
+          for (final detailMap in _warehouseDetails!) {
+            final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
+            final shippingFee = (detailMap['shipping_fee'] as num?)?.toInt() ?? 0;
+            if (shippingFee > 0) {
+              // Lấy shipping_fee lớn nhất cho mỗi shop (nếu có nhiều warehouse)
+              if (!shopShippingFees.containsKey(shopId) || shippingFee > shopShippingFees[shopId]!) {
+                shopShippingFees[shopId] = shippingFee;
+              }
+              print('🔍 [SHIP_SUPPORT_DEBUG]   Shop $shopId: shipping_fee = $shippingFee');
+            }
+          }
+          print('🔍 [SHIP_SUPPORT_DEBUG] shopShippingFees map: $shopShippingFees');
+        }
+        
+        if (shopFreeshipDetails != null && shopFreeshipDetails.isNotEmpty) {
+          final Map<int, int> shopShipSupport = {};
+          
+          print('🔍 [SHIP_SUPPORT_DEBUG] Bắt đầu tính ship_support từ shop_freeship_details:');
+          
+          for (final entry in shopFreeshipDetails.entries) {
+            final shopIdStr = entry.key;
+            final shopId = int.tryParse(shopIdStr) ?? 0;
+            final config = entry.value;
+            
+            print('🔍 [SHIP_SUPPORT_DEBUG]   → Xử lý Shop ID: $shopId');
+            print('🔍 [SHIP_SUPPORT_DEBUG]     Config: $config');
+            
+            if (config is Map<String, dynamic>) {
+              final mode = config['mode'] as int? ?? 0;
+              final applied = config['applied'] as bool? ?? false;
+              
+              print('🔍 [SHIP_SUPPORT_DEBUG]     Mode: $mode, Applied: $applied');
+              
+              // Mode 3: Per-product freeship - ship_support theo sản phẩm
+              // Nhưng cần tính theo shop (không nhân với số lượng)
+              if (mode == 3 && applied == true) {
+                final products = config['products'];
+                int shopSupport = 0;
+                
+                print('🔍 [SHIP_SUPPORT_DEBUG]     Mode 3: Xử lý products: $products');
+                
+                if (products is Map<String, dynamic> && products.isNotEmpty) {
+                  // Lấy ship_support lớn nhất từ các sản phẩm (vì ship_support là theo shop, không phải theo sản phẩm)
+                  for (final productEntry in products.entries) {
+                    if (productEntry.value is Map<String, dynamic>) {
+                      final productConfig = productEntry.value as Map<String, dynamic>;
+                      final supportAmount = (productConfig['value'] as num?)?.toInt() ?? 0;
+                      print('🔍 [SHIP_SUPPORT_DEBUG]       Product ${productEntry.key}: supportAmount = $supportAmount');
+                      if (supportAmount > shopSupport) {
+                        shopSupport = supportAmount;
+                      }
+                    }
+                  }
+                } else if (products is List && products.isNotEmpty) {
+                  for (final productItem in products) {
+                    if (productItem is Map<String, dynamic>) {
+                      final supportAmount = (productItem['value'] as num?)?.toInt() ?? 0;
+                      print('🔍 [SHIP_SUPPORT_DEBUG]       Product trong List: supportAmount = $supportAmount');
+                      if (supportAmount > shopSupport) {
+                        shopSupport = supportAmount;
+                      }
+                    }
+                  }
+                }
+                
+                print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 3): shopSupport = $shopSupport');
+                
+                if (shopSupport > 0) {
+                  shopShipSupport[shopId] = shopSupport;
+                  print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = $shopSupport cho shop $shopId');
+                }
+              } else if ((mode == 0 || mode == 1 || mode == 2) && applied == true) {
+                // Mode 0, 1, 2: ship_support theo shop (không phải theo sản phẩm)
+                final discount = (config['discount'] as num?)?.toDouble() ?? 0.0;
+                if (mode == 0 && discount > 0) {
+                  // Mode 0: Fixed discount
+                  shopShipSupport[shopId] = discount.toInt();
+                  print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 0): shopSupport = ${discount.toInt()}');
+                  print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = ${discount.toInt()} cho shop $shopId');
+                } else if (mode == 1) {
+                  // Mode 1: 100% freeship - ship_support = toàn bộ shipping_fee
+                  final shippingFee = shopShippingFees[shopId] ?? 0;
+                  if (shippingFee > 0) {
+                    shopShipSupport[shopId] = shippingFee;
+                    print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 1): shipping_fee = $shippingFee, shopSupport = $shippingFee');
+                    print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = $shippingFee cho shop $shopId');
+                  } else {
+                    print('🔍 [SHIP_SUPPORT_DEBUG]     ⚠️ Shop $shopId (mode 1): Không có shipping_fee trong warehouse_details');
+                  }
+                } else if (mode == 2 && discount > 0) {
+                  // Mode 2: Percentage discount - ship_support = discount% của giá trị đơn hàng shop (subtotal)
+                  final subtotal = (config['subtotal'] as num?)?.toInt() ?? 0;
+                  if (subtotal > 0) {
+                    // ✅ Tính ship_support = discount% của subtotal (giá trị đơn hàng shop)
+                    final support = (subtotal * discount / 100).round();
+                    shopShipSupport[shopId] = support;
+                    print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 2): subtotal = $subtotal, discount = ${discount.toInt()}%, shopSupport = $support');
+                    print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = $support cho shop $shopId');
+                  } else {
+                    print('🔍 [SHIP_SUPPORT_DEBUG]     ⚠️ Shop $shopId (mode 2): Không có subtotal trong config');
+                  }
+                }
+              } else {
+                print('🔍 [SHIP_SUPPORT_DEBUG]     ⚠️ Shop $shopId: Mode $mode, Applied: $applied - KHÔNG ÁP DỤNG');
+              }
+            }
+          }
+          
+          print('🔍 [SHIP_SUPPORT_DEBUG] Kết quả shopShipSupport map: $shopShipSupport');
+          print('🔍 [SHIP_SUPPORT_DEBUG] Số lượng shop có ship_support: ${shopShipSupport.length}');
+          
+          // ✅ Tổng hợp ship_support từ tất cả các shop
+          calculatedShipSupport = shopShipSupport.values.fold(0, (sum, support) => sum + support);
+          print('🔍 [SHIP_SUPPORT_DEBUG] Tổng ship_support tính từ shop_freeship_details: $calculatedShipSupport');
+          
+          // In chi tiết từng shop
+          for (final entry in shopShipSupport.entries) {
+            print('🔍 [SHIP_SUPPORT_DEBUG]   - Shop ${entry.key}: ${entry.value}');
+          }
+        } else {
+          print('🔍 [SHIP_SUPPORT_DEBUG] Không có shop_freeship_details hoặc rỗng');
+        }
+        
+        // ✅ Fallback: Thử tính từ warehouse_details nếu shop_freeship_details không có
+        if (calculatedShipSupport == 0 && _warehouseDetails != null && _warehouseDetails!.isNotEmpty) {
+          print('🔍 [SHIP_SUPPORT_DEBUG] Fallback: Tính từ warehouse_details');
+          final Map<int, int> shopShipSupport = {};
+          
+          for (final detailMap in _warehouseDetails!) {
+            final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
+            final shipSupport = (detailMap['ship_support'] as num?)?.toInt() ?? 0;
+            
+            print('🔍 [SHIP_SUPPORT_DEBUG]   warehouse_detail: shop_id=$shopId, ship_support=$shipSupport');
+            
+            if (shipSupport > 0) {
+              if (!shopShipSupport.containsKey(shopId) || shipSupport > shopShipSupport[shopId]!) {
+                shopShipSupport[shopId] = shipSupport;
+              }
+            }
+          }
+          
+          print('🔍 [SHIP_SUPPORT_DEBUG] Kết quả shopShipSupport từ warehouse_details: $shopShipSupport');
+          calculatedShipSupport = shopShipSupport.values.fold(0, (sum, support) => sum + support);
+          print('🔍 [SHIP_SUPPORT_DEBUG] Tổng ship_support tính từ warehouse_details: $calculatedShipSupport');
+        }
+        
+        // ✅ Ưu tiên dùng ship_support tính từ shop_freeship_details hoặc warehouse_details (đúng)
+        // Fallback về best['ship_support'] nếu không có
+        // ⚠️ Nếu best['ship_support'] khác với calculated, có thể API đang tính sai
+        if (calculatedShipSupport > 0 && calculatedShipSupport != bestShipSupport) {
+          print('🔍 [SHIP_SUPPORT_DEBUG] ⚠️ PHÁT HIỆN: best[\'ship_support\'] ($bestShipSupport) khác với calculated ($calculatedShipSupport)');
+          print('🔍 [SHIP_SUPPORT_DEBUG] ⚠️ → Sử dụng calculated ($calculatedShipSupport) để tránh tính sai');
+          _shipSupport = calculatedShipSupport;
+        } else {
+          _shipSupport = calculatedShipSupport > 0 ? calculatedShipSupport : bestShipSupport;
+        }
+        
+        // 🔍 DEBUG: In ra kết quả cuối cùng
+        print('🔍 [SHIP_SUPPORT_DEBUG] Kết quả cuối cùng:');
+        print('🔍 [SHIP_SUPPORT_DEBUG]   - best[\'ship_support\']: $bestShipSupport');
+        print('🔍 [SHIP_SUPPORT_DEBUG]   - calculatedShipSupport: $calculatedShipSupport');
+        print('🔍 [SHIP_SUPPORT_DEBUG]   - _shipSupport (đã chọn): $_shipSupport');
+        print('🔍 [SHIP_SUPPORT_DEBUG] ==========================================');
       
       // Check if there's freeship available using raw API response
       _checkFreeshipAvailability(rawQuote);
@@ -810,18 +997,18 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                       ],
                     ),
                     
-                    // Hiển thị chi tiết phí ship từng kho với provider
-                    if (_warehouseDetails != null && _warehouseDetails!.isNotEmpty)
-                      ...(_warehouseDetails!.map((warehouse) => Padding(
-                        padding: const EdgeInsets.only(left: 8, top: 2),
-                        child: Text(
-                          '• ${warehouse['warehouse_location']}: ${_formatCurrency(warehouse['shipping_fee'])} (${warehouse['provider']})',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      )).toList()),
+                    // ✅ Tạm thời comment lại - Hiển thị chi tiết phí ship từng kho với provider
+                    // if (_warehouseDetails != null && _warehouseDetails!.isNotEmpty)
+                    //   ...(_warehouseDetails!.map((warehouse) => Padding(
+                    //     padding: const EdgeInsets.only(left: 8, top: 2),
+                    //     child: Text(
+                    //       '• ${warehouse['warehouse_location']}: ${_formatCurrency(warehouse['shipping_fee'])} (${warehouse['provider']})',
+                    //       style: const TextStyle(
+                    //         fontSize: 11,
+                    //         color: Colors.grey,
+                    //       ),
+                    //     ),
+                    //   )).toList()),
                     
                     if (_shipSupport != null && _shipSupport! > 0)
                       Text(
@@ -863,11 +1050,11 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.access_time, color: Colors.grey),
+              const Icon(Icons.access_time, color: Color.fromARGB(255, 255, 47, 47)),
               const SizedBox(width: 8),
               Text(
                 _etaText != null 
-                  ? 'Dự kiến: $_etaText'
+                  ? 'Nhận hàng $_etaText'
                   : 'Dự kiến: Vui lòng đăng nhập để tính thời gian',
                 style: TextStyle(
                   color: _etaText == null ? Colors.orange : null,
@@ -879,7 +1066,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           if (_provider != null)
             Row(
               children: [
-                const Icon(Icons.accessibility_sharp, color: Colors.grey),
+                const Icon(Icons.local_shipping_outlined, color: Color.fromARGB(255, 5, 87, 2)),
                 const SizedBox(width: 8),
                 Text(_provider!),
               ],

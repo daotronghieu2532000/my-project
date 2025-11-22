@@ -2494,10 +2494,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         : '';
     
     final oldPriceText = product.oldPrice > product.price 
-        ? '\n💸 Giá gốc: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}'
+        ? '\n💸 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}'
         : '';
     
-    return '🔥 ${product.title}$discountPercent\n💰 Giá: ${FormatUtils.formatCurrency(product.price.toInt())}$oldPriceText\n💎 Hoa hồng: ${product.mainCommission}\n🏪 Thương hiệu: ${product.brandName}\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
+    return '🔥 ${product.title}$discountPercent\n💰 Giá Bán: ${FormatUtils.formatCurrency(product.price.toInt())}$oldPriceText\n🏪 Thương hiệu: ${product.brandName}\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
   }
 
   Widget _buildAffiliateRegistrationPrompt() {

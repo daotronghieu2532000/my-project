@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>API Documentation - Socdo Mobile</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+        }
+        th {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e8f5e9;
+        }
+        .method-get { background-color: #61affe; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .method-post { background-color: #49cc90; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .method-put { background-color: #fca130; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .method-delete { background-color: #f93e3e; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; }
+        .url { font-family: monospace; font-size: 11px; word-break: break-all; }
+        .body { font-family: monospace; font-size: 10px; white-space: pre-wrap; max-width: 400px; }
+    </style>
+</head>
+<body>
+    <h1>API Documentation - Socdo Mobile</h1>
+    <p><strong>Base URL:</strong> https://api.socdo.vn/v1</p>
+    <p><strong>API Key:</strong> zzz8m4rjxnvgogy1gr1htkncn7</p>
+    <p><strong>API Secret:</strong> wz2yht03i0ag2ilib8gpfhbgusq2pw9ylo3sn2n2uqs4djugtf5nbgn1h0o3jx</p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;">STT</th>
+                <th style="width: 120px;">Nhóm API</th>
+                <th style="width: 200px;">Tên API</th>
+                <th style="width: 80px;">Method</th>
+                <th style="width: 400px;">URL</th>
+                <th style="width: 200px;">Headers</th>
+                <th style="width: 400px;">Body/Parameters</th>
+                <th style="width: 300px;">Mô tả</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>Authentication</td>
+                <td>Lấy Token</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/get_token</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "api_key": "zzz8m4rjxnvgogy1gr1htkncn7",
+  "api_secret": "wz2yht03i0ag2ilib8gpfhbgusq2pw9ylo3sn2n2uqs4djugtf5nbgn1h0o3jx"
+}</td>
+                <td>Lấy JWT token để xác thực các API khác</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>Authentication</td>
+                <td>Đăng Nhập</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/login</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "username": "email_or_phone",
+  "password": "password"
+}</td>
+                <td>Đăng nhập bằng email/phone và password</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>Authentication</td>
+                <td>Đăng Ký</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/register</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "phone_number": "0123456789",
+  "password": "password123",
+  "re_password": "password123",
+  "full_name": "Tên người dùng"
+}</td>
+                <td>Đăng ký tài khoản mới</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>Authentication</td>
+                <td>Quên Mật Khẩu</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/forgot_password</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "email": "user@example.com"
+}</td>
+                <td>Gửi email reset mật khẩu</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>Authentication</td>
+                <td>Quên Mật Khẩu SMS</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/forgot_password_sms</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "phone": "0123456789"
+}</td>
+                <td>Gửi SMS reset mật khẩu</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>Authentication</td>
+                <td>Lấy OTP</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/get_otp</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "phone": "0123456789"
+}</td>
+                <td>Lấy mã OTP qua SMS</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td>Authentication</td>
+                <td>Xác Thực OTP Reset Mật Khẩu</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/verify_otp_reset_password</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "phone": "0123456789",
+  "otp": "123456",
+  "new_password": "newpassword123"
+}</td>
+                <td>Xác thực OTP và đặt mật khẩu mới</td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td>Authentication</td>
+                <td>Đổi Mật Khẩu</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/change_password</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "old_password": "oldpassword",
+  "new_password": "newpassword"
+}</td>
+                <td>Đổi mật khẩu khi đã đăng nhập</td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td>User Profile</td>
+                <td>Lấy Thông Tin Người Dùng</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "get_info",
+  "user_id": 1
+}</td>
+                <td>Lấy thông tin chi tiết người dùng</td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td>User Profile</td>
+                <td>Cập Nhật Thông Tin Người Dùng</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "update_info",
+  "user_id": 1,
+  "name": "Tên mới",
+  "email": "email@example.com",
+  "mobile": "0123456789",
+  "ngaysinh": "1990-01-01",
+  "gioi_tinh": "Nam",
+  "dia_chi": "Địa chỉ"
+}</td>
+                <td>Cập nhật thông tin cá nhân</td>
+            </tr>
+            <tr>
+                <td>11</td>
+                <td>User Profile</td>
+                <td>Upload Avatar</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Authorization: Bearer {token}<br>Content-Type: multipart/form-data</td>
+                <td class="body">action: upload_avatar
+user_id: 1
+avatar: [file]</td>
+                <td>Upload ảnh đại diện</td>
+            </tr>
+            <tr>
+                <td>12</td>
+                <td>User Profile</td>
+                <td>Thêm Địa Chỉ</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "address_add",
+  "user_id": 1,
+  "ho_ten": "Nguyễn Văn A",
+  "dien_thoai": "0123456789",
+  "dia_chi": "123 Đường ABC",
+  "ten_xa": "Xã XYZ",
+  "ten_huyen": "Huyện DEF",
+  "ten_tinh": "Tỉnh GHI",
+  "tinh": 1,
+  "huyen": 1,
+  "xa": 1,
+  "email": "email@example.com",
+  "active": 1
+}</td>
+                <td>Thêm địa chỉ giao hàng mới</td>
+            </tr>
+            <tr>
+                <td>13</td>
+                <td>User Profile</td>
+                <td>Cập Nhật Địa Chỉ</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "address_update",
+  "user_id": 1,
+  "address_id": 1,
+  "ho_ten": "Nguyễn Văn A",
+  "dien_thoai": "0123456789",
+  "dia_chi": "123 Đường ABC",
+  "ten_tinh": "Tỉnh GHI",
+  "ten_huyen": "Huyện DEF",
+  "ten_xa": "Xã XYZ",
+  "tinh": 1,
+  "huyen": 1,
+  "xa": 1,
+  "email": "email@example.com"
+}</td>
+                <td>Cập nhật thông tin địa chỉ</td>
+            </tr>
+            <tr>
+                <td>14</td>
+                <td>User Profile</td>
+                <td>Xóa Địa Chỉ</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "address_delete",
+  "user_id": 1,
+  "address_id": 1
+}</td>
+                <td>Xóa địa chỉ</td>
+            </tr>
+            <tr>
+                <td>15</td>
+                <td>User Profile</td>
+                <td>Đặt Địa Chỉ Mặc Định</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "address_set_default",
+  "user_id": 1,
+  "address_id": 1
+}</td>
+                <td>Đặt địa chỉ làm mặc định</td>
+            </tr>
+            <tr>
+                <td>16</td>
+                <td>User Profile</td>
+                <td>Lấy Danh Sách Địa Chỉ</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/address_book?user_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">user_id (query param)</td>
+                <td>Lấy danh sách tất cả địa chỉ của user</td>
+            </tr>
+            <tr>
+                <td>17</td>
+                <td>Products</td>
+                <td>Lấy Chi Tiết Sản Phẩm</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/product_detail?product_id=1&user_id=1&is_member=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">product_id (required), user_id, is_member (query params)</td>
+                <td>Lấy thông tin chi tiết sản phẩm</td>
+            </tr>
+            <tr>
+                <td>18</td>
+                <td>Products</td>
+                <td>Tìm Kiếm Sản Phẩm</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/search_products?keyword=iphone&page=1&limit=50&user_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">keyword (required), page, limit, user_id (query params)</td>
+                <td>Tìm kiếm sản phẩm theo từ khóa</td>
+            </tr>
+            <tr>
+                <td>19</td>
+                <td>Products</td>
+                <td>Gợi Ý Từ Khóa Tìm Kiếm</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/search_suggestions?keyword=iphone&limit=5</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">keyword (required), limit (query params)</td>
+                <td>Lấy gợi ý từ khóa khi tìm kiếm</td>
+            </tr>
+            <tr>
+                <td>20</td>
+                <td>Products</td>
+                <td>Sản Phẩm Gợi Ý</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/product_suggest?type=home_suggest&limit=50&product_id=1&category_id=1&user_id=1&exclude_ids=1,2,3&is_member=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type, limit, product_id, category_id, user_id, exclude_ids, is_member (query params)</td>
+                <td>Lấy danh sách sản phẩm gợi ý</td>
+            </tr>
+            <tr>
+                <td>21</td>
+                <td>Products</td>
+                <td>Sản Phẩm Theo Danh Mục</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/products_by_category?category_id=1&page=1&limit=50&sort=newest</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">category_id (required), page, limit, sort (query params)</td>
+                <td>Lấy sản phẩm theo danh mục</td>
+            </tr>
+            <tr>
+                <td>22</td>
+                <td>Products</td>
+                <td>Sản Phẩm Cùng Shop</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/products_same_shop?product_id=1&shop_id=1&page=1&limit=20&category_id=1&sort=time-desc&exclude_product_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">product_id, shop_id, page, limit, category_id, sort, exclude_product_id (query params)</td>
+                <td>Lấy sản phẩm cùng shop</td>
+            </tr>
+            <tr>
+                <td>23</td>
+                <td>Products</td>
+                <td>Sản Phẩm Liên Quan</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/related_products?product_id=1&shop_id=1&limit=30&type=auto</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">product_id (required), shop_id, limit, type (query params)</td>
+                <td>Lấy sản phẩm liên quan</td>
+            </tr>
+            <tr>
+                <td>24</td>
+                <td>Products</td>
+                <td>Sản Phẩm Miễn Phí Ship</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/products_freeship</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body"></td>
+                <td>Lấy danh sách sản phẩm miễn phí ship</td>
+            </tr>
+            <tr>
+                <td>25</td>
+                <td>Products</td>
+                <td>Sản Phẩm Banner</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/banner_products?vi_tri_hien_thi=dau_trang</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">vi_tri_hien_thi (query param: dau_trang, giua_trang, cuoi_trang)</td>
+                <td>Lấy banner và sản phẩm theo vị trí</td>
+            </tr>
+            <tr>
+                <td>26</td>
+                <td>Categories</td>
+                <td>Danh Sách Danh Mục</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/categories_list?type=all&include_children=1&include_products_count=1&page=1&limit=50&parent_id=0</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type, include_children, include_products_count, page, limit, parent_id (query params)</td>
+                <td>Lấy danh sách danh mục sản phẩm</td>
+            </tr>
+            <tr>
+                <td>27</td>
+                <td>Categories</td>
+                <td>Sản Phẩm Theo Danh Mục</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/category_products?type=all&page=1&limit=50</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type, page, limit (query params)</td>
+                <td>Lấy sản phẩm theo danh mục (cách khác)</td>
+            </tr>
+            <tr>
+                <td>28</td>
+                <td>Orders</td>
+                <td>Tạo Đơn Hàng</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/create_order</td>
+                <td>Authorization: Bearer {token}<br>Content-Type: multipart/form-data</td>
+                <td class="body">user_id, ho_ten, dien_thoai, email, dia_chi, tinh, huyen, xa, sanpham (JSON array), thanhtoan, ghi_chu, coupon, giam, voucher_tmdt, phi_ship, ship_support, shipping_provider, utm_source, utm_campaign</td>
+                <td>Tạo đơn hàng mới</td>
+            </tr>
+            <tr>
+                <td>29</td>
+                <td>Orders</td>
+                <td>Danh Sách Đơn Hàng</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/orders_list?user_id=1&page=1&limit=20&status=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">user_id (required), page, limit, status (query params)</td>
+                <td>Lấy danh sách đơn hàng của user</td>
+            </tr>
+            <tr>
+                <td>30</td>
+                <td>Orders</td>
+                <td>Chi Tiết Đơn Hàng</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/order_detail?user_id=1&order_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">user_id (required), order_id hoặc ma_don (query params)</td>
+                <td>Lấy chi tiết đơn hàng</td>
+            </tr>
+            <tr>
+                <td>31</td>
+                <td>Orders</td>
+                <td>Yêu Cầu Hủy Đơn Hàng</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/order_cancel_request</td>
+                <td>Authorization: Bearer {token}<br>Content-Type: multipart/form-data</td>
+                <td class="body">user_id, order_id hoặc ma_don, reason</td>
+                <td>Yêu cầu hủy đơn hàng</td>
+            </tr>
+            <tr>
+                <td>32</td>
+                <td>Orders</td>
+                <td>Quản Lý Đơn Hàng - Cập Nhật Địa Chỉ</td>
+                <td><span class="method-put">PUT</span></td>
+                <td class="url">https://api.socdo.vn/v1/order_management</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "update_address",
+  "user_id": 1,
+  "order_id": 1,
+  "ma_don": "DH001",
+  "ho_ten": "Nguyễn Văn A",
+  "email": "email@example.com",
+  "dien_thoai": "0123456789",
+  "dia_chi": "123 Đường ABC",
+  "tinh": 1,
+  "huyen": 1,
+  "xa": 1
+}</td>
+                <td>Cập nhật địa chỉ giao hàng của đơn hàng</td>
+            </tr>
+            <tr>
+                <td>33</td>
+                <td>Orders</td>
+                <td>Trạng Thái Đơn Hàng</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/order_status?order_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">order_id (query param)</td>
+                <td>Lấy trạng thái đơn hàng</td>
+            </tr>
+            <tr>
+                <td>34</td>
+                <td>Product Reviews</td>
+                <td>Gửi Đánh Giá</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/product_reviews</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "product_id": 1,
+  "shop_id": 1,
+  "content": "Sản phẩm tốt",
+  "rating": 5,
+  "variant_id": 1,
+  "order_id": 1,
+  "images": ["base64_image1"],
+  "matches_description": true,
+  "is_satisfied": true,
+  "delivery_rating": 5,
+  "shop_rating": 5,
+  "will_buy_again": "yes"
+}</td>
+                <td>Gửi đánh giá sản phẩm</td>
+            </tr>
+            <tr>
+                <td>35</td>
+                <td>Product Reviews</td>
+                <td>Lấy Danh Sách Đánh Giá Sản Phẩm</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/product_reviews?product_id=1&page=1&limit=20&rating=5&has_images=1&is_satisfied=yes&matches_description=yes&sort=latest&variant_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">product_id (required), page, limit, rating, has_images, is_satisfied, matches_description, sort, variant_id (query params)</td>
+                <td>Lấy danh sách đánh giá của sản phẩm</td>
+            </tr>
+            <tr>
+                <td>36</td>
+                <td>Product Reviews</td>
+                <td>Lịch Sử Đánh Giá Của User</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/product_reviews?user_id=1&page=1&limit=20&status=all</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">user_id (required), page, limit, status (query params)</td>
+                <td>Lấy lịch sử đánh giá của người dùng</td>
+            </tr>
+            <tr>
+                <td>37</td>
+                <td>Product Reviews</td>
+                <td>Thống Kê Đánh Giá Sản Phẩm</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/product_rating_stats?product_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">product_id (required) (query param)</td>
+                <td>Lấy thống kê đánh giá (số sao, tỷ lệ)</td>
+            </tr>
+            <tr>
+                <td>38</td>
+                <td>Product Reviews</td>
+                <td>Cập Nhật Đánh Giá</td>
+                <td><span class="method-put">PUT</span></td>
+                <td class="url">https://api.socdo.vn/v1/product_reviews</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "comment_id": 1,
+  "user_id": 1,
+  "content": "Cập nhật đánh giá",
+  "rating": 4,
+  "images": ["base64_image1"],
+  "delivery_rating": 4,
+  "shop_rating": 4,
+  "matches_description": true,
+  "is_satisfied": true,
+  "will_buy_again": "yes"
+}</td>
+                <td>Cập nhật đánh giá đã gửi</td>
+            </tr>
+            <tr>
+                <td>39</td>
+                <td>Product Reviews</td>
+                <td>Xóa Đánh Giá</td>
+                <td><span class="method-delete">DELETE</span></td>
+                <td class="url">https://api.socdo.vn/home/themes/socdo/action/process/product_review_delete.php?comment_id=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">comment_id (query param)</td>
+                <td>Xóa đánh giá</td>
+            </tr>
+            <tr>
+                <td>40</td>
+                <td>Product Reviews</td>
+                <td>Like/Dislike Đánh Giá</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/home/themes/socdo/action/process/product_review_like.php</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "comment_id": 1,
+  "action": "like"
+}</td>
+                <td>Like hoặc dislike đánh giá (action: like, dislike, unlike, undislike)</td>
+            </tr>
+            <tr>
+                <td>41</td>
+                <td>Cart & Favorites</td>
+                <td>Thêm Vào Giỏ Hàng</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/add_to_cart</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "product_id": 1,
+  "quantity": 1,
+  "variant": "variant_info"
+}</td>
+                <td>Thêm sản phẩm vào giỏ hàng</td>
+            </tr>
+            <tr>
+                <td>42</td>
+                <td>Cart & Favorites</td>
+                <td>Danh Sách Sản Phẩm Yêu Thích</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/favorite_products?user_id=1&page=1&limit=50&all=0</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">user_id (required), page, limit, all (query params)</td>
+                <td>Lấy danh sách sản phẩm yêu thích</td>
+            </tr>
+            <tr>
+                <td>43</td>
+                <td>Cart & Favorites</td>
+                <td>Thêm Sản Phẩm Yêu Thích</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/add_favorite</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "product_id": 1
+}</td>
+                <td>Thêm sản phẩm vào danh sách yêu thích</td>
+            </tr>
+            <tr>
+                <td>44</td>
+                <td>Cart & Favorites</td>
+                <td>Xóa Sản Phẩm Yêu Thích</td>
+                <td><span class="method-delete">DELETE</span></td>
+                <td class="url">https://api.socdo.vn/v1/add_favorite</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "product_id": 1
+}</td>
+                <td>Xóa sản phẩm khỏi danh sách yêu thích</td>
+            </tr>
+            <tr>
+                <td>45</td>
+                <td>Cart & Favorites</td>
+                <td>Toggle Yêu Thích</td>
+                <td><span class="method-put">PUT</span></td>
+                <td class="url">https://api.socdo.vn/v1/add_favorite</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "product_id": 1
+}</td>
+                <td>Bật/tắt yêu thích sản phẩm</td>
+            </tr>
+            <tr>
+                <td>46</td>
+                <td>Vouchers</td>
+                <td>Danh Sách Voucher Sàn</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/voucher_list?type=platform&page=1&limit=10</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type=platform, page, limit (query params)</td>
+                <td>Lấy danh sách voucher của sàn</td>
+            </tr>
+            <tr>
+                <td>47</td>
+                <td>Vouchers</td>
+                <td>Danh Sách Voucher Shop</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/voucher_list?type=shop&shop_id=1&user_id=1&page=1&limit=20</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type=shop, shop_id, user_id, page, limit (query params)</td>
+                <td>Lấy danh sách voucher của shop</td>
+            </tr>
+            <tr>
+                <td>48</td>
+                <td>Vouchers</td>
+                <td>Danh Sách Voucher Tổng Hợp</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/voucher_list?type=shop&shop_id=1&user_id=1&product_id=1&page=1&limit=10</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type, shop_id, user_id, product_id, page, limit (query params)</td>
+                <td>Lấy danh sách voucher (có thể filter theo shop, product)</td>
+            </tr>
+            <tr>
+                <td>49</td>
+                <td>Flash Sale</td>
+                <td>Danh Sách Flash Sale</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/flash_sale?page=1&limit=50&status=active&timeline=09:00&shop=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">page, limit, status, timeline, shop (query params)</td>
+                <td>Lấy danh sách flash sale</td>
+            </tr>
+            <tr>
+                <td>50</td>
+                <td>Flash Sale</td>
+                <td>Flash Sale App</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/app_flash_sale</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body"></td>
+                <td>Lấy flash sale cho app</td>
+            </tr>
+            <tr>
+                <td>51</td>
+                <td>Shop</td>
+                <td>Chi Tiết Shop</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/shop_detail?shop_id=1&include_products=1&include_flash_sale=1&include_vouchers=1&include_warehouses=1&include_categories=1&products_limit=20</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">shop_id hoặc username, include_products, include_flash_sale, include_vouchers, include_warehouses, include_categories, products_limit (query params)</td>
+                <td>Lấy thông tin chi tiết shop</td>
+            </tr>
+            <tr>
+                <td>52</td>
+                <td>Shop</td>
+                <td>Sản Phẩm Shop Phân Trang</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/shop_detail?shop_id=1&include_products=1&products_limit=50&page=1&sort_by=price_asc&category_id=1&search=keyword</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">shop_id, include_products, products_limit, page, sort_by, category_id, search (query params)</td>
+                <td>Lấy sản phẩm shop với phân trang và filter</td>
+            </tr>
+            <tr>
+                <td>53</td>
+                <td>Banners & Brands</td>
+                <td>Danh Sách Banner</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/banners?position=home&limit=10&shop_id=0</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">position (required), limit, shop_id (query params)</td>
+                <td>Lấy danh sách banner theo vị trí</td>
+            </tr>
+            <tr>
+                <td>54</td>
+                <td>Banners & Brands</td>
+                <td>Banner Đơn</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/banner?position=home</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">position (query param)</td>
+                <td>Lấy một banner</td>
+            </tr>
+            <tr>
+                <td>55</td>
+                <td>Banners & Brands</td>
+                <td>Thương Hiệu Nổi Bật</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/featured_brands?page=1&limit=20&shop_id=0&sort=order&all=0</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">page, limit, shop_id, sort, all (query params)</td>
+                <td>Lấy danh sách thương hiệu nổi bật</td>
+            </tr>
+            <tr>
+                <td>56</td>
+                <td>Banners & Brands</td>
+                <td>Popup Banner</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/popup_banners?exclude_id=1,2,3</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">exclude_id (query param - danh sách ID đã hiển thị)</td>
+                <td>Lấy popup banner để hiển thị</td>
+            </tr>
+            <tr>
+                <td>57</td>
+                <td>Banners & Brands</td>
+                <td>Tăng Click Popup Banner</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/popup_banners</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "popup_id": 1
+}</td>
+                <td>Tăng số lượt click popup banner</td>
+            </tr>
+            <tr>
+                <td>58</td>
+                <td>Banners & Brands</td>
+                <td>Splash Screen</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/splash_screen</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body"></td>
+                <td>Lấy splash screen đang active</td>
+            </tr>
+            <tr>
+                <td>59</td>
+                <td>Locations</td>
+                <td>Danh Sách Tỉnh/Thành</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/locations?type=province&keyword=&page=1&limit=100</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type=province, keyword, page, limit (query params)</td>
+                <td>Lấy danh sách tỉnh/thành phố</td>
+            </tr>
+            <tr>
+                <td>60</td>
+                <td>Locations</td>
+                <td>Danh Sách Quận/Huyện</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/locations?type=district&tinh=1&keyword=&page=1&limit=100</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type=district, tinh (required), keyword, page, limit (query params)</td>
+                <td>Lấy danh sách quận/huyện theo tỉnh</td>
+            </tr>
+            <tr>
+                <td>61</td>
+                <td>Locations</td>
+                <td>Danh Sách Phường/Xã</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/locations?type=ward&tinh=1&huyen=1&keyword=&page=1&limit=100</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">type=ward, tinh (required), huyen (required), keyword, page, limit (query params)</td>
+                <td>Lấy danh sách phường/xã theo quận/huyện</td>
+            </tr>
+            <tr>
+                <td>62</td>
+                <td>Shipping</td>
+                <td>Tính Phí Vận Chuyển</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/shipping_quote</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "items": [{
+    "product_id": 1,
+    "quantity": 2
+  }]
+}</td>
+                <td>Tính phí vận chuyển cho đơn hàng</td>
+            </tr>
+            <tr>
+                <td>63</td>
+                <td>Notifications</td>
+                <td>Danh Sách Thông Báo</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/notifications_mobile?user_id=1&page=1&limit=20&type=order&unread_only=false</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">user_id (required), page, limit, type, unread_only (query params)</td>
+                <td>Lấy danh sách thông báo</td>
+            </tr>
+            <tr>
+                <td>64</td>
+                <td>Notifications</td>
+                <td>Đánh Dấu Đã Đọc</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/notification_mark_read_mobile</td>
+                <td>Authorization: Bearer {token}<br>Content-Type: multipart/form-data</td>
+                <td class="body">user_id, notification_id (hoặc mark_all=true, type)</td>
+                <td>Đánh dấu thông báo đã đọc</td>
+            </tr>
+            <tr>
+                <td>65</td>
+                <td>Notifications</td>
+                <td>Xóa Thông Báo</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/notification_delete_mobile</td>
+                <td>Authorization: Bearer {token}<br>Content-Type: multipart/form-data</td>
+                <td class="body">user_id, notification_id (hoặc delete_all=true)</td>
+                <td>Xóa thông báo</td>
+            </tr>
+            <tr>
+                <td>66</td>
+                <td>Notifications</td>
+                <td>Số Lượng Thông Báo Chưa Đọc</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/notifications_mobile?user_id=1&unread_only=true&limit=1</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">user_id (required), unread_only=true, limit=1 (query params)</td>
+                <td>Lấy số lượng thông báo chưa đọc</td>
+            </tr>
+            <tr>
+                <td>67</td>
+                <td>Notifications</td>
+                <td>Đăng Ký Device Token FCM</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/register_device_token</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "device_token": "fcm_token_here",
+  "platform": "android",
+  "device_model": "Samsung Galaxy S21",
+  "app_version": "1.0.0"
+}</td>
+                <td>Đăng ký FCM token để nhận push notification</td>
+            </tr>
+            <tr>
+                <td>68</td>
+                <td>Chat</td>
+                <td>Tạo Phiên Chat</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=create_session</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "shop_id": 1,
+  "user_id": 1
+}</td>
+                <td>Tạo phiên chat mới với shop</td>
+            </tr>
+            <tr>
+                <td>69</td>
+                <td>Chat</td>
+                <td>Danh Sách Phiên Chat</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "list_sessions",
+  "user_id": 1,
+  "user_type": "user",
+  "page": 1,
+  "limit": 20
+}</td>
+                <td>Lấy danh sách phiên chat</td>
+            </tr>
+            <tr>
+                <td>70</td>
+                <td>Chat</td>
+                <td>Lấy Tin Nhắn</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=get_messages&phien=session_id&page=1&limit=50</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{}</td>
+                <td>Lấy tin nhắn của phiên chat</td>
+            </tr>
+            <tr>
+                <td>71</td>
+                <td>Chat</td>
+                <td>Gửi Tin Nhắn</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "send_message",
+  "phien": "session_id",
+  "content": "Nội dung tin nhắn",
+  "sender_type": "user",
+  "product_id": 1,
+  "variant_id": 1
+}</td>
+                <td>Gửi tin nhắn trong phiên chat</td>
+            </tr>
+            <tr>
+                <td>72</td>
+                <td>Chat</td>
+                <td>Đánh Dấu Đã Đọc</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=mark_read&phien=session_id&mark_all=true&message_ids=1,2,3</td>
+                <td>Authorization: Bearer {token}</td>
+                <td class="body">action=mark_read, phien, mark_all, message_ids (query params)</td>
+                <td>Đánh dấu tin nhắn đã đọc</td>
+            </tr>
+            <tr>
+                <td>73</td>
+                <td>Chat</td>
+                <td>Số Tin Nhắn Chưa Đọc</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=get_unread_count&user_id=1&user_type=user</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{}</td>
+                <td>Lấy số lượng tin nhắn chưa đọc</td>
+            </tr>
+            <tr>
+                <td>74</td>
+                <td>Chat</td>
+                <td>Đóng Phiên Chat</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=close_session</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "phien": "session_id"
+}</td>
+                <td>Đóng phiên chat</td>
+            </tr>
+            <tr>
+                <td>75</td>
+                <td>Chat</td>
+                <td>Xóa Phiên Chat</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=delete_session</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "phien": "session_id",
+  "user_type": "user"
+}</td>
+                <td>Xóa phiên chat</td>
+            </tr>
+            <tr>
+                <td>76</td>
+                <td>Chat</td>
+                <td>Tìm Kiếm Tin Nhắn</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=search_messages&phien=session_id&keyword=search&page=1&limit=20</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{}</td>
+                <td>Tìm kiếm tin nhắn trong phiên chat</td>
+            </tr>
+            <tr>
+                <td>77</td>
+                <td>Chat</td>
+                <td>Reset Unread Count</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/chat_api_correct?action=reset_unread</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "phien": "session_id",
+  "user_type": "user"
+}</td>
+                <td>Reset số tin nhắn chưa đọc</td>
+            </tr>
+            <tr>
+                <td>78</td>
+                <td>Chat</td>
+                <td>SSE Real-time</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/sse_realtime_final?phien=session_id&session_id=1</td>
+                <td>Authorization: Bearer {token}<br>Accept: text/event-stream</td>
+                <td class="body">phien, session_id (query params)</td>
+                <td>Kết nối SSE để nhận tin nhắn real-time</td>
+            </tr>
+            <tr>
+                <td>79</td>
+                <td>Affiliate</td>
+                <td>Đăng Ký Affiliate</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/user_profile</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "action": "register_affiliate",
+  "user_id": 1
+}</td>
+                <td>Đăng ký tham gia chương trình affiliate</td>
+            </tr>
+            <tr>
+                <td>80</td>
+                <td>Affiliate</td>
+                <td>Dashboard Affiliate</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_dashboard?user_id=1</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id (query param)</td>
+                <td>Lấy thống kê dashboard affiliate</td>
+            </tr>
+            <tr>
+                <td>81</td>
+                <td>Affiliate</td>
+                <td>Danh Sách Sản Phẩm Affiliate</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_products?user_id=1&page=1&limit=50&search=keyword&sort_by=price&only_following=0</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id, page, limit, search, sort_by, only_following (query params)</td>
+                <td>Lấy danh sách sản phẩm có thể affiliate</td>
+            </tr>
+            <tr>
+                <td>82</td>
+                <td>Affiliate</td>
+                <td>Follow/Unfollow Sản Phẩm</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_follow_product</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "user_id": 1,
+  "sp_id": 1,
+  "shop": 1,
+  "action": "follow"
+}</td>
+                <td>Follow hoặc unfollow sản phẩm để affiliate</td>
+            </tr>
+            <tr>
+                <td>83</td>
+                <td>Affiliate</td>
+                <td>Tạo Link Affiliate</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_create_link</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "user_id": 1,
+  "sp_id": 1,
+  "full_link": "https://socdo.vn/product/1?utm_source=affiliate"
+}</td>
+                <td>Tạo link affiliate cho sản phẩm</td>
+            </tr>
+            <tr>
+                <td>84</td>
+                <td>Affiliate</td>
+                <td>Danh Sách Link Affiliate Của Tôi</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_my_links?user_id=1&page=1&limit=20&search=keyword&sort_by=created&only_has_link=0</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id, page, limit, search, sort_by, only_has_link (query params)</td>
+                <td>Lấy danh sách link affiliate đã tạo</td>
+            </tr>
+            <tr>
+                <td>85</td>
+                <td>Affiliate</td>
+                <td>Đơn Hàng Affiliate</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_orders?user_id=1&page=1&limit=20</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id, page, limit (query params)</td>
+                <td>Lấy danh sách đơn hàng từ link affiliate</td>
+            </tr>
+            <tr>
+                <td>86</td>
+                <td>Affiliate</td>
+                <td>Lịch Sử Hoa Hồng</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_commission_history?user_id=1&page=1&limit=20</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id, page, limit (query params)</td>
+                <td>Lấy lịch sử hoa hồng affiliate</td>
+            </tr>
+            <tr>
+                <td>87</td>
+                <td>Affiliate</td>
+                <td>Yêu Cầu Nhận Hoa Hồng</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_claim_commission</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "user_id": 1
+}</td>
+                <td>Yêu cầu nhận hoa hồng (sau 7 ngày)</td>
+            </tr>
+            <tr>
+                <td>88</td>
+                <td>Affiliate</td>
+                <td>Thông Tin Số Dư</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_balance_info?user_id=1</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id (query param)</td>
+                <td>Lấy thông tin số dư affiliate</td>
+            </tr>
+            <tr>
+                <td>89</td>
+                <td>Affiliate</td>
+                <td>Yêu Cầu Rút Tiền</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_withdraw</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "user_id": 1,
+  "amount": 100000,
+  "bank_account": "0123456789",
+  "bank_name": "Vietcombank",
+  "account_holder": "Nguyễn Văn A"
+}</td>
+                <td>Yêu cầu rút tiền hoa hồng</td>
+            </tr>
+            <tr>
+                <td>90</td>
+                <td>Affiliate</td>
+                <td>Lịch Sử Rút Tiền</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_withdrawal_history?user_id=1&page=1&limit=20</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id, page, limit (query params)</td>
+                <td>Lấy lịch sử rút tiền</td>
+            </tr>
+            <tr>
+                <td>91</td>
+                <td>Affiliate</td>
+                <td>Danh Sách Tài Khoản Ngân Hàng</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_bank_accounts?user_id=1</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id (query param)</td>
+                <td>Lấy danh sách tài khoản ngân hàng đã lưu</td>
+            </tr>
+            <tr>
+                <td>92</td>
+                <td>Affiliate</td>
+                <td>Thêm Tài Khoản Ngân Hàng</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_bank_accounts?user_id=1</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">{
+  "account_holder": "Nguyễn Văn A",
+  "account_number": "0123456789",
+  "bank_id": 1,
+  "is_default": true
+}</td>
+                <td>Thêm tài khoản ngân hàng để nhận tiền</td>
+            </tr>
+            <tr>
+                <td>93</td>
+                <td>Affiliate</td>
+                <td>Danh Sách Ngân Hàng</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_banks_list</td>
+                <td>Content-Type: application/json</td>
+                <td class="body"></td>
+                <td>Lấy danh sách ngân hàng hỗ trợ</td>
+            </tr>
+            <tr>
+                <td>94</td>
+                <td>Affiliate</td>
+                <td>Affiliate Simple</td>
+                <td><span class="method-get">GET</span></td>
+                <td class="url">https://api.socdo.vn/v1/affiliate_simple?user_id=1</td>
+                <td>Content-Type: application/json</td>
+                <td class="body">user_id (query param)</td>
+                <td>Lấy thông tin affiliate đơn giản</td>
+            </tr>
+            <tr>
+                <td>95</td>
+                <td>App Rating & Feedback</td>
+                <td>Gửi Đánh Giá App</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/app_rating</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "rating": 5,
+  "comment": "Ứng dụng rất tốt",
+  "device_info": "Samsung Galaxy S21",
+  "app_version": "1.0.0"
+}</td>
+                <td>Gửi đánh giá ứng dụng</td>
+            </tr>
+            <tr>
+                <td>96</td>
+                <td>App Rating & Feedback</td>
+                <td>Báo Lỗi App</td>
+                <td><span class="method-post">POST</span></td>
+                <td class="url">https://api.socdo.vn/v1/app_report</td>
+                <td>Content-Type: application/json<br>Authorization: Bearer {token}</td>
+                <td class="body">{
+  "user_id": 1,
+  "description": "Mô tả lỗi",
+  "image_urls": ["url1", "url2"],
+  "device_info": "Samsung Galaxy S21",
+  "app_version": "1.0.0"
+}</td>
+                <td>Báo lỗi ứng dụng</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
+

@@ -63,10 +63,14 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
       return s;
     });
     // Cộng dồn giảm giá shop + sàn theo giỏ hàng hiện tại
-    final shopDiscount = voucherService.calculateTotalDiscount(totalGoods);
+    final shopDiscount = voucherService.calculateTotalDiscount(
+      totalGoods,
+      items: items.map((e) => {'shopId': e.shopId, 'price': e.price, 'quantity': e.quantity}).toList(),
+    );
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e.id).toList(),
+      items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
     );
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
     final shipFee = ShippingQuoteStore().lastFee;

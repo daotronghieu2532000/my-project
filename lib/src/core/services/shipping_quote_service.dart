@@ -129,7 +129,7 @@ class ShippingQuoteService {
     }
 
     // ✅ Tính ETA fallback
-    final etaText = 'Dự kiến từ ${_getEstimatedDeliveryDate(2)} - ${_getEstimatedDeliveryDate(4)}';
+    final etaText = 'dự kiến trong ${_getEstimatedDeliveryDate(2)} - ${_getEstimatedDeliveryDate(4)}';
 
     final fallbackQuote = {
       'success': true,

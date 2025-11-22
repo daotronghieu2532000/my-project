@@ -1115,35 +1115,10 @@ class _LoggedOutView extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Background Image with opacity
-        Container(
-          decoration: BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('lib/src/core/assets/images/logo_socdo.png'),
-              fit: BoxFit.cover,
-              opacity: 0.15, // Mờ mờ cho đẹp
-            ),
-          ),
-        ),
-        // Subtle overlay
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withOpacity(0.8),
-                Colors.white.withOpacity(0.9),
-              ],
-            ),
-          ),
-        ),
-        // Content
-        Center(
-          child: Column(
+    return Container(
+      color: Colors.white,
+      child: Center(
+        child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               // Logo/Icon
@@ -1151,7 +1126,7 @@ class _LoggedOutView extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.grey[50],
                   borderRadius: BorderRadius.circular(40),
                   boxShadow: [
                     BoxShadow(
@@ -1239,7 +1214,6 @@ class _LoggedOutView extends StatelessWidget {
             ],
           ),
         ),
-      ],
     );
   }
 }

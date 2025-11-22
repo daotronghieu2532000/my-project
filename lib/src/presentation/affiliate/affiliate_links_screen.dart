@@ -832,7 +832,7 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
       }
     }
     if (minCommission == null || maxCommission == null) return '💎';
-    return '💎 ${FormatUtils.formatCurrency(minCommission.toInt())} → ${FormatUtils.formatCurrency(maxCommission.toInt())}';
+    return '${FormatUtils.formatCurrency(minCommission.toInt())} → ${FormatUtils.formatCurrency(maxCommission.toInt())}';
   }
 
   Widget _buildModernFilterPanel() {

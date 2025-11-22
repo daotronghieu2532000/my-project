@@ -99,47 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Image - Ảnh 300x658px phù hợp với tỉ lệ màn hình điện thoại
-          Image.asset(
-            'lib/src/core/assets/images/logo_socdo.png',
-            fit: BoxFit.cover, // Fill toàn màn hình, không có khoảng trắng
-            alignment: Alignment.center, // Căn giữa - tỉ lệ 1:2.19 gần khớp với màn hình
-            filterQuality: FilterQuality.high, // Chất lượng cao để ảnh nét
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFF8F9FA),
-                      Color(0xFFE9ECEF),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          // Subtle overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withOpacity(0.7),
-                  Colors.white.withOpacity(0.8),
-                ],
-              ),
-            ),
-          ),
-          // Main content
-          SafeArea(
-            child: Column(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
               children: [
                 // Modern AppBar
                 Padding(
@@ -148,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -196,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 70,
                               height: 70,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(60),
                                 boxShadow: [
                                   BoxShadow(
@@ -246,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Container(
                             padding: const EdgeInsets.all(28),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
@@ -288,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.9),
+                                    fillColor: Colors.grey[50],
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
@@ -351,7 +313,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.5),
+                                    fillColor: Colors.grey[50],
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
@@ -428,7 +390,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.4),
+                                    color: Colors.grey[50],
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Row(
@@ -485,7 +447,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.6),
+                                  color: Colors.grey[50],
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
                                     color: const Color(0xFFE9ECEF),
@@ -510,8 +472,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ],
             ),
-          ),
-        ],
       ),
     );
   }

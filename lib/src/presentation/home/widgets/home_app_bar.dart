@@ -174,8 +174,24 @@ class _HomeAppBarState extends State<HomeAppBar> {
   }
 
   void _handleSearchTap() {
+    // ✅ Sử dụng PageRouteBuilder với animation nhanh hơn để tăng tốc độ navigation
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SearchScreen()),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const SearchScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          // ✅ Slide animation nhanh hơn (200ms thay vì 300ms mặc định)
+          const begin = Offset(1.0, 0.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOut;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+          return SlideTransition(
+            position: offsetAnimation,
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 200), // ✅ Nhanh hơn 100ms
+      ),
     );
   }
 

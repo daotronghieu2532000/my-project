@@ -1041,10 +1041,24 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               // Search button - Navigate to search screen
               IconButton(
                 onPressed: () {
+                  // ✅ Sử dụng PageRouteBuilder với animation nhanh hơn để tăng tốc độ navigation
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const SearchScreen(),
+                    PageRouteBuilder(
+                      pageBuilder: (context, animation, secondaryAnimation) => const SearchScreen(),
+                      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                        // ✅ Slide animation nhanh hơn (200ms thay vì 300ms mặc định)
+                        const begin = Offset(1.0, 0.0);
+                        const end = Offset.zero;
+                        const curve = Curves.easeOut;
+                        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        return SlideTransition(
+                          position: offsetAnimation,
+                          child: child,
+                        );
+                      },
+                      transitionDuration: const Duration(milliseconds: 200), // ✅ Nhanh hơn 100ms
                     ),
                   );
                 },

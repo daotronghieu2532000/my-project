@@ -234,16 +234,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   Widget _buildNotLoggedInView() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFF8F9FA),
-            Color(0xFFE9ECEF),
-          ],
-        ),
-      ),
+      color: Colors.white,
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

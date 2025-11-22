@@ -52,6 +52,9 @@ class _SearchScreenState extends State<SearchScreen> {
   
   // Lịch sử tìm kiếm
   List<String> _searchHistory = [];
+  
+  // Focus node cho search field
+  final FocusNode _searchFocusNode = FocusNode();
 
 
   @override
@@ -59,8 +62,18 @@ class _SearchScreenState extends State<SearchScreen> {
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);
-    _loadSearchHistory();
-    _loadRandomCategoriesFromSuggestions();
+    // ✅ Load tất cả data sau khi UI đã render để không block navigation
+    // Giúp màn hình hiển thị ngay lập tức, data sẽ load sau
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSearchHistory();
+      _loadRandomCategoriesFromSuggestions();
+      // ✅ Delay autofocus một chút để UI render trước, tránh delay khi mở keyboard
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (mounted && _searchFocusNode.canRequestFocus) {
+          _searchFocusNode.requestFocus();
+        }
+      });
+    });
   }
 
 
@@ -68,6 +81,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -404,7 +418,7 @@ class _SearchScreenState extends State<SearchScreen> {
           _isLoadingShopSuggestions = false;
         });
       }
-    } catch (e, stackTrace) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _searchSuggestions = [];
@@ -493,6 +507,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         Expanded(
                           child: TextField(
                             controller: _searchController,
+                            focusNode: _searchFocusNode,
                             decoration: const InputDecoration(
                               hintText: 'Tìm kiếm sản phẩm...',
                               border: InputBorder.none,
@@ -505,7 +520,7 @@ class _SearchScreenState extends State<SearchScreen> {
                               contentPadding: EdgeInsets.symmetric(vertical: 10),
                             ),
                             onSubmitted: _onSearchSubmitted,
-                            autofocus: true,
+                            autofocus: false, // ✅ Tắt autofocus, sẽ request focus sau khi UI render
                             textInputAction: TextInputAction.search,
                             keyboardType: TextInputType.text,
                             textAlignVertical: TextAlignVertical.center,

@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'widgets/delivery_info_section.dart';
 import 'widgets/product_section.dart';
@@ -117,7 +116,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     
     // Tự động áp dụng voucher sàn tốt nhất (sau khi đã áp dụng voucher shop)
-    await _voucherService.autoApplyBestPlatformVoucher(totalGoods, cartProductIds);
+    await _voucherService.autoApplyBestPlatformVoucher(
+      totalGoods,
+      cartProductIds,
+      items: selectedItems.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
+    );
   }
 
   @override
@@ -246,10 +249,14 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     
     // Tính voucher discount như trong PaymentDetailsSection
     final totalGoods = items.fold(0, (s, i) => s + (i['gia_moi'] as int) * (i['quantity'] as int));
-    final shopDiscount = voucherService.calculateTotalDiscount(totalGoods);
+    final shopDiscount = voucherService.calculateTotalDiscount(
+      totalGoods,
+      items: items.map((e) => {'shopId': e['shop'] as int, 'price': e['gia_moi'] as int, 'quantity': e['quantity'] as int}).toList(),
+    );
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e['id'] as int).toList(),
+      items: items.map((e) => {'id': e['id'] as int, 'price': e['gia_moi'] as int, 'quantity': e['quantity'] as int}).toList(),
     );
     // final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
     
@@ -257,16 +264,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final platformVoucher = voucherService.platformVoucher;
     final couponCode = platformVoucher?.code ?? '';
     
-    // Tính ship support từ freeship logic
-    // API shipping_quote.php trả về phí ship gốc và hỗ trợ ship riêng biệt
-    int shipSupport = 0;
+    // ✅ Ưu tiên sử dụng shipSupport từ ShippingQuoteStore (giá trị đã được set từ OrderSummarySection)
+    // Đảm bảo giá trị khớp với UI hiển thị
+    int shipSupport = ship.shipSupport; // Lấy từ store (giá trị đúng, không bị clamp)
     int originalShipFee = ship.lastFee; // Phí ship gốc
-    int finalShipFee = ship.lastFee; // Phí ship cuối (sẽ được tính lại)
     
     // Map để lưu shipping_provider cho từng shop
     Map<int, String> shopShippingProviders = {};
     
     // Gọi API shipping_quote để lấy thông tin freeship cho tất cả items
+    // Chỉ để lấy warehouse_details và provider, không cần tính lại shipSupport
     try {
       // ✅ Thêm giá vào items để fallback tính chính xác hơn
       final shippingItems = items.map((item) => {
@@ -284,42 +291,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       
       if (shippingQuote != null && shippingQuote['success'] == true) {
-        // Sử dụng phí ship gốc và hỗ trợ ship từ API response
+        // ✅ Lấy phí ship gốc từ API (nếu có) để đảm bảo chính xác
         final bestOverall = shippingQuote['data']?['best'] as Map<String, dynamic>?;
         if (bestOverall != null) {
           originalShipFee = bestOverall['fee'] as int? ?? ship.lastFee; // Phí ship gốc từ API
-          shipSupport = bestOverall['ship_support'] as int? ?? 0; // Hỗ trợ ship từ API
-          finalShipFee = max(0, originalShipFee - shipSupport); // Phí ship cuối
-        } else {
-          // Fallback: sử dụng logic cũ nếu không có best_overall
-          final debug = shippingQuote['data']?['debug'];
-          if (debug != null) {
-            final freeshipExcluded = debug['freeship_excluded'] as Map<String, dynamic>?;
-            if (freeshipExcluded != null) {
-              // Lấy ship support từ API response
-              final shipFixedSupport = freeshipExcluded['ship_fixed_support'] as int? ?? 0;
-              final shipPercentSupport = freeshipExcluded['ship_percent_support'] as double? ?? 0.0;
-              
-              // Tính tổng ship support
-              shipSupport = shipFixedSupport;
-              if (shipPercentSupport > 0) {
-                // Lấy fee_before_support từ debug để tính percent support chính xác
-                final finalFeeCalculation = debug['final_fee_calculation'] as Map<String, dynamic>?;
-                int percentSupportAmount = 0;
-                if (finalFeeCalculation != null) {
-                  final feeBeforeSupport = finalFeeCalculation['fee_before_support'] as int? ?? 0;
-                  percentSupportAmount = (feeBeforeSupport * shipPercentSupport / 100).round();
-                } else {
-                  // Fallback: sử dụng ship.lastFee nếu không có debug info
-                  percentSupportAmount = (ship.lastFee * shipPercentSupport / 100).round();
-                }
-                shipSupport += percentSupportAmount;
-              }
-              
-              // Tính final ship fee
-              finalShipFee = max(0, ship.lastFee - shipSupport);
-            }
-          }
+          // ✅ Không override shipSupport từ store, vì store đã có giá trị đúng
+          // shipSupport từ store đã được set từ OrderSummarySection với giá trị chính xác
         }
         
         // ✅ Lấy warehouse_shipping_details để map provider cho từng shop
@@ -361,10 +338,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               final provider = detailMap['provider']?.toString() ?? '';
               // ✅ Xử lý cả shop_id = 0 (nếu có) và shop_id > 0
               if (provider.isNotEmpty) {
-                // ✅ Nếu shop đã có provider, log warning (không nên xảy ra)
-                if (shopShippingProviders.containsKey(shopId)) {
-                  final oldProvider = shopShippingProviders[shopId];
-                }
+                // ✅ Nếu shop đã có provider, ghi đè (không nên xảy ra trong thực tế)
                 shopShippingProviders[shopId] = provider;
               }
             }
@@ -372,12 +346,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         } 
       }
     } catch (e) {
-      // Nếu có lỗi khi gọi shipping_quote, sử dụng ship fee gốc
+      // Nếu có lỗi khi gọi shipping_quote, sử dụng ship fee gốc và shipSupport từ store
     }
     
-    // Đảm bảo ship support không vượt quá ship fee gốc
-    shipSupport = shipSupport.clamp(0, ship.lastFee);
-    finalShipFee = finalShipFee.clamp(0, ship.lastFee);
+    // ✅ KHÔNG clamp shipSupport vì API cho phép shipSupport lớn hơn ship fee
+    // shipSupport từ store đã là giá trị chính xác từ API (39.400)
+    // Việc clamp sẽ làm sai giá trị (giảm từ 39.400 xuống 12.000)
     
     // ✅ Thêm shipping_provider vào mỗi item dựa trên shop_id
     // ✅ Đảm bảo tất cả items trong cùng shop có cùng provider

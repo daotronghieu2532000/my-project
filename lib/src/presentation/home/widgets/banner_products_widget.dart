@@ -176,10 +176,13 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
   }
 
   Widget _buildTitle() {
+    // Lấy tiêu đề dựa trên position
+    String title = _getTitleByPosition();
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Text(
-        'NHÀ BÁN TIỀM NĂNG',
+        title,
         style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
@@ -188,6 +191,23 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
         ),
       ),
     );
+  }
+
+  String _getTitleByPosition() {
+    if (_bannerProducts == null) {
+      return 'SOCDO CHOICE'; // Default
+    }
+    
+    switch (_bannerProducts!.position) {
+      case 'dau_trang':
+        return 'NHÀ BÁN TIỀM NĂNG';
+      case 'giua_trang':
+        return 'SOCDO CHOICE';
+      case 'cuoi_trang':
+        return 'NHÀ BÁN MỚI LÊN SÀN';
+      default:
+        return 'SOCDO CHOICE';
+    }
   }
 
   Future<void> _loadBannerProductsFromCache() async {

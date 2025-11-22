@@ -10,7 +10,6 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _rePasswordController = TextEditingController();
@@ -21,21 +20,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _rePasswordController.dispose();
     super.dispose();
-  }
-
-  String? _validateFullName(String? value) {
-    if (value == null || value.trim().isEmpty) {
-      return 'Vui lòng nhập họ và tên';
-    }
-    if (value.trim().length < 2) {
-      return 'Họ và tên phải có ít nhất 2 ký tự';
-    }
-    return null;
   }
 
   String? _validatePhone(String? value) {
@@ -82,7 +70,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final authService = AuthService();
       final result = await authService.register(
-        fullName: _fullNameController.text.trim(),
+        fullName: '',
         phoneNumber: _phoneController.text.trim(),
         password: _passwordController.text,
         rePassword: _rePasswordController.text,
@@ -155,47 +143,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Image - Ảnh 300x658px phù hợp với tỉ lệ màn hình điện thoại
-          Image.asset(
-            'lib/src/core/assets/images/logo_socdo.png',
-            fit: BoxFit.cover, // Fill toàn màn hình, không có khoảng trắng
-            alignment: Alignment.center, // Căn giữa - tỉ lệ 1:2.19 gần khớp với màn hình
-            filterQuality: FilterQuality.high, // Chất lượng cao để ảnh nét
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFF8F9FA),
-                      Color(0xFFE9ECEF),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          // Subtle overlay
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.white.withOpacity(0.7),
-                  Colors.white.withOpacity(0.8),
-                ],
-              ),
-            ),
-          ),
-          // Main content
-          SafeArea(
-            child: Column(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
               children: [
                 // Modern AppBar
                 Padding(
@@ -204,7 +154,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -252,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               width: 70,
                               height: 70,
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(80),
                                 boxShadow: [
                                   BoxShadow(
@@ -290,7 +240,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           Container(
                             padding: const EdgeInsets.all(28),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
@@ -302,47 +252,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                             child: Column(
                               children: [
-                                // Compact Full Name field
-                                TextFormField(
-                                  controller: _fullNameController,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w500,
-                                    color: Color(0xFF212529),
-                                  ),
-                                  decoration: InputDecoration(
-                                    labelText: 'Họ và tên',
-                                    hintText: 'Nhập họ và tên',
-                                    hintStyle: TextStyle(
-                                      color: const Color(0xFFADB5BD),
-                                      fontWeight: FontWeight.w400,
-                                    ),
-                                    labelStyle: TextStyle(
-                                      color: const Color(0xFF6C757D),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    prefixIcon: Icon(
-                                      Icons.person_rounded,
-                                      color: const Color(0xFF6C757D),
-                                      size: 20,
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.white.withOpacity(0.9),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 16,
-                                    ),
-                                  ),
-                                  validator: _validateFullName,
-                                  textInputAction: TextInputAction.next,
-                                ),
-                                
-                                const SizedBox(height: 16),
-                                
                                 // Compact Phone field
                                 TextFormField(
                                   controller: _phoneController,
@@ -373,7 +282,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.5),
+                                    fillColor: Colors.grey[50],
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
@@ -429,7 +338,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.5),
+                                    fillColor: Colors.grey[50],
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
@@ -490,7 +399,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       borderSide: BorderSide.none,
                                     ),
                                     filled: true,
-                                    fillColor: Colors.white.withOpacity(0.5),
+                                    fillColor: Colors.grey[50],
                                     contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 16,
                                       vertical: 16,
@@ -561,7 +470,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.4),
+                                    color: Colors.grey[50],
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Row(
@@ -603,8 +512,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ],
             ),
-          ),
-        ],
       ),
     );
   }
