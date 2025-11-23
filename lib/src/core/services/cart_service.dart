@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'voucher_service.dart';
 import 'auth_service.dart';
@@ -110,6 +111,8 @@ class CartService extends ChangeNotifier {
   bool _isLoading = false; // Flag để tránh lưu khi đang load
   int? _currentUserId; // User ID hiện tại để theo dõi thay đổi user
   bool _isInitialized = false; // Flag để đảm bảo chỉ init một lần
+  SharedPreferences? _cachedPrefs; // Cache SharedPreferences instance
+  Timer? _saveCartTimer; // Timer để debounce save cart
   
   // Khởi tạo giỏ hàng và load theo user hiện tại
   Future<void> _initializeCart() async {
@@ -482,45 +485,65 @@ class CartService extends ChangeNotifier {
     _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
 
-  // Lưu giỏ hàng vào SharedPreferences
+  // Lưu giỏ hàng vào SharedPreferences (với debounce để tránh lưu quá nhiều lần)
   Future<void> _saveCart() async {
     if (_isLoading) return; // Không lưu khi đang load
     
-    // Lấy user hiện tại để lưu theo userId
-    final currentUser = await _authService.getCurrentUser();
-    final userId = currentUser?.userId;
-    
-    if (userId != null) {
-      await _saveCartForUser(userId);
-      _currentUserId = userId;
-    } else {
-      // Nếu chưa đăng nhập, lưu vào giỏ hàng guest
-      await _saveCartForUser(null);
-    }
+    // Debounce: Hủy timer cũ và tạo timer mới (chỉ lưu sau 300ms khi không có thay đổi)
+    _saveCartTimer?.cancel();
+    _saveCartTimer = Timer(const Duration(milliseconds: 300), () async {
+      await _saveCartImmediate();
+    });
   }
   
-  // Lưu giỏ hàng cho user cụ thể
+  // Lưu cart ngay lập tức (được gọi từ debounce timer)
+  Future<void> _saveCartImmediate() async {
+    if (_isLoading) return;
+    
+    // Sử dụng cached userId nếu có, nếu không thì lấy lại
+    if (_currentUserId == null) {
+      final currentUser = await _authService.getCurrentUser();
+      _currentUserId = currentUser?.userId;
+    }
+    
+    await _saveCartForUser(_currentUserId);
+  }
+  
+  // Lưu giỏ hàng cho user cụ thể (sử dụng cached SharedPreferences)
   Future<void> _saveCartForUser(int? userId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      // Sử dụng cached SharedPreferences instance nếu có
+      if (_cachedPrefs == null) {
+        _cachedPrefs = await SharedPreferences.getInstance();
+      }
+      
       final cartKey = userId != null ? '$_cartKeyPrefix$userId' : '${_cartKeyPrefix}guest';
       final cartJson = _items.map((item) => item.toJson()).toList();
-      await prefs.setString(cartKey, jsonEncode(cartJson));
+      await _cachedPrefs!.setString(cartKey, jsonEncode(cartJson));
     } catch (e) {
+      // Nếu có lỗi, clear cache và thử lại
+      _cachedPrefs = null;
     }
   }
 
-  // Load giỏ hàng từ SharedPreferences
+  // Load giỏ hàng từ SharedPreferences (sử dụng cached SharedPreferences)
   Future<void> _loadCart() async {
     _isLoading = true; // Đánh dấu đang load để tránh lưu
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final currentUser = await _authService.getCurrentUser();
-      final userId = currentUser?.userId;
+      // Sử dụng cached SharedPreferences instance nếu có
+      if (_cachedPrefs == null) {
+        _cachedPrefs = await SharedPreferences.getInstance();
+      }
+      
+      // Cache userId một lần
+      if (_currentUserId == null) {
+        final currentUser = await _authService.getCurrentUser();
+        _currentUserId = currentUser?.userId;
+      }
       
       // Xác định key để load
-      final cartKey = userId != null ? '$_cartKeyPrefix$userId' : '${_cartKeyPrefix}guest';
-      final cartJsonString = prefs.getString(cartKey);
+      final cartKey = _currentUserId != null ? '$_cartKeyPrefix$_currentUserId' : '${_cartKeyPrefix}guest';
+      final cartJsonString = _cachedPrefs!.getString(cartKey);
       
       if (cartJsonString != null && cartJsonString.isNotEmpty) {
         final cartJson = jsonDecode(cartJsonString) as List<dynamic>;
@@ -528,14 +551,14 @@ class CartService extends ChangeNotifier {
         _items.addAll(
           cartJson.map((json) => CartItem.fromJson(json as Map<String, dynamic>)).toList(),
         );
-        _currentUserId = userId;
         notifyListeners();
       } else {
         // Nếu không có giỏ hàng cho user này, clear items
         _items.clear();
-        _currentUserId = userId;
       }
     } catch (e) {
+      // Nếu có lỗi, clear cache và thử lại
+      _cachedPrefs = null;
     } finally {
       _isLoading = false; // Hoàn tất load
     }

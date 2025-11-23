@@ -740,24 +740,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   /// Sử dụng API mới product_detail_basic để load nhanh hơn
   Future<void> _loadProductDetail() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-        _currentImageIndex = 0; // Reset image index
-        _reviews = []; // Reset reviews khi load lại
-        _isLoadingReviews = false; // Reset loading state
-        _reviewsLoaded = false; // Reset flag để có thể load lại
-      });
+      // Hiển thị UI ngay với loading state (không block)
+      if (mounted) {
+        setState(() {
+          _isLoading = true;
+          _error = null;
+          _currentImageIndex = 0; // Reset image index
+          _reviews = []; // Reset reviews khi load lại
+          _isLoadingReviews = false; // Reset loading state
+          _reviewsLoaded = false; // Reset flag để có thể load lại
+        });
+      }
 
       // Sử dụng cached userId để tránh gọi getCurrentUser nhiều lần
       if (_cachedUserId == null) {
         await _cacheUserId();
       }
       
-      // Sử dụng API mới product_detail_basic (tối ưu - chỉ basic info)
+      // Kiểm tra cache trước (nhanh hơn)
+      final cachedProduct = await _cachedApiService.getProductDetailBasicCached(
+        widget.productId!,
+        userId: _cachedUserId,
+        forceRefresh: false, // Ưu tiên cache
+      );
+      
+      // Nếu có cache, hiển thị ngay
+      if (cachedProduct != null && mounted) {
+        setState(() {
+          _isLoading = false;
+          _productDetail = cachedProduct;
+          _isFavorite = cachedProduct.isFavorited;
+          if (cachedProduct.variants.isNotEmpty) {
+            _selectedVariant = cachedProduct.variants.first;
+          }
+        });
+        
+        // Load fresh data trong background
+        _loadProductDetailFresh();
+        return;
+      }
+      
+      // Nếu không có cache, load từ API
       final productDetail = await _cachedApiService.getProductDetailBasicCached(
         widget.productId!,
         userId: _cachedUserId,
+        forceRefresh: true, // Force refresh nếu không có cache
       );
       
       if (mounted) {
@@ -774,18 +801,68 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         
         // Load các phần khác với delay để ưu tiên hiển thị basic info trước
         if (productDetail != null) {
-          // Priority 2: Load rating stats sau 100ms (không block UI)
-          Future.delayed(const Duration(milliseconds: 100), () {
-            if (mounted) _loadRatingStats();
+          // Sử dụng rating từ product_detail_basic API trước (đã có sẵn)
+          setState(() {
+            _realRating = productDetail.rating;
+            _realReviewsCount = productDetail.reviewsCount;
           });
           
-          // Priority 3: Load reviews sau 200ms (để hiển thị 2 reviews đầu tiên)
+          // Priority 2: Load rating stats và reviews cùng lúc (gộp thành 1 API call)
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (mounted) _loadRatingAndReviews();
+          });
+          
+          // Priority 4-5: Load các phần khác sau 200ms (lazy load)
           Future.delayed(const Duration(milliseconds: 200), () {
-            if (mounted) _loadReviews();
+            if (mounted) {
+              _loadRelatedProducts();
+              _loadSameShopProducts();
+            }
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Lỗi kết nối: $e';
+        });
+      }
+    }
+  }
+  
+  /// Load fresh data trong background (sau khi đã hiển thị cache)
+  Future<void> _loadProductDetailFresh() async {
+    try {
+      final productDetail = await _cachedApiService.getProductDetailBasicCached(
+        widget.productId!,
+        userId: _cachedUserId,
+        forceRefresh: true, // Force refresh để lấy data mới nhất
+      );
+      
+      if (mounted && productDetail != null) {
+        setState(() {
+          _productDetail = productDetail;
+          _isFavorite = productDetail.isFavorited;
+          if (productDetail.variants.isNotEmpty && _selectedVariant == null) {
+            _selectedVariant = productDetail.variants.first;
+          }
+        });
+        
+        // Sử dụng rating từ product_detail_basic API trước (đã có sẵn)
+        if (mounted) {
+          setState(() {
+            _realRating = productDetail.rating;
+            _realReviewsCount = productDetail.reviewsCount;
           });
           
-          // Priority 4-5: Load các phần khác sau 300ms (lazy load)
-          Future.delayed(const Duration(milliseconds: 300), () {
+          // Load rating và reviews cùng lúc (gộp thành 1 API call)
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (mounted) _loadRatingAndReviews();
+          });
+          
+          // Load các phần khác
+          Future.delayed(const Duration(milliseconds: 200), () {
             if (mounted) {
               _loadRelatedProducts();
               _loadSameShopProducts();
@@ -861,38 +938,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
-  /// Load rating stats (Priority 2 - Deferred, ngay sau basic info)
-  Future<void> _loadRatingStats() async {
-    if (widget.productId == null || _ratingStatsLoaded) return;
-    _ratingStatsLoaded = true;
+  /// Load rating stats và reviews cùng lúc (gộp thành 1 API call để tối ưu)
+  /// Priority 2 - Load ngay sau basic info
+  Future<void> _loadRatingAndReviews() async {
+    if (widget.productId == null || (_ratingStatsLoaded && _reviewsLoaded)) return;
     
-    try {
-      // Lấy rating và reviewsCount từ API product_reviews (dữ liệu thật)
-      final reviewsData = await _apiService.getProductReviews(
-        productId: widget.productId!,
-        page: 1,
-        limit: 1, // Chỉ cần lấy stats, không cần reviews
-      );
-      
-      if (mounted && reviewsData != null && reviewsData['success'] == true) {
-        final data = reviewsData['data'] as Map<String, dynamic>?;
-        if (data != null) {
-          setState(() {
-            _realRating = (data['average_rating'] as num?)?.toDouble();
-            _realReviewsCount = data['total_reviews'] as int?;
-          });
-        }
-      }
-    } catch (e) {
-      // Lỗi không ảnh hưởng đến hiển thị, chỉ log
-      // print('Error loading rating stats: $e');
-    }
-  }
-
-  /// Load reviews (Priority 3 - Deferred, ngay sau basic info)
-  /// Load 2 reviews đầu tiên để hiển thị trong ProductReviewsSection
-  Future<void> _loadReviews() async {
-    if (widget.productId == null || _reviewsLoaded) return;
+    // Đánh dấu đã load để tránh gọi lại
+    _ratingStatsLoaded = true;
     _reviewsLoaded = true;
     
     try {
@@ -900,27 +952,28 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         _isLoadingReviews = true;
       });
       
-      // Lấy 2 reviews đầu tiên từ API product_reviews
+      // Gộp 2 API calls thành 1: Lấy cả rating stats và reviews cùng lúc
       final reviewsData = await _apiService.getProductReviews(
         productId: widget.productId!,
         page: 1,
-        limit: 2, // Chỉ lấy 2 reviews đầu tiên để hiển thị
+        limit: 2, // Lấy 2 reviews đầu tiên, API sẽ trả về cả stats
       );
       
       if (mounted && reviewsData != null && reviewsData['success'] == true) {
         final data = reviewsData['data'] as Map<String, dynamic>?;
         if (data != null) {
-          final reviewsList = data['reviews'] as List?;
-          if (reviewsList != null) {
-            setState(() {
+          setState(() {
+            // Cập nhật rating stats (dữ liệu thật từ API)
+            _realRating = (data['average_rating'] as num?)?.toDouble();
+            _realReviewsCount = data['total_reviews'] as int?;
+            
+            // Cập nhật reviews
+            final reviewsList = data['reviews'] as List?;
+            if (reviewsList != null) {
               _reviews = reviewsList.cast<Map<String, dynamic>>();
-              _isLoadingReviews = false;
-            });
-          } else {
-            setState(() {
-              _isLoadingReviews = false;
-            });
-          }
+            }
+            _isLoadingReviews = false;
+          });
         } else {
           setState(() {
             _isLoadingReviews = false;

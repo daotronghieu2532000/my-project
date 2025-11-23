@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ChipItem extends StatefulWidget {
   final String label;
@@ -142,10 +143,34 @@ class _ChipItemState extends State<ChipItem> with SingleTickerProviderStateMixin
         }
       }
       
-      return Image.network(
-        fullImageUrl,
+      return CachedNetworkImage(
+        imageUrl: fullImageUrl,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
+        fadeInDuration: const Duration(milliseconds: 200),
+        fadeOutDuration: const Duration(milliseconds: 100),
+        placeholder: (context, url) => Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.grey[100]!,
+                Colors.grey[50]!,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.grey[400]!),
+              ),
+            ),
+          ),
+        ),
+        errorWidget: (context, url, error) {
           return Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(

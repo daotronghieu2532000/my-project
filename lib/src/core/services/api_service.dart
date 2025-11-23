@@ -2926,156 +2926,22 @@ class ApiService {
   }
 
 
-  // Get products by parent category - SMART MODERN APPROACH
+  // Get products by parent category - TỐI ƯU: Chỉ gọi trực tiếp parent category
   Future<Map<String, dynamic>?> getProductsByParentCategory({
     required int parentCategoryId,
     int page = 1,
-    int limit = 50, // Tăng từ 20 lên 50
+    int limit = 50,
     String sort = 'newest', // 'newest', 'price_asc', 'price_desc', 'popular'
   }) async {
     try {
-      
-      // Step 1: Get child categories (limit to top 10 for faster loading)
-      final categoriesResponse = await getCategoriesList(
-        type: 'children',
-        parentId: parentCategoryId,
-        includeChildren: false,
-        includeProductsCount: true, // Get product count to prioritize
-        page: 1,
-        limit: 10, // Only get top 10 categories for faster loading
+      // Tối ưu: Chỉ gọi trực tiếp parent category (nhanh hơn nhiều)
+      // Không cần load child categories và merge (giảm từ 5-6 API calls xuống 1)
+      return await getProductsByCategory(
+        categoryId: parentCategoryId,
+        page: page,
+        limit: limit,
+        sort: sort,
       );
-      
-      if (categoriesResponse == null || categoriesResponse.isEmpty) {
-        // If no child categories, just get products from parent category
-        return await getProductsByCategory(
-          categoryId: parentCategoryId,
-          page: page,
-          limit: limit,
-          sort: sort,
-        );
-      }
-      
-      // Step 2: Prioritize categories with most products
-      final List<Map<String, dynamic>> prioritizedCategories = List.from(categoriesResponse);
-      prioritizedCategories.sort((a, b) {
-        final countA = (a['products_count'] as int?) ?? 0;
-        final countB = (b['products_count'] as int?) ?? 0;
-        return countB.compareTo(countA); // Sort by product count descending
-      });
-      
-      // Step 3: Take only top 5 categories for first load (super fast)
-      final topCategories = prioritizedCategories.take(5).toList();
-      final List<int> priorityCategoryIds = [parentCategoryId];
-      
-      for (final category in topCategories) {
-        final categoryId = category['id'] as int?;
-        if (categoryId != null && categoryId != parentCategoryId) {
-          priorityCategoryIds.add(categoryId);
-        }
-      }
-      
-      
-      // Step 4: Load products in parallel from priority categories
-      final List<Future<Map<String, dynamic>?>> futures = priorityCategoryIds.map((categoryId) {
-        return getProductsByCategory(
-          categoryId: categoryId,
-          page: 1,
-          limit: 15, // Get more products per category for better selection
-          sort: sort,
-        );
-      }).toList();
-      
-      // Execute all requests in parallel
-      final List<Map<String, dynamic>?> responses = await Future.wait(futures);
-      
-      // Step 5: Process responses and remove duplicates
-      final List<Map<String, dynamic>> allProducts = [];
-      for (final response in responses) {
-        if (response != null && response['data'] != null) {
-          final products = List<Map<String, dynamic>>.from(response['data']['products'] ?? []);
-          allProducts.addAll(products);
-        }
-      }
-      
-      // Remove duplicates based on product ID
-      final uniqueProducts = <int, Map<String, dynamic>>{};
-      for (final product in allProducts) {
-        final productId = product['id'] as int?;
-        if (productId != null) {
-          uniqueProducts[productId] = product;
-        }
-      }
-      
-      final finalProducts = uniqueProducts.values.toList();
-      
-      // Step 6: Sort products
-      switch (sort) {
-        case 'price_asc':
-          finalProducts.sort((a, b) {
-            final priceA = (a['gia_moi'] as num?) ?? 0;
-            final priceB = (b['gia_moi'] as num?) ?? 0;
-            return priceA.compareTo(priceB);
-          });
-          break;
-        case 'price_desc':
-          finalProducts.sort((a, b) {
-            final priceA = (a['gia_moi'] as num?) ?? 0;
-            final priceB = (b['gia_moi'] as num?) ?? 0;
-            return priceB.compareTo(priceA);
-          });
-          break;
-        case 'popular':
-          finalProducts.sort((a, b) {
-            final soldA = (a['ban'] as num?) ?? 0;
-            final soldB = (b['ban'] as num?) ?? 0;
-            if (soldA != soldB) return soldB.compareTo(soldA);
-            final viewA = (a['view'] as num?) ?? 0;
-            final viewB = (b['view'] as num?) ?? 0;
-            return viewB.compareTo(viewA);
-          });
-          break;
-        case 'newest':
-        default:
-          finalProducts.sort((a, b) {
-            final dateA = a['date_post'] as String? ?? '';
-            final dateB = b['date_post'] as String? ?? '';
-            return dateB.compareTo(dateA);
-          });
-          break;
-      }
-      
-      // Step 7: Apply pagination
-      final startIndex = (page - 1) * limit;
-      final paginatedProducts = finalProducts.skip(startIndex).take(limit).toList();
-      
-      final totalPages = (finalProducts.length / limit).ceil();
-      
-      
-      return {
-        'success': true,
-        'message': 'Lấy danh sách sản phẩm theo danh mục cha thành công',
-        'data': {
-          'category': {
-            'id': parentCategoryId,
-            'name': 'Tất cả sản phẩm',
-            'is_parent': true,
-          },
-          'products': paginatedProducts,
-          'pagination': {
-            'current_page': page,
-            'total_pages': totalPages,
-            'total_products': finalProducts.length,
-            'limit': limit,
-            'has_next': page < totalPages,
-            'has_prev': page > 1
-          },
-          'filters': {
-            'parent_category_id': parentCategoryId,
-            'sort': sort,
-            'included_categories': priorityCategoryIds
-          }
-        }
-      };
       
     } catch (e) {
       return {

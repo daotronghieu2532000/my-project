@@ -185,14 +185,18 @@ class _GroupCardState extends State<GroupCard> with SingleTickerProviderStateMix
     }
 
     return Column(
-      children: categoryPairs.map((pair) => Padding(
+      children: categoryPairs.map((pair) {
+        // Ưu tiên 'image' field trước (API trả về field này), sau đó mới đến cat_minhhoa và cat_img
+        final imageUrl1 = pair[0]['image'] ?? pair[0]['cat_minhhoa'] ?? pair[0]['cat_img'];
+        
+        return Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Row(
           children: [
             Expanded(
               child: ChipItem(
                 label: pair[0]['name'] ?? pair[0]['cat_tieude'] ?? 'Danh mục',
-                imageUrl: pair[0]['image'] ?? pair[0]['cat_minhhoa'] ?? pair[0]['cat_img'],
+                imageUrl: imageUrl1,
                 onTap: () {
                   final categoryId = pair[0]['id'] ?? pair[0]['cat_id'] ?? 0;
                   final categoryName = pair[0]['name'] ?? pair[0]['cat_tieude'] ?? 'Danh mục';
@@ -211,10 +215,14 @@ class _GroupCardState extends State<GroupCard> with SingleTickerProviderStateMix
             const SizedBox(width: 12),
             Expanded(
               child: pair.length > 1 
-                ? ChipItem(
-                    label: pair[1]['name'] ?? pair[1]['cat_tieude'] ?? 'Danh mục',
-                    imageUrl: pair[1]['image'] ?? pair[1]['cat_minhhoa'] ?? pair[1]['cat_img'],
-                    onTap: () {
+                ? Builder(
+                    builder: (context) {
+                      // Ưu tiên 'image' field trước (API trả về field này)
+                      final imageUrl2 = pair[1]['image'] ?? pair[1]['cat_minhhoa'] ?? pair[1]['cat_img'];
+                      return ChipItem(
+                        label: pair[1]['name'] ?? pair[1]['cat_tieude'] ?? 'Danh mục',
+                        imageUrl: imageUrl2,
+                        onTap: () {
                       final categoryId = pair[1]['id'] ?? pair[1]['cat_id'] ?? 0;
                       final categoryName = pair[1]['name'] ?? pair[1]['cat_tieude'] ?? 'Danh mục';
                       
@@ -227,12 +235,15 @@ class _GroupCardState extends State<GroupCard> with SingleTickerProviderStateMix
                         ),
                       );
                     },
+                      );
+                    },
                   )
                 : const SizedBox(), // Empty space nếu chỉ có 1 item
             ),
           ],
         ),
-      )).toList(),
+      );
+      }).toList(),
     );
   }
 }

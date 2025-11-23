@@ -524,6 +524,55 @@ class CachedApiService {
     clearCachePattern('category_products:{"categoryId":$categoryId');
   }
 
+  /// Lấy sản phẩm theo parent category với cache (tối ưu)
+  Future<Map<String, dynamic>?> getProductsByParentCategoryCached({
+    required int parentCategoryId,
+    int page = 1,
+    int limit = 50,
+    String sort = 'newest',
+    bool forceRefresh = false,
+    Duration? cacheDuration,
+  }) async {
+    final cacheKey = MemoryCacheService.createKey('parent_category_products', {
+      'parentCategoryId': parentCategoryId,
+      'page': page,
+      'limit': limit,
+      'sort': sort,
+    });
+    
+    // Kiểm tra cache trước
+    if (!forceRefresh && _cache.has(cacheKey)) {
+      final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+      if (cachedData != null) {
+        return cachedData;
+      }
+    }
+
+    try {
+      final response = await _apiService.getProductsByParentCategory(
+        parentCategoryId: parentCategoryId,
+        page: page,
+        limit: limit,
+        sort: sort,
+      );
+      
+      // Lưu vào cache
+      if (response != null) {
+        _cache.set(cacheKey, response, duration: cacheDuration ?? _defaultCacheDuration);
+      }
+      
+      return response;
+    } catch (e) {
+      // Fallback về cache cũ nếu có
+      final cachedData = _cache.get<Map<String, dynamic>>(cacheKey);
+      if (cachedData != null) {
+        return cachedData;
+      }
+      
+      rethrow;
+    }
+  }
+
   /// Lấy affiliate dashboard với cache
   Future<Map<String, dynamic>?> getAffiliateDashboard({
     required int? userId,

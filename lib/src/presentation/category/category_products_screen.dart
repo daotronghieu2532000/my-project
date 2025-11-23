@@ -21,7 +21,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   final CachedApiService _cachedApiService = CachedApiService();
   final ScrollController _scrollController = ScrollController();
   
-  List<Map<String, dynamic>> _products = [];
+  List<Map<String, dynamic>> _allProducts = []; // Tất cả sản phẩm đã load từ API
+  List<Map<String, dynamic>> _displayedProducts = []; // Sản phẩm đang hiển thị
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
@@ -34,6 +35,10 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   bool _onlyInStock = false;
   bool _onlyHasVoucher = false;
   bool _showFilters = false;
+  static const int _initialDisplayCount = 10; // Số sản phẩm hiển thị ban đầu
+  static const int _loadMoreCount = 10; // Số sản phẩm load thêm mỗi lần khi scroll
+  static const int _apiLoadLimit = 50; // Số sản phẩm load từ API một lần
+  bool _hasMore = true; // Còn sản phẩm để hiển thị không
 
   @override
   void initState() {
@@ -50,8 +55,12 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
 
   void _onScroll() {
     // Infinite scroll logic
-    if (_scrollController.position.pixels >= 
-        _scrollController.position.maxScrollExtent - 200) {
+    final pixels = _scrollController.position.pixels;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final threshold = maxScroll - 200;
+    
+    if (pixels >= threshold) {
+      print('🛍️ CategoryProducts: Scroll trigger - pixels: $pixels, maxScroll: $maxScroll, threshold: $threshold');
       _loadMore();
     }
   }
@@ -86,34 +95,35 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   }
 
   Future<void> _loadProducts({bool loadMore = false}) async {
+    final startTime = DateTime.now();
+    print('🛍️ CategoryProducts: Bắt đầu _loadProducts, loadMore: $loadMore, categoryId: ${widget.categoryId}');
+    
     if (!loadMore) {
       setState(() {
         _isLoading = true;
         _hasError = false;
         _currentPage = 1;
+        _hasMore = true;
       });
-    } else {
-      setState(() {
-        _isLoadingMore = true;
-      });
+      print('🛍️ CategoryProducts: Reset state cho lần load đầu');
     }
 
     try {
-      // Sử dụng cached API service với pagination
+      // Sử dụng cached API service với pagination - load nhiều sản phẩm để cache
+      print('🛍️ CategoryProducts: Gọi API với page: ${loadMore ? _currentPage + 1 : 1}, limit: $_apiLoadLimit');
       final response = await _cachedApiService.getCategoryProductsWithPagination(
         categoryId: widget.categoryId,
         page: loadMore ? _currentPage + 1 : 1,
-        limit: 50, // Tăng từ 20 lên 50
+        limit: _apiLoadLimit,
         sort: _currentSort,
       );
+      final apiTime = DateTime.now().difference(startTime).inMilliseconds;
+      print('🛍️ CategoryProducts: API trả về sau ${apiTime}ms');
 
       if (response != null && mounted) {
         final data = response['data'];
         final rawProducts = List<Map<String, dynamic>>.from(data['products'] ?? []);
         final pagination = data['pagination'] ?? {};
-        
-      
-       
         
         // Lưu total products từ pagination
         _totalProducts = _safeParseInt(pagination['total_products']) != 0 ? _safeParseInt(pagination['total_products']) : (_safeParseInt(pagination['total']) != 0 ? _safeParseInt(pagination['total']) : 0);
@@ -160,18 +170,30 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
 
         setState(() {
           if (loadMore) {
-            _products.addAll(products);
+            // Thêm sản phẩm mới vào _allProducts (bỏ qua trùng lặp)
+            final existingIds = _allProducts.map((p) => p['id']).toSet();
+            final newProducts = products.where((p) => !existingIds.contains(p['id'])).toList();
+            _allProducts.addAll(newProducts);
             _currentPage++;
+            print('🛍️ CategoryProducts: LoadMore - Thêm ${newProducts.length} sản phẩm mới, tổng _allProducts: ${_allProducts.length}');
           } else {
-            _products = products;
+            _allProducts = products;
             _currentPage = 1;
+            // Chỉ hiển thị 10 sản phẩm đầu tiên
+            _displayedProducts = products.take(_initialDisplayCount).toList();
+            print('🛍️ CategoryProducts: Load đầu - _allProducts: ${_allProducts.length}, _displayedProducts: ${_displayedProducts.length}');
           }
           
           _hasNextPage = _safeParseBool(pagination['has_next']) != false ? _safeParseBool(pagination['has_next']) : false;
           _isLoading = false;
           _isLoadingMore = false;
           _hasError = false;
+          _hasMore = _allProducts.length > _displayedProducts.length || _hasNextPage;
+          print('🛍️ CategoryProducts: State updated - _hasNextPage: $_hasNextPage, _hasMore: $_hasMore');
         });
+        
+        // KHÔNG tự động load thêm - chỉ load khi user scroll
+        // Để user có trải nghiệm tốt hơn, chỉ hiển thị 10 sản phẩm đầu và chờ user scroll
       } else {
         setState(() {
           _isLoading = false;
@@ -204,8 +226,101 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   }
 
   void _loadMore() {
-    if (!_isLoadingMore && _hasNextPage) {
+    print('🛍️ CategoryProducts: _loadMore được gọi - _isLoadingMore: $_isLoadingMore, _isLoading: $_isLoading, _hasMore: $_hasMore');
+    if (_isLoadingMore || _isLoading) {
+      print('🛍️ CategoryProducts: ⚠️ Đang load, bỏ qua _loadMore');
+      return;
+    }
+    
+    if (!_hasMore) {
+      print('🛍️ CategoryProducts: ⚠️ Không còn sản phẩm, bỏ qua _loadMore');
+      return;
+    }
+    
+    // Nếu còn sản phẩm trong cache, load từ cache trước
+    if (_allProducts.length > _displayedProducts.length) {
+      print('🛍️ CategoryProducts: Còn sản phẩm trong cache (${_allProducts.length - _displayedProducts.length}), load từ cache');
+      _loadMoreProducts();
+    } else if (_hasNextPage) {
+      // Nếu hết cache, load từ API
+      print('🛍️ CategoryProducts: Hết cache, load từ API');
       _loadProducts(loadMore: true);
+    } else {
+      print('🛍️ CategoryProducts: ⚠️ Không có gì để load');
+    }
+  }
+  
+  /// Load thêm sản phẩm từ cache (không gọi API)
+  Future<void> _loadMoreProducts() async {
+    print('🛍️ CategoryProducts: _loadMoreProducts được gọi - _allProducts: ${_allProducts.length}, _displayedProducts: ${_displayedProducts.length}');
+    
+    if (_isLoadingMore || _isLoading) {
+      print('🛍️ CategoryProducts: ⚠️ Đang load, bỏ qua _loadMoreProducts');
+      return;
+    }
+    
+    if (!_hasMore) {
+      print('🛍️ CategoryProducts: ⚠️ Không còn sản phẩm, bỏ qua _loadMoreProducts');
+      return;
+    }
+    
+    if (_allProducts.length <= _displayedProducts.length) {
+      // Nếu hết cache, load từ API
+      print('🛍️ CategoryProducts: Hết cache (_allProducts: ${_allProducts.length} <= _displayedProducts: ${_displayedProducts.length})');
+      if (_hasNextPage) {
+        print('🛍️ CategoryProducts: Có _hasNextPage, gọi API');
+        _loadProducts(loadMore: true);
+      } else {
+        print('🛍️ CategoryProducts: ⚠️ Không có _hasNextPage');
+      }
+      return;
+    }
+    
+    try {
+      setState(() {
+        _isLoadingMore = true;
+      });
+      
+      // Simulate delay nhỏ để UI mượt hơn
+      await Future.delayed(const Duration(milliseconds: 100));
+      
+      // Lấy thêm sản phẩm từ danh sách đã load (không gọi API)
+      final additionalProducts = _allProducts
+          .skip(_displayedProducts.length)
+          .take(_loadMoreCount)
+          .toList();
+      
+      print('🛍️ CategoryProducts: Lấy ${additionalProducts.length} sản phẩm từ cache');
+      
+      if (mounted && additionalProducts.isNotEmpty) {
+        setState(() {
+          _displayedProducts.addAll(additionalProducts);
+          _hasMore = _allProducts.length > _displayedProducts.length || _hasNextPage;
+          _isLoadingMore = false;
+        });
+        
+        print('🛍️ CategoryProducts: ✅ Đã thêm ${additionalProducts.length} sản phẩm, _displayedProducts: ${_displayedProducts.length}, _hasMore: $_hasMore');
+        
+        // KHÔNG tự động load thêm - chỉ load khi user scroll
+        // Pre-load từ API trong background khi gần hết danh sách đã cache (còn <= 10 sản phẩm)
+        if (mounted && _hasMore && _hasNextPage && _displayedProducts.length >= _allProducts.length - 10) {
+          print('🛍️ CategoryProducts: Gần hết cache (còn ${_allProducts.length - _displayedProducts.length}), pre-load từ API');
+          _loadProducts(loadMore: true);
+        }
+      } else {
+        print('🛍️ CategoryProducts: ⚠️ Không có sản phẩm để thêm');
+        setState(() {
+          _isLoadingMore = false;
+          _hasMore = false;
+        });
+      }
+    } catch (e) {
+      print('🛍️ CategoryProducts: ❌ Lỗi _loadMoreProducts: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
@@ -328,7 +443,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
       );
     }
 
-    if (_products.isEmpty) {
+    if (_displayedProducts.isEmpty && !_isLoading) {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -359,7 +474,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
             children: [
               Expanded(
                 child: Text(
-                'Tìm thấy ${_totalProducts > 0 ? _totalProducts : _products.length} sản phẩm',
+                'Tìm thấy ${_totalProducts > 0 ? _totalProducts : _allProducts.length} sản phẩm',
                 style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -576,7 +691,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   }
 
   Widget _buildProductsGrid() {
-    final filteredProducts = _filteredSorted();
+    // Áp dụng filter và sort cho displayed products
+    final filteredProducts = _filteredSorted(_displayedProducts);
     final screenWidth = MediaQuery.of(context).size.width;
     // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
     // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
@@ -606,8 +722,8 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
     );
   }
 
-  List<Map<String, dynamic>> _filteredSorted() {
-    List<Map<String, dynamic>> items = List<Map<String, dynamic>>.from(_products);
+  List<Map<String, dynamic>> _filteredSorted(List<Map<String, dynamic>> products) {
+    List<Map<String, dynamic>> items = List<Map<String, dynamic>>.from(products);
     
     // Lọc theo freeship - kiểm tra cả is_freeship và freeship_icon
     if (_onlyFreeship) {

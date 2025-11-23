@@ -92,17 +92,19 @@ try {
             exit;
         }
         
-        // Query tối ưu: Chỉ lấy thông tin cơ bản, sử dụng product_rating_stats cache
+        // Query tối ưu: Gộp shop info vào query chính để giảm số lượng queries
         // Thêm noi_dung và noi_bat để hiển thị description và highlights
         $query = "SELECT s.id, s.tieu_de, s.link, s.minh_hoa, s.anh, s.gia_cu, s.gia_moi, s.gia_ctv, s.gia_drop,
                   s.kho, s.ban, s.view, s.shop, s.thuong_hieu, s.cat, s.date_post, s.active, s.kho_id,
                   s.box_banchay, s.box_noibat, s.box_flash, s.noi_dung, s.noi_bat,
                   COALESCE(prs.total_reviews, 0) AS total_reviews,
                   COALESCE(prs.average_rating, 0) AS avg_rating,
-                  CASE WHEN y.id IS NOT NULL THEN 1 ELSE 0 END AS is_favorited
+                  CASE WHEN y.id IS NOT NULL THEN 1 ELSE 0 END AS is_favorited,
+                  ui.user_id AS shop_user_id, ui.name AS shop_name, ui.avatar AS shop_avatar
                   FROM sanpham s
                   LEFT JOIN product_rating_stats prs ON s.id = prs.product_id AND s.shop = prs.shop_id
                   LEFT JOIN yeu_thich_san_pham y ON s.id = y.product_id AND y.user_id = '$user_id'
+                  LEFT JOIN user_info ui ON s.shop = ui.user_id
                   WHERE s.id = $product_id AND s.kho > 0 AND s.active = 0
                   LIMIT 1";
         
@@ -120,23 +122,12 @@ try {
         $product = mysqli_fetch_assoc($result);
         $current_time = time();
         
-        // Xử lý giá từ bảng phanloai_sanpham nếu có (chỉ lấy MIN/MAX, không lấy tất cả)
-        $sql_pl = "SELECT MIN(gia_moi) AS gia_moi_min, MAX(gia_cu) AS gia_cu_max, MIN(gia_ctv) AS gia_ctv_min, 
-                   MIN(gia_drop) AS gia_drop_min FROM phanloai_sanpham WHERE sp_id = '$product_id'";
-        $res_pl = mysqli_query($conn, $sql_pl);
-        $row_pl = mysqli_fetch_assoc($res_pl);
-        
-        if ($row_pl && $row_pl['gia_moi_min'] !== null && $row_pl['gia_moi_min'] > 0) {
-            $gia_moi_main = (int) $row_pl['gia_moi_min'];
-            $gia_cu_main = (int) $row_pl['gia_cu_max'];
-            $gia_ctv_main = (int) $row_pl['gia_ctv_min'];
-            $gia_drop_main = (int) $row_pl['gia_drop_min'];
-        } else {
-            $gia_cu_main = (int) preg_replace('/[^0-9]/', '', $product['gia_cu']);
-            $gia_moi_main = (int) preg_replace('/[^0-9]/', '', $product['gia_moi']);
-            $gia_ctv_main = (int) preg_replace('/[^0-9]/', '', $product['gia_ctv']);
-            $gia_drop_main = (int) preg_replace('/[^0-9]/', '', $product['gia_drop']);
-        }
+        // Xử lý giá: Ưu tiên dùng giá từ bảng sanpham, sau đó sẽ tính từ variants nếu cần
+        // Loại bỏ query phanloai_sanpham MIN/MAX để giảm số lượng queries (tính từ variants sau)
+        $gia_cu_main = (int) preg_replace('/[^0-9]/', '', $product['gia_cu']);
+        $gia_moi_main = (int) preg_replace('/[^0-9]/', '', $product['gia_moi']);
+        $gia_ctv_main = (int) preg_replace('/[^0-9]/', '', $product['gia_ctv']);
+        $gia_drop_main = (int) preg_replace('/[^0-9]/', '', $product['gia_drop']);
         
         // Tính phần trăm giảm giá
         $discount_percent = ($gia_cu_main > $gia_moi_main && $gia_cu_main > 0) ? 
@@ -186,13 +177,14 @@ try {
         $images['gallery'] = $gallery_images;
         $product['images'] = $images;
         
-        // Check flash sale (simplified - chỉ check basic info)
+        // Check flash sale (simplified - chỉ check basic info, tối ưu query)
         $flash_sale_info = null;
         $deal_shop = intval($product['shop']);
         
-        if ($deal_shop > 0) {
-            // Chỉ check flash sale cho shop thường (shop > 0)
-            $check_flash_sale = mysqli_query($conn, "SELECT id, date_start, date_end, sub_product FROM deal WHERE loai = 'flash_sale' AND shop != 0 AND status = 2 AND '$current_time' BETWEEN date_start AND date_end AND (FIND_IN_SET('$product_id', main_product) > 0 OR sub_product LIKE '%\"$product_id\"%') LIMIT 1");
+        if ($deal_shop > 0 && $product['box_flash'] == 1) {
+            // Chỉ check flash sale nếu box_flash = 1 (đã được đánh dấu)
+            // Tối ưu query: Thêm điều kiện box_flash để giảm số lượng rows cần scan
+            $check_flash_sale = mysqli_query($conn, "SELECT id, date_start, date_end, sub_product FROM deal WHERE loai = 'flash_sale' AND shop = '$deal_shop' AND status = 2 AND '$current_time' BETWEEN date_start AND date_end AND (FIND_IN_SET('$product_id', main_product) > 0 OR sub_product LIKE '%\"$product_id\"%') LIMIT 1");
         
             if ($check_flash_sale && mysqli_num_rows($check_flash_sale) > 0) {
                 $flash_deal = mysqli_fetch_assoc($check_flash_sale);
@@ -265,35 +257,25 @@ try {
         // Tạo URL sản phẩm
         $product['product_url'] = 'https://socdo.vn/san-pham/' . $product['id'] . '/' . $product['link'] . '.html';
         
-        // Coupon info (simplified - chỉ check có voucher không, không lấy chi tiết)
+        // Coupon info (simplified - tối ưu: chỉ check EXISTS thay vì SELECT id)
         $coupon_info = array('has_coupon' => false);
-        if ($deal_shop > 0) {
-            $check_coupon = mysqli_query($conn, "SELECT id FROM coupon WHERE (FIND_IN_SET('$product_id', sanpham) OR kieu = 'all') AND shop = '$deal_shop' AND '$current_time' BETWEEN start AND expired LIMIT 1");
-            if (mysqli_num_rows($check_coupon) > 0) {
-                $coupon_info['has_coupon'] = true;
-            }
-        } else {
-            $check_coupon = mysqli_query($conn, "SELECT id FROM coupon WHERE (FIND_IN_SET('$product_id', sanpham) OR kieu = 'all') AND shop = 0 AND '$current_time' BETWEEN start AND expired LIMIT 1");
-            if (mysqli_num_rows($check_coupon) > 0) {
-                $coupon_info['has_coupon'] = true;
-            }
+        $coupon_shop = $deal_shop > 0 ? $deal_shop : 0;
+        // Tối ưu: Sử dụng EXISTS thay vì SELECT id để nhanh hơn
+        $check_coupon = mysqli_query($conn, "SELECT 1 FROM coupon WHERE (FIND_IN_SET('$product_id', sanpham) OR kieu = 'all') AND shop = '$coupon_shop' AND '$current_time' BETWEEN start AND expired LIMIT 1");
+        if ($check_coupon && mysqli_num_rows($check_coupon) > 0) {
+            $coupon_info['has_coupon'] = true;
         }
         $product['coupon_info'] = $coupon_info;
         
-        // Shop basic info (chỉ lấy id, name, avatar)
+        // Shop basic info (đã được JOIN trong query chính, không cần query riêng)
         $shop_info = array();
-        if ($deal_shop > 0) {
-            $shop_query = "SELECT user_id, name, avatar FROM user_info WHERE user_id = '$deal_shop' LIMIT 1";
-            $shop_result = mysqli_query($conn, $shop_query);
-            if ($shop_result && mysqli_num_rows($shop_result) > 0) {
-                $shop_data = mysqli_fetch_assoc($shop_result);
-                $shop_info = array(
-                    'shop_id' => intval($shop_data['user_id']),
-                    'shop_name' => $shop_data['name'],
-                    'shop_avatar' => !empty($shop_data['avatar']) ? getImageUrlWithCDN($shop_data['avatar']) : '',
-                    'is_marketplace' => false
-                );
-            }
+        if ($deal_shop > 0 && !empty($product['shop_user_id'])) {
+            $shop_info = array(
+                'shop_id' => intval($product['shop_user_id']),
+                'shop_name' => $product['shop_name'] ?? '',
+                'shop_avatar' => !empty($product['shop_avatar']) ? getImageUrlWithCDN($product['shop_avatar']) : '',
+                'is_marketplace' => false
+            );
         } else {
             // Sản phẩm sàn (shop = 0)
             $shop_info = array(
@@ -379,12 +361,7 @@ try {
         }
         $product['variants'] = $variants;
         
-        // Cập nhật lượt xem (async - không block response)
-        $view_update = "UPDATE sanpham SET view = view + 1 WHERE id = $product_id";
-        mysqli_query($conn, $view_update);
-        $product['view'] = $product['view'] + 1;
-        
-        // Response chỉ với basic info
+        // Response chỉ với basic info (gửi response trước)
         $response = [
             "success" => true,
             "message" => "Lấy thông tin sản phẩm thành công",
@@ -393,6 +370,14 @@ try {
         
         http_response_code(200);
         echo json_encode($response, JSON_UNESCAPED_UNICODE);
+        
+        // Cập nhật lượt xem (async - sau khi response đã được gửi, không block)
+        // Sử dụng connection riêng hoặc ignore errors để không ảnh hưởng response
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request(); // Gửi response ngay lập tức
+        }
+        $view_update = "UPDATE sanpham SET view = view + 1 WHERE id = $product_id";
+        @mysqli_query($conn, $view_update); // @ để ignore errors
         
         // Lưu hành vi xem sản phẩm (chạy sau khi response đã được gửi, không ảnh hưởng API)
         $final_user_id = ($user_id > 0) ? $user_id : $jwt_user_id;
