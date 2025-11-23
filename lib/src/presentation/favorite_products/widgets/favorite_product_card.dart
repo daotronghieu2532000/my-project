@@ -384,8 +384,8 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
   // Hiển thị dialog mua hàng - giống product_suggest_card_vertical
   void _showPurchaseDialog(BuildContext context) async {
     try {
-      // Lấy thông tin chi tiết sản phẩm
-      final productDetail = await ApiService().getProductDetail(widget.product.id);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(widget.product.id);
       
       // Sử dụng context từ parent để tránh vấn đề context hierarchy
       final parentContext = Navigator.of(context).context;
@@ -405,15 +405,15 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
                   _handleBuyNow(parentContext, productDetail, variant, quantity);
                   Future.delayed(const Duration(milliseconds: 500), () {
                     if (context.mounted) {
-                      Navigator.of(context).pop();
+        Navigator.of(context).pop();
                     }
                   });
-                },
+      },
                 onAddToCart: (variant, quantity) {
                   _handleAddToCart(parentContext, productDetail, variant, quantity);
                   Future.delayed(const Duration(milliseconds: 500), () {
                     if (context.mounted) {
-                      Navigator.of(context).pop();
+        Navigator.of(context).pop();
                     }
                   });
                 },
@@ -426,15 +426,15 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
                   _handleBuyNowSimple(parentContext, product, quantity);
                   Future.delayed(const Duration(milliseconds: 500), () {
                     if (context.mounted) {
-                      Navigator.of(context).pop();
+        Navigator.of(context).pop();
                     }
                   });
-                },
+      },
                 onAddToCart: (product, quantity) {
                   _handleAddToCartSimple(parentContext, product, quantity);
                   Future.delayed(const Duration(milliseconds: 500), () {
                     if (context.mounted) {
-                      Navigator.of(context).pop();
+        Navigator.of(context).pop();
                     }
                   });
                 },
@@ -450,7 +450,7 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
             content: Text('Lỗi: $e'),
             backgroundColor: Colors.red,
           ),
-        );
+    );
       }
     }
   }

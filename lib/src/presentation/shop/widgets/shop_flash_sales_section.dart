@@ -715,8 +715,8 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
 
   void _showPurchaseDialog(BuildContext context, int productId) async {
     try {
-      // Dùng cache cho chi tiết sản phẩm để thống nhất với các nơi khác
-      final productDetail = await CachedApiService().getProductDetailCached(productId);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(productId);
       final parentContext = Navigator.of(context).context;
       
       if (parentContext.mounted && productDetail != null) {

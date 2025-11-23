@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
+import '../root_shell.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -17,6 +18,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureRePassword = true;
+  
+  // Kiểm tra yêu cầu mật khẩu - Đơn giản hóa như Shopee, Facebook
+  bool _hasMinLength(String password) => password.length >= 6;
 
   @override
   void dispose() {
@@ -42,11 +46,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (value == null || value.isEmpty) {
       return 'Vui lòng nhập mật khẩu';
     }
-    if (value.length < 6) {
+    // Validate đơn giản - chỉ yêu cầu tối thiểu 6 ký tự
+    if (!_hasMinLength(value)) {
       return 'Mật khẩu phải có ít nhất 6 ký tự';
     }
     return null;
   }
+
 
   String? _validateRePassword(String? value) {
     if (value == null || value.isEmpty) {
@@ -77,24 +83,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (result['success'] == true) {
+        // Đăng ký thành công, tự động đăng nhập luôn
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(result['message'] ?? 'Đăng ký thành công'),
               backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-              action: SnackBarAction(
-                label: 'Đóng',
-                textColor: Colors.white,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
-              ),
+              duration: const Duration(seconds: 2),
             ),
           );
           
-          // Quay lại màn hình đăng nhập sau khi đăng ký thành công
-          Navigator.of(context).pop();
+          // Tự động đăng nhập với thông tin vừa đăng ký
+          final loginResult = await authService.login(
+            _phoneController.text.trim(),
+            _passwordController.text,
+          );
+          
+          if (mounted) {
+            if (loginResult['success'] == true) {
+              // Đăng nhập thành công, chuyển vào trang chủ
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const RootShell(initialIndex: 0),
+                ),
+                (route) => false, // Xóa tất cả các route trước đó
+              );
+            } else {
+              // Đăng nhập thất bại, quay lại màn hình trước (thường không xảy ra)
+              Navigator.of(context).pop();
+            }
+          }
         }
       } else {
         if (mounted) {
@@ -313,6 +331,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     labelStyle: TextStyle(
                                       color: const Color(0xFF6C757D),
                                       fontWeight: FontWeight.w500,
+                                    ),
+                                    helperText: 'Mật khẩu phải có ít nhất 6 ký tự',
+                                    helperStyle: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.grey[600],
+                                      height: 1.3,
                                     ),
                                     prefixIcon: Icon(
                                       Icons.lock_rounded,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../checkout/checkout_screen.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/services/voucher_service.dart';
+import '../../../core/services/cart_service.dart' as cart_service;
 
 class BottomCheckoutBar extends StatelessWidget {
   final bool selectAll;
@@ -26,7 +27,22 @@ class BottomCheckoutBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final voucherService = VoucherService();
-    final voucherDiscount = voucherService.calculateTotalDiscount(totalPrice);
+    final cart = cart_service.CartService();
+    
+    // ✅ Lấy items đã chọn để tính voucher đúng (theo shop)
+    final items = cart.items.where((i) => i.isSelected).toList();
+    
+    // ✅ Tính voucher discount đúng như checkout (theo shop và theo sản phẩm áp dụng)
+    final shopDiscount = voucherService.calculateTotalDiscount(
+      totalPrice,
+      items: items.map((e) => {'shopId': e.shopId, 'price': e.price, 'quantity': e.quantity}).toList(),
+    );
+    final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
+      totalPrice,
+      items.map((e) => e.id).toList(),
+      items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
+    );
+    final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalPrice);
     final finalPrice = totalPrice - voucherDiscount;
     
     return SafeArea(

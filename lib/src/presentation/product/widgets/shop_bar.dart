@@ -112,7 +112,9 @@ class ShopBar extends StatelessWidget {
                     Text(
                       shopAddress?.isNotEmpty == true 
                           ? shopAddress!
-                          : '$rating | $reviewCount đánh giá',
+                          : (rating > 0 && reviewCount > 0 
+                              ? '$rating ⭐ | $reviewCount đánh giá'
+                              : shopAddress ?? ''),
                       style: const TextStyle(
                         fontSize: 13, // Giảm kích thước địa chỉ một chút
                         color: Colors.grey,

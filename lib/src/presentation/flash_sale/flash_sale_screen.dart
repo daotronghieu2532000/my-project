@@ -162,8 +162,8 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
 
   void _addToCart(FlashSaleProduct product) async {
     try {
-            // Sử dụng cached API service cho product detail
-            final productDetail = await _cachedApiService.getProductDetailCached(product.id);
+            // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+            final productDetail = await ApiService().getProductVariants(product.id);
       
       if (productDetail != null && productDetail.variants.isNotEmpty) {
         // Show variant selection dialog

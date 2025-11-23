@@ -83,7 +83,9 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
     _autoScrollTimer?.cancel();
     _autoScrollTimer = Timer.periodic(const Duration(milliseconds: 30), (timer) {
       if (!_isUserScrolling && mounted && _scrollController.hasClients) {
-        final maxScroll = _scrollController.position.maxScrollExtent;
+        final position = _scrollController.position;
+        if (!position.hasContentDimensions) return;
+        final maxScroll = position.maxScrollExtent;
         final currentScroll = _scrollController.offset;
         
         // Scroll từ từ (0.5 pixel mỗi 30ms = ~16.7 pixels/giây)
@@ -116,17 +118,26 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
       if (mounted && !_isUserScrolling) {
         _isUserScrolling = false;
         if (_scrollController.hasClients) {
-          // Đảm bảo scroll position hợp lý trước khi resume
-          final maxScroll = _scrollController.position.maxScrollExtent;
-          final currentScroll = _scrollController.offset;
-          final oneThirdLength = maxScroll / 3;
-          
-          // Nếu đang ở phần cuối, reset về phần giữa
-          if (currentScroll >= oneThirdLength * 2) {
-            _scrollController.jumpTo(oneThirdLength);
+          try {
+            // Đảm bảo scroll position hợp lý trước khi resume
+            final position = _scrollController.position;
+            if (position.hasContentDimensions) {
+              final maxScroll = position.maxScrollExtent;
+              final currentScroll = _scrollController.offset;
+              final oneThirdLength = maxScroll / 3;
+              
+              // Nếu đang ở phần cuối, reset về phần giữa
+              if (currentScroll >= oneThirdLength * 2) {
+                _scrollController.jumpTo(oneThirdLength);
+              }
+            }
+          } catch (e) {
+            // Ignore error, scroll controller chưa sẵn sàng
           }
         }
-        _startAutoScroll();
+        if (mounted) {
+          _startAutoScroll();
+        }
       }
     });
   }
@@ -155,13 +166,24 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
           // Bắt đầu auto scroll sau khi load xong
           if (mounted && _brands.isNotEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (_scrollController.hasClients) {
-                // Bắt đầu từ phần giữa (duplicate đầu tiên) để có thể scroll cả 2 hướng
-                final maxScroll = _scrollController.position.maxScrollExtent;
-                final oneThirdLength = maxScroll / 3;
-                _scrollController.jumpTo(oneThirdLength);
+              if (mounted && _scrollController.hasClients) {
+                try {
+                  // Bắt đầu từ phần giữa (duplicate đầu tiên) để có thể scroll cả 2 hướng
+                  final position = _scrollController.position;
+                  if (position.hasContentDimensions) {
+                    final maxScroll = position.maxScrollExtent;
+                    if (maxScroll > 0) {
+                      final oneThirdLength = maxScroll / 3;
+                      _scrollController.jumpTo(oneThirdLength);
+                    }
+                  }
+                } catch (e) {
+                  // Ignore error, scroll controller chưa sẵn sàng
+                }
               }
-              _startAutoScroll();
+              if (mounted) {
+                _startAutoScroll();
+              }
             });
           }
         } else {

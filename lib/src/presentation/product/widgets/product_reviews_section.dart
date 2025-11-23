@@ -8,6 +8,7 @@ class ProductReviewsSection extends StatelessWidget {
   final int productId;
   final int? totalReviews;
   final double? rating;
+  final bool isLoading; // Thêm parameter để biết đang load
 
   const ProductReviewsSection({
     super.key,
@@ -15,13 +16,13 @@ class ProductReviewsSection extends StatelessWidget {
     required this.productId,
     this.totalReviews,
     this.rating,
+    this.isLoading = false, // Default false
   });
 
   @override
   Widget build(BuildContext context) {
-    if (reviews == null || reviews!.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    // LUÔN HIỂN THỊ section, ngay cả khi chưa có reviews
+    final hasReviews = reviews != null && reviews!.isNotEmpty;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,12 +44,12 @@ class ProductReviewsSection extends StatelessWidget {
                         color: Colors.black87,
                       ),
                     ),
-                    if (rating != null) ...[
+                    if (rating != null && rating! > 0) ...[
                       const SizedBox(width: 8),
                       const Icon(Icons.star, color: Colors.amber, size: 18),
                       const SizedBox(width: 4),
                       Text(
-                        rating! > 0 ? rating!.toStringAsFixed(1) : '0.0',
+                        rating!.toStringAsFixed(1),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -69,7 +70,8 @@ class ProductReviewsSection extends StatelessWidget {
                   ],
                 ),
               ),
-              if (totalReviews != null && (totalReviews as int) > 2)
+              // Luôn hiển thị nút "Xem tất cả" nếu có reviews hoặc có totalReviews
+              if (totalReviews != null && totalReviews! > 0)
                 TextButton(
                         onPressed: () {
                           Navigator.push(
@@ -103,18 +105,60 @@ class ProductReviewsSection extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 4),
-        // List đánh giá - full width (chỉ hiển thị 2 đánh giá đầu tiên)
-        ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              padding: EdgeInsets.zero,
-              itemCount: reviews!.length > 2 ? 2 : reviews!.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final review = reviews![index];
-                return _buildReviewItem(review);
-              },
-        ),
+        // List đánh giá - hiển thị reviews nếu có, hoặc loading/empty state
+        if (isLoading)
+          // Đang load reviews
+          const Padding(
+            padding: EdgeInsets.all(20),
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (hasReviews)
+          // Có reviews, hiển thị
+          ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: reviews!.length > 2 ? 2 : reviews!.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final review = reviews![index];
+                  return _buildReviewItem(review);
+                },
+          )
+        else if (totalReviews != null && totalReviews! > 0)
+          // Có reviews nhưng chưa load được (có thể đang load hoặc lỗi)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: Column(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Đang tải đánh giá...',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          // Chưa có reviews, hiển thị empty state
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Center(
+              child: Text(
+                'Chưa có đánh giá nào',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }

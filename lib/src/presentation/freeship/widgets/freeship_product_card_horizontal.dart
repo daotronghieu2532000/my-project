@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/models/freeship_product.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/utils/format_utils.dart';
@@ -317,9 +317,8 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context) async {
     try {
-      // Sử dụng cached API service cho product detail
-      final cachedApiService = CachedApiService();
-      final productDetail = await cachedApiService.getProductDetailCached(product.id);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(product.id);
       
       final parentContext = Navigator.of(context).context;
       

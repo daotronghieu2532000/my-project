@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../core/services/api_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/cart_service.dart' as cart_service;
 import '../../../core/services/shipping_events.dart';
 import '../../../core/services/shipping_quote_store.dart';
 import '../../../core/services/shipping_quote_service.dart';
+import '../../../core/services/voucher_service.dart';
+import '../../../core/utils/format_utils.dart';
 
 class OrderSummarySection extends StatefulWidget {
   const OrderSummarySection({super.key});
@@ -15,7 +16,6 @@ class OrderSummarySection extends StatefulWidget {
 }
 
 class _OrderSummarySectionState extends State<OrderSummarySection> {
-  final _api = ApiService();
   final _auth = AuthService();
   final _shippingQuoteService = ShippingQuoteService(); // ✅ Sử dụng service chuyên nghiệp
   int? _shipFee;
@@ -26,24 +26,38 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
   bool _hasFreeshipAvailable = false;
   bool _isFallback = false; // ✅ Đánh dấu đang dùng fallback
   List<Map<String, dynamic>>? _warehouseDetails; // Chi tiết phí ship từng kho
+  Map<String, dynamic>? _shopFreeshipDetails; // Chi tiết freeship theo shop
   StreamSubscription<void>? _shipSub;
+  final VoucherService _voucherService = VoucherService();
 
   @override
   void initState() {
     super.initState();
     _load();
-    // Lắng nghe sự kiện cần tính lại phí ship khi đổi địa chỉ
+    // ✅ Lắng nghe sự kiện cần tính lại phí ship khi đổi địa chỉ
     _shipSub = ShippingEvents.stream.listen((_) {
       if (!mounted) return;
       _load();
     });
+    // ✅ Lắng nghe thay đổi voucher để cập nhật UI
+    _voucherService.addListener(_onVoucherChanged);
   }
 
   @override
   void dispose() {
     _shipSub?.cancel();
     _loadDebounceTimer?.cancel(); // ✅ Hủy timer khi dispose
+    _voucherService.removeListener(_onVoucherChanged); // ✅ Remove listener
     super.dispose();
+  }
+  
+  // ✅ Callback khi voucher thay đổi
+  void _onVoucherChanged() {
+    if (mounted) {
+      setState(() {
+        // Trigger rebuild để cập nhật UI
+      });
+    }
   }
 
   Timer? _loadDebounceTimer; // ✅ Debounce để tránh gọi API quá nhiều lần
@@ -170,24 +184,17 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         int calculatedShipSupport = 0;
         final bestShipSupport = (rawQuote?['best']?['ship_support'] as num?)?.toInt() ?? 0;
         
-        // 🔍 DEBUG: In ra thông tin để kiểm tra
-        print('🔍 [SHIP_SUPPORT_DEBUG] ==========================================');
-        print('🔍 [SHIP_SUPPORT_DEBUG] best[\'ship_support\'] từ API: $bestShipSupport');
-        print('🔍 [SHIP_SUPPORT_DEBUG] Số lượng items trong giỏ: ${items.length}');
-        print('🔍 [SHIP_SUPPORT_DEBUG] Items: ${items.map((i) => 'product_id=${i['product_id']}, qty=${i['quantity']}').join('; ')}');
-        
         // ✅ Tính ship_support từ shop_freeship_details (nếu có)
         // shop_freeship_details chứa thông tin ship_support theo shop
         final debug = rawQuote?['debug'] as Map<String, dynamic>?;
         final shopFreeshipDetails = debug?['shop_freeship_details'] as Map<String, dynamic>?;
         
-        print('🔍 [SHIP_SUPPORT_DEBUG] shop_freeship_details: $shopFreeshipDetails');
-        print('🔍 [SHIP_SUPPORT_DEBUG] Số lượng shop trong shop_freeship_details: ${shopFreeshipDetails?.length ?? 0}');
+        // ✅ Lưu shop_freeship_details để hiển thị
+        _shopFreeshipDetails = shopFreeshipDetails;
         
         // ✅ Tạo map shop_id -> shipping_fee từ warehouse_details (cần cho mode 1, 2)
         final Map<int, int> shopShippingFees = {};
         if (_warehouseDetails != null && _warehouseDetails!.isNotEmpty) {
-          print('🔍 [SHIP_SUPPORT_DEBUG] Tạo map shopShippingFees từ warehouse_details:');
           for (final detailMap in _warehouseDetails!) {
             final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
             final shippingFee = (detailMap['shipping_fee'] as num?)?.toInt() ?? 0;
@@ -196,30 +203,21 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
               if (!shopShippingFees.containsKey(shopId) || shippingFee > shopShippingFees[shopId]!) {
                 shopShippingFees[shopId] = shippingFee;
               }
-              print('🔍 [SHIP_SUPPORT_DEBUG]   Shop $shopId: shipping_fee = $shippingFee');
             }
           }
-          print('🔍 [SHIP_SUPPORT_DEBUG] shopShippingFees map: $shopShippingFees');
         }
         
         if (shopFreeshipDetails != null && shopFreeshipDetails.isNotEmpty) {
           final Map<int, int> shopShipSupport = {};
-          
-          print('🔍 [SHIP_SUPPORT_DEBUG] Bắt đầu tính ship_support từ shop_freeship_details:');
           
           for (final entry in shopFreeshipDetails.entries) {
             final shopIdStr = entry.key;
             final shopId = int.tryParse(shopIdStr) ?? 0;
             final config = entry.value;
             
-            print('🔍 [SHIP_SUPPORT_DEBUG]   → Xử lý Shop ID: $shopId');
-            print('🔍 [SHIP_SUPPORT_DEBUG]     Config: $config');
-            
             if (config is Map<String, dynamic>) {
               final mode = config['mode'] as int? ?? 0;
               final applied = config['applied'] as bool? ?? false;
-              
-              print('🔍 [SHIP_SUPPORT_DEBUG]     Mode: $mode, Applied: $applied');
               
               // Mode 3: Per-product freeship - ship_support theo sản phẩm
               // Nhưng cần tính theo shop (không nhân với số lượng)
@@ -227,15 +225,12 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                 final products = config['products'];
                 int shopSupport = 0;
                 
-                print('🔍 [SHIP_SUPPORT_DEBUG]     Mode 3: Xử lý products: $products');
-                
                 if (products is Map<String, dynamic> && products.isNotEmpty) {
                   // Lấy ship_support lớn nhất từ các sản phẩm (vì ship_support là theo shop, không phải theo sản phẩm)
                   for (final productEntry in products.entries) {
                     if (productEntry.value is Map<String, dynamic>) {
                       final productConfig = productEntry.value as Map<String, dynamic>;
                       final supportAmount = (productConfig['value'] as num?)?.toInt() ?? 0;
-                      print('🔍 [SHIP_SUPPORT_DEBUG]       Product ${productEntry.key}: supportAmount = $supportAmount');
                       if (supportAmount > shopSupport) {
                         shopSupport = supportAmount;
                       }
@@ -245,7 +240,6 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                   for (final productItem in products) {
                     if (productItem is Map<String, dynamic>) {
                       final supportAmount = (productItem['value'] as num?)?.toInt() ?? 0;
-                      print('🔍 [SHIP_SUPPORT_DEBUG]       Product trong List: supportAmount = $supportAmount');
                       if (supportAmount > shopSupport) {
                         shopSupport = supportAmount;
                       }
@@ -253,11 +247,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                   }
                 }
                 
-                print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 3): shopSupport = $shopSupport');
-                
                 if (shopSupport > 0) {
                   shopShipSupport[shopId] = shopSupport;
-                  print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = $shopSupport cho shop $shopId');
                 }
               } else if ((mode == 0 || mode == 1 || mode == 2) && applied == true) {
                 // Mode 0, 1, 2: ship_support theo shop (không phải theo sản phẩm)
@@ -265,17 +256,11 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                 if (mode == 0 && discount > 0) {
                   // Mode 0: Fixed discount
                   shopShipSupport[shopId] = discount.toInt();
-                  print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 0): shopSupport = ${discount.toInt()}');
-                  print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = ${discount.toInt()} cho shop $shopId');
                 } else if (mode == 1) {
                   // Mode 1: 100% freeship - ship_support = toàn bộ shipping_fee
                   final shippingFee = shopShippingFees[shopId] ?? 0;
                   if (shippingFee > 0) {
                     shopShipSupport[shopId] = shippingFee;
-                    print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 1): shipping_fee = $shippingFee, shopSupport = $shippingFee');
-                    print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = $shippingFee cho shop $shopId');
-                  } else {
-                    print('🔍 [SHIP_SUPPORT_DEBUG]     ⚠️ Shop $shopId (mode 1): Không có shipping_fee trong warehouse_details');
                   }
                 } else if (mode == 2 && discount > 0) {
                   // Mode 2: Percentage discount - ship_support = discount% của giá trị đơn hàng shop (subtotal)
@@ -284,43 +269,23 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                     // ✅ Tính ship_support = discount% của subtotal (giá trị đơn hàng shop)
                     final support = (subtotal * discount / 100).round();
                     shopShipSupport[shopId] = support;
-                    print('🔍 [SHIP_SUPPORT_DEBUG]     Shop $shopId (mode 2): subtotal = $subtotal, discount = ${discount.toInt()}%, shopSupport = $support');
-                    print('🔍 [SHIP_SUPPORT_DEBUG]     ✅ Đã thêm shopSupport = $support cho shop $shopId');
-                  } else {
-                    print('🔍 [SHIP_SUPPORT_DEBUG]     ⚠️ Shop $shopId (mode 2): Không có subtotal trong config');
                   }
                 }
-              } else {
-                print('🔍 [SHIP_SUPPORT_DEBUG]     ⚠️ Shop $shopId: Mode $mode, Applied: $applied - KHÔNG ÁP DỤNG');
               }
             }
           }
           
-          print('🔍 [SHIP_SUPPORT_DEBUG] Kết quả shopShipSupport map: $shopShipSupport');
-          print('🔍 [SHIP_SUPPORT_DEBUG] Số lượng shop có ship_support: ${shopShipSupport.length}');
-          
           // ✅ Tổng hợp ship_support từ tất cả các shop
           calculatedShipSupport = shopShipSupport.values.fold(0, (sum, support) => sum + support);
-          print('🔍 [SHIP_SUPPORT_DEBUG] Tổng ship_support tính từ shop_freeship_details: $calculatedShipSupport');
-          
-          // In chi tiết từng shop
-          for (final entry in shopShipSupport.entries) {
-            print('🔍 [SHIP_SUPPORT_DEBUG]   - Shop ${entry.key}: ${entry.value}');
-          }
-        } else {
-          print('🔍 [SHIP_SUPPORT_DEBUG] Không có shop_freeship_details hoặc rỗng');
         }
         
         // ✅ Fallback: Thử tính từ warehouse_details nếu shop_freeship_details không có
         if (calculatedShipSupport == 0 && _warehouseDetails != null && _warehouseDetails!.isNotEmpty) {
-          print('🔍 [SHIP_SUPPORT_DEBUG] Fallback: Tính từ warehouse_details');
           final Map<int, int> shopShipSupport = {};
           
           for (final detailMap in _warehouseDetails!) {
             final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
             final shipSupport = (detailMap['ship_support'] as num?)?.toInt() ?? 0;
-            
-            print('🔍 [SHIP_SUPPORT_DEBUG]   warehouse_detail: shop_id=$shopId, ship_support=$shipSupport');
             
             if (shipSupport > 0) {
               if (!shopShipSupport.containsKey(shopId) || shipSupport > shopShipSupport[shopId]!) {
@@ -329,28 +294,17 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
             }
           }
           
-          print('🔍 [SHIP_SUPPORT_DEBUG] Kết quả shopShipSupport từ warehouse_details: $shopShipSupport');
           calculatedShipSupport = shopShipSupport.values.fold(0, (sum, support) => sum + support);
-          print('🔍 [SHIP_SUPPORT_DEBUG] Tổng ship_support tính từ warehouse_details: $calculatedShipSupport');
         }
         
         // ✅ Ưu tiên dùng ship_support tính từ shop_freeship_details hoặc warehouse_details (đúng)
         // Fallback về best['ship_support'] nếu không có
         // ⚠️ Nếu best['ship_support'] khác với calculated, có thể API đang tính sai
         if (calculatedShipSupport > 0 && calculatedShipSupport != bestShipSupport) {
-          print('🔍 [SHIP_SUPPORT_DEBUG] ⚠️ PHÁT HIỆN: best[\'ship_support\'] ($bestShipSupport) khác với calculated ($calculatedShipSupport)');
-          print('🔍 [SHIP_SUPPORT_DEBUG] ⚠️ → Sử dụng calculated ($calculatedShipSupport) để tránh tính sai');
           _shipSupport = calculatedShipSupport;
         } else {
           _shipSupport = calculatedShipSupport > 0 ? calculatedShipSupport : bestShipSupport;
         }
-        
-        // 🔍 DEBUG: In ra kết quả cuối cùng
-        print('🔍 [SHIP_SUPPORT_DEBUG] Kết quả cuối cùng:');
-        print('🔍 [SHIP_SUPPORT_DEBUG]   - best[\'ship_support\']: $bestShipSupport');
-        print('🔍 [SHIP_SUPPORT_DEBUG]   - calculatedShipSupport: $calculatedShipSupport');
-        print('🔍 [SHIP_SUPPORT_DEBUG]   - _shipSupport (đã chọn): $_shipSupport');
-        print('🔍 [SHIP_SUPPORT_DEBUG] ==========================================');
       
       // Check if there's freeship available using raw API response
       _checkFreeshipAvailability(rawQuote);
@@ -448,51 +402,34 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
   }
 
   void _showFreeshipDialog(BuildContext context) async {
-    // Sử dụng dữ liệu đã có từ _checkFreeshipAvailability thay vì gọi API lại
-    if (!_hasFreeshipAvailable) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sản phẩm này không có ưu đãi vận chuyển')),
-      );
-      return;
-    }
-    
-    // Lấy thông tin freeship từ shipping quote
-    final u = await _auth.getCurrentUser();
-    if (u == null) return;
-    
+    // ✅ Sử dụng dữ liệu đã có từ _shopFreeshipDetails
     final cart = cart_service.CartService();
-    final items = cart.items
-        .map((i) => {
-              'product_id': i.id,
-              'quantity': i.quantity,
-            })
-        .toList();
+    final voucherService = VoucherService();
+    final items = cart.items.where((i) => i.isSelected).toList();
     
-    if (items.isEmpty) return;
-    
-    Map<String, dynamic>? shopFreeshipDetails;
-    
-    try {
-      final quote = await _api.getShippingQuote(userId: u.userId, items: items);
-      
-      if (quote != null) {
-        final debug = quote['debug'];
-        
-        if (debug != null) {
-          shopFreeshipDetails = debug['shop_freeship_details'] as Map<String, dynamic>?;
-        }
-      }
-    } catch (e) {
-      // Error getting quote
-    }
-    
-    // Only show dialog if there's actual freeship data
-    if (shopFreeshipDetails == null || shopFreeshipDetails.isEmpty) {
+    if (items.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sản phẩm này không có ưu đãi vận chuyển')),
+        const SnackBar(content: Text('Vui lòng chọn sản phẩm để xem ưu đãi')),
       );
       return;
     }
+    
+    final itemsByShop = cart.itemsByShop;
+    
+    final platformVoucher = voucherService.platformVoucher;
+    final hasShopVoucher = voucherService.appliedVouchers.isNotEmpty;
+    final hasPlatformVoucher = platformVoucher != null;
+    final hasFreeship = _shopFreeshipDetails != null && _shopFreeshipDetails!.isNotEmpty;
+    
+    // ✅ Chỉ hiển thị nếu có ít nhất một loại ưu đãi
+    if (!hasShopVoucher && !hasPlatformVoucher && !hasFreeship) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Hiện tại chưa có ưu đãi nào được áp dụng')),
+      );
+      return;
+    }
+    
+    final shopFreeshipDetails = _shopFreeshipDetails;
     
     showModalBottomSheet(
       context: context,
@@ -501,8 +438,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       builder: (context) {
         return Container(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height * 0.6,
-            minHeight: 300,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+            minHeight: 400,
           ),
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -543,7 +480,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        'Ưu đãi vận chuyển',
+                        'Chi tiết ưu đãi',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -566,39 +503,50 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Debug info
-                    
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
                       
-                      if (shopFreeshipDetails != null && shopFreeshipDetails.isNotEmpty) ...[
-                    
-                        for (final entry in shopFreeshipDetails.entries) ...[
-                          _buildFreeshipInfo(entry.key, entry.value),
-                          const SizedBox(height: 16),
-                        ],
-                      ] else ...[
-                        Text('❌ No freeship details found', 
-                             style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
-                        const SizedBox(height: 16),
-                        const Center(
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                size: 48,
-                                color: Colors.grey,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                'Hiện tại chưa có ưu đãi vận chuyển nào',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
-                          ),
+                      // ✅ Hiển thị voucher shop theo từng shop - chỉ hiển thị shop có ưu đãi
+                      for (final entry in itemsByShop.entries) ...[
+                        Builder(
+                          builder: (context) {
+                            final shopId = entry.key;
+                            final shopItems = entry.value.where((i) => i.isSelected).toList();
+                            if (shopItems.isEmpty) return const SizedBox.shrink();
+                            
+                            final appliedVoucher = voucherService.getAppliedVoucher(shopId);
+                            
+                            // ✅ Kiểm tra hỗ trợ ship có giá trị không
+                            bool hasValidShipSupport = false;
+                            if (shopFreeshipDetails != null && shopFreeshipDetails.containsKey(shopId.toString())) {
+                              final freeshipConfig = shopFreeshipDetails[shopId.toString()] as Map<String, dynamic>?;
+                              if (freeshipConfig != null) {
+                                final mode = freeshipConfig['mode'] as int? ?? 0;
+                                final applied = freeshipConfig['applied'] as bool? ?? false;
+                                final discount = (freeshipConfig['discount'] as num?)?.toDouble() ?? 0.0;
+                                hasValidShipSupport = applied || (discount > 0 && mode >= 0 && mode <= 3);
+                              }
+                            }
+                            
+                            // ✅ Chỉ hiển thị shop nếu có voucher hoặc hỗ trợ ship hợp lệ
+                            if (appliedVoucher != null || hasValidShipSupport) {
+                              return Column(
+                                children: [
+                                  _buildShopPromotionSection(context, shopId, entry.value, voucherService, shopFreeshipDetails),
+                                  const SizedBox(height: 16),
+                                ],
+                              );
+                            }
+                            
+                            return const SizedBox.shrink();
+                          },
                         ),
+                      ],
+                      
+                      // ✅ Hiển thị voucher sàn (nếu có)
+                      if (platformVoucher != null) ...[
+                        const Divider(height: 24),
+                        _buildPlatformVoucherSection(context, platformVoucher, items, voucherService),
+                        const SizedBox(height: 16),
                       ],
                       
                       const SizedBox(height: 20),
@@ -643,6 +591,578 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           ),
         );
       },
+    );
+  }
+
+  // ✅ Widget hiển thị section ưu đãi của một shop trong dialog
+  Widget _buildShopPromotionSection(
+    BuildContext context,
+    int shopId,
+    List<cart_service.CartItem> shopItems,
+    VoucherService voucherService,
+    Map<String, dynamic>? shopFreeshipDetails,
+  ) {
+    final selectedShopItems = shopItems.where((i) => i.isSelected).toList();
+    if (selectedShopItems.isEmpty) return const SizedBox.shrink();
+    
+    final shopName = selectedShopItems.first.shopName;
+    final shopTotal = selectedShopItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+    final appliedVoucher = voucherService.getAppliedVoucher(shopId);
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Shop header
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.store, color: Colors.blue, size: 18),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                shopName,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1D1D1F),
+                ),
+              ),
+            ),
+            Text(
+              FormatUtils.formatCurrency(shopTotal),
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.red,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        
+        // ✅ Voucher shop
+        if (appliedVoucher != null) ...[
+          _buildVoucherShopCardDialog(shopName, appliedVoucher, shopTotal),
+          const SizedBox(height: 12),
+        ],
+        
+        // ✅ Hỗ trợ ship - chỉ hiển thị khi có giá trị thực sự
+        if (shopFreeshipDetails != null && shopFreeshipDetails.containsKey(shopId.toString())) ...[
+          Builder(
+            builder: (context) {
+              final freeshipConfig = shopFreeshipDetails[shopId.toString()] as Map<String, dynamic>?;
+              if (freeshipConfig != null) {
+                // ✅ Kiểm tra xem có nên hiển thị không
+                final mode = freeshipConfig['mode'] as int? ?? 0;
+                final applied = freeshipConfig['applied'] as bool? ?? false;
+                final discount = (freeshipConfig['discount'] as num?)?.toDouble() ?? 0.0;
+                
+                // ✅ Chỉ hiển thị nếu: applied = true HOẶC (discount > 0 và mode hợp lệ)
+                final shouldShow = applied || (discount > 0 && mode >= 0 && mode <= 3);
+                
+                if (shouldShow) {
+                  return Column(
+                    children: [
+                      _buildShipSupportCardDialog(shopName, shopId, freeshipConfig, shopTotal),
+                      const SizedBox(height: 12),
+                    ],
+                  );
+                }
+              }
+              return const SizedBox.shrink();
+            },
+          ),
+        ],
+      ],
+    );
+  }
+  
+  // ✅ Widget hiển thị voucher sàn trong dialog
+  Widget _buildPlatformVoucherSection(
+    BuildContext context,
+    dynamic platformVoucher,
+    List<cart_service.CartItem> items,
+    VoucherService voucherService,
+  ) {
+    final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+    return _buildPlatformVoucherCardDialog(platformVoucher, items, totalGoods);
+  }
+  
+  // ✅ Widget hiển thị voucher shop trong dialog (chi tiết hơn)
+  Widget _buildVoucherShopCardDialog(String shopName, dynamic voucher, int shopTotal) {
+    final discountValue = voucher.discountValue ?? 0.0;
+    final discountType = voucher.discountType ?? 'fixed';
+    final maxDiscount = voucher.maxDiscountValue;
+    final minOrder = voucher.minOrderValue?.round() ?? 0;
+    
+    String discountText = '';
+    int calculatedDiscount = 0;
+    
+    if (discountType == 'percentage') {
+      calculatedDiscount = (shopTotal * discountValue / 100).round();
+      if (maxDiscount != null && calculatedDiscount > maxDiscount.round()) {
+        calculatedDiscount = maxDiscount.round();
+      }
+      discountText = 'Giảm ${discountValue.toInt()}% (tối đa ${FormatUtils.formatCurrency(maxDiscount?.round() ?? calculatedDiscount)})';
+    } else {
+      calculatedDiscount = discountValue.round();
+      discountText = 'Giảm ${FormatUtils.formatCurrency(calculatedDiscount)}';
+    }
+    
+    final canApply = shopTotal >= minOrder;
+    final statusColor = canApply ? Colors.green : Colors.orange;
+    final statusText = canApply ? 'Đã áp dụng' : 'Chưa đủ điều kiện';
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: statusColor.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                canApply ? Icons.check_circle : Icons.info_outline,
+                color: statusColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Mã giảm giá shop',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mã: ${voucher.code}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6C757D),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  discountText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Giá trị đơn hàng shop: ${FormatUtils.formatCurrency(shopTotal)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6C757D),
+                  ),
+                ),
+                if (canApply) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Bạn đã tiết kiệm ${FormatUtils.formatCurrency(calculatedDiscount)}! 🎉',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Cần thêm ${FormatUtils.formatCurrency(minOrder - shopTotal)} để nhận ưu đãi 💝',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ✅ Widget hiển thị hỗ trợ ship trong dialog (chi tiết hơn)
+  Widget _buildShipSupportCardDialog(String shopName, int shopId, Map<String, dynamic> config, int shopTotal) {
+    final mode = config['mode'] as int? ?? 0;
+    final applied = config['applied'] as bool? ?? false;
+    final subtotal = config['subtotal'] as int? ?? 0;
+    final minOrder = config['min_order'] as int? ?? 0;
+    final discount = (config['discount'] as num?)?.toDouble() ?? 0.0;
+    
+    String title = '';
+    String description = '';
+    int supportAmount = 0;
+    final statusColor = applied ? Colors.green : Colors.orange;
+    final statusText = applied ? 'Đã áp dụng' : 'Chưa đủ điều kiện';
+    
+    switch (mode) {
+      case 0:
+        title = 'Hỗ trợ ship cố định';
+        description = 'Shop hỗ trợ ${FormatUtils.formatCurrency(discount.toInt())} phí ship';
+        supportAmount = discount.toInt();
+        break;
+      case 1:
+        title = 'Miễn phí ship 100%';
+        description = 'Shop miễn phí toàn bộ phí ship';
+        final shippingFee = _warehouseDetails?.firstWhere(
+          (w) => (w['shop_id'] as int?) == shopId,
+          orElse: () => {},
+        )['shipping_fee'] as int? ?? 0;
+        supportAmount = shippingFee;
+        break;
+      case 2:
+        title = 'Hỗ trợ ship theo %';
+        description = 'Shop hỗ trợ ${discount.toInt()}% giá trị đơn hàng';
+        supportAmount = subtotal > 0 ? (subtotal * discount / 100).round() : 0;
+        break;
+      case 3:
+        title = 'Hỗ trợ ship theo sản phẩm';
+        final products = config['products'] as Map<String, dynamic>?;
+        if (products != null && products.isNotEmpty) {
+          int maxSupport = 0;
+          for (final productEntry in products.entries) {
+            final productConfig = productEntry.value as Map<String, dynamic>?;
+            final value = (productConfig?['value'] as num?)?.toInt() ?? 0;
+            if (value > maxSupport) maxSupport = value;
+          }
+          supportAmount = maxSupport;
+          description = 'Shop hỗ trợ ${FormatUtils.formatCurrency(maxSupport)} ship cho sản phẩm này';
+        } else {
+          description = 'Shop có hỗ trợ ship cho sản phẩm đặc biệt';
+        }
+        break;
+      default:
+        title = 'Ưu đãi vận chuyển';
+        description = 'Shop có ưu đãi vận chuyển đặc biệt';
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: statusColor.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                applied ? Icons.local_shipping : Icons.local_shipping_outlined,
+                color: statusColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6C757D),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Giá trị đơn hàng shop: ${FormatUtils.formatCurrency(subtotal)}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6C757D),
+                  ),
+                ),
+                if (applied && supportAmount > 0) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Bạn được hỗ trợ ${FormatUtils.formatCurrency(supportAmount)}! 🚚',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else if (!applied) ...[
+                  if (minOrder > 0 && shopTotal < minOrder) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Thêm ${FormatUtils.formatCurrency(minOrder - shopTotal)} để nhận ưu đãi ship! 💝',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ✅ Widget hiển thị voucher sàn trong dialog (chi tiết hơn)
+  Widget _buildPlatformVoucherCardDialog(dynamic voucher, List<cart_service.CartItem> items, int totalGoods) {
+    final discountValue = voucher.discountValue ?? 0.0;
+    final discountType = voucher.discountType ?? 'fixed';
+    final maxDiscount = voucher.maxDiscountValue;
+    final minOrder = voucher.minOrderValue?.round() ?? 0;
+    
+    // ✅ Kiểm tra sản phẩm áp dụng
+    final allowIds = <int>{};
+    if (voucher.applicableProductsDetail != null && voucher.applicableProductsDetail!.isNotEmpty) {
+      for (final m in voucher.applicableProductsDetail!) {
+        final id = int.tryParse(m['id'] ?? '');
+        if (id != null) allowIds.add(id);
+      }
+    } else if (voucher.applicableProducts != null && voucher.applicableProducts!.isNotEmpty) {
+      for (final s in voucher.applicableProducts!) {
+        final id = int.tryParse(s);
+        if (id != null) allowIds.add(id);
+      }
+    }
+    
+    // ✅ Tính subtotal của sản phẩm áp dụng
+    int applicableSubtotal = 0;
+    if (allowIds.isNotEmpty) {
+      for (final item in items) {
+        if (allowIds.contains(item.id)) {
+          applicableSubtotal += item.price * item.quantity;
+        }
+      }
+    } else {
+      applicableSubtotal = totalGoods;
+    }
+    
+    String discountText = '';
+    int calculatedDiscount = 0;
+    
+    if (discountType == 'percentage') {
+      calculatedDiscount = (applicableSubtotal * discountValue / 100).round();
+      if (maxDiscount != null && maxDiscount! > 0 && calculatedDiscount > maxDiscount!.round()) {
+        calculatedDiscount = maxDiscount!.round();
+      }
+      // ✅ Chỉ hiển thị "tối đa" khi maxDiscount > 0
+      final maxDiscountText = (maxDiscount != null && maxDiscount! > 0) 
+          ? ' (tối đa ${FormatUtils.formatCurrency(maxDiscount!.round())})' 
+          : '';
+      if (allowIds.isNotEmpty) {
+        discountText = 'Giảm ${discountValue.toInt()}% cho sản phẩm áp dụng$maxDiscountText';
+      } else {
+        discountText = 'Giảm ${discountValue.toInt()}% cho toàn bộ đơn hàng$maxDiscountText';
+      }
+    } else {
+      calculatedDiscount = discountValue.round();
+      discountText = 'Giảm ${FormatUtils.formatCurrency(calculatedDiscount)}';
+    }
+    
+    final canApply = totalGoods >= minOrder && (allowIds.isEmpty || applicableSubtotal > 0);
+    final statusColor = canApply ? Colors.green : Colors.orange;
+    final statusText = canApply ? 'Đã áp dụng' : 'Chưa đủ điều kiện';
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: statusColor.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                canApply ? Icons.workspace_premium : Icons.workspace_premium_outlined,
+                color: statusColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Mã giảm giá sàn TMĐT',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mã: ${voucher.code}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6C757D),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  discountText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+               
+                if (allowIds.isNotEmpty && applicableSubtotal > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Áp dụng cho sản phẩm: ${FormatUtils.formatCurrency(applicableSubtotal)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6C757D),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+                if (canApply) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Bạn đã tiết kiệm ${FormatUtils.formatCurrency(calculatedDiscount)}! 🎊',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else ...[
+                  if (totalGoods < minOrder) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'Thêm ${FormatUtils.formatCurrency(minOrder - totalGoods)} để nhận ưu đãi sàn! 💎',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ] else if (allowIds.isNotEmpty && applicableSubtotal == 0) ...[
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Voucher chỉ áp dụng cho sản phẩm đặc biệt. Hãy thêm sản phẩm phù hợp! 🛍️',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1105,6 +1625,10 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
               ),
             ],
           ),
+          
+          // ✅ Đã chuyển hiển thị ưu đãi vào dialog "Ưu đãi! Xem ngay"
+          // if (_shouldShowPromotionDetails())
+          //   ..._buildPromotionDetails(),
         ],
       ),
     );
@@ -1119,5 +1643,566 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       if (p > 1 && p % 3 == 1) b.write('.');
     }
     return '${b.toString()}₫';
+  }
+  
+  // ✅ Kiểm tra xem có cần hiển thị chi tiết ưu đãi không
+  bool _shouldShowPromotionDetails() {
+    final cart = cart_service.CartService();
+    final voucherService = VoucherService();
+    final items = cart.items.where((i) => i.isSelected).toList();
+    
+    // Kiểm tra có voucher shop hoặc platform voucher
+    final hasShopVoucher = voucherService.appliedVouchers.isNotEmpty;
+    final hasPlatformVoucher = voucherService.platformVoucher != null;
+    final hasFreeship = _shopFreeshipDetails != null && _shopFreeshipDetails!.isNotEmpty;
+    
+    return items.isNotEmpty && (hasShopVoucher || hasPlatformVoucher || hasFreeship);
+  }
+  
+  // ✅ Hiển thị chi tiết ưu đãi theo shop
+  List<Widget> _buildPromotionDetails() {
+    final cart = cart_service.CartService();
+    final voucherService = VoucherService();
+    final items = cart.items.where((i) => i.isSelected).toList();
+    final itemsByShop = cart.itemsByShop;
+    
+    if (items.isEmpty) return [];
+    
+    final List<Widget> widgets = [];
+    
+    widgets.add(const SizedBox(height: 16));
+    widgets.add(const Divider(height: 1));
+    widgets.add(const SizedBox(height: 16));
+    
+    // Header
+    widgets.add(Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: const Icon(Icons.local_offer, color: Colors.red, size: 18),
+        ),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            'Ưu đãi đang áp dụng',
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1D1D1F),
+            ),
+          ),
+        ),
+      ],
+    ));
+    
+    widgets.add(const SizedBox(height: 12));
+    
+    // ✅ Hiển thị voucher shop theo từng shop
+    for (final entry in itemsByShop.entries) {
+      final shopId = entry.key;
+      final shopItems = entry.value.where((i) => i.isSelected).toList();
+      if (shopItems.isEmpty) continue;
+      
+      final shopName = shopItems.first.shopName;
+      final shopTotal = shopItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+      final appliedVoucher = voucherService.getAppliedVoucher(shopId);
+      
+      if (appliedVoucher != null) {
+        // ✅ Voucher shop đã áp dụng
+        widgets.add(_buildVoucherShopCard(shopName, appliedVoucher, shopTotal, true));
+        widgets.add(const SizedBox(height: 8));
+      } else {
+        // ✅ Không có voucher shop - có thể hiển thị thông báo mời chọn voucher
+      }
+      
+      // ✅ Hỗ trợ ship của shop
+      if (_shopFreeshipDetails != null && _shopFreeshipDetails!.containsKey(shopId.toString())) {
+        final freeshipConfig = _shopFreeshipDetails![shopId.toString()] as Map<String, dynamic>?;
+        if (freeshipConfig != null) {
+          widgets.add(_buildShipSupportCard(shopName, shopId, freeshipConfig, shopTotal));
+          widgets.add(const SizedBox(height: 8));
+        }
+      }
+    }
+    
+    // ✅ Hiển thị voucher sàn (nếu có)
+    final platformVoucher = voucherService.platformVoucher;
+    if (platformVoucher != null) {
+      final items = cart.items.where((i) => i.isSelected).toList();
+      final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+      widgets.add(_buildPlatformVoucherCard(platformVoucher, items, totalGoods));
+      widgets.add(const SizedBox(height: 8));
+    }
+    
+    return widgets;
+  }
+  
+  // ✅ Widget hiển thị voucher shop
+  Widget _buildVoucherShopCard(String shopName, dynamic voucher, int shopTotal, bool isApplied) {
+    final discountValue = voucher.discountValue ?? 0.0;
+    final discountType = voucher.discountType ?? 'fixed';
+    final maxDiscount = voucher.maxDiscountValue;
+    
+    String discountText = '';
+    int calculatedDiscount = 0;
+    
+    if (discountType == 'percentage') {
+      calculatedDiscount = (shopTotal * discountValue / 100).round();
+      if (maxDiscount != null && calculatedDiscount > maxDiscount.round()) {
+        calculatedDiscount = maxDiscount.round();
+      }
+      discountText = 'Giảm ${discountValue.toInt()}% (tối đa ${FormatUtils.formatCurrency(maxDiscount?.round() ?? calculatedDiscount)})';
+    } else {
+      calculatedDiscount = discountValue.round();
+      discountText = 'Giảm ${FormatUtils.formatCurrency(calculatedDiscount)}';
+    }
+    
+    final canApply = shopTotal >= (voucher.minOrderValue?.round() ?? 0);
+    final statusColor = canApply ? Colors.green : Colors.orange;
+    final statusText = canApply ? 'Đã áp dụng' : 'Chưa đủ điều kiện';
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: statusColor.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                canApply ? Icons.check_circle : Icons.info_outline,
+                color: statusColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Mã giảm giá $shopName',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mã: ${voucher.code}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6C757D),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  discountText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (canApply) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Bạn đã tiết kiệm ${FormatUtils.formatCurrency(calculatedDiscount)}! 🎉',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Cần thêm ${FormatUtils.formatCurrency((voucher.minOrderValue?.round() ?? 0) - shopTotal)} để nhận ưu đãi 💝',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ✅ Widget hiển thị hỗ trợ ship
+  Widget _buildShipSupportCard(String shopName, int shopId, Map<String, dynamic> config, int shopTotal) {
+    final mode = config['mode'] as int? ?? 0;
+    final applied = config['applied'] as bool? ?? false;
+    final subtotal = config['subtotal'] as int? ?? 0;
+    final minOrder = config['min_order'] as int? ?? 0;
+    final discount = (config['discount'] as num?)?.toDouble() ?? 0.0;
+    
+    String title = '';
+    String description = '';
+    int supportAmount = 0;
+    final statusColor = applied ? Colors.green : Colors.orange;
+    final statusText = applied ? 'Đã áp dụng' : 'Chưa đủ điều kiện';
+    
+    switch (mode) {
+      case 0:
+        title = 'Hỗ trợ ship cố định';
+        description = 'Shop hỗ trợ ${FormatUtils.formatCurrency(discount.toInt())} phí ship cho đơn hàng';
+        supportAmount = discount.toInt();
+        break;
+      case 1:
+        title = 'Miễn phí ship 100%';
+        description = 'Shop miễn phí toàn bộ phí ship cho đơn hàng của bạn';
+        final shippingFee = _warehouseDetails?.firstWhere(
+          (w) => (w['shop_id'] as int?) == shopId,
+          orElse: () => {},
+        )['shipping_fee'] as int? ?? 0;
+        supportAmount = shippingFee;
+        break;
+      case 2:
+        title = 'Hỗ trợ ship theo %';
+        description = 'Shop hỗ trợ ${discount.toInt()}% giá trị đơn hàng làm phí ship';
+        supportAmount = subtotal > 0 ? (subtotal * discount / 100).round() : 0;
+        break;
+      case 3:
+        title = 'Hỗ trợ ship theo sản phẩm';
+        final products = config['products'] as Map<String, dynamic>?;
+        if (products != null && products.isNotEmpty) {
+          // Lấy ship support lớn nhất (theo shop, không nhân số lượng)
+          int maxSupport = 0;
+          for (final productEntry in products.entries) {
+            final productConfig = productEntry.value as Map<String, dynamic>?;
+            final value = (productConfig?['value'] as num?)?.toInt() ?? 0;
+            if (value > maxSupport) maxSupport = value;
+          }
+          supportAmount = maxSupport;
+          description = 'Shop hỗ trợ ${FormatUtils.formatCurrency(maxSupport)} ship cho sản phẩm này';
+        } else {
+          description = 'Shop có hỗ trợ ship cho sản phẩm đặc biệt';
+        }
+        break;
+      default:
+        title = 'Ưu đãi vận chuyển';
+        description = 'Shop có ưu đãi vận chuyển đặc biệt';
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: statusColor.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                applied ? Icons.local_shipping : Icons.local_shipping_outlined,
+                color: statusColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$title - $shopName',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6C757D),
+                  ),
+                ),
+                if (applied && supportAmount > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Bạn được hỗ trợ ${FormatUtils.formatCurrency(supportAmount)}! 🚚',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else if (!applied) ...[
+                  if (minOrder > 0 && shopTotal < minOrder) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Thêm ${FormatUtils.formatCurrency(minOrder - shopTotal)} để nhận ưu đãi ship! 💝',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Đang kiểm tra điều kiện...',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // ✅ Widget hiển thị voucher sàn
+  Widget _buildPlatformVoucherCard(dynamic voucher, List<cart_service.CartItem> items, int totalGoods) {
+    final discountValue = voucher.discountValue ?? 0.0;
+    final discountType = voucher.discountType ?? 'fixed';
+    final maxDiscount = voucher.maxDiscountValue;
+    final minOrder = voucher.minOrderValue?.round() ?? 0;
+    
+    // ✅ Kiểm tra sản phẩm áp dụng
+    final allowIds = <int>{};
+    if (voucher.applicableProductsDetail != null && voucher.applicableProductsDetail!.isNotEmpty) {
+      for (final m in voucher.applicableProductsDetail!) {
+        final id = int.tryParse(m['id'] ?? '');
+        if (id != null) allowIds.add(id);
+      }
+    } else if (voucher.applicableProducts != null && voucher.applicableProducts!.isNotEmpty) {
+      for (final s in voucher.applicableProducts!) {
+        final id = int.tryParse(s);
+        if (id != null) allowIds.add(id);
+      }
+    }
+    
+    // ✅ Tính subtotal của sản phẩm áp dụng
+    int applicableSubtotal = 0;
+    if (allowIds.isNotEmpty) {
+      for (final item in items) {
+        if (allowIds.contains(item.id)) {
+          applicableSubtotal += item.price * item.quantity;
+        }
+      }
+    } else {
+      applicableSubtotal = totalGoods; // Áp dụng cho tất cả
+    }
+    
+    String discountText = '';
+    int calculatedDiscount = 0;
+    
+    if (discountType == 'percentage') {
+      calculatedDiscount = (applicableSubtotal * discountValue / 100).round();
+      if (maxDiscount != null && maxDiscount! > 0 && calculatedDiscount > maxDiscount!.round()) {
+        calculatedDiscount = maxDiscount!.round();
+      }
+      // ✅ Chỉ hiển thị "tối đa" khi maxDiscount > 0
+      final maxDiscountText = (maxDiscount != null && maxDiscount! > 0) 
+          ? ' (tối đa ${FormatUtils.formatCurrency(maxDiscount!.round())})' 
+          : '';
+      if (allowIds.isNotEmpty) {
+        discountText = 'Giảm ${discountValue.toInt()}% cho sản phẩm áp dụng$maxDiscountText';
+      } else {
+        discountText = 'Giảm ${discountValue.toInt()}% cho toàn bộ đơn hàng$maxDiscountText';
+      }
+    } else {
+      calculatedDiscount = discountValue.round();
+      discountText = 'Giảm ${FormatUtils.formatCurrency(calculatedDiscount)}';
+    }
+    
+    final canApply = totalGoods >= minOrder && (allowIds.isEmpty || applicableSubtotal > 0);
+    final statusColor = canApply ? Colors.green : Colors.orange;
+    final statusText = canApply ? 'Đã áp dụng' : 'Chưa đủ điều kiện';
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: statusColor.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                canApply ? Icons.workspace_premium : Icons.workspace_premium_outlined,
+                color: statusColor,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Mã giảm giá sàn TMĐT',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: statusColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 26),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Mã: ${voucher.code}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF6C757D),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  discountText,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: statusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (allowIds.isNotEmpty && applicableSubtotal > 0) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Áp dụng cho sản phẩm: ${FormatUtils.formatCurrency(applicableSubtotal)}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6C757D),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+                if (canApply) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Bạn đã tiết kiệm ${FormatUtils.formatCurrency(calculatedDiscount)}! 🎊',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ] else ...[
+                  if (totalGoods < minOrder) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Thêm ${FormatUtils.formatCurrency(minOrder - totalGoods)} để nhận ưu đãi sàn! 💎',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ] else if (allowIds.isNotEmpty && applicableSubtotal == 0) ...[
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Voucher chỉ áp dụng cho sản phẩm đặc biệt. Hãy thêm sản phẩm phù hợp! 🛍️',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

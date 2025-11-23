@@ -49,7 +49,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     _scrollController.addListener(_onScroll);
     
     _preloadData();
-    _loadPopupBanner();
+    // Load popup banner trong background, không block UI
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        _loadPopupBanner();
+      }
+    });
     
     // KHÔNG restore scroll position - luôn bắt đầu từ đầu trang chủ
     // _restoreScrollPositionAfterLoad();
@@ -184,12 +189,15 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   
   Future<void> _loadPopupBanner() async {
     try {
-      // Lấy danh sách banner ID đã hiển thị từ SharedPreferences
+      // Load SharedPreferences một lần và cache kết quả
       final prefs = await SharedPreferences.getInstance();
-      final displayedBannerIdsString = prefs.getString('displayed_popup_banner_ids');
-      List<int> displayedBannerIds = [];
       
-      if (displayedBannerIdsString != null && displayedBannerIdsString.isNotEmpty) {
+      // Đọc tất cả dữ liệu cần thiết một lần để giảm database operations
+      final displayedBannerIdsString = prefs.getString('displayed_popup_banner_ids') ?? '';
+      final lastResetTimeString = prefs.getString('popup_banner_last_reset_time');
+      
+      List<int> displayedBannerIds = [];
+      if (displayedBannerIdsString.isNotEmpty) {
         displayedBannerIds = displayedBannerIdsString
             .split(',')
             .map((id) => int.tryParse(id.trim()))
@@ -198,8 +206,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             .toList();
       }
       
-      // Kiểm tra thời gian reset lần cuối
-      final lastResetTimeString = prefs.getString('popup_banner_last_reset_time');
       DateTime? lastResetTime;
       if (lastResetTimeString != null && lastResetTimeString.isNotEmpty) {
         lastResetTime = DateTime.tryParse(lastResetTimeString);
@@ -222,11 +228,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
           displayedBannerIds.clear();
           popupBanner = await _apiService.getPopupBanner(excludeIds: null);
           
-          // Lưu thời gian reset
-          await prefs.setString(
-            'popup_banner_last_reset_time',
-            now.toIso8601String(),
-          );
+          // Lưu thời gian reset (chỉ lưu khi cần)
+          if (popupBanner != null) {
+            await prefs.setString(
+              'popup_banner_last_reset_time',
+              now.toIso8601String(),
+            );
+          }
         } else {
           // Chưa qua 24h, không hiển thị banner
           popupBanner = null;
@@ -234,27 +242,28 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       }
       
       if (mounted && popupBanner != null) {
-        // Preload ảnh trước khi hiển thị popup
-        final imageLoaded = await _preloadPopupImage(popupBanner.imageUrl);
-        
-        if (mounted && imageLoaded) {
-          // Chỉ hiển thị popup khi ảnh đã load xong
-          setState(() {
-            _popupBanner = popupBanner;
-            _showPopup = true;
-          });
-          
-          // Thêm banner ID mới vào danh sách đã hiển thị
-          if (!displayedBannerIds.contains(popupBanner.id)) {
-            displayedBannerIds.add(popupBanner.id);
+        final bannerId = popupBanner.id;
+        // Preload ảnh trong background, không block UI
+        _preloadPopupImage(popupBanner.imageUrl).then((imageLoaded) {
+          if (mounted && imageLoaded) {
+            // Chỉ hiển thị popup khi ảnh đã load xong
+            setState(() {
+              _popupBanner = popupBanner;
+              _showPopup = true;
+            });
+            
+            // Thêm banner ID mới vào danh sách đã hiển thị
+            if (!displayedBannerIds.contains(bannerId)) {
+              displayedBannerIds.add(bannerId);
+            }
+            
+            // Lưu danh sách banner ID đã hiển thị vào SharedPreferences (async, không block)
+            prefs.setString(
+              'displayed_popup_banner_ids',
+              displayedBannerIds.join(','),
+            );
           }
-          
-          // Lưu danh sách banner ID đã hiển thị vào SharedPreferences
-          await prefs.setString(
-            'displayed_popup_banner_ids',
-            displayedBannerIds.join(','),
-          );
-        }
+        });
       }
     } catch (e) {
       // Ignore error
@@ -272,12 +281,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       // Sử dụng CachedNetworkImageProvider để preload ảnh
       final imageProvider = CachedNetworkImageProvider(imageUrl);
       
-      // Preload ảnh với timeout 10 giây
+      // Preload ảnh với timeout ngắn hơn (5 giây) để không block quá lâu
       await precacheImage(
         imageProvider,
         context,
       ).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 5),
         onTimeout: () {
           throw TimeoutException('Image preload timeout');
         },
@@ -298,31 +307,47 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   }
 
   Future<void> _preloadData() async {
+    // Hiển thị UI ngay, không chờ preload
+    if (mounted) {
+      setState(() {
+        _isPreloading = false;
+      });
+    }
+    
+    // Load các section quan trọng nhất trước (section trên cùng)
     try {
-      // Preload tất cả dữ liệu cần thiết cho trang chủ
-      // Lấy userId từ AuthService (user đã đăng nhập) để preload personalized suggestions
+      // Cache userId một lần để tránh gọi getCurrentUser nhiều lần
       final user = await _authService.getCurrentUser();
       final userId = user?.userId;
       
-      await Future.wait([
-        _cachedApiService.getHomeBanners(),
-        _cachedApiService.getHomeFlashSale(),
-        _cachedApiService.getHomePartnerBanners(),
-        _cachedApiService.getHomeFeaturedBrands(),
-        _cachedApiService.getHomeSuggestions(limit: 100, userId: userId),
-      ]);
+      // Load section trên cùng trước (Partner Banner, Flash Sale)
+      // Không chờ, để chạy song song
+      Future(() async {
+        try {
+          await Future.wait([
+            _cachedApiService.getHomePartnerBanners(),
+            _cachedApiService.getHomeFlashSale(),
+          ]);
+        } catch (e) {
+          // Ignore errors
+        }
+      });
       
-      if (mounted) {
-        setState(() {
-          _isPreloading = false;
-        });
-      }
+      // Load các section còn lại trong background (không block UI)
+      Future(() async {
+        try {
+          await Future.wait([
+            _cachedApiService.getHomeBanners(),
+            _cachedApiService.getHomeFeaturedBrands(),
+            _cachedApiService.getHomeSuggestions(limit: 50, userId: userId), // Load 50 để cache
+            // Banner products - load lazy khi scroll đến
+          ]);
+        } catch (e) {
+          // Ignore errors, không ảnh hưởng UI
+        }
+      });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isPreloading = false;
-        });
-      }
+      // Ignore errors, UI đã hiển thị rồi
     }
   }
 
@@ -353,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         _cachedApiService.getHomeFlashSale(forceRefresh: true),
         _cachedApiService.getHomePartnerBanners(forceRefresh: true),
         _cachedApiService.getHomeFeaturedBrands(forceRefresh: true),
-        _cachedApiService.getHomeSuggestions(limit: 100, forceRefresh: true, userId: userId),
+        _cachedApiService.getHomeSuggestions(limit: 10, forceRefresh: true, userId: userId),
         // Banner products - gọi song song với các API khác
         _cachedApiService.getBannerProductsCached(viTriHienThi: 'dau_trang', forceRefresh: true),
         _cachedApiService.getBannerProductsCached(viTriHienThi: 'giua_trang', forceRefresh: true),

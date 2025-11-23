@@ -9,7 +9,7 @@ import '../../checkout/checkout_screen.dart';
 import '../../product/product_detail_screen.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/services/cart_service.dart';
-import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/api_service.dart';
 
 class ShopSuggestedProductsSection extends StatelessWidget {
   final int shopId;
@@ -355,8 +355,8 @@ class ShopSuggestedProductsSection extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context, int productId) async {
     try {
-      // Dùng cache cho chi tiết sản phẩm
-      final productDetail = await CachedApiService().getProductDetailCached(productId);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(productId);
       
       if (!context.mounted || productDetail == null) return;
       

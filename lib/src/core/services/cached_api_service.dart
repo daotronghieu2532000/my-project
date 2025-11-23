@@ -709,7 +709,47 @@ class CachedApiService {
     clearCachePattern('affiliate_products');
   }
 
-  /// Lấy chi tiết sản phẩm với cache
+  /// Lấy chi tiết sản phẩm cơ bản với cache (tối ưu - load nhanh)
+  Future<ProductDetail?> getProductDetailBasicCached(
+    int productId, {
+    int? userId,
+    bool forceRefresh = false,
+    Duration? cacheDuration,
+  }) async {
+    final cacheKey = MemoryCacheService.createKey('product_detail_basic', {
+      'id': productId,
+      'userId': userId ?? 'anonymous',
+    });
+    
+    // Kiểm tra cache trước
+    if (!forceRefresh && _cache.has(cacheKey)) {
+      final cachedProduct = _cache.get<ProductDetail>(cacheKey);
+      if (cachedProduct != null) {
+        return cachedProduct;
+      }
+    }
+
+    try {
+      final product = await _apiService.getProductDetailBasic(productId, userId: userId);
+      
+      // Lưu trực tiếp ProductDetail object vào cache
+      if (product != null) {
+        _cache.set(cacheKey, product, duration: cacheDuration ?? _longCacheDuration);
+      }
+      
+      return product;
+    } catch (e) {
+      // Fallback về cache nếu có lỗi
+      final cachedProduct = _cache.get<ProductDetail>(cacheKey);
+      if (cachedProduct != null) {
+        return cachedProduct;
+      }
+      
+      rethrow;
+    }
+  }
+
+  /// Lấy chi tiết sản phẩm đầy đủ với cache (API cũ - giữ nguyên)
   Future<ProductDetail?> getProductDetailCached(
     int productId, {
     int? userId,

@@ -247,17 +247,92 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     final ship = ShippingQuoteStore();
     final voucherService = VoucherService();
     
-    // Tính voucher discount như trong PaymentDetailsSection
+    // ✅ Tính voucher discount theo từng shop để gửi chính xác
     final totalGoods = items.fold(0, (s, i) => s + (i['gia_moi'] as int) * (i['quantity'] as int));
-    final shopDiscount = voucherService.calculateTotalDiscount(
-      totalGoods,
-      items: items.map((e) => {'shopId': e['shop'] as int, 'price': e['gia_moi'] as int, 'quantity': e['quantity'] as int}).toList(),
-    );
-    final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
-      totalGoods,
-      items.map((e) => e['id'] as int).toList(),
-      items: items.map((e) => {'id': e['id'] as int, 'price': e['gia_moi'] as int, 'quantity': e['quantity'] as int}).toList(),
-    );
+    
+    // ✅ Tính shop discount cho từng shop
+    final Map<int, int> shopDiscounts = {}; // shopId => discount
+    final itemsByShop = <int, List<Map<String, dynamic>>>{};
+    for (final item in items) {
+      final shopId = item['shop'] as int? ?? 0;
+      if (!itemsByShop.containsKey(shopId)) {
+        itemsByShop[shopId] = [];
+      }
+      itemsByShop[shopId]!.add(item);
+    }
+    
+    for (final entry in itemsByShop.entries) {
+      final shopId = entry.key;
+      final shopItems = entry.value;
+      final shopTotal = shopItems.fold(0, (s, i) => s + (i['gia_moi'] as int) * (i['quantity'] as int));
+      final shopDiscount = voucherService.calculateShopDiscount(shopId, shopTotal);
+      if (shopDiscount > 0) {
+        shopDiscounts[shopId] = shopDiscount;
+      }
+    }
+    
+    // ✅ Tính platform discount cho từng shop (dựa trên sản phẩm áp dụng trong shop đó)
+    final Map<int, int> platformDiscounts = {}; // shopId => discount
+    final pv = voucherService.platformVoucher;
+    if (pv != null && pv.discountValue != null) {
+      // Lấy danh sách sản phẩm áp dụng
+      final allowIds = <int>{};
+      if (pv.applicableProductsDetail != null && pv.applicableProductsDetail!.isNotEmpty) {
+        for (final m in pv.applicableProductsDetail!) {
+          final id = int.tryParse(m['id'] ?? '');
+          if (id != null) allowIds.add(id);
+        }
+      } else if (pv.applicableProducts != null && pv.applicableProducts!.isNotEmpty) {
+        for (final s in pv.applicableProducts!) {
+          final id = int.tryParse(s);
+          if (id != null) allowIds.add(id);
+        }
+      }
+      
+      // Tính platform discount cho từng shop
+      for (final entry in itemsByShop.entries) {
+        final shopId = entry.key;
+        final shopItems = entry.value;
+        
+        // Tính subtotal của sản phẩm áp dụng trong shop này
+        int applicableSubtotal = 0;
+        if (allowIds.isEmpty) {
+          // Áp dụng cho tất cả sản phẩm
+          applicableSubtotal = shopItems.fold(0, (s, i) => s + (i['gia_moi'] as int) * (i['quantity'] as int));
+        } else {
+          // Chỉ tính sản phẩm trong danh sách áp dụng
+          for (final item in shopItems) {
+            final productId = item['id'] as int? ?? 0;
+            if (allowIds.contains(productId)) {
+              applicableSubtotal += (item['gia_moi'] as int) * (item['quantity'] as int);
+            }
+          }
+        }
+        
+        if (applicableSubtotal > 0 && totalGoods >= (pv.minOrderValue?.round() ?? 0)) {
+          // Tính discount
+          int discount = 0;
+          if (pv.discountType == 'percentage') {
+            discount = (applicableSubtotal * pv.discountValue! / 100).round();
+            if (pv.maxDiscountValue != null && pv.maxDiscountValue! > 0) {
+              discount = discount > pv.maxDiscountValue!.round() 
+                  ? pv.maxDiscountValue!.round() 
+                  : discount;
+            }
+          } else {
+            discount = pv.discountValue!.round();
+          }
+          
+          if (discount > 0) {
+            platformDiscounts[shopId] = discount;
+          }
+        }
+      }
+    }
+    
+    // ✅ Tính tổng để gửi (backward compatibility)
+    final shopDiscount = shopDiscounts.values.fold(0, (s, d) => s + d);
+    final platformDiscount = platformDiscounts.values.fold(0, (s, d) => s + d);
     // final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
     
     // Lấy mã coupon từ platform voucher
@@ -271,6 +346,9 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     
     // Map để lưu shipping_provider cho từng shop
     Map<int, String> shopShippingProviders = {};
+    // ✅ Map để lưu shipping_fee và ship_support cho từng shop
+    Map<int, int> shopShippingFees = {};
+    Map<int, int> shopShipSupports = {};
     
     // Gọi API shipping_quote để lấy thông tin freeship cho tất cả items
     // Chỉ để lấy warehouse_details và provider, không cần tính lại shipSupport
@@ -328,6 +406,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           }
         }
         
+        // ✅ Map shipping_fee và ship_support theo shop_id từ warehouse_details
         // Map provider cho từng shop
         // ✅ Đảm bảo mỗi shop chỉ có 1 provider duy nhất
         if (warehouseDetails != null && warehouseDetails.isNotEmpty) {
@@ -336,10 +415,70 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             if (detailMap != null) {
               final shopId = int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
               final provider = detailMap['provider']?.toString() ?? '';
+              final shippingFee = (detailMap['shipping_fee'] as num?)?.toInt() ?? 0;
+              
               // ✅ Xử lý cả shop_id = 0 (nếu có) và shop_id > 0
               if (provider.isNotEmpty) {
                 // ✅ Nếu shop đã có provider, ghi đè (không nên xảy ra trong thực tế)
                 shopShippingProviders[shopId] = provider;
+              }
+              
+              // ✅ Lưu shipping_fee theo shop_id
+              if (shopId > 0 && shippingFee > 0) {
+                shopShippingFees[shopId] = shippingFee;
+              }
+            }
+          }
+          
+          // ✅ Tính ship_support theo shop từ shop_freeship_details trong debug
+          final debug = shippingQuote['data']?['debug'] as Map<String, dynamic>?;
+          final shopFreeshipDetails = debug?['shop_freeship_details'] as Map<String, dynamic>?;
+          
+          if (shopFreeshipDetails != null) {
+            // Tính ship_support cho từng shop từ shop_freeship_details
+            for (final entry in shopFreeshipDetails.entries) {
+              final shopId = int.tryParse(entry.key) ?? 0;
+              final config = entry.value as Map<String, dynamic>?;
+              
+              if (shopId > 0 && config != null && (config['applied'] == true)) {
+                final mode = (config['mode'] as num?)?.toInt() ?? 0;
+                final subtotal = (config['subtotal'] as num?)?.toInt() ?? 0;
+                final discount = (config['discount'] as num?)?.toDouble() ?? 0.0;
+                
+                int shopSupport = 0;
+                
+                if (mode == 0 && discount > 0) {
+                  // Mode 0: Fixed discount
+                  shopSupport = discount.toInt();
+                } else if (mode == 1) {
+                  // Mode 1: 100% freeship - lấy shipping_fee của shop này
+                  shopSupport = shopShippingFees[shopId] ?? 0;
+                } else if (mode == 2 && discount > 0 && subtotal > 0) {
+                  // Mode 2: % discount của subtotal
+                  shopSupport = (subtotal * discount / 100).round();
+                } else if (mode == 3) {
+                  // Mode 3: Per-product freeship
+                  final products = config['products'] as Map<String, dynamic>?;
+                  if (products != null) {
+                    for (final prodEntry in products.entries) {
+                      final prodConfig = prodEntry.value as Map<String, dynamic>?;
+                      final prodType = prodConfig?['type']?.toString() ?? 'fixed';
+                      final prodValue = (prodConfig?['value'] as num?)?.toDouble() ?? 0.0;
+                      
+                      if (prodType == 'fixed') {
+                        shopSupport += prodValue.toInt();
+                      } else if (prodType == 'percent') {
+                        // Mode 3 percent: tính trên shipping_fee của shop
+                        final shopFee = shopShippingFees[shopId] ?? 0;
+                        shopSupport += (shopFee * prodValue / 100).round();
+                      }
+                    }
+                  }
+                }
+                
+                if (shopSupport > 0) {
+                  shopShipSupports[shopId] = shopSupport;
+                }
               }
             }
           }
@@ -353,17 +492,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // shipSupport từ store đã là giá trị chính xác từ API (39.400)
     // Việc clamp sẽ làm sai giá trị (giảm từ 39.400 xuống 12.000)
     
-    // ✅ Thêm shipping_provider vào mỗi item dựa trên shop_id
-    // ✅ Đảm bảo tất cả items trong cùng shop có cùng provider
+    // ✅ Thêm shipping_provider, shipping_fee, ship_support, shop_discount, platform_discount vào mỗi item dựa trên shop_id
+    // ✅ Đảm bảo tất cả items trong cùng shop có cùng provider, phí ship và discount
     final itemsWithProvider = items.map((item) {
       final shopId = item['shop'] as int? ?? 0;
       // ✅ Ưu tiên lấy từ shopShippingProviders (từ warehouse_details)
       // Nếu không có, dùng fallback từ ship.provider
       final provider = shopShippingProviders[shopId] ?? ship.provider ?? '';
+      // ✅ Lấy shipping_fee và ship_support theo shop_id
+      final itemShippingFee = shopShippingFees[shopId] ?? 0;
+      final itemShipSupport = shopShipSupports[shopId] ?? 0;
+      // ✅ Lấy shop_discount và platform_discount theo shop_id
+      final itemShopDiscount = shopDiscounts[shopId] ?? 0;
+      final itemPlatformDiscount = platformDiscounts[shopId] ?? 0;
       
+      // ✅ Đảm bảo gửi discount ngay cả khi = 0 để backend biết shop này không có discount
       return {
         ...item,
         'shipping_provider': provider, // ✅ Thêm shipping_provider vào mỗi item
+        if (itemShippingFee > 0) 'shipping_fee': itemShippingFee, // ✅ Thêm shipping_fee vào mỗi item
+        if (itemShipSupport > 0) 'ship_support': itemShipSupport, // ✅ Thêm ship_support vào mỗi item
+        'shop_discount_per_shop': itemShopDiscount, // ✅ Thêm shop_discount vào mỗi item (kể cả 0)
+        'platform_discount_per_shop': itemPlatformDiscount, // ✅ Thêm platform_discount vào mỗi item (kể cả 0)
       };
     }).toList();
     

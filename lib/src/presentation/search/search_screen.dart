@@ -688,12 +688,21 @@ class _SearchScreenState extends State<SearchScreen> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () => _performSearch(_currentKeyword),
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: _buildProductsGrid(),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (ScrollNotification notification) {
+                // Khi user scroll, ẩn bàn phím và unfocus search field
+                if (notification is ScrollUpdateNotification) {
+                  FocusScope.of(context).unfocus();
+                }
+                return false;
+              },
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                child: Align(
+                  alignment: Alignment.topLeft,
+                  child: _buildProductsGrid(),
+                ),
               ),
             ),
           ),
@@ -1126,9 +1135,18 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSearchSuggestions() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification notification) {
+        // Khi user scroll, ẩn bàn phím và unfocus search field
+        if (notification is ScrollUpdateNotification) {
+          FocusScope.of(context).unfocus();
+        }
+        return false;
+      },
+      child: ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        children: [
         // Hiển thị gợi ý từ khóa nếu đang nhập
         if (_searchController.text.isNotEmpty && _searchSuggestions.isNotEmpty) ...[
           _SectionTitle(icon: Icons.lightbulb_outline, title: 'Gợi ý từ khóa'),
@@ -1261,7 +1279,8 @@ class _SearchScreenState extends State<SearchScreen> {
         const SizedBox(height: 12),
         _KeywordGrid(onTap: _onKeywordTapped),
         const SizedBox(height: 24),
-      ],
+        ],
+      ),
     );
   }
 }

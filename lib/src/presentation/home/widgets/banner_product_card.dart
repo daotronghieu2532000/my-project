@@ -363,7 +363,7 @@ class BannerProductCard extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context) async {
     try {
-      final productDetail = await ApiService().getProductDetail(product.id);
+      final productDetail = await ApiService().getProductVariants(product.id);
       
       if (!context.mounted || productDetail == null) return;
       

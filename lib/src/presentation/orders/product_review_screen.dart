@@ -154,38 +154,6 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
 
       if (!mounted) return;
 
-      // Debug: Log debug info từ API
-      final debugInfo = result?['data']?['debug'] as Map<String, dynamic>?;
-      if (debugInfo != null) {
-        print('🔍 DEBUG INFO từ API:');
-        print('   variant_id_from_request: ${debugInfo['variant_id_from_request']}');
-        print('   variant_id_final: ${debugInfo['variant_id_final']}');
-        print('   variant_id_sql: ${debugInfo['variant_id_sql']}');
-        print('   order_id: ${debugInfo['order_id']}');
-        print('   has_order_id: ${debugInfo['has_order_id']}');
-        if (debugInfo['found_matching_product'] == true) {
-          print('   ✅ Found matching product!');
-          print('   matching_key: ${debugInfo['matching_key']}');
-          print('   item_pl: ${debugInfo['item_pl']}');
-          print('   variant_id_source: ${debugInfo['variant_id_source']}');
-          if (debugInfo['available_fields'] != null) {
-            print('   available_fields: ${debugInfo['available_fields']}');
-          }
-        } else {
-          print('   ❌ Không tìm thấy sản phẩm khớp trong đơn hàng');
-          if (debugInfo['no_order_id'] == true) {
-            print('   - Lý do: Không có order_id');
-          } else if (debugInfo['order_check_failed'] == true) {
-            print('   - Lý do: Không tìm thấy đơn hàng');
-          } else if (debugInfo['order_products_json_empty'] == true) {
-            print('   - Lý do: JSON sản phẩm trong đơn hàng rỗng');
-          } else if (debugInfo['order_products_not_array'] == true) {
-            print('   - Lý do: JSON sản phẩm không phải array');
-          }
-        }
-        print('   Full debug: $debugInfo');
-      }
-
       if (result?['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -3642,6 +3642,120 @@ class ApiService {
   }
 
   /// Lấy chi tiết sản phẩm
+  /// Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+  Future<ProductDetail?> getProductVariants(int productId) async {
+    try {
+      String endpoint = '/product_variants?product_id=$productId';
+      
+      final response = await get(endpoint);
+      
+      if (response != null && response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+     
+        if (decoded is List) {
+          if (decoded.isNotEmpty && decoded.first is Map<String, dynamic>) {
+            final first = decoded.first as Map<String, dynamic>;
+            return ProductDetail.fromJson(first);
+          } else {
+            return null;
+          }
+        }
+
+        final success = decoded is Map<String, dynamic> ? (decoded['success'] == true) : false;
+        final rawData = decoded is Map<String, dynamic> ? decoded['data'] : null;
+
+        if (success && rawData != null) {
+          if (rawData is List && rawData.isNotEmpty) {
+            final first = rawData.first as Map<String, dynamic>;
+            return ProductDetail.fromJson(first);
+          } else if (rawData is Map<String, dynamic>) {
+            // Map dữ liệu từ API mới sang format ProductDetail (đầy đủ thông tin)
+            final productData = {
+              'id': rawData['id'],
+              'tieu_de': rawData['tieu_de'] ?? rawData['name'],
+              'name': rawData['name'] ?? rawData['tieu_de'],
+              'minh_hoa': rawData['minh_hoa'] ?? rawData['imageUrl'],
+              'images': rawData['images'],
+              'gia_moi': rawData['gia_moi'] ?? rawData['price'],
+              'gia_cu': rawData['gia_cu'] ?? rawData['oldPrice'],
+              'gia_ctv': rawData['gia_ctv'],
+              'gia_drop': rawData['gia_drop'],
+              'discount_percent': rawData['discount_percent'],
+              'shop': rawData['shop'] ?? rawData['shop_id'],
+              'shop_id': rawData['shop_id'] ?? rawData['shop'],
+              'shop_info': rawData['shop_info'],
+              'is_marketplace': rawData['is_marketplace'],
+              'coupon_info': rawData['coupon_info'],
+              'flash_sale_info': rawData['flash_sale_info'],
+              'voucher_icon': rawData['voucher_icon'],
+              'freeship_icon': rawData['freeship_icon'],
+              'warehouse_name': rawData['warehouse_name'],
+              'province_name': rawData['province_name'],
+              'variants': rawData['variants'] ?? [],
+            };
+            return ProductDetail.fromJson(productData);
+          } else {
+            return null;
+          }
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Lấy thông tin cơ bản sản phẩm (tối ưu - chỉ basic info)
+  /// Sử dụng API mới product_detail_basic.php để load nhanh hơn
+  Future<ProductDetail?> getProductDetailBasic(int productId, {int? userId}) async {
+    try {
+      String endpoint = '/product_detail_basic?product_id=$productId';
+      
+      if (userId != null) {
+        endpoint += '&user_id=$userId';
+      }
+      
+      final response = await get(endpoint);
+      
+      if (response != null && response.statusCode == 200) {
+        final dynamic decoded = jsonDecode(response.body);
+     
+        if (decoded is List) {
+          if (decoded.isNotEmpty && decoded.first is Map<String, dynamic>) {
+            final first = decoded.first as Map<String, dynamic>;
+            return ProductDetail.fromJson(first);
+          } else {
+            return null;
+          }
+        }
+
+        final success = decoded is Map<String, dynamic> ? (decoded['success'] == true) : false;
+        final rawData = decoded is Map<String, dynamic> ? decoded['data'] : null;
+
+        if (success && rawData != null) {
+          if (rawData is List && rawData.isNotEmpty) {
+            final first = rawData.first as Map<String, dynamic>;
+            return ProductDetail.fromJson(first);
+          } else if (rawData is Map<String, dynamic>) {
+            return ProductDetail.fromJson(rawData);
+          } else {
+            return null;
+          }
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Lấy thông tin đầy đủ sản phẩm (API cũ - giữ nguyên để không ảnh hưởng mục khác)
   Future<ProductDetail?> getProductDetail(int productId, {int? userId, bool? isMember}) async {
     try {
       String endpoint = '/product_detail?product_id=$productId';

@@ -9,6 +9,7 @@ import '../../../core/services/cart_service.dart';
 import '../../cart/cart_screen.dart';
 import '../../checkout/checkout_screen.dart';
 import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../shared/widgets/product_badges.dart';
 
 class SameShopProductCardHorizontal extends StatelessWidget {
@@ -310,9 +311,8 @@ class SameShopProductCardHorizontal extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context) async {
     try {
-            // Sử dụng cached API service cho product detail
-            final cachedApiService = CachedApiService();
-            final productDetail = await cachedApiService.getProductDetailCached(product.id);
+            // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+            final productDetail = await ApiService().getProductVariants(product.id);
       
       final parentContext = Navigator.of(context).context;
       

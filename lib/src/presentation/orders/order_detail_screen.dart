@@ -873,7 +873,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             child: OutlinedButton.icon(
               onPressed: _requestCancel,
               icon: const Icon(Icons.cancel_outlined, size: 18),
-              label: const Text('Yêu cầu hủy đơn'),
+              label: const Text('Hủy đơn'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFFF3B30),
                 side: const BorderSide(color: Color(0xFFFF3B30)),

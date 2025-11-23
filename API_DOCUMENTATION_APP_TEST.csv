@@ -1,0 +1,1156 @@
+﻿STT,Nhóm API,Tên API,Các Bước Thực Hiện Trên App,Kết Quả Mong Muốn Trên App,Mô Tả Lỗi (Nếu Có),Báo Lỗi Bằng Hình Ảnh
+1,Authentication,Đăng ký tài khoản thành công,"1. Mở ứng dụng
+2. Vào màn hình đăng nhập
+3. Chọn ""Đăng ký ngay""
+4. Nhập họ và tên: ""Nguyễn Văn A""
+5. Nhập số điện thoại: ""0123456789""
+6. Nhập mật khẩu: ""123456""
+7. Nhập lại mật khẩu: ""123456""
+8. Nhấn nút ""Đăng ký""","- Hiển thị thông báo màu xanh: ""Đăng ký thành công""
+- Tự động quay lại màn hình đăng nhập
+- Có thể đăng nhập bằng số điện thoại và mật khẩu vừa đăng ký",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+2,Authentication,Đăng ký thất bại - thiếu thông tin,"1. Mở màn hình đăng ký
+2. Không nhập gì, nhấn nút ""Đăng ký""","- Hiển thị lỗi: ""Vui lòng nhập họ và tên""
+- Hiển thị lỗi: ""Vui lòng nhập số điện thoại""
+- Hiển thị lỗi: ""Vui lòng nhập mật khẩu""
+- Không cho phép đăng ký",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+3,Authentication,Đăng ký thất bại - số điện thoại không hợp lệ,"1. Mở màn hình đăng ký
+2. Nhập họ và tên: ""Nguyễn Văn A""
+3. Nhập số điện thoại: ""123"" (số không hợp lệ)
+4. Nhập mật khẩu: ""123456""
+5. Nhập lại mật khẩu: ""123456""
+6. Nhấn nút ""Đăng ký""","- Hiển thị lỗi: ""Số điện thoại không hợp lệ""
+- Không cho phép đăng ký",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+4,Authentication,Đăng ký thất bại - mật khẩu không khớp,"1. Mở màn hình đăng ký
+2. Nhập họ và tên: ""Nguyễn Văn A""
+3. Nhập số điện thoại: ""0123456789""
+4. Nhập mật khẩu: ""123456""
+5. Nhập lại mật khẩu: ""1234567"" (khác mật khẩu)
+6. Nhấn nút ""Đăng ký""","- Hiển thị lỗi: ""Mật khẩu không khớp""
+- Không cho phép đăng ký",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+5,Authentication,Đăng nhập thành công,"1. Mở màn hình đăng nhập
+2. Nhập số điện thoại: ""0123456789""
+3. Nhập mật khẩu: ""123456""
+4. Nhấn nút ""Đăng nhập""","- Hiển thị thông báo màu xanh: ""Đăng nhập thành công""
+- Tự động quay lại màn hình trước đó
+- Ứng dụng lưu thông tin đăng nhập, không cần đăng nhập lại khi mở lại app",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+6,Authentication,Đăng nhập thất bại - sai mật khẩu,"1. Mở màn hình đăng nhập
+2. Nhập số điện thoại: ""0123456789""
+3. Nhập mật khẩu sai: ""1234567""
+4. Nhấn nút ""Đăng nhập""","- Hiển thị thông báo màu đỏ: ""Sai tài khoản hoặc mật khẩu""
+- Không cho phép đăng nhập
+- Vẫn ở màn hình đăng nhập",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+7,Authentication,Đăng nhập thất bại - thiếu thông tin,"1. Mở màn hình đăng nhập
+2. Không nhập gì, nhấn nút ""Đăng nhập""","- Hiển thị lỗi: ""Vui lòng nhập số điện thoại""
+- Hiển thị lỗi: ""Vui lòng nhập mật khẩu""
+- Không cho phép đăng nhập",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+8,Products & Cart,Thêm sản phẩm vào giỏ hàng thành công,"1. Đăng nhập vào ứng dụng
+2. Tìm và mở một sản phẩm bất kỳ
+3. Chọn số lượng: 2
+4. Nhấn nút ""Thêm vào giỏ""
+5. Kiểm tra giỏ hàng","- Hiển thị thông báo màu xanh: ""Đã thêm [tên sản phẩm] vào giỏ hàng""
+- Có nút ""Xem giỏ hàng"" trong thông báo
+- Sản phẩm xuất hiện trong giỏ hàng với số lượng đúng
+- Tổng tiền trong giỏ hàng được cập nhật",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+9,Products & Cart,Mua ngay sản phẩm,"1. Đăng nhập vào ứng dụng
+2. Tìm và mở một sản phẩm bất kỳ
+3. Chọn số lượng: 1
+4. Nhấn nút ""Mua ngay""","- Hiển thị thông báo: ""Đã thêm [tên sản phẩm] vào giỏ hàng""
+- Tự động chuyển đến màn hình thanh toán (checkout)
+- Sản phẩm hiển thị trong màn hình thanh toán",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+10,Products & Cart,Thêm nhiều sản phẩm từ nhiều shop khác nhau,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A vào giỏ hàng
+3. Thêm sản phẩm từ shop B vào giỏ hàng
+4. Mở giỏ hàng","- Giỏ hàng hiển thị sản phẩm được nhóm theo shop
+- Mỗi shop có phần riêng biệt
+- Tổng tiền tính đúng cho tất cả sản phẩm",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+11,Products & Cart,Tăng giảm số lượng sản phẩm trong giỏ hàng,"1. Mở giỏ hàng
+2. Tìm một sản phẩm
+3. Nhấn nút ""+"" để tăng số lượng từ 1 lên 2
+4. Nhấn nút ""-"" để giảm số lượng từ 2 xuống 1","- Số lượng sản phẩm thay đổi đúng
+- Tổng tiền được tính lại tự động
+- Không cho phép giảm số lượng xuống dưới 1",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+12,Products & Cart,Xóa sản phẩm khỏi giỏ hàng,"1. Mở giỏ hàng
+2. Tìm một sản phẩm
+3. Nhấn nút xóa (thùng rác)
+4. Xác nhận xóa","- Sản phẩm biến mất khỏi giỏ hàng
+- Tổng tiền được tính lại
+- Nếu giỏ hàng trống, hiển thị thông báo ""Giỏ hàng trống""",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+13,Products & Cart,Chọn/bỏ chọn sản phẩm trong giỏ hàng,"1. Mở giỏ hàng
+2. Có nhiều sản phẩm trong giỏ
+3. Bỏ chọn một số sản phẩm
+4. Nhấn nút ""Thanh toán""","- Chỉ các sản phẩm đã chọn được đưa vào màn hình thanh toán
+- Tổng tiền chỉ tính cho sản phẩm đã chọn
+- Các sản phẩm chưa chọn vẫn còn trong giỏ hàng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+14,Orders,Vào màn hình thanh toán khi chưa đăng nhập,"1. Đăng xuất khỏi ứng dụng (nếu đã đăng nhập)
+2. Thêm sản phẩm vào giỏ hàng (chế độ khách)
+3. Mở giỏ hàng
+4. Nhấn nút ""Thanh toán""","- Tự động chuyển đến màn hình đăng nhập
+- Sau khi đăng nhập thành công, tự động quay lại màn hình thanh toán
+- Giỏ hàng của khách được hợp nhất với giỏ hàng của tài khoản",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+15,Orders,Thanh toán khi chưa có địa chỉ nhận hàng,"1. Đăng nhập vào ứng dụng
+2. Đảm bảo chưa có địa chỉ nhận hàng trong tài khoản
+3. Thêm sản phẩm vào giỏ hàng
+4. Vào màn hình thanh toán
+5. Nhấn nút ""Đặt hàng""","- Hiển thị thông báo: ""Vui lòng thêm địa chỉ nhận hàng""
+- Không cho phép đặt hàng
+- Có thể nhấn vào phần địa chỉ để thêm địa chỉ mới",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+16,Orders,Xem và chỉnh sửa địa chỉ nhận hàng,"1. Đăng nhập vào ứng dụng
+2. Có địa chỉ nhận hàng trong tài khoản
+3. Vào màn hình thanh toán
+4. Nhấn vào phần ""Thông tin giao hàng""
+5. Chọn địa chỉ khác hoặc thêm địa chỉ mới","- Hiển thị danh sách địa chỉ đã lưu
+- Có thể chọn địa chỉ khác
+- Có thể thêm địa chỉ mới
+- Phí vận chuyển được tính lại khi đổi địa chỉ",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+17,Orders,Xem phí vận chuyển,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Xem phần ""Tóm tắt đơn hàng""","- Hiển thị ""Phí vận chuyển: [số tiền]""
+- Hiển thị ""Hỗ trợ ship: -[số tiền]"" (nếu có)
+- Hiển thị thời gian dự kiến nhận hàng
+- Hiển thị đơn vị vận chuyển (nếu có)",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+18,Orders,Áp dụng voucher giảm giá,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Nhấn vào phần ""Voucher""
+5. Chọn một voucher có sẵn
+6. Xem tổng tiền","- Voucher được áp dụng tự động (nếu có voucher tốt nhất)
+- Hiển thị số tiền được giảm
+- Tổng tiền cuối cùng được tính lại sau khi trừ voucher
+- Có thể xem chi tiết voucher đã áp dụng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+19,Orders,Đặt hàng thành công,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Kiểm tra thông tin: địa chỉ, sản phẩm, phí ship, voucher
+5. Nhấn nút ""Đặt hàng""
+6. Chờ xử lý","- Hiển thị thông báo màu xanh: ""Đặt hàng thành công: [mã đơn hàng]""
+- Tự động chuyển đến màn hình ""Đặt hàng thành công""
+- Hiển thị mã đơn hàng
+- Giỏ hàng được xóa sạch
+- Không thể quay lại màn hình thanh toán bằng nút Back",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+20,Orders,Đặt hàng thất bại - lỗi server,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Tắt mạng internet
+5. Nhấn nút ""Đặt hàng""","- Hiển thị thông báo lỗi: ""Đặt hàng thất bại: [thông báo lỗi]""
+- Vẫn ở màn hình thanh toán
+- Giỏ hàng vẫn còn sản phẩm
+- Có thể thử đặt hàng lại sau khi có mạng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+21,Orders,Xem thông tin đơn hàng sau khi đặt thành công,"1. Đặt hàng thành công
+2. Xem màn hình ""Đặt hàng thành công""","- Hiển thị icon check màu xanh với hiệu ứng animation
+- Hiển thị mã đơn hàng rõ ràng
+- Hiển thị thông báo: ""Cảm ơn bạn đã tin tưởng và mua sắm tại Socdo!""
+- Có nút ""Xem đơn hàng""
+- Có nút ""Về trang chủ""
+- Hiển thị thông báo: ""Chúng tôi sẽ gửi thông tin đơn hàng trạng thái ở thông báo, vui lòng chú ý""",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+22,Orders,Chuyển đến màn hình đơn hàng,"1. Đặt hàng thành công
+2. Nhấn nút ""Xem đơn hàng""","- Chuyển đến màn hình danh sách đơn hàng
+- Đơn hàng vừa đặt hiển thị ở đầu danh sách
+- Hiển thị trạng thái đơn hàng: ""Chờ xử lý"" hoặc tương tự
+- Có thể xem chi tiết đơn hàng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+23,Orders,Xem danh sách đơn hàng,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Đơn hàng của tôi"" hoặc ""Tài khoản"" > ""Đơn hàng""","- Hiển thị danh sách tất cả đơn hàng
+- Đơn hàng được sắp xếp: đơn hàng đang xử lý (0,1,2) -> đơn hàng giao thành công (5) -> các trạng thái khác
+- Mỗi đơn hàng hiển thị: tên shop, trạng thái, sản phẩm, tổng tiền
+- Có thể kéo xuống để làm mới danh sách",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+24,Orders,Xem chi tiết đơn hàng,"1. Vào màn hình danh sách đơn hàng
+2. Nhấn vào một đơn hàng bất kỳ","- Hiển thị thông tin chi tiết: mã đơn, trạng thái, địa chỉ giao hàng
+- Hiển thị danh sách sản phẩm trong đơn: tên, hình ảnh, số lượng, giá
+- Hiển thị tổng tiền hàng, phí ship, voucher (nếu có), tổng thanh toán
+- Hiển thị thông tin vận chuyển: đơn vị vận chuyển, thời gian dự kiến
+- Có nút ""Đánh giá"" nếu đơn hàng đã giao thành công (trạng thái 5)",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+25,Products & Cart,Đánh giá sản phẩm sau khi đơn hàng giao thành công,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình đơn hàng
+3. Tìm đơn hàng có trạng thái ""Giao thành công"" (trạng thái 5)
+4. Nhấn nút ""Đánh giá""
+5. Chọn số sao: 5 sao
+6. Nhập nội dung đánh giá: ""Sản phẩm rất tốt, đúng như mô tả""
+7. Chọn ""Đúng với mô tả"": Đúng
+8. Chọn ""Hài lòng sản phẩm"": Hài lòng
+9. Chọn ""Sẽ quay lại mua"": Có
+10. Nhấn nút ""Gửi đánh giá""","- Hiển thị thông báo màu xanh: ""Đánh giá thành công""
+- Tự động quay lại màn hình đơn hàng
+- Nút ""Đánh giá"" trên đơn hàng chuyển thành ""Đã đánh giá"" (màu xám)
+- Đánh giá được lưu và hiển thị trên trang sản phẩm",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+26,Products & Cart,Đánh giá sản phẩm với hình ảnh,"1. Vào màn hình đánh giá sản phẩm
+2. Chọn số sao và nhập nội dung
+3. Nhấn vào biểu tượng thêm ảnh
+4. Chọn 2-3 ảnh từ thư viện
+5. Nhấn nút ""Gửi đánh giá""","- Ảnh được hiển thị trong form đánh giá
+- Có thể xóa ảnh bằng cách nhấn nút X trên ảnh
+- Tối đa 5 ảnh
+- Đánh giá được gửi kèm ảnh thành công",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+28,Products & Cart,Đánh giá thất bại - thiếu nội dung,"1. Vào màn hình đánh giá sản phẩm
+2. Chọn số sao: 5 sao
+3. Không nhập nội dung
+4. Nhấn nút ""Gửi đánh giá""","- Hiển thị thông báo: ""Vui lòng chia sẻ trải nghiệm""
+- Không cho phép gửi đánh giá
+- Vẫn ở màn hình đánh giá",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+29,Products & Cart,Đánh giá với đánh giá tốc độ giao hàng và shop,"1. Vào màn hình đánh giá sản phẩm
+2. Chọn số sao sản phẩm: 5 sao
+3. Chọn số sao tốc độ giao hàng: 5 sao
+4. Chọn số sao đánh giá shop: 4 sao
+5. Nhập nội dung đánh giá
+6. Gửi đánh giá","- Có thể chọn số sao cho tốc độ giao hàng (tùy chọn)
+- Có thể chọn số sao cho shop (tùy chọn)
+- Đánh giá được gửi thành công với đầy đủ thông tin",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+30,Other,Đặt hàng khi giỏ hàng có sản phẩm từ nhiều shop,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A vào giỏ hàng
+3. Thêm sản phẩm từ shop B vào giỏ hàng
+4. Chọn tất cả sản phẩm
+5. Vào màn hình thanh toán
+6. Đặt hàng","- Đơn hàng được tách thành 2 đơn con (mỗi shop một đơn)
+- Màn hình thành công hiển thị: ""Đặt hàng thành công: 2 đơn hàng""
+- Hiển thị mã đơn chính và các mã đơn con
+- Có thể xem từng đơn hàng riêng trong danh sách đơn hàng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+31,Other,Đặt hàng với voucher freeship,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có voucher freeship vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Kiểm tra phần phí vận chuyển
+5. Đặt hàng","- Hiển thị ""Phí vận chuyển: [số tiền]""
+- Hiển thị ""Hỗ trợ ship: -[số tiền]"" (số tiền hỗ trợ)
+- Phí ship cuối cùng = Phí ship gốc - Hỗ trợ ship (nếu hỗ trợ ship < phí ship gốc)
+- Tổng tiền được tính đúng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+32,Other,Đặt hàng khi mất kết nối mạng,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Tắt mạng internet
+5. Nhấn nút ""Đặt hàng""","- Hiển thị thông báo lỗi kết nối
+- Không đặt được hàng
+- Giỏ hàng vẫn còn sản phẩm
+- Sau khi bật lại mạng, có thể đặt hàng lại",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+33,Products & Cart,Thêm sản phẩm vào giỏ từ icon giỏ hàng trên trang chủ,"1. Đăng nhập vào ứng dụng
+2. Vào trang chủ
+3. Tìm một sản phẩm trong danh sách
+4. Nhấn vào icon giỏ hàng màu đỏ ở góc dưới bên phải của ảnh sản phẩm
+5. Chọn số lượng trong dialog
+6. Nhấn ""Thêm vào giỏ""","- Hiển thị dialog chọn số lượng và biến thể (nếu có)
+- Sau khi chọn và nhấn ""Thêm vào giỏ"", hiển thị thông báo màu xanh
+- Sản phẩm được thêm vào giỏ hàng
+- Dialog tự động đóng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+34,Products & Cart,Mua ngay từ icon giỏ hàng trên trang chủ,"1. Đăng nhập vào ứng dụng
+2. Vào trang chủ
+3. Nhấn icon giỏ hàng trên một sản phẩm
+4. Chọn số lượng
+5. Nhấn ""Mua ngay""","- Dialog đóng
+- Tự động chuyển đến màn hình thanh toán
+- Sản phẩm hiển thị trong màn hình thanh toán",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+35,Products & Cart,Thêm sản phẩm từ icon giỏ hàng - sản phẩm có biến thể,"1. Đăng nhập vào ứng dụng
+2. Tìm một sản phẩm có biến thể (ví dụ: áo có nhiều màu, size)
+3. Nhấn icon giỏ hàng trên sản phẩm
+4. Chọn biến thể: màu đỏ, size M
+5. Chọn số lượng: 2
+6. Nhấn ""Thêm vào giỏ""","- Dialog hiển thị danh sách biến thể để chọn
+- Có thể chọn màu sắc và kích thước
+- Sau khi thêm, sản phẩm trong giỏ hàng hiển thị đúng biến thể đã chọn
+- Tên sản phẩm trong giỏ hàng có ghi rõ biến thể: ""[Tên sản phẩm] - [Biến thể]""",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+36,Products & Cart,Thêm sản phẩm từ icon giỏ hàng trên màn hình tìm kiếm,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình tìm kiếm
+3. Nhập từ khóa tìm kiếm: ""áo thun""
+4. Xem kết quả tìm kiếm
+5. Nhấn icon giỏ hàng trên một sản phẩm trong kết quả
+6. Chọn số lượng và thêm vào giỏ","- Dialog mua hàng hiển thị
+- Sản phẩm được thêm vào giỏ hàng thành công
+- Vẫn ở màn hình tìm kiếm, không chuyển màn hình",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+37,Products & Cart,Thêm sản phẩm từ icon giỏ hàng trên màn hình danh mục,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Danh mục""
+3. Chọn một danh mục bất kỳ (ví dụ: ""Thời trang"")
+4. Xem danh sách sản phẩm trong danh mục
+5. Nhấn icon giỏ hàng trên một sản phẩm
+6. Thêm vào giỏ hàng","- Sản phẩm được thêm vào giỏ hàng thành công
+- Có thể tiếp tục xem và thêm sản phẩm khác trong danh mục",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+38,Products & Cart,Thêm sản phẩm từ icon giỏ hàng trên màn hình shop,"1. Đăng nhập vào ứng dụng
+2. Vào trang chi tiết một shop bất kỳ
+3. Chọn tab ""Sản phẩm""
+4. Nhấn icon giỏ hàng trên một sản phẩm của shop
+5. Thêm vào giỏ hàng","- Sản phẩm được thêm vào giỏ hàng
+- Thông tin shop được lưu đúng với sản phẩm
+- Có thể thêm nhiều sản phẩm từ cùng shop",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+39,Products & Cart,Thêm sản phẩm từ icon giỏ hàng trên màn hình Flash Sale,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Flash Sale""
+3. Chọn một khung giờ (Sáng sớm, Buổi sáng, Buổi chiều tối)
+4. Tìm một sản phẩm flash sale
+5. Nhấn icon giỏ hàng trên sản phẩm
+6. Chọn số lượng và thêm vào giỏ","- Sản phẩm flash sale được thêm vào giỏ hàng với giá flash sale
+- Hiển thị giá gốc bị gạch và giá flash sale
+- Sản phẩm trong giỏ hàng hiển thị đúng giá đã giảm",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+40,Products & Cart,Thêm sản phẩm từ icon giỏ hàng trên màn hình Ship 0 đồng,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Ship 0 đồng"" (Freeship)
+3. Tìm một sản phẩm freeship
+4. Nhấn icon giỏ hàng trên sản phẩm
+5. Thêm vào giỏ hàng","- Sản phẩm được thêm vào giỏ hàng
+- Khi vào thanh toán, sản phẩm này sẽ có ưu đãi freeship
+- Hiển thị thông tin hỗ trợ ship trong màn hình thanh toán",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+41,Products & Cart,Thêm sản phẩm từ icon giỏ hàng trên banner sản phẩm,"1. Đăng nhập vào ứng dụng
+2. Vào trang chủ
+3. Cuộn xuống phần banner sản phẩm (nếu có)
+4. Tìm một sản phẩm trong banner
+5. Nhấn icon giỏ hàng trên sản phẩm
+6. Thêm vào giỏ hàng","- Sản phẩm được thêm vào giỏ hàng thành công
+- Có thể tiếp tục xem các sản phẩm khác trong banner",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+42,Products & Cart,Thêm sản phẩm từ icon giỏ hàng khi chưa đăng nhập,"1. Đăng xuất khỏi ứng dụng (nếu đã đăng nhập)
+2. Vào trang chủ
+3. Nhấn icon giỏ hàng trên một sản phẩm
+4. Chọn số lượng và thêm vào giỏ","- Sản phẩm vẫn được thêm vào giỏ hàng (chế độ khách)
+- Khi đăng nhập sau đó, giỏ hàng của khách được hợp nhất với giỏ hàng của tài khoản
+- Không yêu cầu đăng nhập để thêm vào giỏ hàng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+43,Other,Mua hàng từ màn hình Flash Sale,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Flash Sale""
+3. Chọn khung giờ đang diễn ra flash sale
+4. Tìm một sản phẩm flash sale
+5. Nhấn vào sản phẩm để xem chi tiết
+6. Chọn số lượng
+7. Nhấn ""Mua ngay"" hoặc ""Thêm vào giỏ""","- Hiển thị giá flash sale rõ ràng
+- Có timer đếm ngược thời gian còn lại của flash sale
+- Sản phẩm được thêm vào giỏ với giá flash sale
+- Khi thanh toán, giá được tính đúng theo giá flash sale",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+44,Other,Mua hàng từ màn hình Ship 0 đồng,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Ship 0 đồng""
+3. Tìm một sản phẩm freeship
+4. Nhấn vào sản phẩm để xem chi tiết
+5. Thêm vào giỏ hàng
+6. Vào màn hình thanh toán","- Sản phẩm được thêm vào giỏ hàng
+- Trong màn hình thanh toán, hiển thị ""Hỗ trợ ship: -[số tiền]""
+- Phí ship cuối cùng được giảm theo hỗ trợ ship
+- Có thể xem chi tiết ưu đãi vận chuyển",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+45,Other,Mua hàng từ màn hình tìm kiếm,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình tìm kiếm
+3. Nhập từ khóa: ""điện thoại""
+4. Xem kết quả tìm kiếm
+5. Nhấn vào một sản phẩm
+6. Thêm vào giỏ hàng hoặc mua ngay","- Có thể xem chi tiết sản phẩm từ kết quả tìm kiếm
+- Có thể thêm vào giỏ hoặc mua ngay
+- Sau khi mua, có thể quay lại kết quả tìm kiếm để tiếp tục tìm",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+46,Other,Mua hàng từ màn hình danh mục,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Danh mục""
+3. Chọn một danh mục (ví dụ: ""Điện tử"")
+4. Xem danh sách sản phẩm
+5. Nhấn vào một sản phẩm
+6. Thêm vào giỏ hàng","- Có thể xem chi tiết sản phẩm
+- Có thể thêm vào giỏ hàng hoặc mua ngay
+- Có thể quay lại danh mục để xem thêm sản phẩm khác",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+47,Other,Mua hàng từ trang chi tiết shop,"1. Đăng nhập vào ứng dụng
+2. Vào trang chi tiết một shop
+3. Chọn tab ""Sản phẩm""
+4. Nhấn vào một sản phẩm
+5. Thêm vào giỏ hàng hoặc mua ngay","- Có thể xem chi tiết sản phẩm
+- Thông tin shop được lưu đúng với sản phẩm
+- Có thể mua nhiều sản phẩm từ cùng shop",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+48,Other,Mua hàng từ sản phẩm đã mua trước đó,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Sản phẩm đã mua"" (nếu có)
+3. Tìm một sản phẩm đã mua trước đó
+4. Nhấn vào sản phẩm hoặc icon giỏ hàng
+5. Thêm vào giỏ hàng","- Có thể xem lại sản phẩm đã mua
+- Có thể mua lại sản phẩm với giá hiện tại
+- Sản phẩm được thêm vào giỏ hàng bình thường",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+49,Other,Mua hàng từ sản phẩm yêu thích,"1. Đăng nhập vào ứng dụng
+2. Vào màn hình ""Sản phẩm yêu thích""
+3. Tìm một sản phẩm yêu thích
+4. Nhấn vào sản phẩm hoặc icon giỏ hàng
+5. Thêm vào giỏ hàng","- Có thể xem chi tiết sản phẩm yêu thích
+- Có thể thêm vào giỏ hàng hoặc mua ngay
+- Sản phẩm vẫn còn trong danh sách yêu thích sau khi mua",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+50,Products & Cart,Hợp nhất giỏ hàng khi đăng nhập,"1. Đăng xuất khỏi ứng dụng
+2. Thêm 2 sản phẩm vào giỏ hàng (chế độ khách)
+3. Đăng nhập vào tài khoản đã có 1 sản phẩm trong giỏ hàng
+4. Kiểm tra giỏ hàng","- Giỏ hàng hiển thị 3 sản phẩm (2 từ khách + 1 từ tài khoản)
+- Không bị mất sản phẩm nào
+- Tất cả sản phẩm đều được chọn mặc định
+- Có thể thanh toán tất cả hoặc chọn một phần",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+51,Products & Cart,Giỏ hàng khi chuyển đổi tài khoản,"1. Đăng nhập vào tài khoản A
+2. Thêm 2 sản phẩm vào giỏ hàng
+3. Đăng xuất
+4. Đăng nhập vào tài khoản B (có 1 sản phẩm trong giỏ)
+5. Kiểm tra giỏ hàng","- Giỏ hàng của tài khoản A được lưu
+- Giỏ hàng hiển thị 1 sản phẩm của tài khoản B
+- Không hiển thị sản phẩm của tài khoản A
+- Khi đăng nhập lại tài khoản A, giỏ hàng được khôi phục",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+52,Products & Cart,Thêm cùng một sản phẩm nhiều lần,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A vào giỏ hàng (số lượng 1)
+3. Thêm lại sản phẩm A vào giỏ hàng (số lượng 2)
+4. Kiểm tra giỏ hàng","- Sản phẩm A chỉ xuất hiện 1 lần trong giỏ hàng
+- Số lượng được cộng dồn: 1 + 2 = 3
+- Tổng tiền được tính đúng theo số lượng mới",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+53,Products & Cart,Thêm cùng sản phẩm nhưng khác biến thể,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm ""Áo thun"" - màu đỏ, size M vào giỏ hàng
+3. Thêm sản phẩm ""Áo thun"" - màu xanh, size L vào giỏ hàng
+4. Kiểm tra giỏ hàng","- Hiển thị 2 mục riêng biệt trong giỏ hàng
+- Mỗi mục có tên rõ ràng: ""Áo thun - Đỏ, M"" và ""Áo thun - Xanh, L""
+- Có thể quản lý số lượng từng biến thể độc lập",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+54,Products & Cart,Xóa tất cả sản phẩm khỏi giỏ hàng,"1. Đăng nhập vào ứng dụng
+2. Thêm nhiều sản phẩm vào giỏ hàng
+3. Vào giỏ hàng
+4. Xóa từng sản phẩm cho đến khi hết
+5. Kiểm tra màn hình giỏ hàng","- Khi xóa hết sản phẩm, hiển thị thông báo ""Giỏ hàng trống""
+- Có thể quay lại trang chủ hoặc tiếp tục mua sắm
+- Tổng tiền hiển thị 0đ",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+55,Other,Đặt hàng với sản phẩm hết hàng,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Đợi sản phẩm hết hàng (hoặc admin xóa sản phẩm)
+4. Vào màn hình thanh toán
+5. Thử đặt hàng","- Hiển thị thông báo lỗi về sản phẩm hết hàng
+- Không cho phép đặt hàng
+- Có thể xóa sản phẩm hết hàng khỏi giỏ hàng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+56,Other,Đặt hàng với giá sản phẩm thay đổi,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng với giá 100.000đ
+3. Admin thay đổi giá sản phẩm thành 120.000đ
+4. Vào màn hình thanh toán
+5. Kiểm tra giá hiển thị","- Giá trong giỏ hàng được cập nhật theo giá mới
+- Tổng tiền được tính lại
+- Có thể tiếp tục đặt hàng với giá mới",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+57,Other,Đặt hàng với voucher hết hạn,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Áp dụng voucher
+4. Đợi voucher hết hạn
+5. Vào màn hình thanh toán
+6. Thử đặt hàng","- Voucher tự động bị gỡ bỏ
+- Tổng tiền được tính lại không có voucher
+- Có thể tiếp tục đặt hàng hoặc chọn voucher khác",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+58,Other,Đặt hàng với địa chỉ không hợp lệ,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Chọn địa chỉ đã bị xóa hoặc không hợp lệ
+5. Thử đặt hàng","- Hiển thị thông báo yêu cầu chọn địa chỉ hợp lệ
+- Không cho phép đặt hàng
+- Có thể thêm địa chỉ mới hoặc chọn địa chỉ khác",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+59,Vouchers,Áp dụng voucher shop - giảm theo phần trăm,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A vào giỏ hàng (tổng tiền: 500.000đ)
+3. Vào màn hình thanh toán
+4. Kiểm tra phần voucher của shop A
+5. Chọn voucher shop A: giảm 10% (không có max discount)
+6. Xem chi tiết thanh toán","- Voucher được áp dụng tự động hoặc có thể chọn thủ công
+- Hiển thị ""Tổng cộng Voucher giảm giá: -50.000đ"" (10% của 500.000đ)
+- Tổng thanh toán = Tổng tiền hàng + Phí ship - Hỗ trợ ship - 50.000đ
+- Voucher chỉ tính trên tổng tiền của shop A, không ảnh hưởng shop khác",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+60,Vouchers,Áp dụng voucher shop - giảm cố định,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A vào giỏ hàng (tổng tiền: 300.000đ)
+3. Vào màn hình thanh toán
+4. Chọn voucher shop A: giảm 50.000đ cố định
+5. Xem chi tiết thanh toán","- Voucher được áp dụng thành công
+- Hiển thị ""Tổng cộng Voucher giảm giá: -50.000đ""
+- Tổng thanh toán = Tổng tiền hàng + Phí ship - Hỗ trợ ship - 50.000đ
+- Giảm giá cố định không phụ thuộc vào giá trị đơn hàng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+61,Vouchers,Voucher shop có giới hạn giảm tối đa,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A vào giỏ hàng (tổng tiền: 1.000.000đ)
+3. Vào màn hình thanh toán
+4. Chọn voucher shop A: giảm 20% nhưng tối đa 100.000đ
+5. Xem chi tiết thanh toán","- Voucher được áp dụng
+- Tính toán: 20% của 1.000.000đ = 200.000đ, nhưng max = 100.000đ
+- Hiển thị ""Tổng cộng Voucher giảm giá: -100.000đ"" (không phải -200.000đ)
+- Tổng thanh toán được tính đúng với giới hạn tối đa",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+62,Vouchers,Voucher shop có điều kiện đơn tối thiểu,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A vào giỏ hàng (tổng tiền: 200.000đ)
+3. Vào màn hình thanh toán
+4. Tìm voucher shop A: giảm 10% nhưng đơn tối thiểu 500.000đ
+5. Thử áp dụng voucher","- Voucher hiển thị nhưng không thể áp dụng (màu xám hoặc có icon cảnh báo)
+- Hiển thị lý do: ""Đơn tối thiểu 500.000đ""
+- Có thể xem chi tiết điều kiện voucher
+- Không thể áp dụng voucher cho đến khi đủ điều kiện",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+63,Vouchers,Voucher shop áp dụng cho sản phẩm cụ thể,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A (ID: 100) từ shop A vào giỏ hàng
+3. Thêm sản phẩm B (ID: 200) từ shop A vào giỏ hàng
+4. Vào màn hình thanh toán
+5. Tìm voucher shop A: chỉ áp dụng cho sản phẩm ID 100
+6. Thử áp dụng voucher","- Nếu giỏ hàng có sản phẩm 100: voucher có thể áp dụng
+- Voucher chỉ tính giảm giá trên sản phẩm 100, không tính sản phẩm 200
+- Hiển thị danh sách sản phẩm áp dụng trong chi tiết voucher
+- Có thể nhấn vào sản phẩm để xem chi tiết",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+64,Vouchers,"Nhiều shop, mỗi shop có voucher riêng","1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A (tổng: 500.000đ) vào giỏ hàng
+3. Thêm sản phẩm từ shop B (tổng: 300.000đ) vào giỏ hàng
+4. Vào màn hình thanh toán
+5. Áp dụng voucher shop A: giảm 10% (50.000đ)
+6. Áp dụng voucher shop B: giảm 50.000đ cố định
+7. Xem chi tiết thanh toán","- Mỗi shop có phần voucher riêng
+- Voucher shop A tính trên tổng tiền shop A: -50.000đ
+- Voucher shop B tính cố định: -50.000đ
+- Tổng voucher giảm giá: -100.000đ
+- Tổng thanh toán = (500.000 + 300.000) + Phí ship - Hỗ trợ ship - 100.000đ",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+65,Vouchers,Voucher shop tự động áp dụng tốt nhất,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A (tổng: 500.000đ) vào giỏ hàng
+3. Shop A có 3 voucher:
+- Voucher 1: giảm 5% (25.000đ)
+- Voucher 2: giảm 50.000đ cố định
+- Voucher 3: giảm 10% nhưng max 30.000đ (tính ra 50.000đ nhưng chỉ được 30.000đ)
+4. Vào màn hình thanh toán
+5. Kiểm tra voucher đã được áp dụng","- Hệ thống tự động áp dụng voucher 2 (50.000đ) vì có giá trị cao nhất
+- Hiển thị voucher đã được áp dụng tự động
+- Có thể thay đổi voucher khác nếu muốn
+- Tổng giảm giá hiển thị đúng: -50.000đ",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+66,Vouchers,Áp dụng voucher sàn - giảm theo phần trăm,"1. Đăng nhập vào ứng dụng
+2. Thêm nhiều sản phẩm từ nhiều shop vào giỏ hàng (tổng: 1.000.000đ)
+3. Vào màn hình thanh toán
+4. Nhấn vào phần ""Voucher sàn""
+5. Chọn voucher sàn: giảm 15% (không có max discount)
+6. Xem chi tiết thanh toán","- Voucher sàn được áp dụng
+- Hiển thị ""Tổng cộng Voucher giảm giá: -150.000đ"" (15% của 1.000.000đ)
+- Voucher sàn tính trên tổng tiền hàng của tất cả shop
+- Tổng thanh toán = Tổng tiền hàng + Phí ship - Hỗ trợ ship - 150.000đ",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+67,Vouchers,Voucher sàn có giới hạn giảm tối đa,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 2.000.000đ)
+3. Vào màn hình thanh toán
+4. Chọn voucher sàn: giảm 20% nhưng tối đa 200.000đ
+5. Xem chi tiết thanh toán","- Tính toán: 20% của 2.000.000đ = 400.000đ, nhưng max = 200.000đ
+- Hiển thị ""Tổng cộng Voucher giảm giá: -200.000đ""
+- Tổng thanh toán được tính đúng với giới hạn tối đa",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+68,Vouchers,Voucher sàn có điều kiện đơn tối thiểu,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 300.000đ)
+3. Vào màn hình thanh toán
+4. Tìm voucher sàn: giảm 10% nhưng đơn tối thiểu 500.000đ
+5. Thử áp dụng voucher","- Voucher hiển thị nhưng không thể áp dụng
+- Hiển thị lý do: ""Đơn tối thiểu 500.000đ""
+- Có thể xem chi tiết điều kiện
+- Thêm sản phẩm để đạt 500.000đ, voucher tự động có thể áp dụng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+69,Vouchers,Voucher sàn áp dụng cho sản phẩm cụ thể,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A (ID: 100) vào giỏ hàng: 300.000đ
+3. Thêm sản phẩm B (ID: 200) vào giỏ hàng: 200.000đ
+4. Vào màn hình thanh toán
+5. Chọn voucher sàn: chỉ áp dụng cho sản phẩm ID 100
+6. Xem chi tiết thanh toán","- Voucher chỉ tính giảm giá trên sản phẩm 100 (300.000đ)
+- Không tính giảm giá trên sản phẩm 200
+- Nếu voucher giảm 10%: chỉ tính 10% của 300.000đ = 30.000đ
+- Hiển thị ""Tổng cộng Voucher giảm giá: -30.000đ""",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+70,Vouchers,Kết hợp voucher shop và voucher sàn,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A (tổng: 500.000đ) vào giỏ hàng
+3. Thêm sản phẩm từ shop B (tổng: 300.000đ) vào giỏ hàng
+4. Vào màn hình thanh toán
+5. Áp dụng voucher shop A: giảm 10% (-50.000đ)
+6. Áp dụng voucher sàn: giảm 5% (-40.000đ, tính trên tổng 800.000đ)
+7. Xem chi tiết thanh toán","- Voucher shop A: -50.000đ (tính trên 500.000đ của shop A)
+- Voucher sàn: -40.000đ (tính trên tổng 800.000đ)
+- Tổng voucher giảm giá: -90.000đ
+- Tổng thanh toán = 800.000đ + Phí ship - Hỗ trợ ship - 90.000đ
+- Cả hai voucher được áp dụng độc lập, không ảnh hưởng lẫn nhau",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+71,Vouchers,Voucher hết hạn khi đang thanh toán,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Áp dụng voucher có thời hạn sắp hết
+4. Vào màn hình thanh toán
+5. Đợi voucher hết hạn (hoặc admin thay đổi thời gian)
+6. Thử đặt hàng","- Voucher tự động bị gỡ bỏ hoặc hiển thị cảnh báo
+- Tổng tiền được tính lại không có voucher
+- Có thể chọn voucher khác hoặc tiếp tục đặt hàng không có voucher",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+72,Vouchers,Voucher không đủ điều kiện khi thay đổi giỏ hàng,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 600.000đ)
+3. Áp dụng voucher: đơn tối thiểu 500.000đ
+4. Vào màn hình thanh toán
+5. Quay lại giỏ hàng, xóa một số sản phẩm (còn 400.000đ)
+6. Quay lại màn hình thanh toán","- Voucher tự động bị gỡ bỏ vì không đủ điều kiện
+- Hiển thị thông báo: ""Voucher không còn đủ điều kiện""
+- Tổng tiền được tính lại không có voucher
+- Có thể thêm sản phẩm lại để đủ điều kiện",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+73,Shipping,Sản phẩm có freeship 100% (Mode 1),"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có freeship 100% vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Kiểm tra phần ""Tóm tắt đơn hàng""
+5. Xem chi tiết thanh toán","- Hiển thị ""Phí vận chuyển: [số tiền]"" (phí ship gốc)
+- Hiển thị ""Hỗ trợ ship: -[số tiền]"" (bằng phí ship gốc)
+- Phí ship cuối cùng = 0đ (phí ship gốc - hỗ trợ ship)
+- Tổng thanh toán = Tổng tiền hàng - Voucher (không có phí ship)",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+74,Shipping,Sản phẩm có freeship giảm cố định (Mode 0),"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có freeship giảm 20.000đ vào giỏ hàng
+3. Phí ship gốc: 30.000đ
+4. Vào màn hình thanh toán
+5. Kiểm tra phần phí vận chuyển","- Hiển thị ""Phí vận chuyển: 30.000đ""
+- Hiển thị ""Hỗ trợ ship: -20.000đ""
+- Phí ship cuối cùng = 10.000đ (30.000đ - 20.000đ)
+- Tổng thanh toán = Tổng tiền hàng + 10.000đ - Voucher",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+75,Shipping,Sản phẩm có freeship giảm theo phần trăm (Mode 2),"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có freeship giảm 50% vào giỏ hàng
+3. Phí ship gốc: 40.000đ
+4. Vào màn hình thanh toán
+5. Kiểm tra phần phí vận chuyển","- Hiển thị ""Phí vận chuyển: 40.000đ""
+- Hiển thị ""Hỗ trợ ship: -20.000đ"" (50% của 40.000đ)
+- Phí ship cuối cùng = 20.000đ (40.000đ - 20.000đ)
+- Tổng thanh toán được tính đúng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+76,Shipping,Sản phẩm có freeship theo từng sản phẩm (Mode 3),"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A có ship support 15.000đ vào giỏ hàng (số lượng: 2)
+3. Thêm sản phẩm B có ship support 10.000đ vào giỏ hàng (số lượng: 1)
+4. Phí ship gốc: 50.000đ
+5. Vào màn hình thanh toán
+6. Kiểm tra phần phí vận chuyển","- Ship support = 15.000đ + 10.000đ = 25.000đ (tính theo shop, không nhân số lượng)
+- Hiển thị ""Phí vận chuyển: 50.000đ""
+- Hiển thị ""Hỗ trợ ship: -25.000đ""
+- Phí ship cuối cùng = 25.000đ (50.000đ - 25.000đ)",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+77,Shipping,Hỗ trợ ship lớn hơn phí ship gốc,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có ship support 50.000đ vào giỏ hàng
+3. Phí ship gốc: 30.000đ
+4. Vào màn hình thanh toán
+5. Kiểm tra phần phí vận chuyển","- Hiển thị ""Phí vận chuyển: 30.000đ""
+- Hiển thị ""Hỗ trợ ship: -50.000đ""
+- Phí ship cuối cùng = 0đ (không được âm)
+- Tổng thanh toán = Tổng tiền hàng - Voucher (không có phí ship)",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+78,Shipping,"Nhiều shop, mỗi shop có freeship khác nhau","1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A có freeship 100% vào giỏ hàng
+3. Thêm sản phẩm từ shop B có ship support 20.000đ vào giỏ hàng
+4. Phí ship gốc: 50.000đ (tổng từ cả 2 shop)
+5. Vào màn hình thanh toán
+6. Kiểm tra phần phí vận chuyển","- Ship support được tính tổng từ cả 2 shop
+- Hiển thị ""Phí vận chuyển: 50.000đ""
+- Hiển thị ""Hỗ trợ ship: -[tổng ship support]""
+- Phí ship cuối cùng được tính đúng
+- Có thể xem chi tiết freeship từng shop",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+79,Shipping,Freeship có điều kiện đơn tối thiểu,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 200.000đ)
+3. Shop có freeship nhưng đơn tối thiểu 500.000đ
+4. Vào màn hình thanh toán
+5. Kiểm tra phần phí vận chuyển","- Freeship không được áp dụng (chưa đủ điều kiện)
+- Hiển thị ""Phí vận chuyển: [số tiền]"" (không có hỗ trợ ship)
+- Có thể xem chi tiết điều kiện freeship
+- Thêm sản phẩm để đạt 500.000đ, freeship tự động được áp dụng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+80,Shipping,Kết hợp voucher và freeship,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có freeship vào giỏ hàng (tổng: 1.000.000đ)
+3. Phí ship gốc: 50.000đ, ship support: 30.000đ
+4. Vào màn hình thanh toán
+5. Áp dụng voucher: giảm 10% (-100.000đ)
+6. Xem chi tiết thanh toán","- Tổng tiền hàng: 1.000.000đ
+- Hỗ trợ ship: -30.000đ
+- Phí vận chuyển: 50.000đ (phí ship cuối cùng = 20.000đ)
+- Voucher giảm giá: -100.000đ
+- Tổng thanh toán = 1.000.000đ + 20.000đ - 100.000đ = 920.000đ
+- Voucher và freeship được tính độc lập, không ảnh hưởng lẫn nhau",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+81,Shipping,Thay đổi địa chỉ làm thay đổi phí ship và freeship,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có freeship vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Ghi nhận phí ship và ship support hiện tại
+5. Thay đổi địa chỉ nhận hàng (tỉnh/thành khác)
+6. Chờ hệ thống tính lại phí ship","- Phí ship được tính lại theo địa chỉ mới
+- Ship support được tính lại (nếu có thay đổi)
+- Chi tiết thanh toán được cập nhật tự động
+- Tổng thanh toán được tính lại đúng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+82,Shipping,Sản phẩm không có freeship nhưng có voucher,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm không có freeship vào giỏ hàng
+3. Áp dụng voucher giảm giá
+4. Vào màn hình thanh toán
+5. Kiểm tra chi tiết thanh toán","- Không hiển thị ""Hỗ trợ ship"" (vì không có)
+- Hiển thị ""Phí vận chuyển: [số tiền]"" (phí ship đầy đủ)
+- Hiển thị ""Voucher giảm giá: -[số tiền]""
+- Tổng thanh toán = Tổng tiền hàng + Phí ship - Voucher",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+83,Shipping,"Nhiều sản phẩm, một số có freeship một số không","1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A có freeship vào giỏ hàng
+3. Thêm sản phẩm B không có freeship vào giỏ hàng
+4. Vào màn hình thanh toán
+5. Kiểm tra phần phí vận chuyển","- Ship support chỉ tính cho sản phẩm A
+- Phí ship gốc tính cho cả 2 sản phẩm
+- Hiển thị ""Hỗ trợ ship: -[số tiền từ sản phẩm A]""
+- Phí ship cuối cùng = Phí ship gốc - Ship support",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+84,Shipping,Xem chi tiết ưu đãi vận chuyển,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có freeship vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Nhấn vào phần ""Ưu đãi! Xem ngay"" trong phần phí vận chuyển
+5. Xem chi tiết ưu đãi","- Hiển thị dialog chi tiết ưu đãi vận chuyển
+- Hiển thị thông tin: mode, discount, min order, applied status
+- Hiển thị giá trị đơn hàng hiện tại
+- Hiển thị trạng thái: ""Đã áp dụng"" hoặc ""Chưa áp dụng""
+- Có thể đóng dialog và tiếp tục thanh toán",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+85,Other,"Đặt hàng với nhiều shop, nhiều voucher, nhiều freeship","1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A (500.000đ) có voucher 10% và freeship 100%
+3. Thêm sản phẩm từ shop B (300.000đ) có voucher 50.000đ và ship support 20.000đ
+4. Áp dụng voucher sàn: giảm 5% (40.000đ trên tổng 800.000đ)
+5. Phí ship gốc: 60.000đ
+6. Vào màn hình thanh toán
+7. Kiểm tra chi tiết thanh toán
+8. Đặt hàng","- Tổng tiền hàng: 800.000đ
+- Voucher shop A: -50.000đ (10% của 500.000đ)
+- Voucher shop B: -50.000đ (cố định)
+- Voucher sàn: -40.000đ (5% của 800.000đ)
+- Tổng voucher: -140.000đ
+- Phí ship gốc: 60.000đ
+- Ship support: -[tổng từ shop A và B]
+- Phí ship cuối cùng: 60.000đ - ship support
+- Tổng thanh toán = 800.000đ + Phí ship cuối - 140.000đ
+- Đặt hàng thành công với tất cả thông tin đúng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+86,Other,Thay đổi số lượng sản phẩm ảnh hưởng đến voucher và freeship,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 450.000đ)
+3. Áp dụng voucher: đơn tối thiểu 500.000đ
+4. Freeship: đơn tối thiểu 500.000đ
+5. Vào màn hình thanh toán
+6. Quay lại giỏ hàng, tăng số lượng để đạt 550.000đ
+7. Quay lại màn hình thanh toán","- Voucher tự động được áp dụng (đã đủ điều kiện)
+- Freeship tự động được áp dụng (đã đủ điều kiện)
+- Chi tiết thanh toán được cập nhật tự động
+- Tổng thanh toán được tính lại với voucher và freeship",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+87,Other,Bỏ chọn sản phẩm làm mất điều kiện voucher,"1. Đăng nhập vào ứng dụng
+2. Thêm nhiều sản phẩm vào giỏ hàng (tổng: 600.000đ)
+3. Áp dụng voucher: đơn tối thiểu 500.000đ
+4. Vào màn hình thanh toán
+5. Bỏ chọn một số sản phẩm (còn 400.000đ)
+6. Kiểm tra voucher","- Voucher tự động bị gỡ bỏ (không đủ điều kiện)
+- Hiển thị thông báo: ""Voucher không còn đủ điều kiện""
+- Tổng tiền được tính lại không có voucher
+- Có thể chọn lại sản phẩm để đủ điều kiện",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+88,Other,Voucher sàn áp dụng cho một phần sản phẩm,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A (ID: 100, giá: 500.000đ) vào giỏ hàng
+3. Thêm sản phẩm B (ID: 200, giá: 300.000đ) vào giỏ hàng
+4. Áp dụng voucher sàn: giảm 10% nhưng chỉ áp dụng cho sản phẩm ID 100
+5. Vào màn hình thanh toán
+6. Kiểm tra chi tiết thanh toán","- Voucher chỉ tính trên sản phẩm A: 10% của 500.000đ = 50.000đ
+- Không tính trên sản phẩm B
+- Hiển thị ""Tổng cộng Voucher giảm giá: -50.000đ""
+- Tổng thanh toán = 800.000đ + Phí ship - Hỗ trợ ship - 50.000đ",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+89,Other,Đặt hàng với voucher và freeship hết hạn đồng thời,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có voucher và freeship sắp hết hạn vào giỏ hàng
+3. Áp dụng voucher và có freeship
+4. Vào màn hình thanh toán
+5. Đợi voucher và freeship hết hạn
+6. Thử đặt hàng","- Voucher tự động bị gỡ bỏ
+- Freeship không còn được áp dụng
+- Tổng tiền được tính lại không có voucher và freeship
+- Có thể tiếp tục đặt hàng hoặc chọn voucher/freeship khác",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+90,Other,Kiểm tra tính toán tổng thanh toán chính xác,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop A (500.000đ) có voucher 10% và freeship 100%
+3. Thêm sản phẩm từ shop B (300.000đ) có voucher 50.000đ
+4. Áp dụng voucher sàn: giảm 5% max 30.000đ
+5. Phí ship gốc: 50.000đ, ship support: 30.000đ
+6. Vào màn hình thanh toán
+7. Kiểm tra từng dòng trong chi tiết thanh toán
+8. Tính toán thủ công để so sánh","- Tổng tiền hàng: 800.000đ
+- Voucher shop A: -50.000đ (10% của 500.000đ)
+- Voucher shop B: -50.000đ (cố định)
+- Voucher sàn: -30.000đ (5% của 800.000đ = 40.000đ nhưng max 30.000đ)
+- Tổng voucher: -130.000đ
+- Phí vận chuyển: 50.000đ
+- Hỗ trợ ship: -30.000đ
+- Phí ship cuối: 20.000đ
+- Tổng thanh toán: 800.000đ + 20.000đ - 130.000đ = 690.000đ
+- Tất cả số liệu hiển thị chính xác, khớp với tính toán thủ công",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+91,Other,Voucher giảm giá lớn hơn tổng tiền hàng,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 100.000đ)
+3. Áp dụng voucher shop: giảm 50.000đ
+4. Áp dụng voucher sàn: giảm 60.000đ
+5. Tổng voucher: 110.000đ (lớn hơn 100.000đ)
+6. Vào màn hình thanh toán
+7. Kiểm tra chi tiết thanh toán","- Tổng voucher được giới hạn tối đa = tổng tiền hàng (100.000đ)
+- Hiển thị ""Tổng cộng Voucher giảm giá: -100.000đ"" (không phải -110.000đ)
+- Tổng thanh toán = Tổng tiền hàng + Phí ship - Hỗ trợ ship - 100.000đ
+- Không được âm, tối thiểu = 0đ (nếu có phí ship thì = phí ship - hỗ trợ ship)",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+92,Other,Voucher áp dụng cho sản phẩm không có trong giỏ hàng,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A (ID: 100) vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Tìm voucher sàn: chỉ áp dụng cho sản phẩm ID 200 (không có trong giỏ)
+5. Thử áp dụng voucher","- Voucher hiển thị nhưng không thể áp dụng
+- Hiển thị lý do: ""Voucher áp dụng cho sản phẩm khác""
+- Có thể xem danh sách sản phẩm áp dụng trong voucher
+- Không tính giảm giá",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+93,Other,Voucher shop áp dụng cho shop khác,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm từ shop B vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Tìm voucher shop A
+5. Thử áp dụng voucher shop A cho sản phẩm shop B","- Voucher shop A không hiển thị trong phần voucher của shop B
+- Hoặc hiển thị nhưng không thể áp dụng
+- Hiển thị lý do: ""Voucher không áp dụng cho shop này""
+- Chỉ có thể áp dụng voucher shop A cho sản phẩm shop A",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+94,Other,Thay đổi giỏ hàng làm voucher sàn không còn đủ điều kiện,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 600.000đ)
+3. Áp dụng voucher sàn: đơn tối thiểu 500.000đ
+4. Vào màn hình thanh toán
+5. Quay lại giỏ hàng, xóa một số sản phẩm (còn 400.000đ)
+6. Quay lại màn hình thanh toán","- Voucher sàn tự động bị gỡ bỏ
+- Hiển thị thông báo: ""Voucher sàn không còn đủ điều kiện""
+- Tổng tiền được tính lại không có voucher sàn
+- Có thể thêm sản phẩm lại để đủ điều kiện",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+95,Other,"Voucher sàn áp dụng cho một phần sản phẩm, sau đó xóa sản phẩm áp dụng","1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm A (ID: 100, giá: 500.000đ) vào giỏ hàng
+3. Thêm sản phẩm B (ID: 200, giá: 300.000đ) vào giỏ hàng
+4. Áp dụng voucher sàn: chỉ áp dụng cho sản phẩm ID 100
+5. Vào màn hình thanh toán
+6. Quay lại giỏ hàng, xóa sản phẩm A
+7. Quay lại màn hình thanh toán","- Voucher sàn tự động bị gỡ bỏ (vì không còn sản phẩm áp dụng)
+- Hiển thị thông báo: ""Voucher sàn không còn áp dụng được""
+- Tổng tiền được tính lại không có voucher sàn
+- Chỉ còn sản phẩm B trong giỏ hàng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+96,Other,Freeship không được áp dụng do không đủ min order,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có freeship vào giỏ hàng (tổng: 300.000đ)
+3. Freeship yêu cầu đơn tối thiểu 500.000đ
+4. Vào màn hình thanh toán
+5. Kiểm tra phần phí vận chuyển","- Freeship không được áp dụng
+- Hiển thị ""Phí vận chuyển: [số tiền]"" (không có hỗ trợ ship)
+- Có thể xem chi tiết điều kiện freeship
+- Hiển thị: ""Đơn tối thiểu: 500.000đ"" và ""Giá trị đơn hàng hiện tại: 300.000đ""
+- Thêm sản phẩm để đạt 500.000đ, freeship tự động được áp dụng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+97,Other,Ship support tính sai khi có nhiều sản phẩm cùng loại,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm có ship support 20.000đ vào giỏ hàng (số lượng: 3)
+3. Vào màn hình thanh toán
+4. Kiểm tra phần phí vận chuyển","- Ship support = 20.000đ (không phải 20.000đ x 3 = 60.000đ)
+- Ship support tính theo shop, không nhân với số lượng sản phẩm
+- Hiển thị ""Hỗ trợ ship: -20.000đ""
+- Phí ship cuối cùng được tính đúng",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+98,Other,Voucher tự động áp dụng khi đủ điều kiện,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 200.000đ)
+3. Shop có voucher: đơn tối thiểu 500.000đ
+4. Vào màn hình thanh toán
+5. Quay lại giỏ hàng, thêm sản phẩm để đạt 600.000đ
+6. Quay lại màn hình thanh toán","- Voucher tự động được áp dụng khi đủ điều kiện
+- Hiển thị thông báo: ""Đã tự động áp dụng voucher tốt nhất""
+- Chi tiết thanh toán được cập nhật với voucher
+- Tổng thanh toán được tính lại với voucher",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+99,Other,Kiểm tra tính toán khi voucher và freeship thay đổi real-time,"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng
+3. Vào màn hình thanh toán
+4. Ghi nhận tổng thanh toán ban đầu
+5. Áp dụng voucher mới
+6. Thay đổi địa chỉ (làm thay đổi freeship)
+7. Quan sát chi tiết thanh toán","- Chi tiết thanh toán cập nhật ngay lập tức khi thay đổi voucher
+- Chi tiết thanh toán cập nhật ngay lập tức khi thay đổi địa chỉ
+- Không cần reload hoặc refresh
+- Tất cả số liệu được tính lại chính xác và đồng bộ",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"
+100,Other,Đặt hàng với tổng thanh toán = 0đ (do voucher và freeship),"1. Đăng nhập vào ứng dụng
+2. Thêm sản phẩm vào giỏ hàng (tổng: 100.000đ)
+3. Áp dụng voucher: giảm 100.000đ
+4. Sản phẩm có freeship 100% (phí ship = 0đ)
+5. Vào màn hình thanh toán
+6. Kiểm tra tổng thanh toán
+7. Thử đặt hàng","- Tổng tiền hàng: 100.000đ
+- Voucher giảm giá: -100.000đ
+- Phí vận chuyển: 0đ (do freeship)
+- Tổng thanh toán: 0đ
+- Có thể đặt hàng với tổng thanh toán = 0đ
+- Đơn hàng được tạo thành công
+- Voucher shop tính trên tổng tiền của shop đó, không phải tổng tất cả shop
+- Voucher sàn tính trên tổng tiền hàng tất cả shop
+- Voucher có max discount: so sánh với giới hạn tối đa
+- Voucher áp dụng cho sản phẩm cụ thể: chỉ tính trên sản phẩm đó
+- Ship support tính theo shop, không nhân với số lượng sản phẩm
+- Ship support có thể lớn hơn phí ship gốc (phí ship cuối = 0đ)
+- Freeship có điều kiện đơn tối thiểu: kiểm tra giá trị đơn hàng
+- Nhiều shop: ship support được tổng hợp từ tất cả shop
+- Voucher và freeship được tính độc lập
+- Tổng thanh toán = Tổng tiền hàng + Phí ship - Ship support - Voucher
+- Voucher không được vượt quá tổng tiền hàng
+- Phí ship cuối cùng không được âm (tối thiểu = 0đ)
+- Kiểm tra điều kiện min order trước khi áp dụng voucher/freeship
+- Kiểm tra thời gian hiệu lực của voucher
+- Kiểm tra sản phẩm áp dụng của voucher
+- Tự động gỡ bỏ voucher/freeship khi không đủ điều kiện
+- Tổng voucher > tổng tiền hàng → giới hạn = tổng tiền hàng
+- Ship support > phí ship gốc → phí ship cuối = 0đ
+- Tổng thanh toán = 0đ → vẫn có thể đặt hàng
+- Voucher hết hạn trong quá trình thanh toán → tự động gỡ bỏ
+- 0, 1, 2: Đơn hàng đang xử lý (Chờ xử lý, Đã xác nhận, Đang chuẩn bị)
+- 5: Giao thành công (có thể đánh giá)
+- 3, 4, 6: Các trạng thái khác (Yêu cầu hủy, Đã hủy, Đã trả hàng)
+- Chỉ có thể đánh giá khi đơn hàng có trạng thái 5 (Giao thành công)
+- Phải đánh giá hết tất cả sản phẩm trong đơn thì nút mới chuyển thành ""Đã đánh giá""
+- Nội dung đánh giá là bắt buộc
+- Hiện tại chỉ hỗ trợ thanh toán COD (tiền mặt khi nhận hàng)
+- Phải có địa chỉ nhận hàng mới có thể đặt hàng
+- Giỏ hàng của khách (chưa đăng nhập) sẽ được hợp nhất với giỏ hàng của tài khoản sau khi đăng nhập
+- Có thể chọn/bỏ chọn sản phẩm để thanh toán
+- **Phần 1-2:** Đăng ký và Đăng nhập (7 test case)
+- **Phần 3-4:** Thêm sản phẩm và Quản lý giỏ hàng (6 test case)
+- **Phần 5:** Thanh toán và Đặt hàng (7 test case)
+- **Phần 6-7:** Màn hình thành công và Xem đơn hàng (3 test case)
+- **Phần 8:** Đánh giá sản phẩm (5 test case)
+- **Phần 9:** Thêm sản phẩm từ icon giỏ hàng (10 test case)
+- **Phần 10:** Mua hàng từ các màn hình khác (7 test case)
+- **Phần 11:** Quản lý giỏ hàng nâng cao (5 test case)
+- **Phần 12:** Các trường hợp đặc biệt (8 test case)
+- **Phần 13:** Voucher và Giảm giá (14 test case)
+- **Phần 14:** Hỗ trợ vận chuyển và Freeship (12 test case)
+- **Phần 15:** Các trường hợp kết hợp phức tạp (6 test case)
+- **Phần 16:** Validation và Edge Cases (10 test case)
+- Test theo thứ tự từ TC-001 đến TC-100 để đảm bảo luồng hoàn chỉnh
+- **Ưu tiên test các phần quan trọng:** Phần 13 (Voucher), Phần 14 (Freeship), Phần 15 (Kết hợp phức tạp)
+- **Test edge cases:** Các trường hợp biên như voucher hết hạn, không đủ điều kiện, ship support lớn hơn phí ship
+- Có thể test riêng từng phần tùy theo mục đích
+- Ghi lại kết quả thực tế so với kết quả mong đợi
+- Báo cáo ngay các lỗi phát hiện được
+- Test trên cả môi trường test và production (nếu có)
+- Đặc biệt chú ý test các luồng mua hàng từ icon giỏ hàng trên các màn hình khác nhau",Không có lỗi,"Chụp màn hình:
+1. Các bước thực hiện trên app
+2. Kết quả hiển thị trên app
+3. Nếu có lỗi: chụp màn hình thông báo lỗi"

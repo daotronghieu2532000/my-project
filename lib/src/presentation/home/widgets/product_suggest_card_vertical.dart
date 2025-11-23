@@ -248,8 +248,8 @@ class ProductSuggestCardVertical extends StatelessWidget {
   // Hiển thị dialog mua hàng
   void _showPurchaseDialog(BuildContext context) async {
     try {
-      // Lấy thông tin chi tiết sản phẩm
-      final productDetail = await ApiService().getProductDetail(product.id);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(product.id);
       
       // Sử dụng context từ parent để tránh vấn đề context hierarchy
       final parentContext = Navigator.of(context).context;

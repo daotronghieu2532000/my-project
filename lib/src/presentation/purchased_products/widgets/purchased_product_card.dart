@@ -349,8 +349,8 @@ class _PurchasedProductCardState extends State<PurchasedProductCard> {
         _isAddingToCart = true;
       });
 
-      // Lấy thông tin chi tiết sản phẩm
-      final productDetail = await ApiService().getProductDetail(widget.product.id);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(widget.product.id);
       
       // Sử dụng context từ parent để tránh vấn đề context hierarchy
       final parentContext = Navigator.of(context).context;

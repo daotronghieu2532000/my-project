@@ -74,7 +74,7 @@ class _OrdersScreenState extends State<OrdersScreen>
       } else if ([1, 11, 10, 12].contains(s)) c1++;
       else if ([2, 8, 9, 7, 14].contains(s)) c2++;
       else if ([5].contains(s)) c3++; // Đánh giá (chỉ status 5 - Giao thành công)
-      else if ([3, 4, 6].contains(s)) c4++; // Đơn hàng hủy (bao gồm status 3 - Yêu cầu hủy đơn, 4 - Đã hủy đơn, 6 - Đã hoàn đơn)
+      else if ([3, 4, 6].contains(s)) c4++; // Đơn hàng hủy (bao gồm status 3 - Hủy đơn, 4 - Đã hủy đơn, 6 - Đã hoàn đơn)
     }
     if (!mounted) return;
     setState(() {

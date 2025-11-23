@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/models/shop_detail.dart';
 import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
@@ -736,7 +737,8 @@ class _FlashSaleProductCardHelper extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context, int productId) async {
     try {
-      final productDetail = await CachedApiService().getProductDetailCached(productId);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(productId);
       final parentContext = Navigator.of(context).context;
       
       if (parentContext.mounted && productDetail != null) {

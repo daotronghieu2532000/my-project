@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/models/search_result.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/utils/format_utils.dart';
-import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
@@ -318,9 +318,8 @@ class SearchProductCardHorizontal extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context) async {
     try {
-            // Sử dụng cached API service cho product detail
-            final cachedApiService = CachedApiService();
-            final productDetail = await cachedApiService.getProductDetailCached(product.id);
+            // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+            final productDetail = await ApiService().getProductVariants(product.id);
       
       final parentContext = Navigator.of(context).context;
       

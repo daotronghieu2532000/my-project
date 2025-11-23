@@ -319,7 +319,8 @@ class CategoryProductCardHorizontal extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context) async {
     try {
-      final productDetail = await ApiService().getProductDetail(product['id'] ?? 0);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(product['id'] ?? 0);
       final parentContext = Navigator.of(context).context;
       
       if (parentContext.mounted && productDetail != null) {

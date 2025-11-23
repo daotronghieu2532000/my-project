@@ -75,10 +75,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final AuthService _authService = AuthService();
   bool _isFavorite = false;
   bool _isTogglingFavorite = false;
+  int? _cachedUserId; // Cache userId để tránh gọi getCurrentUser nhiều lần
   
   // Rating và reviews từ API product_reviews (dữ liệu thật)
   double? _realRating;
   int? _realReviewsCount;
+  List<Map<String, dynamic>> _reviews = []; // Lưu reviews để hiển thị
+  bool _isLoadingReviews = false;
+  
+  // Progressive loading flags
+  bool _relatedLoaded = false;
+  bool _sameShopLoaded = false;
+  bool _ratingStatsLoaded = false;
+  bool _reviewsLoaded = false;
   
   Future<void> _toggleFavorite() async {
     if (_isTogglingFavorite || widget.productId == null) return;
@@ -88,14 +97,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     });
 
     try {
-      final currentUser = await _authService.getCurrentUser();
-      if (currentUser == null) {
-        _showSnack('Vui lòng đăng nhập để thực hiện thao tác này', background: Colors.red);
+      // Sử dụng cached userId nếu có, nếu không thì lấy lại
+      if (_cachedUserId == null) {
+        await _cacheUserId();
+      }
+      
+      if (_cachedUserId == null) {
+        if (mounted) {
+          setState(() {
+            _isTogglingFavorite = false;
+          });
+          _showSnack('Vui lòng đăng nhập để thực hiện thao tác này', background: Colors.red);
+        }
         return;
       }
 
       final result = await _apiService.toggleFavoriteProduct(
-        userId: currentUser.userId,
+        userId: _cachedUserId!,
         productId: widget.productId!,
       );
 
@@ -457,23 +475,222 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  Widget _buildPolicyItem({required IconData icon, required String text}) {
+  void _showVoucherDialog() {
+    if (_productDetail == null || !_productDetail!.hasCoupon) return;
+    
+    final couponInfo = _productDetail!.couponInfo;
+    final couponCode = _productDetail!.couponCode;
+    final couponType = couponInfo?['coupon_type'] as String? ?? '';
+    final couponDiscount = (couponInfo?['coupon_discount'] as num?)?.toInt() ?? 0;
+    final couponDescription = couponInfo?['coupon_description'] as String? ?? '';
+    final couponMinOrder = (couponInfo?['coupon_min_order'] as num?)?.toInt() ?? 0;
+    final currentPrice = _selectedVariant?.price ?? _productDetail!.price;
+    final isEligible = currentPrice >= couponMinOrder;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Title
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Mã giảm giá',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Voucher code
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFFFF8),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isEligible ? Colors.green : Colors.orange,
+                    width: 2,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.local_offer,
+                          color: isEligible ? Colors.green : Colors.orange,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                couponCode,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: isEligible ? Colors.green : Colors.orange,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                couponType == 'tru' 
+                                    ? 'Giảm ${couponDiscount.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')}đ'
+                                    : 'Giảm $couponDiscount%',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: isEligible ? Colors.green : Colors.orange,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            isEligible ? 'Đủ điều kiện' : 'Chưa đủ điều kiện',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Conditions
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Điều kiện sử dụng',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (couponMinOrder > 0)
+                    _buildPolicyItem(
+                      icon: Icons.shopping_cart_outlined,
+                      text: 'Đơn hàng tối thiểu: ${couponMinOrder.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')}đ',
+                      isEligible: currentPrice >= couponMinOrder,
+                    ),
+                  if (couponDescription.isNotEmpty) ...[
+                    if (couponMinOrder > 0) const SizedBox(height: 12),
+                    _buildPolicyItem(
+                      icon: Icons.info_outline,
+                      text: couponDescription,
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  _buildPolicyItem(
+                    icon: Icons.attach_money,
+                    text: 'Giá trị đơn hàng hiện tại: ${currentPrice.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')}đ',
+                    isEligible: isEligible,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Copy button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Copy coupon code to clipboard
+                    // TODO: Implement clipboard copy
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isEligible ? Colors.green : Colors.orange,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Sao chép mã',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPolicyItem({required IconData icon, required String text, bool? isEligible}) {
+    final iconColor = isEligible == null 
+        ? const Color(0xFF4CAF50) 
+        : (isEligible ? Colors.green : Colors.orange);
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(
           icon,
           size: 20,
-          color: const Color(0xFF4CAF50),
+          color: iconColor,
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: Colors.black87,
+              color: isEligible == null ? Colors.black87 : (isEligible ? Colors.green : Colors.orange),
               height: 1.5,
+              fontWeight: isEligible != null ? FontWeight.w600 : FontWeight.normal,
             ),
           ),
         ),
@@ -484,6 +701,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
+    // Cache userId một lần để tránh gọi getCurrentUser nhiều lần
+    _cacheUserId();
     if (widget.productId != null) {
       _loadProductDetail();
     } else {
@@ -492,28 +712,53 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       });
     }
   }
+  
+  /// Cache userId một lần để tránh gọi getCurrentUser nhiều lần
+  Future<void> _cacheUserId() async {
+    try {
+      final user = await _authService.getCurrentUser();
+      _cachedUserId = user?.userId;
+    } catch (e) {
+      _cachedUserId = null;
+    }
+  }
+  
+  void _onScroll() {
+    // Scroll detection không cần thiết nữa vì đã load ngay sau basic info
+    // Giữ lại để có thể dùng cho các tính năng khác sau này
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _pageController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  /// Load product basic info (Priority 1 - Immediate)
+  /// Sử dụng API mới product_detail_basic để load nhanh hơn
   Future<void> _loadProductDetail() async {
     try {
       setState(() {
         _isLoading = true;
         _error = null;
         _currentImageIndex = 0; // Reset image index
+        _reviews = []; // Reset reviews khi load lại
+        _isLoadingReviews = false; // Reset loading state
+        _reviewsLoaded = false; // Reset flag để có thể load lại
       });
 
-            // Sử dụng cached API service cho product detail với user_id
-            final currentUser = await _authService.getCurrentUser();
-            final productDetail = await _cachedApiService.getProductDetailCached(
-              widget.productId!,
-              userId: currentUser?.userId,
-            );
+      // Sử dụng cached userId để tránh gọi getCurrentUser nhiều lần
+      if (_cachedUserId == null) {
+        await _cacheUserId();
+      }
+      
+      // Sử dụng API mới product_detail_basic (tối ưu - chỉ basic info)
+      final productDetail = await _cachedApiService.getProductDetailBasicCached(
+        widget.productId!,
+        userId: _cachedUserId,
+      );
       
       if (mounted) {
         setState(() {
@@ -527,11 +772,25 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           }
         });
         
-        // Load sản phẩm cùng shop và sản phẩm liên quan sau khi load chi tiết sản phẩm
+        // Load các phần khác với delay để ưu tiên hiển thị basic info trước
         if (productDetail != null) {
-          _loadSameShopProducts();
-          _loadRelatedProducts();
-          _loadRatingStats(); // Load rating và reviewsCount từ API product_reviews (dữ liệu thật)
+          // Priority 2: Load rating stats sau 100ms (không block UI)
+          Future.delayed(const Duration(milliseconds: 100), () {
+            if (mounted) _loadRatingStats();
+          });
+          
+          // Priority 3: Load reviews sau 200ms (để hiển thị 2 reviews đầu tiên)
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted) _loadReviews();
+          });
+          
+          // Priority 4-5: Load các phần khác sau 300ms (lazy load)
+          Future.delayed(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              _loadRelatedProducts();
+              _loadSameShopProducts();
+            }
+          });
         }
       }
     } catch (e) {
@@ -544,8 +803,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+  /// Load same shop products (Priority 5 - Progressive, ngay sau basic info)
   Future<void> _loadSameShopProducts() async {
-    if (widget.productId == null) return;
+    if (widget.productId == null || _sameShopLoaded) return;
+    _sameShopLoaded = true;
     
     try {
       setState(() {
@@ -600,8 +861,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+  /// Load rating stats (Priority 2 - Deferred, ngay sau basic info)
   Future<void> _loadRatingStats() async {
-    if (widget.productId == null) return;
+    if (widget.productId == null || _ratingStatsLoaded) return;
+    _ratingStatsLoaded = true;
     
     try {
       // Lấy rating và reviewsCount từ API product_reviews (dữ liệu thật)
@@ -622,12 +885,65 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       }
     } catch (e) {
       // Lỗi không ảnh hưởng đến hiển thị, chỉ log
-      print('Error loading rating stats: $e');
+      // print('Error loading rating stats: $e');
     }
   }
 
+  /// Load reviews (Priority 3 - Deferred, ngay sau basic info)
+  /// Load 2 reviews đầu tiên để hiển thị trong ProductReviewsSection
+  Future<void> _loadReviews() async {
+    if (widget.productId == null || _reviewsLoaded) return;
+    _reviewsLoaded = true;
+    
+    try {
+      setState(() {
+        _isLoadingReviews = true;
+      });
+      
+      // Lấy 2 reviews đầu tiên từ API product_reviews
+      final reviewsData = await _apiService.getProductReviews(
+        productId: widget.productId!,
+        page: 1,
+        limit: 2, // Chỉ lấy 2 reviews đầu tiên để hiển thị
+      );
+      
+      if (mounted && reviewsData != null && reviewsData['success'] == true) {
+        final data = reviewsData['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final reviewsList = data['reviews'] as List?;
+          if (reviewsList != null) {
+            setState(() {
+              _reviews = reviewsList.cast<Map<String, dynamic>>();
+              _isLoadingReviews = false;
+            });
+          } else {
+            setState(() {
+              _isLoadingReviews = false;
+            });
+          }
+        } else {
+          setState(() {
+            _isLoadingReviews = false;
+          });
+        }
+      } else {
+        setState(() {
+          _isLoadingReviews = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingReviews = false;
+        });
+      }
+    }
+  }
+
+  /// Load related products (Priority 4 - Progressive, ngay sau basic info)
   Future<void> _loadRelatedProducts() async {
-    if (widget.productId == null) return;
+    if (widget.productId == null || _relatedLoaded) return;
+    _relatedLoaded = true;
     
     try {
       setState(() {
@@ -971,12 +1287,74 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   // Các method _handleMoreOptions, _shareProduct, _toggleFavorite, _reportProduct đã được xóa
   // vì nút ... đã bị ẩn theo yêu cầu
 
+  /// Skeleton loading widget (hiển thị khi đang load basic info)
+  Widget _buildSkeletonLoading() {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Image skeleton
+          Container(
+            height: 400,
+            width: double.infinity,
+            color: Colors.grey[200],
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Title skeleton
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 24,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 24,
+                  width: 200,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Price skeleton
+                Container(
+                  height: 32,
+                  width: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Skeleton loading khi đang load basic info
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Đang tải...')),
-        body: const Center(child: CircularProgressIndicator()),
+        appBar: AppBar(
+          title: const Text('Sản phẩm'),
+          backgroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: _buildSkeletonLoading(),
       );
     }
 
@@ -1458,31 +1836,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     VoucherRow(
                       couponCode: product!.couponCode,
                       couponDetails: product.couponDetails,
+                      onTap: () => _showVoucherDialog(),
                     ),
                 ],
               ),
             ),
           ),
-          // Hiển thị đánh giá thật - full width (tách ra khỏi padding)
-          if (product?.reviews != null && (product!.reviews as List).isNotEmpty)
-            SliverToBoxAdapter(
-              child: ProductReviewsSection(
-                reviews: product.reviews as List<Map<String, dynamic>>,
-                productId: product.id,
-                totalReviews: _realReviewsCount ?? product.reviewsCount, // Ưu tiên dữ liệu thật từ product_reviews API
-                rating: _realRating ?? product.rating, // Ưu tiên dữ liệu thật từ product_reviews API
-              ),
+          // Hiển thị đánh giá - LUÔN HIỂN THỊ (với loading state nếu chưa có data)
+          SliverToBoxAdapter(
+            child: ProductReviewsSection(
+              reviews: _reviews.isNotEmpty 
+                  ? _reviews 
+                  : (product?.reviews != null && (product!.reviews as List).isNotEmpty) 
+                      ? product.reviews as List<Map<String, dynamic>> 
+                      : [], // Empty list nếu chưa có reviews
+              productId: product?.id ?? widget.productId ?? 0,
+              totalReviews: _realReviewsCount ?? product?.reviewsCount ?? 0, // Ưu tiên dữ liệu thật từ product_reviews API
+              rating: _realRating ?? product?.rating ?? 0.0, // Ưu tiên dữ liệu thật từ product_reviews API
+              isLoading: _isLoadingReviews, // Truyền loading state
             ),
+          ),
           ShopBar(
             shopName: product?.shopNameFromInfo,
             shopAvatar: product?.shopAvatar,
             shopAddress: product?.shopAddress,
             shopUrl: product?.shopUrl,
+            rating: () {
+              final shopRating = product?.shopInfo?['shop_rating'] as double?;
+              return shopRating ?? 0.0;
+            }(),
+            reviewCount: () {
+              final shopReviews = product?.shopInfo?['shop_reviews'] as int?;
+              return shopReviews ?? 0;
+            }(),
             totalProducts: () {
               final totalProducts = product?.shopInfo?['total_products'] as int?;
-            
               return totalProducts;
-            }(), // Truyền số sản phẩm từ shopInfo với debug
+            }(),
             onViewShop: _navigateToShop,
           ),
           SliverToBoxAdapter(
@@ -1492,10 +1882,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 2), // Giảm từ 8 xuống 2
+                  // Sản phẩm cùng gian hàng - LUÔN HIỂN THỊ
                   if (_isLoadingSameShop)
-                    const SizedBox(
-                      height: 200,
-                      child: Center(child: CircularProgressIndicator()),
+                    Column(
+                      children: [
+                        const SectionHeader('Sản phẩm cùng gian hàng'),
+                        const SizedBox(
+                          height: 200,
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                      ],
                     )
                   else if (_sameShopProducts.isNotEmpty) ...[
                     ProductCarousel(
@@ -1507,14 +1903,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       }).toList(),
                     ),
                   ] else
-                    const SizedBox(
-                      height: 100,
-                      child: Center(
-                        child: Text(
-                          'Không có sản phẩm cùng gian hàng',
-                          style: TextStyle(color: Colors.grey),
+                    Column(
+                      children: [
+                        const SectionHeader('Sản phẩm cùng gian hàng'),
+                        const SizedBox(
+                          height: 100,
+                          child: Center(
+                            child: Text(
+                              'Không có sản phẩm cùng gian hàng',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   const SizedBox(height: 8), // Giảm từ 16 xuống 8
                   // Hiển thị đặc điểm nổi bật nếu có
@@ -1672,13 +2073,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   //   children: List.generate(6, (index) => ViewedProductCard(index: index)),
                   // ),
                   const SizedBox(height: 12), // Giảm từ 24 xuống 12
-                  // Sản phẩm liên quan từ API thật
+                  // Sản phẩm liên quan - LUÔN HIỂN THỊ
                   if (_isLoadingRelatedProducts)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: CircularProgressIndicator(),
-                      ),
+                    Column(
+                      children: [
+                        const SectionHeader('Sản phẩm liên quan'),
+                        const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: CircularProgressIndicator(),
+                          ),
+                        ),
+                      ],
                     )
                   else if (_relatedProducts.isNotEmpty) ...[
                     ProductCarousel(
@@ -1690,7 +2096,20 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       }).toList(),
                     ),
                   ] else
-                    const SizedBox.shrink(), // Ẩn nếu không có dữ liệu
+                    Column(
+                      children: [
+                        const SectionHeader('Sản phẩm liên quan'),
+                        const SizedBox(
+                          height: 100,
+                          child: Center(
+                            child: Text(
+                              'Không có sản phẩm liên quan',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 8), // Giảm từ 20 xuống 8
                 ],
               ),

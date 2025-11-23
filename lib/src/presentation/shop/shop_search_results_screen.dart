@@ -10,6 +10,7 @@ import '../product/product_detail_screen.dart';
 import '../../core/models/product_detail.dart';
 import '../../core/services/cart_service.dart';
 import '../../core/services/cached_api_service.dart';
+import '../../core/services/api_service.dart';
 
 class ShopSearchResultsScreen extends StatefulWidget {
   final int shopId;
@@ -578,7 +579,8 @@ class _ShopSearchResultsScreenState extends State<ShopSearchResultsScreen> {
 
   void _showPurchaseDialog(BuildContext context, ShopProduct product) async {
     try {
-      final productDetail = await CachedApiService().getProductDetailCached(product.id);
+      // Lấy thông tin biến thể sản phẩm (nhẹ, chỉ cho dialog)
+      final productDetail = await ApiService().getProductVariants(product.id);
       final parentContext = Navigator.of(context).context;
       
       if (parentContext.mounted && productDetail != null) {

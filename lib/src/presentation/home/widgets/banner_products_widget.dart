@@ -29,8 +29,17 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
   @override
   void initState() {
     super.initState();
-    // Load từ cache ngay lập tức
-    _loadBannerProductsFromCache();
+    // Chỉ load ngay nếu là banner đầu trang, các vị trí khác load lazy
+    if (widget.position == 'dau_trang') {
+      _loadBannerProductsFromCache();
+    } else {
+      // Delay load cho banner giữa/cuối trang để tăng tốc trang chủ
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _loadBannerProductsFromCache();
+        }
+      });
+    }
   }
 
   @override

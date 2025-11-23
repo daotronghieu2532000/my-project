@@ -284,7 +284,7 @@ class FlashSaleProductCardVertical extends StatelessWidget {
 
   void _showPurchaseDialog(BuildContext context) async {
     try {
-      final productDetail = await ApiService().getProductDetail(product.id);
+      final productDetail = await ApiService().getProductVariants(product.id);
       final parentContext = Navigator.of(context).context;
       
       if (parentContext.mounted && productDetail != null) {

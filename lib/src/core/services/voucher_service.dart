@@ -75,13 +75,6 @@ class VoucherService extends ChangeNotifier {
   /// - totalPrice: tổng tiền hàng tất cả shop (để backward compatibility)
   /// - items: danh sách items với shopId và giá (để tính subtotal theo shop) - format: [{'shopId': int, 'price': int, 'quantity': int}]
   int calculateTotalDiscount(int totalPrice, {List<Map<String, dynamic>>? items}) {
-    // 🔍 DEBUG: In ra thông tin để kiểm tra
-    print('🔍 [VOUCHER_DEBUG] ==========================================');
-    print('🔍 [VOUCHER_DEBUG] calculateTotalDiscount - totalPrice: $totalPrice');
-    print('🔍 [VOUCHER_DEBUG] items: $items');
-    print('🔍 [VOUCHER_DEBUG] Số lượng voucher shop đã áp dụng: ${_appliedVouchers.length}');
-    print('🔍 [VOUCHER_DEBUG] _appliedVouchers map: ${_appliedVouchers.map((k, v) => MapEntry(k.toString(), '${v.code} (${v.discountType}, ${v.discountValue})'))}');
-    
     int totalDiscount = 0;
     
     // ✅ Tính subtotal theo từng shop từ items (nếu có)
@@ -96,40 +89,22 @@ class VoucherService extends ChangeNotifier {
           shopSubtotals[shopId] = (shopSubtotals[shopId] ?? 0) + (price * quantity);
         }
       }
-      print('🔍 [VOUCHER_DEBUG] shopSubtotals map: $shopSubtotals');
     }
     
     for (final entry in _appliedVouchers.entries) {
       final shopId = entry.key;
-      final voucher = entry.value;
-      
-      print('🔍 [VOUCHER_DEBUG]   → Xử lý voucher shop $shopId:');
-      print('🔍 [VOUCHER_DEBUG]     Code: ${voucher.code}');
-      print('🔍 [VOUCHER_DEBUG]     Type: ${voucher.discountType}');
-      print('🔍 [VOUCHER_DEBUG]     Value: ${voucher.discountValue}');
-      print('🔍 [VOUCHER_DEBUG]     MaxDiscount: ${voucher.maxDiscountValue}');
       
       // ✅ Tính subtotal của shop này (nếu có trong shopSubtotals)
       final shopSubtotal = shopSubtotals[shopId] ?? totalPrice;
-      if (shopSubtotals.containsKey(shopId)) {
-        print('🔍 [VOUCHER_DEBUG]     Shop subtotal: $shopSubtotal (chỉ của shop $shopId)');
-      } else {
-        print('🔍 [VOUCHER_DEBUG]     ⚠️ Không tìm thấy shop $shopId trong items, dùng totalPrice: $totalPrice (TỔNG TẤT CẢ SHOP)');
-      }
       
       // ✅ Tính discount trên shopSubtotal (subtotal của shop đó), không phải totalPrice tổng
       final discount = calculateShopDiscount(shopId, shopSubtotal);
       
       if (discount > 0) {
-        print('🔍 [VOUCHER_DEBUG]     Discount tính được: $discount (trên shopSubtotal: $shopSubtotal)');
-        print('🔍 [VOUCHER_DEBUG]     ⚠️ QUAN TRỌNG: Tính trên shopSubtotal ($shopSubtotal), KHÔNG phải totalPrice tổng ($totalPrice)');
         totalDiscount += discount;
-        print('🔍 [VOUCHER_DEBUG]     ✅ Thêm discount vào tổng: $totalDiscount');
       }
     }
     
-    print('🔍 [VOUCHER_DEBUG] Tổng shopDiscount: $totalDiscount');
-    print('🔍 [VOUCHER_DEBUG] ==========================================');
     return totalDiscount;
   }
 
@@ -138,34 +113,15 @@ class VoucherService extends ChangeNotifier {
   /// - cartProductIds: danh sách product id trong giỏ (để kiểm tra applicable_products)
   /// - items: danh sách items với giá (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int}]
   int calculatePlatformDiscountWithItems(int subtotal, List<int> cartProductIds, {List<Map<String, dynamic>>? items}) {
-    // 🔍 DEBUG: In ra thông tin để kiểm tra
-    print('🔍 [VOUCHER_DEBUG] ==========================================');
-    print('🔍 [VOUCHER_DEBUG] calculatePlatformDiscountWithItems - subtotal: $subtotal');
-    print('🔍 [VOUCHER_DEBUG] cartProductIds: $cartProductIds');
-    print('🔍 [VOUCHER_DEBUG] items: $items');
-    
     final pv = _platformVoucher;
     if (pv == null || pv.discountValue == null) {
-      print('🔍 [VOUCHER_DEBUG] Không có platform voucher hoặc discountValue = null');
-      print('🔍 [VOUCHER_DEBUG] ==========================================');
       return 0;
     }
-
-    print('🔍 [VOUCHER_DEBUG] Platform voucher:');
-    print('🔍 [VOUCHER_DEBUG]   Code: ${pv.code}');
-    print('🔍 [VOUCHER_DEBUG]   Type: ${pv.discountType}');
-    print('🔍 [VOUCHER_DEBUG]   Value: ${pv.discountValue}');
-    print('🔍 [VOUCHER_DEBUG]   MaxDiscount: ${pv.maxDiscountValue}');
-    print('🔍 [VOUCHER_DEBUG]   MinOrder: ${pv.minOrderValue}');
 
     // Kiểm tra min order (dùng subtotal tổng để check)
     if (pv.minOrderValue != null && subtotal < pv.minOrderValue!.round()) {
-      print('🔍 [VOUCHER_DEBUG]   ⚠️ Không đủ min order: subtotal ($subtotal) < minOrder (${pv.minOrderValue})');
-      print('🔍 [VOUCHER_DEBUG] ==========================================');
       return 0;
     }
-
-    print('🔍 [VOUCHER_DEBUG]   ✅ Đủ min order');
 
     // Kiểm tra danh sách sản phẩm áp dụng (nếu có)
     final allowIds = <int>{};
@@ -174,15 +130,11 @@ class VoucherService extends ChangeNotifier {
         final id = int.tryParse(m['id'] ?? '');
         if (id != null) allowIds.add(id);
       }
-      print('🔍 [VOUCHER_DEBUG]   applicableProductsDetail: $allowIds');
     } else if (pv.applicableProducts != null && pv.applicableProducts!.isNotEmpty) {
       for (final s in pv.applicableProducts!) {
         final id = int.tryParse(s);
         if (id != null) allowIds.add(id);
       }
-      print('🔍 [VOUCHER_DEBUG]   applicableProducts: $allowIds');
-    } else {
-      print('🔍 [VOUCHER_DEBUG]   Không có giới hạn sản phẩm (áp dụng cho tất cả)');
     }
     
     // ✅ Tính subtotal chỉ của các sản phẩm trong danh sách áp dụng (nếu có giới hạn)
@@ -190,18 +142,10 @@ class VoucherService extends ChangeNotifier {
     
     if (allowIds.isNotEmpty) {
       final hasApplicable = cartProductIds.toSet().intersection(allowIds).isNotEmpty;
-      print('🔍 [VOUCHER_DEBUG]   Kiểm tra sản phẩm áp dụng:');
-      print('🔍 [VOUCHER_DEBUG]     allowIds: $allowIds');
-      print('🔍 [VOUCHER_DEBUG]     cartProductIds: ${cartProductIds.toSet()}');
-      print('🔍 [VOUCHER_DEBUG]     Giao nhau: ${cartProductIds.toSet().intersection(allowIds)}');
       
       if (!hasApplicable) {
-        print('🔍 [VOUCHER_DEBUG]   ⚠️ Không có sản phẩm nào trong danh sách áp dụng');
-        print('🔍 [VOUCHER_DEBUG] ==========================================');
         return 0;
       }
-      
-      print('🔍 [VOUCHER_DEBUG]   ✅ Có sản phẩm trong danh sách áp dụng');
       
       // ✅ Tính subtotal chỉ của các sản phẩm trong danh sách áp dụng
       if (items != null && items.isNotEmpty) {
@@ -214,37 +158,25 @@ class VoucherService extends ChangeNotifier {
           if (allowIds.contains(productId)) {
             final itemTotal = price * quantity;
             applicableSubtotal += itemTotal;
-            print('🔍 [VOUCHER_DEBUG]     Sản phẩm $productId (giá $price x $quantity = $itemTotal) → Thêm vào applicableSubtotal');
           }
         }
-        print('🔍 [VOUCHER_DEBUG]   Tổng subtotal các sản phẩm áp dụng: $applicableSubtotal');
-      } else {
-        print('🔍 [VOUCHER_DEBUG]   ⚠️ Không có items để tính subtotal, dùng subtotal tổng: $applicableSubtotal');
       }
-    } else {
-      print('🔍 [VOUCHER_DEBUG]   Không có giới hạn sản phẩm → áp dụng cho tất cả (dùng subtotal tổng: $applicableSubtotal)');
     }
 
     // Tính tiền giảm theo kiểu (trên applicableSubtotal, không phải subtotal tổng)
     int finalDiscount = 0;
     if (pv.discountType == 'percentage') {
       final discount = (applicableSubtotal * pv.discountValue! / 100).round();
-      print('🔍 [VOUCHER_DEBUG]   Discount tính được (percentage): $applicableSubtotal * ${pv.discountValue}% = $discount');
-      print('🔍 [VOUCHER_DEBUG]   ⚠️ QUAN TRỌNG: Tính trên applicableSubtotal ($applicableSubtotal), KHÔNG phải subtotal tổng ($subtotal)');
       
       if (pv.maxDiscountValue != null && pv.maxDiscountValue! > 0) {
         finalDiscount = discount > pv.maxDiscountValue!.round() ? pv.maxDiscountValue!.round() : discount;
-        print('🔍 [VOUCHER_DEBUG]   So sánh với maxDiscount (${pv.maxDiscountValue}): $finalDiscount');
       } else {
         finalDiscount = discount;
       }
     } else {
       finalDiscount = pv.discountValue!.round();
-      print('🔍 [VOUCHER_DEBUG]   Discount (fixed): $finalDiscount');
     }
     
-    print('🔍 [VOUCHER_DEBUG] Platform discount cuối cùng: $finalDiscount');
-    print('🔍 [VOUCHER_DEBUG] ==========================================');
     return finalDiscount;
   }
 
