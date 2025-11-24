@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -55,7 +56,9 @@ class _SearchScreenState extends State<SearchScreen> {
   
   // Focus node cho search field
   final FocusNode _searchFocusNode = FocusNode();
-
+  
+  // Debounce timer cho search suggestions
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -79,6 +82,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _searchFocusNode.dispose();
@@ -86,16 +90,27 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _onSearchChanged() {
-    // Debounce logic cho gợi ý từ khóa
+    // Hủy timer cũ nếu có
+    _debounceTimer?.cancel();
+    
     final keyword = _searchController.text.trim();
-    if (keyword.isNotEmpty && keyword.length >= 2) {
-      _loadSearchSuggestions(keyword);
-    } else {
+    
+    // Nếu keyword rỗng hoặc quá ngắn, clear suggestions ngay lập tức
+    if (keyword.isEmpty || keyword.length < 2) {
       setState(() {
         _searchSuggestions = [];
         _shopSuggestions = [];
       });
+      return;
     }
+    
+    // Debounce: chỉ gọi API sau 300ms khi user ngừng gõ
+    // Giảm từ 3-5 giây xuống còn < 500ms với cache
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted && _searchController.text.trim() == keyword) {
+        _loadSearchSuggestions(keyword);
+      }
+    });
   }
 
   void _onScroll() {

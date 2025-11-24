@@ -119,24 +119,24 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
         _isUserScrolling = false;
         if (_scrollController.hasClients) {
           try {
-            // Đảm bảo scroll position hợp lý trước khi resume
+          // Đảm bảo scroll position hợp lý trước khi resume
             final position = _scrollController.position;
             if (position.hasContentDimensions) {
               final maxScroll = position.maxScrollExtent;
-              final currentScroll = _scrollController.offset;
-              final oneThirdLength = maxScroll / 3;
-              
-              // Nếu đang ở phần cuối, reset về phần giữa
-              if (currentScroll >= oneThirdLength * 2) {
-                _scrollController.jumpTo(oneThirdLength);
-              }
-            }
+          final currentScroll = _scrollController.offset;
+          final oneThirdLength = maxScroll / 3;
+          
+          // Nếu đang ở phần cuối, reset về phần giữa
+          if (currentScroll >= oneThirdLength * 2) {
+            _scrollController.jumpTo(oneThirdLength);
+          }
+        }
           } catch (e) {
             // Ignore error, scroll controller chưa sẵn sàng
           }
         }
         if (mounted) {
-          _startAutoScroll();
+        _startAutoScroll();
         }
       }
     });
@@ -168,13 +168,13 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted && _scrollController.hasClients) {
                 try {
-                  // Bắt đầu từ phần giữa (duplicate đầu tiên) để có thể scroll cả 2 hướng
+                // Bắt đầu từ phần giữa (duplicate đầu tiên) để có thể scroll cả 2 hướng
                   final position = _scrollController.position;
                   if (position.hasContentDimensions) {
                     final maxScroll = position.maxScrollExtent;
                     if (maxScroll > 0) {
-                      final oneThirdLength = maxScroll / 3;
-                      _scrollController.jumpTo(oneThirdLength);
+                final oneThirdLength = maxScroll / 3;
+                _scrollController.jumpTo(oneThirdLength);
                     }
                   }
                 } catch (e) {
@@ -182,7 +182,7 @@ class _FeaturedBrandsSliderState extends State<FeaturedBrandsSlider> with Automa
                 }
               }
               if (mounted) {
-                _startAutoScroll();
+              _startAutoScroll();
               }
             });
           }

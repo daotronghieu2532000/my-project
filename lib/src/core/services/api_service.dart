@@ -2936,12 +2936,12 @@ class ApiService {
     try {
       // Tối ưu: Chỉ gọi trực tiếp parent category (nhanh hơn nhiều)
       // Không cần load child categories và merge (giảm từ 5-6 API calls xuống 1)
-      return await getProductsByCategory(
-        categoryId: parentCategoryId,
-        page: page,
-        limit: limit,
-        sort: sort,
-      );
+        return await getProductsByCategory(
+          categoryId: parentCategoryId,
+          page: page,
+          limit: limit,
+          sort: sort,
+        );
       
     } catch (e) {
       return {

@@ -36,7 +36,7 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
       // Delay load cho banner giữa/cuối trang để tăng tốc trang chủ
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
-          _loadBannerProductsFromCache();
+    _loadBannerProductsFromCache();
         }
       });
     }

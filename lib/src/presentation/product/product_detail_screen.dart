@@ -107,7 +107,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           setState(() {
             _isTogglingFavorite = false;
           });
-          _showSnack('Vui lòng đăng nhập để thực hiện thao tác này', background: Colors.red);
+        _showSnack('Vui lòng đăng nhập để thực hiện thao tác này', background: Colors.red);
         }
         return;
       }
@@ -742,14 +742,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     try {
       // Hiển thị UI ngay với loading state (không block)
       if (mounted) {
-        setState(() {
-          _isLoading = true;
-          _error = null;
-          _currentImageIndex = 0; // Reset image index
-          _reviews = []; // Reset reviews khi load lại
-          _isLoadingReviews = false; // Reset loading state
-          _reviewsLoaded = false; // Reset flag để có thể load lại
-        });
+      setState(() {
+        _isLoading = true;
+        _error = null;
+        _currentImageIndex = 0; // Reset image index
+        _reviews = []; // Reset reviews khi load lại
+        _isLoadingReviews = false; // Reset loading state
+        _reviewsLoaded = false; // Reset flag để có thể load lại
+      });
       }
 
       // Sử dụng cached userId để tránh gọi getCurrentUser nhiều lần
@@ -815,8 +815,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           // Priority 4-5: Load các phần khác sau 200ms (lazy load)
           Future.delayed(const Duration(milliseconds: 200), () {
             if (mounted) {
-              _loadRelatedProducts();
-              _loadSameShopProducts();
+          _loadRelatedProducts();
+          _loadSameShopProducts();
             }
           });
         }
@@ -968,12 +968,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _realReviewsCount = data['total_reviews'] as int?;
             
             // Cập nhật reviews
-            final reviewsList = data['reviews'] as List?;
-            if (reviewsList != null) {
+          final reviewsList = data['reviews'] as List?;
+          if (reviewsList != null) {
               _reviews = reviewsList.cast<Map<String, dynamic>>();
             }
-            _isLoadingReviews = false;
-          });
+              _isLoadingReviews = false;
+            });
         } else {
           setState(() {
             _isLoadingReviews = false;
@@ -1915,8 +1915,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             shopAddress: product?.shopAddress,
             shopUrl: product?.shopUrl,
             rating: () {
-              final shopRating = product?.shopInfo?['shop_rating'] as double?;
-              return shopRating ?? 0.0;
+              // shop_rating có thể là int (khi shop không có đánh giá) hoặc double (khi shop có đánh giá)
+              final shopRatingValue = product?.shopInfo?['shop_rating'];
+              if (shopRatingValue == null) return 0.0;
+              // Xử lý cả int và double
+              if (shopRatingValue is double) return shopRatingValue;
+              if (shopRatingValue is int) return shopRatingValue.toDouble();
+              // Fallback: thử parse nếu là String hoặc num
+              if (shopRatingValue is num) return shopRatingValue.toDouble();
+              return 0.0;
             }(),
             reviewCount: () {
               final shopReviews = product?.shopInfo?['shop_reviews'] as int?;

@@ -537,7 +537,7 @@ class CartService extends ChangeNotifier {
       
       // Cache userId một lần
       if (_currentUserId == null) {
-        final currentUser = await _authService.getCurrentUser();
+      final currentUser = await _authService.getCurrentUser();
         _currentUserId = currentUser?.userId;
       }
       

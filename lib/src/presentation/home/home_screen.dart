@@ -52,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     // Load popup banner trong background, không block UI
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
-        _loadPopupBanner();
+    _loadPopupBanner();
       }
     });
     
@@ -195,6 +195,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       // Đọc tất cả dữ liệu cần thiết một lần để giảm database operations
       final displayedBannerIdsString = prefs.getString('displayed_popup_banner_ids') ?? '';
       final lastResetTimeString = prefs.getString('popup_banner_last_reset_time');
+      final lastPopupDisplayTimeString = prefs.getString('popup_banner_last_display_time');
       
       List<int> displayedBannerIds = [];
       if (displayedBannerIdsString.isNotEmpty) {
@@ -211,10 +212,24 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         lastResetTime = DateTime.tryParse(lastResetTimeString);
       }
       
-      // Kiểm tra xem đã qua 24h chưa
+      DateTime? lastPopupDisplayTime;
+      if (lastPopupDisplayTimeString != null && lastPopupDisplayTimeString.isNotEmpty) {
+        lastPopupDisplayTime = DateTime.tryParse(lastPopupDisplayTimeString);
+      }
+      
+      // Kiểm tra xem đã qua 24h chưa (để reset danh sách banner đã hiển thị)
       final now = DateTime.now();
       final shouldReset = lastResetTime == null || 
           now.difference(lastResetTime).inHours >= 24;
+      
+      // Kiểm tra xem đã đủ 2 giờ kể từ lần hiển thị popup cuối cùng chưa
+      final canShowPopup = lastPopupDisplayTime == null || 
+          now.difference(lastPopupDisplayTime).inHours >= 2;
+      
+      // Nếu chưa đủ 2 giờ, không hiển thị popup
+      if (!canShowPopup) {
+        return;
+      }
       
       // Gọi API với danh sách banner đã hiển thị để loại trừ tất cả
       PopupBanner? popupBanner = await _apiService.getPopupBanner(
@@ -230,10 +245,10 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
           
           // Lưu thời gian reset (chỉ lưu khi cần)
           if (popupBanner != null) {
-            await prefs.setString(
-              'popup_banner_last_reset_time',
-              now.toIso8601String(),
-            );
+          await prefs.setString(
+            'popup_banner_last_reset_time',
+            now.toIso8601String(),
+          );
           }
         } else {
           // Chưa qua 24h, không hiển thị banner
@@ -245,24 +260,30 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         final bannerId = popupBanner.id;
         // Preload ảnh trong background, không block UI
         _preloadPopupImage(popupBanner.imageUrl).then((imageLoaded) {
-          if (mounted && imageLoaded) {
-            // Chỉ hiển thị popup khi ảnh đã load xong
-            setState(() {
-              _popupBanner = popupBanner;
-              _showPopup = true;
-            });
-            
-            // Thêm banner ID mới vào danh sách đã hiển thị
+        if (mounted && imageLoaded) {
+          // Chỉ hiển thị popup khi ảnh đã load xong
+          setState(() {
+            _popupBanner = popupBanner;
+            _showPopup = true;
+          });
+          
+          // Lưu thời gian hiển thị popup lần cuối
+          prefs.setString(
+            'popup_banner_last_display_time',
+            now.toIso8601String(),
+          );
+          
+          // Thêm banner ID mới vào danh sách đã hiển thị
             if (!displayedBannerIds.contains(bannerId)) {
               displayedBannerIds.add(bannerId);
-            }
-            
+          }
+          
             // Lưu danh sách banner ID đã hiển thị vào SharedPreferences (async, không block)
             prefs.setString(
-              'displayed_popup_banner_ids',
-              displayedBannerIds.join(','),
-            );
-          }
+            'displayed_popup_banner_ids',
+            displayedBannerIds.join(','),
+          );
+        }
         });
       }
     } catch (e) {
@@ -300,10 +321,29 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     }
   }
   
-  void _closePopup() {
+  void _closePopup() async {
     setState(() {
       _showPopup = false;
     });
+    
+    // Lưu thời gian đóng popup (để đảm bảo tính chính xác của 2 giờ)
+    // Nếu chưa lưu thời gian hiển thị ở _loadPopupBanner (do ảnh chưa load xong),
+    // thì lưu ở đây để đảm bảo
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final lastDisplayTimeString = prefs.getString('popup_banner_last_display_time');
+      
+      // Chỉ lưu nếu chưa có (trường hợp ảnh load nhanh và đã lưu ở _loadPopupBanner)
+      // hoặc nếu đã có thì không cần lưu lại
+      if (lastDisplayTimeString == null || lastDisplayTimeString.isEmpty) {
+        await prefs.setString(
+          'popup_banner_last_display_time',
+          DateTime.now().toIso8601String(),
+        );
+      }
+    } catch (e) {
+      // Ignore error
+    }
   }
 
   Future<void> _preloadData() async {
@@ -329,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             _cachedApiService.getHomeFlashSale(),
           ]);
         } catch (e) {
-          // Ignore errors
+          // Silent fail
         }
       });
       
@@ -343,7 +383,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
             // Banner products - load lazy khi scroll đến
           ]);
         } catch (e) {
-          // Ignore errors, không ảnh hưởng UI
+          // Silent fail
         }
       });
     } catch (e) {
@@ -497,7 +537,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                               bottom: BorderSide(color: Colors.grey[200]!, width: 1),
                             ),
                           ),
-                          child: ProductGrid(key: ValueKey('product_grid_$_refreshKey'), title: 'GỢI Ý TỚI BẠN '),
+                          // Tối ưu: Không dùng key động để tránh widget bị dispose/tạo lại
+                          // ProductGrid tự quản lý refresh thông qua _onAuthStateChanged
+                          child: ProductGrid(title: 'GỢI Ý TỚI BẠN '),
                         ),
                       ],
                     ),
