@@ -23,11 +23,42 @@ class ShippingQuoteService {
     bool useCache = true,
     bool enableFallback = true,
   }) async {
+    // ✅ Lấy tinh/huyen/xa để thêm vào cache key (quan trọng: API tính phí dựa trên tinh/huyen/xa, không phải Address ID)
+    // API lấy địa chỉ từ: SELECT ten_tinh, ten_huyen, ten_xa FROM dia_chi WHERE user_id='$user_id' AND active='1'
+    int? tinh;
+    int? huyen;
+    int? xa;
+    String? tenTinh;
+    String? tenHuyen;
+    String? tenXa;
+    try {
+      final api = ApiService();
+      final profile = await api.getUserProfile(userId: userId);
+      final addr = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstWhere(
+              (a) => (a?['active'] == 1 || a?['active'] == '1'),
+              orElse: () => null) ??
+          (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstOrNull;
+      if (addr != null) {
+        tinh = int.tryParse('${addr['tinh'] ?? 0}') ?? 0;
+        huyen = int.tryParse('${addr['huyen'] ?? 0}') ?? 0;
+        xa = int.tryParse('${addr['xa'] ?? 0}');
+        tenTinh = addr['ten_tinh']?.toString();
+        tenHuyen = addr['ten_huyen']?.toString();
+        tenXa = addr['ten_xa']?.toString();
+     
+      }
+    } catch (e) {
+      print('   - ⚠️ Không lấy được địa chỉ: $e');
+    }
+    
     // ✅ 1. Kiểm tra cache trước
     if (useCache) {
-      final cached = await _getCachedQuote(userId, items);
+      final cached = await _getCachedQuote(userId, items, tinh, huyen, xa);
       if (cached != null) {
+       
         return cached;
+      } else {
+        print('❌ [ShippingQuoteService.getShippingQuote] Cache không có, sẽ gọi API');
       }
     }
 
@@ -44,11 +75,13 @@ class ShippingQuoteService {
         );
 
         if (result != null && result['success'] == true) {
-          // ✅ Lưu vào cache khi thành công
+
           if (useCache) {
-            await _saveCachedQuote(userId, items, result);
+            await _saveCachedQuote(userId, items, result, tinh, huyen, xa);
           }
           return result;
+        } else {
+          print('⚠️ [ShippingQuoteService.getShippingQuote] API call không thành công (attempt $attempt)');
         }
       } catch (e) {
         lastError = e is Exception ? e : Exception(e.toString());
@@ -178,10 +211,13 @@ class ShippingQuoteService {
   Future<Map<String, dynamic>?> _getCachedQuote(
     int userId,
     List<Map<String, dynamic>> items,
+    int? tinh,
+    int? huyen,
+    int? xa,
   ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = _generateCacheKey(userId, items);
+      final cacheKey = _generateCacheKey(userId, items, tinh, huyen, xa);
       final cachedJson = prefs.getString(cacheKey);
 
       if (cachedJson != null) {
@@ -206,10 +242,13 @@ class ShippingQuoteService {
     int userId,
     List<Map<String, dynamic>> items,
     Map<String, dynamic> quote,
+    int? tinh,
+    int? huyen,
+    int? xa,
   ) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cacheKey = _generateCacheKey(userId, items);
+      final cacheKey = _generateCacheKey(userId, items, tinh, huyen, xa);
       final cacheData = {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
         'data': quote,
@@ -219,8 +258,15 @@ class ShippingQuoteService {
     }
   }
 
-  /// Tạo cache key từ userId và items
-  String _generateCacheKey(int userId, List<Map<String, dynamic>> items) {
+  /// Tạo cache key từ userId, items và tinh/huyen/xa (✅ Quan trọng: API tính phí dựa trên tinh/huyen/xa)
+  /// Cache key format: shipping_quote_cache_{userId}_t{tinh}_h{huyen}_x{xa}_{itemsHash}
+  String _generateCacheKey(
+    int userId, 
+    List<Map<String, dynamic>> items, 
+    int? tinh, 
+    int? huyen, 
+    int? xa,
+  ) {
     // Sắp xếp items để đảm bảo cùng key cho cùng items
     final sortedItems = List<Map<String, dynamic>>.from(items)
       ..sort((a, b) => (a['product_id'] ?? 0).compareTo(b['product_id'] ?? 0));
@@ -229,7 +275,16 @@ class ShippingQuoteService {
         .map((i) => '${i['product_id']}_${i['quantity']}')
         .join(',');
     
-    return '$_cachePrefix${userId}_$itemsHash';
+    // ✅ Thêm tinh/huyen/xa vào cache key (API tính phí dựa trên đây, không phải Address ID)
+    // Format: t7_h83_x1434 (tỉnh 7, huyện 83, xã 1434)
+    final tinhStr = tinh != null && tinh > 0 ? 't$tinh' : 't0';
+    final huyenStr = huyen != null && huyen > 0 ? 'h$huyen' : 'h0';
+    final xaStr = xa != null && xa > 0 ? 'x$xa' : 'x0';
+    final addressPart = '_$tinhStr\_$huyenStr\_$xaStr';
+    
+    final cacheKey = '$_cachePrefix${userId}$addressPart\_$itemsHash';
+   
+    return cacheKey;
   }
 
   /// Xóa cache (dùng khi cần refresh)

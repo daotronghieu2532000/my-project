@@ -37,7 +37,7 @@ class _DeliveryInfoSectionState extends State<DeliveryInfoSection> {
   }
 
   Future<void> _openAddressBook() async {
-    // Kiểm tra đăng nhập trước
+   
     final u = await _auth.getCurrentUser();
     if (u == null) {
       // Nếu chưa đăng nhập, navigate đến trang đăng nhập
@@ -45,6 +45,7 @@ class _DeliveryInfoSectionState extends State<DeliveryInfoSection> {
       // Nếu đăng nhập thành công, reload lại địa chỉ và trigger refresh shipping
       if (loginResult == true) {
         await _load();
+      
         // Trigger refresh shipping để OrderSummarySection tự động tính lại phí ship
         ShippingEvents.refresh();
       }
@@ -53,6 +54,9 @@ class _DeliveryInfoSectionState extends State<DeliveryInfoSection> {
     // Nếu đã đăng nhập, mở trang địa chỉ
     await Navigator.of(context).pushNamed('/profile/address');
     await _load();
+   
+    // ✅ Trigger refresh shipping để tính lại phí ship với địa chỉ mới
+    ShippingEvents.refresh();
   }
 
   @override

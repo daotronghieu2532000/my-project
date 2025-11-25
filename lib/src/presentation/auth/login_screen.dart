@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/auth_service.dart';
+import '../common/widgets/welcome_bonus_dialog.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -50,6 +52,9 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
           
+          // ✅ Kiểm tra và hiển thị dialog cảm ơn nếu có bonus mới
+          await _showWelcomeBonusDialogIfNeeded(context);
+          
           // Quay lại màn hình trước
           Navigator.of(context).pop(true);
         } else {
@@ -93,6 +98,37 @@ class _LoginScreenState extends State<LoginScreen> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  /// Hiển thị dialog cảm ơn nếu user vừa nhận bonus mới
+  Future<void> _showWelcomeBonusDialogIfNeeded(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final shouldShow = prefs.getBool('show_bonus_dialog') ?? false;
+      
+      if (shouldShow) {
+        // Đánh dấu đã hiển thị để không hiển thị lại
+        await prefs.setBool('show_bonus_dialog', false);
+        await prefs.setBool('welcome_bonus_dialog_shown', true);
+        
+        // Hiển thị dialog sau một chút delay để UI mượt hơn
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false, // Không cho đóng bằng cách tap outside
+            builder: (context) => WelcomeBonusDialog(
+              onClose: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Ignore error
     }
   }
 

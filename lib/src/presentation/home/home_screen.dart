@@ -14,6 +14,7 @@ import 'widgets/service_guarantees.dart';
 import 'widgets/banner_products_widget.dart';
 // import 'widgets/dedication_section.dart'; // Tận tâm - Tận tình - Tận tụy
 import '../common/widgets/go_top_button.dart';
+import '../common/widgets/welcome_bonus_dialog.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
@@ -53,6 +54,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
     _loadPopupBanner();
+      }
+    });
+    
+    // ✅ Kiểm tra và hiển thị dialog cảm ơn nếu có bonus mới (sau khi vào home)
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        _showWelcomeBonusDialogIfNeeded();
       }
     });
     
@@ -321,6 +329,34 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     }
   }
   
+  /// Hiển thị dialog cảm ơn nếu user vừa nhận bonus mới
+  Future<void> _showWelcomeBonusDialogIfNeeded() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final shouldShow = prefs.getBool('show_bonus_dialog') ?? false;
+      
+      if (shouldShow) {
+        // Đánh dấu đã hiển thị để không hiển thị lại
+        await prefs.setBool('show_bonus_dialog', false);
+        await prefs.setBool('welcome_bonus_dialog_shown', true);
+        
+        if (mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false, // Không cho đóng bằng cách tap outside
+            builder: (context) => WelcomeBonusDialog(
+              onClose: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Ignore error
+    }
+  }
+
   void _closePopup() async {
     setState(() {
       _showPopup = false;

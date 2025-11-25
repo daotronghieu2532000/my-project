@@ -535,20 +535,11 @@ class _OrdersListState extends State<_OrdersList> {
               // Product summary row (image + info)
               _buildProductSummary(first, count),
               const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Text('Tổng số tiền: ', style: TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
-                  Text(
-                    _formatPrice(o['tongtien_formatted'] ?? ''),
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFFFF6B35)),
-                  ),
-                  const Spacer(),
-                  const Icon(Icons.chevron_right, color: Color(0xFFB0B0B0))
-                ],
-              ),
-              // Show shipping fee if available
+
+              // === ĐÃ SỬA THEO YÊU CẦU: ĐỔI THỨ TỰ + TĂNG SIZE TỔNG TIỀN ===
+              // 1. Phí vận chuyển (nếu có) - hiện trước
               if ((o['phi_ship'] ?? 0) > 0) ...[
-                const SizedBox(height: 4),
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     const Text('Phí vận chuyển: ', style: TextStyle(fontSize: 12, color: Color(0xFF6C757D))),
@@ -557,14 +548,35 @@ class _OrdersListState extends State<_OrdersList> {
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1976D2)),
                     ),
                     const Spacer(),
-                    // Show review button only for status 5 (Đánh giá tab)
-                    if ((o['status'] as int? ?? 0) == 5)
-                      _buildReviewButton(o),
+                    if ((o['status'] as int? ?? 0) == 5) _buildReviewButton(o),
                   ],
                 ),
-              ] else if ((o['status'] as int? ?? 0) == 5) ...[
-                // If no shipping fee, still show review button for status 5
-                const SizedBox(height: 4),
+              ],
+
+              // 2. Tổng số tiền - luôn hiển thị, to hơn, đậm hơn
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Text(
+                    'Tổng số tiền: ',
+                    style: TextStyle(fontSize: 13, color: Color(0xFF333333), fontWeight: FontWeight.w600),
+                  ),
+                  Text(
+                    _formatPrice(o['tongtien_formatted'] ?? ''),
+                    style: const TextStyle(
+                      fontSize: 15.2,        // Tăng từ 14 → 15.2
+                      fontWeight: FontWeight.w800,  // Đậm hơn
+                      color: Color(0xFFFF6B35),
+                    ),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.chevron_right, color: Color(0xFFB0B0B0))
+                ],
+              ),
+
+              // Nếu không có phí ship nhưng vẫn cần nút đánh giá → hiện riêng
+              if ((o['phi_ship'] ?? 0) == 0 && (o['status'] as int? ?? 0) == 5) ...[
+                const SizedBox(height: 8),
                 Row(
                   children: [
                     const Spacer(),
@@ -572,6 +584,24 @@ class _OrdersListState extends State<_OrdersList> {
                   ],
                 ),
               ],
+
+              // Hiển thị bonus_used nếu có
+              if ((o['bonus_used'] ?? 0) > 0) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      'Quà tặng: -${_formatPrice(o['bonus_used_formatted'] ?? '')}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+
               // Show voucher info if available
               if ((o['voucher_tmdt'] ?? 0) > 0) ...[
                 const SizedBox(height: 6),
@@ -595,6 +625,7 @@ class _OrdersListState extends State<_OrdersList> {
                   ),
                 ),
               ],
+
               // Show delivery ETA if available, otherwise show last update
               if ((etaText.isNotEmpty) || (o['delivery_eta_text'] ?? '').toString().isNotEmpty || (o['date_update_formatted'] ?? '').toString().isNotEmpty) ...[
                 const SizedBox(height: 10),
@@ -1188,5 +1219,3 @@ class _LoggedOutView extends StatelessWidget {
     );
   }
 }
-
-

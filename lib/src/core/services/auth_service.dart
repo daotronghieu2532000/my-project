@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'push_notification_service.dart';
+import 'first_time_bonus_service.dart';
 import '../models/user.dart';
 
 class AuthService {
@@ -91,6 +92,20 @@ class AuthService {
             final user = User.fromJson(data['data']);
             await _saveUser(user);
             
+            // ✅ Kiểm tra và tặng bonus lần đầu tải app
+            final bonusService = FirstTimeBonusService();
+            final bonusInfo = await bonusService.checkAndGrantBonus(user.userId);
+            
+            // Lưu thông tin bonus vào SharedPreferences để hiển thị UI
+            if (bonusInfo != null) {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('first_time_bonus_info', jsonEncode(bonusInfo));
+              
+              // Nếu là bonus mới, lưu flag để hiển thị dialog
+              if (bonusInfo['is_new_bonus'] == true) {
+                await prefs.setBool('show_bonus_dialog', true);
+              }
+            }
             
             // Register FCM token sau khi login thành công
             _registerPushToken();

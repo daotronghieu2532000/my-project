@@ -632,14 +632,18 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           const SizedBox(height: 16),
           _buildPaymentRow('Tạm tính', _detail!['tamtinh_formatted'] ?? '', isTotal: false),
           _buildPaymentRow('Phí vận chuyển', _detail!['phi_ship_formatted'] ?? '', isTotal: false),
-          if ((_detail!['ship_support'] ?? 0) > 0)
-            _buildPaymentRow('Phí hỗ trợ giao hàng', _detail!['ship_support_formatted'] ?? '', isTotal: false),
+          // ✅ Chỉ hiển thị ship_support nếu > 0 (kiểm tra cả số và chuỗi)
+          if ((int.tryParse((_detail!['ship_support'] ?? 0).toString()) ?? 0) > 0)
+            _buildPaymentRow('Phí hỗ trợ giao hàng', '-${_detail!['ship_support_formatted'] ?? ''}', isTotal: false),
           
           // Voucher và giảm giá
-          if ((_detail!['voucher_tmdt'] ?? 0) > 0)
+          if ((int.tryParse((_detail!['voucher_tmdt'] ?? 0).toString()) ?? 0) > 0)
             _buildVoucherRow('Voucher giảm giá', _detail!['voucher_tmdt_formatted'] ?? '', _detail!['coupon_code'] ?? ''),
-          if ((_detail!['giam'] ?? 0) > 0)
-            _buildPaymentRow('Giảm giá khác', _detail!['giam_formatted'] ?? '', isTotal: false),
+          if ((int.tryParse((_detail!['giam'] ?? 0).toString()) ?? 0) > 0)
+            _buildPaymentRow('Voucher', '-${_detail!['giam_formatted'] ?? ''}', isTotal: false),
+          // ✅ Bonus lần đầu tải app
+          if ((int.tryParse((_detail!['bonus_used'] ?? 0).toString()) ?? 0) > 0)
+            _buildPaymentRow('🎁 Quà tặng lần đầu tải ứng dụng', '-${_detail!['bonus_used_formatted'] ?? ''}', isTotal: false),
           
           const Divider(height: 24),
           _buildPaymentRow('Tổng thanh toán', _detail!['tongtien_formatted'] ?? '', isTotal: true),

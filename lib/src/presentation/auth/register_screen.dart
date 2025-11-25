@@ -102,6 +102,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           if (mounted) {
             if (loginResult['success'] == true) {
               // Đăng nhập thành công, chuyển vào trang chủ
+              // Dialog cảm ơn sẽ được hiển thị ở home_screen
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
                   builder: (context) => const RootShell(initialIndex: 0),

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'payment_detail_row.dart';
 import '../../../core/services/cart_service.dart' as cart_service;
 import '../../../core/services/voucher_service.dart';
+import '../../../core/services/first_time_bonus_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/services/shipping_quote_store.dart';
 
@@ -13,6 +17,11 @@ class PaymentDetailsSection extends StatefulWidget {
 }
 
 class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
+  final FirstTimeBonusService _bonusService = FirstTimeBonusService();
+  final AuthService _authService = AuthService();
+  Map<String, dynamic>? _bonusInfo;
+  bool _bonusLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -20,6 +29,7 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     cart_service.CartService().addListener(_onCartChanged);
     VoucherService().addListener(_onVoucherChanged);
     ShippingQuoteStore().addListener(_onShippingChanged);
+    _loadBonusInfo();
   }
 
   @override
@@ -42,12 +52,58 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _loadBonusInfo() async {
+    final loggedIn = await _authService.isLoggedIn();
+    if (!loggedIn) {
+      if (mounted) {
+        setState(() {
+          _bonusLoading = false;
+          _bonusInfo = null;
+        });
+      }
+      return;
+    }
+
+    final user = await _authService.getCurrentUser();
+    if (user == null) {
+      if (mounted) {
+        setState(() {
+          _bonusLoading = false;
+          _bonusInfo = null;
+        });
+      }
+      return;
+    }
+
+    // ✅ LUÔN gọi API để lấy thông tin bonus mới nhất (không dùng cache)
+    // Vì bonus có thể đã hết sau khi đặt hàng thành công
+    await _fetchBonusInfo(user.userId);
+  }
+
+  Future<void> _fetchBonusInfo(int userId) async {
+    final bonusInfo = await _bonusService.getBonusInfo(userId);
+    
+    // ✅ Cập nhật SharedPreferences với thông tin mới nhất
+    if (bonusInfo != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('first_time_bonus_info', jsonEncode(bonusInfo));
+    }
+    
+    if (mounted) {
+      setState(() {
+        _bonusInfo = bonusInfo;
+        _bonusLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cart = cart_service.CartService();
     final voucherService = VoucherService();
     final items = cart.items.where((i) => i.isSelected).toList();
     final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+    
     // Tính giảm giá: cộng dồn voucher shop (đã áp dụng) + voucher sàn trên subtotal
     final shopDiscount = voucherService.calculateTotalDiscount(
       totalGoods,
@@ -59,14 +115,29 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
       items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
     );
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
+
+    
     // Lấy phí ship từ store đã cập nhật bởi OrderSummarySection
     final shipFee = ShippingQuoteStore().lastFee;
     final shipSupport = ShippingQuoteStore().shipSupport;
-    final grandTotal = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
-    
-    // Debug log để so sánh với BottomOrderBar
    
-
+    
+    // ✅ Tính tổng thanh toán trước bonus (sau voucher và ship)
+    final subtotalAfterVoucher = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
+    // ✅ Tính bonus discount: 10% của TỔNG TIỀN HÀNG (totalGoods), KHÔNG phải subtotalAfterVoucher
+    int bonusDiscount = 0;
+    
+    if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
+      final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
+     
+      // ✅ Tính 10% của TỔNG TIỀN HÀNG (totalGoods), không phải subtotalAfterVoucher
+      bonusDiscount = _bonusService.calculateBonusAmount(totalGoods, remainingAmount);
+     
+    }
+    
+    final grandTotal = (subtotalAfterVoucher - bonusDiscount).clamp(0, 1 << 31);
+   
+  
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -83,9 +154,12 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
           const SizedBox(height: 16),
           PaymentDetailRow('Tổng tiền hàng', FormatUtils.formatCurrency(totalGoods)),
           if (shipSupport > 0)
-            PaymentDetailRow('Hỗ trợ ship', '-${FormatUtils.formatCurrency(shipSupport)}', isRed: true),
           PaymentDetailRow('Tổng tiền phí vận chuyển', FormatUtils.formatCurrency(shipFee)),
+          PaymentDetailRow('Hỗ trợ ship', '-${FormatUtils.formatCurrency(shipSupport)}', isRed: true),
           PaymentDetailRow('Tổng cộng Voucher giảm giá', '-${FormatUtils.formatCurrency(voucherDiscount)}', isRed: true),
+          // ✅ Hiển thị bonus discount nếu có
+          if (bonusDiscount > 0)
+            PaymentDetailRow('🎁 Quà tặng lần đầu tải ứng dụng', '-${FormatUtils.formatCurrency(bonusDiscount)}', isRed: true),
           const Divider(height: 20),
           PaymentDetailRow('Tổng thanh toán', FormatUtils.formatCurrency(grandTotal), isBold: true),
         ],

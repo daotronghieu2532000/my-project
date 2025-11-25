@@ -114,16 +114,16 @@ class ProductReviewsSection extends StatelessWidget {
           )
         else if (hasReviews)
           // Có reviews, hiển thị
-          ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                itemCount: reviews!.length > 2 ? 2 : reviews!.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  final review = reviews![index];
-                  return _buildReviewItem(review);
-                },
+        ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: EdgeInsets.zero,
+              itemCount: reviews!.length > 2 ? 2 : reviews!.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final review = reviews![index];
+                return _buildReviewItem(review);
+              },
           )
         else if (totalReviews != null && totalReviews! > 0)
           // Có reviews nhưng chưa load được (có thể đang load hoặc lỗi)
@@ -158,7 +158,7 @@ class ProductReviewsSection extends StatelessWidget {
                 ),
               ),
             ),
-          ),
+        ),
       ],
     );
   }

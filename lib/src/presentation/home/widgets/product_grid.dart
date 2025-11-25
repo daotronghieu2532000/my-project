@@ -33,7 +33,7 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
   static const int _initialDisplayCount = 10; // Số sản phẩm hiển thị ban đầu
   static const int _loadMoreCount = 10; // Số sản phẩm load thêm mỗi lần khi scroll
   static const int _apiLoadLimit = 50; // Số sản phẩm load từ API một lần
-  static const int _maxProductsLimit = 150; // GIỚI HẠN: Tối đa 200 sản phẩm trong _allProducts để tránh memory leak
+  static const int _maxProductsLimit = 250; // GIỚI HẠN: Tối đa 200 sản phẩm trong _allProducts để tránh memory leak
   int _currentDisplayCount = 0; // Số sản phẩm đang hiển thị
   bool _hasMore = true; // Còn sản phẩm để hiển thị không
   int? _cachedUserId; // Cache userId để tránh gọi getCurrentUser nhiều lần

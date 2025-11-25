@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'widgets/delivery_info_section.dart';
 import 'widgets/product_section.dart';
 import 'widgets/order_summary_section.dart';
+import 'widgets/first_time_bonus_section.dart';
 import 'widgets/voucher_section.dart';
 import 'widgets/payment_methods_section.dart';
 import 'widgets/payment_details_section.dart';
@@ -147,6 +148,20 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 12),
           const OrderSummarySection(),
           const SizedBox(height: 12),
+          Builder(
+            builder: (context) {
+              // ✅ Tính tổng tiền hàng (totalGoods) để truyền vào FirstTimeBonusSection
+              // Bonus tính 10% của TỔNG TIỀN HÀNG, không phải tổng thanh toán sau voucher/ship
+              final cart = _cartService;
+              final items = cart.items.where((i) => i.isSelected).toList();
+              final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+
+              return FirstTimeBonusSection(
+                orderTotal: totalGoods, // ✅ Truyền totalGoods, không phải tổng thanh toán sau voucher/ship
+              );
+            },
+          ),
+          const SizedBox(height: 12),
           const VoucherSection(),
           const SizedBox(height: 12),
           PaymentMethodsSection(
@@ -244,6 +259,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       );
       return;
     }
+    
+   
     final ship = ShippingQuoteStore();
     final voucherService = VoucherService();
     
@@ -360,6 +377,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'price': item['gia_moi'], // ✅ Thêm giá để fallback tính chính xác
       }).toList();
       
+    
+      
       // ✅ Sử dụng ShippingQuoteService với retry, timeout, fallback, và cache
       final shippingQuote = await _shippingQuoteService.getShippingQuote(
         userId: user.userId,
@@ -368,14 +387,18 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         enableFallback: true, // ✅ Cho phép fallback nếu API fail
       );
       
+      
       if (shippingQuote != null && shippingQuote['success'] == true) {
         // ✅ Lấy phí ship gốc từ API (nếu có) để đảm bảo chính xác
         final bestOverall = shippingQuote['data']?['best'] as Map<String, dynamic>?;
         if (bestOverall != null) {
-          originalShipFee = bestOverall['fee'] as int? ?? ship.lastFee; // Phí ship gốc từ API
+          final apiFee = bestOverall['fee'] as int? ?? ship.lastFee;
+         
+          originalShipFee = apiFee; // Phí ship gốc từ API
           // ✅ Không override shipSupport từ store, vì store đã có giá trị đúng
           // shipSupport từ store đã được set từ OrderSummarySection với giá trị chính xác
         }
+        
         
         // ✅ Lấy warehouse_shipping_details để map provider cho từng shop
         // Ưu tiên lấy từ best['warehouse_details'], sau đó từ warehouse_shipping

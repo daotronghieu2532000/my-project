@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../../core/services/cart_service.dart' as cart_service;
 import '../../../core/services/shipping_events.dart';
 import '../../../core/services/shipping_quote_store.dart';
@@ -17,6 +18,7 @@ class OrderSummarySection extends StatefulWidget {
 
 class _OrderSummarySectionState extends State<OrderSummarySection> {
   final _auth = AuthService();
+  final _api = ApiService();
   final _shippingQuoteService = ShippingQuoteService(); // ✅ Sử dụng service chuyên nghiệp
   int? _shipFee;
   int? _originalShipFee; // Phí ship gốc
@@ -71,7 +73,26 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
   }
 
   Future<void> _loadShippingQuote() async {
+
     final u = await _auth.getCurrentUser();
+    
+    // ✅ DEBUG: Lấy và print địa chỉ mặc định
+    if (u != null) {
+      try {
+        final profile = await _api.getUserProfile(userId: u.userId);
+        final addr = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstWhere(
+                (a) => (a?['active'] == 1 || a?['active'] == '1'),
+                orElse: () => null) ??
+            (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstOrNull;
+        if (addr != null) {
+          print('   - Xã: ${addr['xa']} (${addr['ten_xa']})');
+        } else {
+          print('⚠️ [OrderSummarySection._loadShippingQuote] Không tìm thấy địa chỉ mặc định');
+        }
+      } catch (e) {
+        print('❌ [OrderSummarySection._loadShippingQuote] Lỗi khi lấy địa chỉ: $e');
+      }
+    }
     
     // Chuẩn bị danh sách items trong giỏ với giá thực tế
     final cart = cart_service.CartService();
@@ -83,6 +104,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
               'price': i.price, // ✅ Thêm giá để fallback tính chính xác hơn
             })
         .toList();
+    
     
     // ✅ Nếu chưa đăng nhập, hiển thị thông báo yêu cầu đăng nhập
     if (u == null) {
@@ -112,6 +134,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       return;
     }
   
+    
     // ✅ Sử dụng ShippingQuoteService với retry, timeout, fallback, và cache
     final rawQuote = await _shippingQuoteService.getShippingQuote(
       userId: u.userId,
@@ -119,6 +142,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       useCache: true,
       enableFallback: true,
     );
+   
     if (!mounted) return;
     setState(() {
       // ✅ Kiểm tra xem có phải fallback không
@@ -319,6 +343,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         provider: _provider,
         shipSupport: _shipSupport ?? 0,
       );
+      
+    
     });
   }
 
