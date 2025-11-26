@@ -1,0 +1,51 @@
+Nhóm chức năng,STT,Tên Test Case,Các bước thực hiện,Dữ liệu đầu vào,Kết quả mong đợi,Kết quả thực tế,Trạng thái,Ghi chú
+"Đăng ký tham gia",1,"Đăng ký thành công","1. Đăng nhập
+2. Vào mục Affiliate
+3. Nhấn ""Đăng ký""","Tài khoản mới, chưa đăng ký Affiliate","Hiển thị thông báo thành công, tài khoản được kích hoạt Affiliate",,,
+"Đăng ký tham gia",2,"Đăng ký lại","1. Đăng nhập tài khoản đã đăng ký
+2. Vào mục Affiliate","Tài khoản đã đăng ký Affiliate","Hiển thị thông báo ""Bạn đã tham gia chương trình Affiliate""",,,
+"Tạo link giới thiệu",3,"Tạo link sản phẩm","1. Vào trang chi tiết sản phẩm
+2. Nhấn ""Lấy link giới thiệu""","ID sản phẩm hợp lệ","Tạo thành công link dạng: https://socdo.xyz/x/[mã_ngẫu_nhiên]",,,
+"Tạo link giới thiệu",4,"Tạo link sản phẩm không tồn tại","1. Gọi API tạo link với sp_id không tồn tại","sp_id=999999","Trả về lỗi ""Sản phẩm không tồn tại""",,,
+"Quản lý đơn hàng",5,"Đơn hàng thành công","1. Click vào link giới thiệu
+2. Thêm sản phẩm vào giỏ
+3. Thanh toán thành công","Link hợp lệ, đơn hàng thành công","- Hiển thị trong mục Đơn hàng
+- Trạng thái ""Chờ xác nhận""",,,
+"Quản lý đơn hàng",6,"Hủy đơn hàng","1. Hủy đơn hàng từ link giới thiệu","Đơn hàng đã hủy","- Cập nhật trạng thái ""Đã hủy""
+- Không tính hoa hồng",,,
+"Rút tiền hoa hồng",7,"Rút tiền thành công","1. Vào mục Rút tiền
+2. Nhập số tiền
+3. Chọn ngân hàng
+4. Xác nhận","Số tiền <= số dư khả dụng","- Trừ số dư khả dụng
+- Thêm vào lịch sử rút tiền
+- Gửi thông báo xác nhận",,,
+"Rút tiền hoa hồng",8,"Rút vượt số dư","1. Nhập số tiền > số dư khả dụng","Số tiền = số dư + 100,000đ","Hiển thị thông báo ""Số dư không đủ""",,,
+"Báo cáo thống kê",9,"Xem báo cáo","1. Vào mục Báo cáo
+2. Chọn khoảng thời gian","Từ ngày 01/01/2025 đến 31/01/2025","Hiển thị đúng dữ liệu trong khoảng thời gian đã chọn",,,
+"Báo cáo thống kê",10,"Xuất báo cáo Excel","1. Nhấn ""Xuất Excel""","Khoảng thời gian có dữ liệu","Tự động tải xuống file Excel chứa dữ liệu báo cáo",,,
+"Quản lý tài khoản ngân hàng",11,"Thêm tài khoản ngân hàng","1. Vào mục Tài khoản ngân hàng
+2. Nhấn ""Thêm tài khoản""
+3. Điền thông tin
+4. Lưu lại","Thông tin tài khoản hợp lệ","- Thêm thành công
+- Hiển thị trong danh sách tài khoản",,,
+"Quản lý tài khoản ngân hàng",12,"Xóa tài khoản ngân hàng","1. Chọn tài khoản cần xóa
+2. Nhấn ""Xóa""
+3. Xác nhận","Tài khoản tồn tại, chưa liên kết với giao dịch đang xử lý","- Xóa thành công
+- Biến mất khỏi danh sách",,,
+"Chuyển đổi trạng thái hoa hồng",13,"Tự động chuyển sau 7 ngày","1. Chờ đủ 7 ngày kể từ khi đơn hàng thành công","Đơn hàng đã xác nhận đủ 7 ngày","- Tự động chuyển từ ""Chờ"" sang ""Có thể rút""
+- Cộng vào số dư khả dụng",,,
+"Chuyển đổi trạng thái hoa hồng",14,"Yêu cầu chuyển đổi thủ công","1. Vào mục Hoa hồng đang chờ
+2. Chọn đơn hàng đủ điều kiện
+3. Nhấn ""Yêu cầu chuyển đổi""","Đơn hàng đủ điều kiện","- Chuyển trạng thái thành ""Đang xử lý""
+- Gửi thông báo cho admin",,,
+"Thông báo",15,"Nhận thông báo có hoa hồng mới","1. Có đơn hàng từ link giới thiệu","Đơn hàng thành công từ link giới thiệu","Nhận thông báo: ""Bạn vừa nhận được Xđ hoa hồng từ đơn hàng #12345""",,,
+"Thông báo",16,"Nhận thông báo rút tiền thành công","1. Yêu cầu rút tiền được duyệt","Yêu cầu rút tiền đã được xử lý","Nhận thông báo: ""Yêu cầu rút Xđ đã được chuyển khoản thành công""",,,
+"Bảo mật",17,"Kiểm tra token xác thực","1. Gọi API không có token","Không có token trong header","Trả về lỗi 401 Unauthorized",,,
+"Bảo mật",18,"Kiểm tra quyền truy cập","1. Đăng nhập tài khoản thường
+2. Truy cập trang Affiliate","Tài khoản không có quyền Affiliate","Chuyển hướng về trang chủ hoặc hiển thị thông báo không có quyền",,,
+"Hiệu năng",19,"Tải trang với nhiều dữ liệu","1. Đăng nhập tài khoản có nhiều đơn hàng
+2. Vào trang thống kê","Hàng trăm đơn hàng","- Thời gian tải < 3s
+- Hiển thị phân trang đầy đủ",,,
+"Hiệu năng",20,"Xuất báo cáo lớn","1. Chọn khoảng thời gian dài
+2. Nhấn ""Xuất Excel""","Dữ liệu 1 năm","- Tạo file Excel thành công
+- File chứa đầy đủ dữ liệu"

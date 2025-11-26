@@ -61,7 +61,7 @@ class _SearchScreenState extends State<SearchScreen> {
   Timer? _debounceTimer;
 
   @override
-  void initState() {
+  void initState() { 
     super.initState();
     _searchController.addListener(_onSearchChanged);
     _scrollController.addListener(_onScroll);

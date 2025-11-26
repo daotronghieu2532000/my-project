@@ -155,7 +155,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               final cart = _cartService;
               final items = cart.items.where((i) => i.isSelected).toList();
               final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
-
+              
+              print('🔍 [CheckoutScreen] FirstTimeBonusSection orderTotal calculation:');
+              print('   - totalGoods (tổng tiền hàng): $totalGoods (${totalGoods / 1000}k)');
+              print('   - Bonus sẽ tính 10% của totalGoods = ${(totalGoods * 10 / 100).floor()}');
+              
               return FirstTimeBonusSection(
                 orderTotal: totalGoods, // ✅ Truyền totalGoods, không phải tổng thanh toán sau voucher/ship
               );
@@ -260,7 +264,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       return;
     }
     
-   
+    // ✅ DEBUG: Print địa chỉ được chọn
+    print('📍 [CheckoutScreen._processOrder] Địa chỉ được chọn:');
+    print('   - ID: ${addr['id']}');
+    print('   - Họ tên: ${addr['ho_ten']}');
+    print('   - Địa chỉ: ${addr['dia_chi']}');
+    print('   - Tỉnh: ${addr['tinh']} (${addr['ten_tinh']})');
+    print('   - Huyện: ${addr['huyen']} (${addr['ten_huyen']})');
+    print('   - Xã: ${addr['xa']} (${addr['ten_xa']})');
+    print('   - Active: ${addr['active']}');
     final ship = ShippingQuoteStore();
     final voucherService = VoucherService();
     
@@ -377,7 +389,13 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         'price': item['gia_moi'], // ✅ Thêm giá để fallback tính chính xác
       }).toList();
       
-    
+      // ✅ DEBUG: Print thông tin items gửi đi
+      print('📦 [CheckoutScreen._processOrder] Shipping items gửi đi:');
+      for (final item in shippingItems) {
+        print('   - Product ID: ${item['product_id']}, Quantity: ${item['quantity']}, Price: ${item['price']}');
+      }
+      print('   - User ID: ${user.userId}');
+      print('   - Use Cache: true');
       
       // ✅ Sử dụng ShippingQuoteService với retry, timeout, fallback, và cache
       final shippingQuote = await _shippingQuoteService.getShippingQuote(
@@ -387,18 +405,31 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         enableFallback: true, // ✅ Cho phép fallback nếu API fail
       );
       
+      // ✅ DEBUG: Print kết quả shipping quote
+      print('🚚 [CheckoutScreen._processOrder] Shipping quote response:');
+      print('   - Success: ${shippingQuote?['success']}');
+      print('   - Is Fallback: ${shippingQuote?['is_fallback']}');
+      if (shippingQuote != null) {
+        print('   - Fee: ${shippingQuote['fee']}');
+        print('   - Provider: ${shippingQuote['provider']}');
+        print('   - ETA: ${shippingQuote['eta_text']}');
+      }
       
       if (shippingQuote != null && shippingQuote['success'] == true) {
         // ✅ Lấy phí ship gốc từ API (nếu có) để đảm bảo chính xác
         final bestOverall = shippingQuote['data']?['best'] as Map<String, dynamic>?;
         if (bestOverall != null) {
           final apiFee = bestOverall['fee'] as int? ?? ship.lastFee;
-         
+          print('   - Phí ship từ API (best): $apiFee');
+          print('   - Phí ship từ store (lastFee): ${ship.lastFee}');
           originalShipFee = apiFee; // Phí ship gốc từ API
           // ✅ Không override shipSupport từ store, vì store đã có giá trị đúng
           // shipSupport từ store đã được set từ OrderSummarySection với giá trị chính xác
         }
         
+        // ✅ DEBUG: Print thông tin warehouse_details
+        print('   - Ship Support từ store: ${ship.shipSupport}');
+        print('   - Original Ship Fee cuối cùng: $originalShipFee');
         
         // ✅ Lấy warehouse_shipping_details để map provider cho từng shop
         // Ưu tiên lấy từ best['warehouse_details'], sau đó từ warehouse_shipping

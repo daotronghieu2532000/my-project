@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'product_card_horizontal.dart';
 import '../../../core/services/cached_api_service.dart';
@@ -24,30 +25,30 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
   
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
+  final ScrollController _scrollController = ScrollController();
+  
   List<ProductSuggest> _allProducts = []; // Tất cả sản phẩm đã load từ API
-  List<ProductSuggest> _displayedProducts = []; // Sản phẩm đang hiển thị
   bool _isLoading = true;
   bool _isLoadingMore = false;
   String? _error;
   bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
-  static const int _initialDisplayCount = 10; // Số sản phẩm hiển thị ban đầu
-  static const int _loadMoreCount = 10; // Số sản phẩm load thêm mỗi lần khi scroll
   static const int _apiLoadLimit = 50; // Số sản phẩm load từ API một lần
-  static const int _maxProductsLimit = 250; // GIỚI HẠN: Tối đa 200 sản phẩm trong _allProducts để tránh memory leak
-  int _currentDisplayCount = 0; // Số sản phẩm đang hiển thị
+  static const int _maxProductsLimit = 500; // Tối đa 1000 sản phẩm
   bool _hasMore = true; // Còn sản phẩm để hiển thị không
   int? _cachedUserId; // Cache userId để tránh gọi getCurrentUser nhiều lần
   bool _isLoadingFromApi = false; // Flag để tránh gọi API nhiều lần cùng lúc
-  int _lastAllProductsCount = 0; // Track để giảm debug print
-  int _lastDisplayedProductsCount = 0; // Track để giảm debug print
-  bool _hasScheduledCallback = false; // Flag để tránh add callback nhiều lần
+  int _lastLoadTriggerIndex = -1; // Track index cuối cùng đã trigger load để tránh load nhiều lần
+  Timer? _loadMoreDebounceTimer; // Debounce timer để tránh gọi API quá nhiều
+  double? _cachedScreenWidth; // Cache screenWidth để tránh tính toán lại
+  double? _cachedCardWidth; // Cache cardWidth để tránh tính toán lại
+  double? _cachedItemHeight; // Cache itemHeight để tránh tính toán lại
 
   @override
   void initState() {
     super.initState();
     // Cache userId một lần để tránh gọi getCurrentUser nhiều lần
     _cacheUserId();
-    // Load từ cache ngay lập tức với 10 sản phẩm
+    // Load từ cache ngay lập tức
     _loadProductSuggestsFromCache();
     // Lắng nghe sự kiện đăng nhập để refresh
     _authService.addAuthStateListener(_onAuthStateChanged);
@@ -66,10 +67,10 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
   @override
   void dispose() {
     _authService.removeAuthStateListener(_onAuthStateChanged);
+    _scrollController.dispose();
+    _loadMoreDebounceTimer?.cancel();
     // Cleanup: Clear products để giải phóng memory
     _allProducts.clear();
-    _displayedProducts.clear();
-    _hasScheduledCallback = false; // Reset flag
     super.dispose();
   }
   
@@ -87,15 +88,18 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
       setState(() {
         _hasLoadedOnce = false;
         _allProducts = [];
-        _displayedProducts = [];
         _isLoading = true;
-        _currentDisplayCount = 0;
         _hasMore = true;
+        _lastLoadTriggerIndex = -1;
+        _cachedScreenWidth = null; // Reset cache khi refresh
+        _cachedCardWidth = null;
+        _cachedItemHeight = null;
       });
       // Force refresh để lấy sản phẩm mới theo user_id mới (hoặc mặc định nếu logout)
       _loadProductSuggestsWithRefresh();
     }
   }
+
 
   Future<void> _loadProductSuggestsFromCache() async {
     try {
@@ -128,34 +132,18 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
         // Convert Map to ProductSuggest
         final allProducts = suggestionsData.map((data) => ProductSuggest.fromJson(data)).toList();
         
-        // Chỉ hiển thị 10 sản phẩm đầu tiên
-        final displayedProducts = allProducts.take(_initialDisplayCount).toList();
-        
         setState(() {
           _isLoading = false;
           _allProducts = allProducts;
-          _displayedProducts = displayedProducts;
-          _currentDisplayCount = displayedProducts.length;
           _hasLoadedOnce = true; // Đánh dấu đã load
-          // Còn sản phẩm để hiển thị nếu số sản phẩm đã load > số sản phẩm đang hiển thị
-          _hasMore = allProducts.length > _currentDisplayCount;
+          // Còn sản phẩm để hiển thị nếu chưa đạt max limit
+          _hasMore = allProducts.length >= _apiLoadLimit && allProducts.length < _maxProductsLimit;
         });
-        
-        // Tự động load thêm khi số sản phẩm hiển thị gần hết
-        if (mounted && _hasMore && _allProducts.length > _currentDisplayCount) {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted && _hasMore && _allProducts.length > _currentDisplayCount) {
-              _loadMoreProducts();
-            }
-          });
-        }
-      
       } else if (mounted) {
         setState(() {
           _isLoading = false;
           _error = 'Không có sản phẩm gợi ý';
         });
-    
       }
     } catch (e) {
       if (mounted) {
@@ -163,7 +151,6 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
           _isLoading = false;
         });
       }
-     
     }
   }
 
@@ -185,26 +172,12 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
         // Convert Map to ProductSuggest
         final allProducts = suggestionsData.map((data) => ProductSuggest.fromJson(data)).toList();
         
-        // Chỉ hiển thị 10 sản phẩm đầu tiên
-        final displayedProducts = allProducts.take(_initialDisplayCount).toList();
-        
         setState(() {
           _isLoading = false;
           _allProducts = allProducts;
-          _displayedProducts = displayedProducts;
-          _currentDisplayCount = displayedProducts.length;
           _hasLoadedOnce = true;
-          _hasMore = allProducts.length > _currentDisplayCount;
+          _hasMore = allProducts.length >= _apiLoadLimit && allProducts.length < _maxProductsLimit;
         });
-        
-        // Tự động load thêm khi số sản phẩm hiển thị gần hết
-        if (mounted && _hasMore && _allProducts.length > _currentDisplayCount) {
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted && _hasMore && _allProducts.length > _currentDisplayCount) {
-              _loadMoreProducts();
-            }
-        });
-        }
       } else if (mounted) {
         setState(() {
           _isLoading = false;
@@ -219,146 +192,11 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
       }
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
-    
-    // Track để giảm rebuild không cần thiết
-    if (_allProducts.length != _lastAllProductsCount || 
-        _displayedProducts.length != _lastDisplayedProductsCount) {
-      _lastAllProductsCount = _allProducts.length;
-      _lastDisplayedProductsCount = _displayedProducts.length;
-    }
-    
-    // Tối ưu: Chỉ add callback một lần mỗi frame, tránh tích lũy
-    // QUAN TRỌNG: Khi ProductGrid nằm trong ListView, chỉ load khi thực sự cần
-    if (!_hasScheduledCallback) {
-      _hasScheduledCallback = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _hasScheduledCallback = false;
-        // Chỉ load thêm nếu widget đã được render và có dữ liệu
-        if (mounted && 
-            !_isLoading && 
-            !_isLoadingMore && 
-            _hasMore && 
-            _displayedProducts.isNotEmpty &&
-            _allProducts.length > _displayedProducts.length) {
-          // Kiểm tra nếu còn sản phẩm để hiển thị và gần hết danh sách đã load (còn <= 10)
-          final remainingInCache = _allProducts.length - _displayedProducts.length;
-          if (remainingInCache > 0 && remainingInCache <= 10) {
-            // Tăng delay để tránh load quá nhanh khi scroll trong ListView
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (mounted && _hasMore && _allProducts.length > _displayedProducts.length) {
-                _loadMoreProducts();
-              }
-            });
-          }
-        }
-      });
-    }
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (widget.title.isNotEmpty)
-        Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
-          child: Text(
-            widget.title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-        _buildProductsList(),
-      ],
-    );
-  }
-  
-  /// Load thêm sản phẩm khi user scroll gần đến cuối
-  /// Lấy từ danh sách đã cache, không gọi API lại
-  Future<void> _loadMoreProducts() async {
-    // Không load nếu đang load hoặc không còn sản phẩm
-    if (_isLoadingMore || _isLoading) {
-      return;
-    }
-    
-    if (!_hasMore) {
-      return;
-    }
-    
-    if (_allProducts.length <= _displayedProducts.length) {
-      // Load thêm từ API nếu đã hết cache
-      _loadMoreFromApi();
-      return;
-    }
-    
-    try {
-      setState(() {
-        _isLoadingMore = true;
-      });
-      
-      // Simulate delay nhỏ để UI mượt hơn
-      await Future.delayed(const Duration(milliseconds: 100));
-      
-      // Lấy thêm sản phẩm từ danh sách đã load (không gọi API)
-      final additionalProducts = _allProducts
-          .skip(_displayedProducts.length)
-          .take(_loadMoreCount)
-          .toList();
-      
-      if (mounted && additionalProducts.isNotEmpty) {
-        setState(() {
-          _displayedProducts.addAll(additionalProducts);
-          _currentDisplayCount = _displayedProducts.length;
-          // Còn sản phẩm để hiển thị nếu số sản phẩm đã load > số sản phẩm đang hiển thị
-          _hasMore = _allProducts.length > _displayedProducts.length;
-          _isLoadingMore = false;
-        });
-        
-        // Tự động load thêm nếu còn sản phẩm trong _allProducts
-        // Tối ưu: Giảm delay và chỉ load khi thực sự cần
-        if (mounted && _hasMore && _allProducts.length > _displayedProducts.length) {
-          // Tự động load thêm sau một khoảng thời gian ngắn hơn
-          Future.delayed(const Duration(milliseconds: 200), () {
-            if (mounted && _hasMore && _allProducts.length > _displayedProducts.length) {
-              _loadMoreProducts();
-            }
-          });
-        }
-        
-        // Load thêm từ API trong background khi gần hết danh sách đã cache (còn <= 10 sản phẩm)
-        // VÀ chỉ khi chưa đạt max limit
-        if (mounted && 
-            _hasMore && 
-            _allProducts.length < _maxProductsLimit &&
-            _displayedProducts.length >= _allProducts.length - 10 &&
-            !_isLoadingFromApi) { // Thêm check để tránh gọi nhiều lần
-          _loadMoreFromApi();
-        }
-      } else {
-        setState(() {
-          _isLoadingMore = false;
-          _hasMore = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoadingMore = false;
-        });
-      }
-    }
-  }
   
   /// Load thêm sản phẩm từ API trong background
   Future<void> _loadMoreFromApi() async {
     // Tránh gọi API nhiều lần cùng lúc
-    if (_isLoadingFromApi) {
-      print('🛍️ ProductGrid: ⚠️ _loadMoreFromApi đang chạy, bỏ qua');
+    if (_isLoadingFromApi || _isLoading) {
       return;
     }
     
@@ -402,29 +240,49 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
           
           setState(() {
             _allProducts.addAll(productsToAdd);
-            _hasMore = _allProducts.length < _maxProductsLimit && _allProducts.length > _displayedProducts.length;
+            _hasMore = _allProducts.length < _maxProductsLimit && productsToAdd.length >= _apiLoadLimit;
           });
-          
-          // Tự động load thêm sản phẩm mới vào danh sách hiển thị
-          if (mounted && _hasMore && _allProducts.length > _displayedProducts.length) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted && _hasMore && _allProducts.length > _displayedProducts.length) {
-                _loadMoreProducts();
-              }
-            });
-          }
         } else {
           // Không có sản phẩm mới, đánh dấu không còn sản phẩm
           setState(() {
             _hasMore = false;
           });
         }
+      } else {
+        // Không có dữ liệu mới, đánh dấu không còn sản phẩm
+        setState(() {
+          _hasMore = false;
+        });
       }
     } catch (e) {
-      // Silent fail
+      // Silent fail - không làm gián đoạn UI
     } finally {
       _isLoadingFromApi = false;
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.title.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+          child: Text(
+            widget.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        _buildProductsList(),
+      ],
+    );
   }
 
   Widget _buildProductsList() {
@@ -459,7 +317,7 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
       );
     }
 
-    if (_displayedProducts.isEmpty) {
+    if (_allProducts.isEmpty) {
       return const Padding(
         padding: EdgeInsets.all(20),
         child: Column(
@@ -475,44 +333,68 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
       );
     }
 
-    // Hiển thị dạng Wrap 2 cột - mỗi card tự co giãn theo nội dung
+    // Sử dụng GridView.builder với lazy loading - chỉ render items visible
+    // Đây là cách Shopee và các app lớn làm - mượt mà ngay cả với hàng nghìn sản phẩm
+    
+    // Cache screenWidth và các giá trị tính toán để tránh tính toán lại mỗi lần build
     final screenWidth = MediaQuery.of(context).size.width;
-    // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
-    // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
-    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
-
-    return Column(
-      children: [
-        Padding(
+    if (_cachedScreenWidth != screenWidth) {
+      _cachedScreenWidth = screenWidth;
+      _cachedCardWidth = (screenWidth - 16) / 2; // 2 cột với spacing
+      _cachedItemHeight = _cachedCardWidth! + 120; // Chiều cao ước tính của mỗi card (ảnh + text)
+    }
+    
+    final cardWidth = _cachedCardWidth!;
+    final itemHeight = _cachedItemHeight!;
+    
+    return GridView.builder(
+      controller: _scrollController,
+      shrinkWrap: true, // Quan trọng: Cho phép GridView fit trong parent ListView
+      physics: const NeverScrollableScrollPhysics(), // Disable scroll riêng - để parent ListView scroll
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-      child: Wrap(
-        alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
-        spacing: 8, // Khoảng cách ngang giữa các card
-        runSpacing: 8, // Khoảng cách dọc giữa các hàng
-            children: [
-              ..._displayedProducts.asMap().entries.map((entry) {
-          final index = entry.key;
-          final product = entry.value;
-          return SizedBox(
-            width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
-            child: ProductCardHorizontal(
-              product: product,
-              index: index,
-            ),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, // 2 cột
+        childAspectRatio: cardWidth / itemHeight, // Tỷ lệ width/height
+        crossAxisSpacing: 8, // Khoảng cách ngang
+        mainAxisSpacing: 8, // Khoảng cách dọc
+      ),
+      itemCount: _allProducts.length + (_isLoadingMore || _isLoadingFromApi ? 1 : 0),
+      cacheExtent: 250, // Cache một số items để scroll mượt hơn (250px)
+      itemBuilder: (context, index) {
+        // Tự động load thêm khi render item gần cuối (còn <= 20 items)
+        // Chỉ trigger một lần cho mỗi index để tránh gọi API nhiều lần
+        if (index >= _allProducts.length - 20 &&
+            index > _lastLoadTriggerIndex &&
+            !_isLoadingFromApi &&
+            !_isLoading &&
+            _hasMore &&
+            _allProducts.length < _maxProductsLimit) {
+          _lastLoadTriggerIndex = index;
+          // Debounce: Hủy timer cũ nếu có và tạo timer mới
+          _loadMoreDebounceTimer?.cancel();
+          _loadMoreDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted && !_isLoadingFromApi && _hasMore) {
+              _loadMoreFromApi();
+            }
+          });
+        }
+        
+        // Hiển thị loading indicator ở cuối danh sách
+        if (index == _allProducts.length) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.red),
           );
-        }).toList(),
-            ],
+        }
+        
+        final product = _allProducts[index];
+        // Sử dụng RepaintBoundary để tối ưu repaint - mỗi card chỉ repaint khi cần
+        return RepaintBoundary(
+          child: ProductCardHorizontal(
+            product: product,
+            index: index,
           ),
-        ),
-        // Hiển thị loading indicator khi đang load thêm
-        if (_isLoadingMore)
-          const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(
-              child: CircularProgressIndicator(color: Colors.red),
-            ),
-          ),
-      ],
+        );
+      },
     );
   }
 }

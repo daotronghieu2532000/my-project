@@ -86,13 +86,25 @@ class FirstTimeBonusService {
   
   /// Tính số tiền bonus có thể dùng (10% của order total, hoặc hết số còn lại nếu < 10%)
   int calculateBonusAmount(int orderTotal, int remainingBonus) {
+    print('🔍 [BONUS DEBUG] calculateBonusAmount called:');
+    print('   - orderTotal: $orderTotal (${orderTotal / 1000}k)');
+    print('   - remainingBonus: $remainingBonus (${remainingBonus / 1000}k)');
+    
     final bonus10Percent = (orderTotal * 10 / 100).floor();
+    print('   - bonus10Percent (10%): $bonus10Percent (${bonus10Percent / 1000}k)');
+    
     int result;
     if (remainingBonus < bonus10Percent) {
+      // Trừ hết số tiền còn lại
       result = remainingBonus;
+      print('   - Result: Trừ hết số còn lại = $result (${result / 1000}k)');
     } else {
+      // Trừ đúng 10%
       result = bonus10Percent;
+      print('   - Result: Trừ đúng 10% = $result (${result / 1000}k)');
     }
+    
+    print('🔍 [BONUS DEBUG] calculateBonusAmount result: $result');
     return result;
   }
 }

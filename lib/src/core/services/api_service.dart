@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
@@ -23,6 +24,9 @@ class ApiService {
   static const String apiKey = 'zzz8m4rjxnvgogy1gr1htkncn7';
   static const String apiSecret = 'wz2yht03i0ag2ilib8gpfhbgusq2pw9ylo3sn2n2uqs4djugtf5nbgn1h0o3jx';
   
+  // Timeout cho HTTP requests - tránh treo vô hạn
+  static const Duration requestTimeout = Duration(seconds: 30);
+  
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
@@ -41,7 +45,7 @@ class ApiService {
           'api_key': apiKey,
           'api_secret': apiSecret,
         }),
-      );
+      ).timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -128,7 +132,7 @@ class ApiService {
       final token = await getValidToken();
       final response = await http.get(uri, headers: {
         'Authorization': token != null ? 'Bearer $token' : '',
-      });
+      }).timeout(requestTimeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         return data;
@@ -154,7 +158,7 @@ class ApiService {
       final token = await getValidToken();
       final response = await http.get(uri, headers: {
         'Authorization': token != null ? 'Bearer $token' : '',
-      });
+      }).timeout(requestTimeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
@@ -183,7 +187,7 @@ class ApiService {
       final token = await getValidToken();
       final response = await http.get(uri, headers: {
         'Authorization': token != null ? 'Bearer $token' : '',
-      });
+      }).timeout(requestTimeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
@@ -300,7 +304,7 @@ class ApiService {
         headers: {
           if (token != null) 'Authorization': 'Bearer $token',
         },
-      );
+      ).timeout(requestTimeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         return data['data']['unread_count'] ?? 0;
@@ -436,7 +440,7 @@ class ApiService {
         uri,
         headers: headers,
         body: jsonEncode(body),
-      );
+      ).timeout(requestTimeout);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -526,7 +530,7 @@ class ApiService {
         uri,
         headers: headers,
         body: jsonEncode(body),
-      );
+      ).timeout(requestTimeout);
       
       if (res.statusCode == 200) {
         try {
@@ -605,7 +609,7 @@ class ApiService {
       final token = await getValidToken();
       final response = await http.get(uri, headers: {
         'Authorization': token != null ? 'Bearer $token' : '',
-      });
+      }).timeout(requestTimeout);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         if (data['success'] == true) {
@@ -653,7 +657,7 @@ class ApiService {
         if (variantId != null && variantId > 0) 'variant_id': variantId.toString(),
       };
       final uri = Uri.parse('$baseUrl/product_reviews').replace(queryParameters: query);
-      final response = await http.get(uri);
+      final response = await http.get(uri).timeout(requestTimeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
@@ -671,7 +675,7 @@ class ApiService {
       final uri = Uri.parse('$baseUrl/product_rating_stats').replace(queryParameters: {
         'product_id': productId.toString(),
       });
-      final response = await http.get(uri);
+      final response = await http.get(uri).timeout(requestTimeout);
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
@@ -720,7 +724,7 @@ class ApiService {
           if (token != null) 'Authorization': 'Bearer $token',
         },
         body: jsonEncode(body),
-      );
+      ).timeout(requestTimeout);
 
  
 
@@ -759,7 +763,7 @@ class ApiService {
         headers: {
           'Authorization': token != null ? 'Bearer $token' : '',
         },
-      );
+      ).timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -789,7 +793,7 @@ class ApiService {
           'comment_id': commentId,
           'action': action,
         }),
-      );
+      ).timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body) as Map<String, dynamic>;
@@ -1112,24 +1116,26 @@ class ApiService {
       
       switch (method.toUpperCase()) {
         case 'GET':
-          return await http.get(uri, headers: headers);
+          return await http.get(uri, headers: headers).timeout(requestTimeout);
         case 'POST':
           return await http.post(
             uri, 
             headers: headers, 
             body: body != null ? jsonEncode(body) : null,
-          );
+          ).timeout(requestTimeout);
         case 'PUT':
           return await http.put(
             uri, 
             headers: headers, 
             body: body != null ? jsonEncode(body) : null,
-          );
+          ).timeout(requestTimeout);
         case 'DELETE':
-          return await http.delete(uri, headers: headers);
+          return await http.delete(uri, headers: headers).timeout(requestTimeout);
         default:
           throw Exception('Unsupported HTTP method: $method');
       }
+    } on TimeoutException {
+      return null;
     } catch (e) {
       return null;
     }
@@ -4093,7 +4099,7 @@ class ApiService {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(requestTimeout);
 
 
       if (response.statusCode == 200) {
@@ -4147,7 +4153,7 @@ class ApiService {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(requestTimeout);
 
 
       if (response.statusCode == 200) {
@@ -4187,7 +4193,7 @@ class ApiService {
           'user_id': userId,
           'product_id': productId,
         }),
-      );
+      ).timeout(requestTimeout);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -4226,7 +4232,7 @@ class ApiService {
           'user_id': userId,
           'product_id': productId,
         }),
-      );
+      ).timeout(requestTimeout);
 
 
       if (response.statusCode == 200) {
@@ -4306,7 +4312,7 @@ class ApiService {
           'user_id': userId,
           'product_id': productId,
         }),
-      );
+      ).timeout(requestTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;

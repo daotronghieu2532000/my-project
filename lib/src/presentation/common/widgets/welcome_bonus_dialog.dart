@@ -33,24 +33,24 @@ class WelcomeBonusDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Icon cảm ơn
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.orange.shade100,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.celebration,
-                size: 50,
-                color: Colors.orange.shade700,
-              ),
-            ),
+            // Container(
+            //   width: 80,
+            //   height: 80,
+            //   decoration: BoxDecoration(
+            //     color: Colors.orange.shade100,
+            //     shape: BoxShape.circle,
+            //   ),
+            //   child: Icon(
+            //     Icons.celebration,
+            //     size: 50,
+            //     color: Colors.orange.shade700,
+            //   ),
+            // ),
             const SizedBox(height: 20),
             
             // Tiêu đề
             Text(
-              'Cảm ơn bạn đã tin tưởng! 🎉',
+              'Cảm ơn bạn đã tin tưởng!',
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,

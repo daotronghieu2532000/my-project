@@ -14,6 +14,9 @@ class MemoryCacheService {
   // Default cache duration: 5 minutes
   static const Duration defaultCacheDuration = Duration(minutes: 5);
   
+  // Giới hạn số lượng cache entries để tránh tích lũy quá nhiều memory
+  static const int maxCacheEntries = 100;
+  
   // Cleanup timer để xóa cache hết hạn
   Timer? _cleanupTimer;
 
@@ -33,6 +36,11 @@ class MemoryCacheService {
 
   /// Lưu dữ liệu vào cache
   void set<T>(String key, T data, {Duration? duration}) {
+    // Nếu cache đã đầy, xóa các entry cũ nhất trước
+    if (_cache.length >= maxCacheEntries && !_cache.containsKey(key)) {
+      _evictOldestCache();
+    }
+    
     final cacheDuration = duration ?? defaultCacheDuration;
     final expiresAt = DateTime.now().add(cacheDuration);
     
@@ -42,6 +50,26 @@ class MemoryCacheService {
       createdAt: DateTime.now(),
     );
     
+  }
+  
+  /// Xóa cache entry cũ nhất (LRU - Least Recently Used)
+  void _evictOldestCache() {
+    if (_cache.isEmpty) return;
+    
+    // Tìm entry cũ nhất dựa trên createdAt
+    String? oldestKey;
+    DateTime? oldestTime;
+    
+    for (final entry in _cache.entries) {
+      if (oldestTime == null || entry.value.createdAt.isBefore(oldestTime)) {
+        oldestTime = entry.value.createdAt;
+        oldestKey = entry.key;
+      }
+    }
+    
+    if (oldestKey != null) {
+      _cache.remove(oldestKey);
+    }
   }
 
   /// Lấy dữ liệu từ cache
