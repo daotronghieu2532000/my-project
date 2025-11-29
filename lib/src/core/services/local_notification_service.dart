@@ -63,34 +63,44 @@ class LocalNotificationService {
         ?.createNotificationChannel(androidChannel);
   }
 
-  /// Download logo và convert thành File cho largeIcon
-  Future<String?> _downloadLogoForNotification() async {
+  /// Download image (product hoặc logo) cho notification
+  Future<String?> _downloadImageForNotification(String? imageUrl) async {
     try {
-      const logoUrl = 'https://socdo.vn/uploads/logo/logo.png';
+      // Nếu không có imageUrl, dùng logo mặc định
+      final url = imageUrl ?? 'https://socdo.vn/uploads/logo/logo.png';
+      
       final tempDir = await getTemporaryDirectory();
-      final logoFile = File('${tempDir.path}/notification_logo.png');
+      // Tạo tên file unique dựa trên URL để cache riêng cho mỗi ảnh
+      final fileName = url.hashCode.toString() + '.png';
+      final imageFile = File('${tempDir.path}/$fileName');
       
       // Nếu file đã tồn tại và còn mới (trong 24h), dùng lại
-      if (await logoFile.exists()) {
-        final stat = await logoFile.stat();
+      if (await imageFile.exists()) {
+        final stat = await imageFile.stat();
         final now = DateTime.now();
         final age = now.difference(stat.modified);
         if (age.inHours < 24) {
-          return logoFile.path;
+          print('🖼️ [LOCAL_NOTIFICATION] Using cached image: $fileName');
+          return imageFile.path;
         }
       }
       
-      // Download logo mới
+      // Download image mới
+      print('🖼️ [LOCAL_NOTIFICATION] Downloading image from: $url');
       final response = await http.get(
-        Uri.parse(logoUrl),
+        Uri.parse(url),
         headers: {'User-Agent': 'SocdoApp/1.0'},
       ).timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
-        await logoFile.writeAsBytes(response.bodyBytes);
-        return logoFile.path;
+        await imageFile.writeAsBytes(response.bodyBytes);
+     
+        return imageFile.path;
+      } else {
+        print('❌ [LOCAL_NOTIFICATION] Failed to download image: HTTP ${response.statusCode}');
       }
     } catch (e) {
+      print('❌ [LOCAL_NOTIFICATION] Error downloading image: $e');
       // Silent fail - không ảnh hưởng đến notification
     }
     return null;
@@ -108,11 +118,19 @@ class LocalNotificationService {
       await initialize();
     }
 
-      // Download logo để dùng làm largeIcon (hiển thị bên cạnh notification)
-      String? logoPath;
+      // Lấy product_image từ payload (nếu có), nếu không thì dùng logo
+      String? imageUrl;
+      if (payload != null && payload.containsKey('product_image')) {
+        imageUrl = payload['product_image'] as String?;
+      
+      }
+
+      // Download image (product hoặc logo) để dùng làm largeIcon
+      String? imagePath;
       try {
-        logoPath = await _downloadLogoForNotification();
+        imagePath = await _downloadImageForNotification(imageUrl);
       } catch (e) {
+        print('❌ [LOCAL_NOTIFICATION] Failed to download image: $e');
         // Silent fail - không ảnh hưởng đến notification
       }
 
@@ -125,7 +143,8 @@ class LocalNotificationService {
       showWhen: true,
         icon: '@drawable/ic_notification',
         color: const Color(0xFFDC143C),
-        largeIcon: logoPath != null ? FilePathAndroidBitmap(logoPath) : null,
+        // Dùng product image nếu có, nếu không thì dùng logo
+        largeIcon: imagePath != null ? FilePathAndroidBitmap(imagePath) : null,
     );
 
     const iosDetails = DarwinNotificationDetails(

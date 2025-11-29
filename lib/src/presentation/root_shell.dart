@@ -5,6 +5,7 @@ import 'category/category_screen.dart';
 import 'cart/cart_screen.dart';
 import '../core/services/cart_service.dart' as cart_service;
 import '../core/services/app_lifecycle_manager.dart';
+import '../core/services/cart_animation_service.dart';
 import '../core/utils/format_utils.dart';
 // import 'notifications/notifications_screen.dart';
 import 'affiliate/affiliate_screen.dart';
@@ -17,11 +18,19 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
+class _RootShellState extends State<RootShell> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
   late int _currentIndex = widget.initialIndex;
   final cart_service.CartService _cart = cart_service.CartService();
   final AppLifecycleManager _lifecycleManager = AppLifecycleManager();
+  final CartAnimationService _cartAnimationService = CartAnimationService();
   bool _isInitialized = false;
+  
+  // GlobalKey cho icon giỏ hàng để animation bay vào
+  final GlobalKey _cartIconKey = GlobalKey();
+  
+  // Animation controller cho bounce effect của icon giỏ hàng
+  late AnimationController _cartBounceController;
+  late Animation<double> _cartBounceAnimation;
 
   @override
   bool get wantKeepAlive => true;
@@ -32,12 +41,35 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
     WidgetsBinding.instance.addObserver(this);
     _cart.addListener(_onCartChanged);
     _initializeAppState();
+    
+    // Setup animation cho icon giỏ hàng
+    _cartBounceController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _cartBounceAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(
+      parent: _cartBounceController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Set GlobalKey vào CartAnimationService
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cartAnimationService.cartIconKey = _cartIconKey;
+    });
+    
+    // Listen to cart changes để trigger bounce animation
+    _cart.addListener(_onCartItemAdded);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _cart.removeListener(_onCartChanged);
+    _cart.removeListener(_onCartItemAdded);
+    _cartBounceController.dispose();
     super.dispose();
   }
 
@@ -80,6 +112,13 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
 
   void _onCartChanged() {
     if (mounted) setState(() {});
+  }
+  
+  void _onCartItemAdded() {
+    // Trigger bounce animation khi có sản phẩm mới thêm vào giỏ
+    if (mounted && _cartBounceController.status != AnimationStatus.forward) {
+      _cartBounceController.forward(from: 0);
+    }
   }
 
   /// Khởi tạo và khôi phục state của app
@@ -224,40 +263,49 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    const Icon(
-                                      Icons.shopping_cart_outlined,
-                                      color: Colors.red,
-                                      size: 24,
-                                    ),
-                                    if (_cart.itemCount > 0)
-                                    Positioned(
-                                      top: -4,
-                                      right: -6,
-                                      child: Container(
-                                        width: 16,
-                                        height: 16,
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            _cart.itemCount.toString(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                                height: 1.0,
-                                            ),
-                                              textAlign: TextAlign.center,
+                                AnimatedBuilder(
+                                  animation: _cartBounceAnimation,
+                                  builder: (context, child) {
+                                    return Transform.scale(
+                                      scale: _cartBounceAnimation.value,
+                                      child: Stack(
+                                        key: _cartIconKey, // GlobalKey cho animation
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          const Icon(
+                                            Icons.shopping_cart_outlined,
+                                            color: Colors.red,
+                                            size: 24,
                                           ),
-                                        ),
+                                          if (_cart.itemCount > 0)
+                                          Positioned(
+                                            top: -4,
+                                            right: -6,
+                                            child: Container(
+                                              width: 16,
+                                              height: 16,
+                                              decoration: const BoxDecoration(
+                                                color: Colors.red,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  _cart.itemCount.toString(),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                      height: 1.0,
+                                                  ),
+                                                    textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ],
+                                    );
+                                  },
                                 ),
                                 Builder(
                                   builder: (context) {
@@ -329,23 +377,61 @@ class RootShellBottomBar extends StatefulWidget {
   State<RootShellBottomBar> createState() => _RootShellBottomBarState();
 }
 
-class _RootShellBottomBarState extends State<RootShellBottomBar> {
+class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProviderStateMixin {
   final cart_service.CartService _cart = cart_service.CartService();
+  final CartAnimationService _cartAnimationService = CartAnimationService();
+  
+  // GlobalKey cho icon giỏ hàng để animation bay vào
+  final GlobalKey _cartIconKey = GlobalKey();
+  
+  // Animation controller cho bounce effect của icon giỏ hàng
+  late AnimationController _cartBounceController;
+  late Animation<double> _cartBounceAnimation;
 
   @override
   void initState() {
     super.initState();
     _cart.addListener(_onCartChanged);
+    
+    // Setup animation cho icon giỏ hàng
+    _cartBounceController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+    _cartBounceAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+    ]).animate(CurvedAnimation(
+      parent: _cartBounceController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Set GlobalKey vào CartAnimationService
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cartAnimationService.cartIconKey = _cartIconKey;
+    });
+    
+    // Listen to cart changes để trigger bounce animation
+    _cart.addListener(_onCartItemAdded);
   }
 
   @override
   void dispose() {
     _cart.removeListener(_onCartChanged);
+    _cart.removeListener(_onCartItemAdded);
+    _cartBounceController.dispose();
     super.dispose();
   }
 
   void _onCartChanged() {
     if (mounted) setState(() {});
+  }
+  
+  void _onCartItemAdded() {
+    // Trigger bounce animation khi có sản phẩm mới thêm vào giỏ
+    if (mounted && _cartBounceController.status != AnimationStatus.forward) {
+      _cartBounceController.forward(from: 0);
+    }
   }
 
   @override
@@ -380,33 +466,42 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              const Icon(Icons.shopping_cart_outlined, color: Colors.red, size: 24),
-                              if (_cart.itemCount > 0)
-                              Positioned(
-                                top: -4,
-                                right: -6,
-                                child: Container(
-                                  width: 16,
-                                  height: 16,
-                                  decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                  child: Center(
-                                      child: Text(
-                                        _cart.itemCount.toString(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.0,
+                          AnimatedBuilder(
+                            animation: _cartBounceAnimation,
+                            builder: (context, child) {
+                              return Transform.scale(
+                                scale: _cartBounceAnimation.value,
+                                child: Stack(
+                                  key: _cartIconKey, // GlobalKey cho animation
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    const Icon(Icons.shopping_cart_outlined, color: Colors.red, size: 24),
+                                    if (_cart.itemCount > 0)
+                                    Positioned(
+                                      top: -4,
+                                      right: -6,
+                                      child: Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                        child: Center(
+                                            child: Text(
+                                              _cart.itemCount.toString(),
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold,
+                                                height: 1.0,
+                                              ),
+                                              textAlign: TextAlign.center,
+                                            ),
                                         ),
-                                        textAlign: TextAlign.center,
                                       ),
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                              );
+                            },
                           ),
                           Builder(
                             builder: (context) {

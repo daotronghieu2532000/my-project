@@ -335,16 +335,6 @@ class _CartScreenState extends State<CartScreen> {
                               setState(() {
                                 _isEditMode = false;
                               });
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Đã xóa ${selectedItems.length} sản phẩm'),
-                                  backgroundColor: Colors.red[600],
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              );
                             },
                             borderRadius: BorderRadius.circular(10),
                             child: const Center(

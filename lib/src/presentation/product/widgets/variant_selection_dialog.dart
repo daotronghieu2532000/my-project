@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/product_detail.dart';
+import '../../../core/services/cart_animation_service.dart';
 
 class VariantSelectionDialog extends StatefulWidget {
   final ProductDetail product;
@@ -24,6 +25,8 @@ class VariantSelectionDialog extends StatefulWidget {
 class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
   ProductVariant? _selectedVariant;
   int _quantity = 1;
+  final GlobalKey _imageKey = GlobalKey();
+  final CartAnimationService _cartAnimationService = CartAnimationService();
 
   @override
   void initState() {
@@ -85,6 +88,7 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
                      );
                    },
                    child: Container(
+                    key: _imageKey, // GlobalKey cho animation
                     width: 78,
                     height: 78,
                   decoration: BoxDecoration(
@@ -321,9 +325,19 @@ class _VariantSelectionDialogState extends State<VariantSelectionDialog> {
                  if (widget.actionType == null || widget.actionType == 'addToCart')
                  Expanded(
                    child: OutlinedButton(
-                     onPressed: () {
+                     onPressed: () async {
                        if (_selectedVariant != null) {
+                         // Đóng dialog trước
                          Navigator.pop(context);
+                         
+                         // Trigger animation bay vào giỏ
+                         await _cartAnimationService.animateToCart(
+                           context: context,
+                           imageUrl: _selectedVariant?.imageUrl ?? widget.product.imageUrl,
+                           startKey: _imageKey,
+                         );
+                         
+                         // Sau đó mới gọi callback thêm vào giỏ
                          widget.onAddToCart(_selectedVariant!, _quantity);
                        }
                      },

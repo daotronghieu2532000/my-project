@@ -368,16 +368,6 @@ class CartServiceItemTile extends StatelessWidget {
                             onTap: () {
               Navigator.pop(context);
               onDelete(item);
-              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Đã xóa "${item.name}"'),
-                                  backgroundColor: Colors.red[600],
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              );
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: const Center(

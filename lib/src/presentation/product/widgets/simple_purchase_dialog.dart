@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/models/product_detail.dart';
+import '../../../core/services/cart_animation_service.dart';
 
 class SimplePurchaseDialog extends StatefulWidget {
   final ProductDetail product;
@@ -21,6 +22,8 @@ class SimplePurchaseDialog extends StatefulWidget {
 
 class _SimplePurchaseDialogState extends State<SimplePurchaseDialog> {
   int _quantity = 1;
+  final GlobalKey _imageKey = GlobalKey();
+  final CartAnimationService _cartAnimationService = CartAnimationService();
 
   @override
   Widget build(BuildContext context) {
@@ -72,6 +75,7 @@ class _SimplePurchaseDialogState extends State<SimplePurchaseDialog> {
                     );
                   },
                   child: Container(
+                    key: _imageKey, // GlobalKey cho animation
                     width: 78,
                     height: 78,
                     decoration: BoxDecoration(
@@ -250,8 +254,18 @@ class _SimplePurchaseDialogState extends State<SimplePurchaseDialog> {
                 if (widget.actionType == null || widget.actionType == 'addToCart')
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
+                      onPressed: () async {
+                        // Đóng dialog trước
                         Navigator.pop(context);
+                        
+                        // Trigger animation bay vào giỏ
+                        await _cartAnimationService.animateToCart(
+                          context: context,
+                          imageUrl: widget.product.imageUrl,
+                          startKey: _imageKey,
+                        );
+                        
+                        // Sau đó mới gọi callback thêm vào giỏ (để bounce animation hoạt động)
                         widget.onAddToCart(widget.product, _quantity);
                       },
                       style: OutlinedButton.styleFrom(

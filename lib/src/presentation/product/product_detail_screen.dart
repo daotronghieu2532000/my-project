@@ -30,6 +30,7 @@ import '../shop/shop_detail_screen.dart';
 import '../chat/chat_screen.dart';
 import '../../core/services/cart_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/affiliate_tracking_service.dart';
 import '../common/widgets/go_top_button.dart';
 import '../account/support_center_screen.dart';
 
@@ -73,6 +74,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   final CartService _cartService = CartService();
   final AuthService _authService = AuthService();
+  final AffiliateTrackingService _affiliateTracking = AffiliateTrackingService();
   bool _isFavorite = false;
   bool _isTogglingFavorite = false;
   int? _cachedUserId; // Cache userId để tránh gọi getCurrentUser nhiều lần
@@ -775,6 +777,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           }
         });
         
+        // Track affiliate view if has valid affiliate tracking
+        if (widget.productId != null) {
+          _affiliateTracking.trackAffiliateView(productId: widget.productId);
+        }
+        
         // Load fresh data trong background
         _loadProductDetailFresh();
         return;
@@ -801,6 +808,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         
         // Load các phần khác với delay để ưu tiên hiển thị basic info trước
         if (productDetail != null) {
+          // Track affiliate view if has valid affiliate tracking
+          if (widget.productId != null) {
+            _affiliateTracking.trackAffiliateView(productId: widget.productId);
+          }
+          
           // Sử dụng rating từ product_detail_basic API trước (đã có sẵn)
           setState(() {
             _realRating = productDetail.rating;

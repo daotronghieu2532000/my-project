@@ -114,7 +114,7 @@ class WelcomeBonusDialog extends StatelessWidget {
             
             // Mô tả
             Text(
-              'Số tiền này sẽ tự động được áp dụng 10% vào mỗi đơn hàng của bạn. Hãy bắt đầu mua sắm ngay nhé! 💝',
+              'Số tiền này sẽ tự động được áp dụng 10% vào mỗi đơn hàng sản phẩm thuộc nhà bán Socdo Choice, JUDYDOOL, CoCayHoaLa . Hãy bắt đầu mua sắm ngay nhé! 💝',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade600,

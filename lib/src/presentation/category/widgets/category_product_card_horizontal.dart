@@ -412,8 +412,6 @@ class CategoryProductCardHorizontal extends StatelessWidget {
       addedAt: DateTime.now(),
     );
     cart_service.CartService().addItem(item);
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    messenger?.showSnackBar(SnackBar(content: Text('Đã thêm ${product.name} (${variant.name}) x$quantity vào giỏ hàng'), backgroundColor: Colors.green));
   }
 
   void _handleBuyNowSimple(BuildContext context, ProductDetail product, int quantity) {
@@ -448,8 +446,6 @@ class CategoryProductCardHorizontal extends StatelessWidget {
       addedAt: DateTime.now(),
     );
     cart_service.CartService().addItem(item);
-    final messenger = ScaffoldMessenger.maybeOf(context);
-      messenger?.showSnackBar(SnackBar(content: Text('Đã thêm ${product.name} x$quantity vào giỏ hàng'), backgroundColor: Colors.green));
   }
 
   ({String id, String name}) _resolveShop(Map<String, dynamic>? product, {Map<String, dynamic>? fb}) {

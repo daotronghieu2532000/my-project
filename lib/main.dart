@@ -4,10 +4,15 @@ import 'package:firebase_core/firebase_core.dart';
 import 'src/app.dart';
 import 'src/core/services/app_initialization_service.dart';
 import 'src/core/services/app_lifecycle_manager.dart';
+import 'src/core/services/deep_link_service.dart';
+import 'src/core/config/image_cache_config.dart';
 
 void main() async {
   // Khởi tạo Flutter binding
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // ✅ Khởi tạo Image Cache Config (QUAN TRỌNG - tránh skip frames)
+  ImageCacheConfig.initialize();
   
   // KHỞI TẠO FIREBASE TRƯỚC TIÊN
   try {
@@ -31,6 +36,10 @@ Future<void> _initializeApp() async {
     // Khởi tạo AppLifecycleManager (không blocking)
     final lifecycleManager = AppLifecycleManager();
     lifecycleManager.initialize();
+    
+    // Khởi tạo Deep Link Service
+    final deepLinkService = DeepLinkService();
+    deepLinkService.init();
     
     // Khởi tạo token (chạy background, không block UI)
     final initService = AppInitializationService();

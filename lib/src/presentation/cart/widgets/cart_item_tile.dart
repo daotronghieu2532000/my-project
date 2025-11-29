@@ -127,9 +127,6 @@ class CartItemTile extends StatelessWidget {
             onPressed: () {
               Navigator.pop(context);
               // TODO: Implement delete item functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Đã xóa "${item.title}"')),
-              );
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Xóa'),

@@ -139,42 +139,56 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
         title: const Text(
           'Thông báo',
           style: TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.5,
           ),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
+        shadowColor: Colors.transparent,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(50),
+          preferredSize: const Size.fromHeight(56),
           child: Container(
-            color: Colors.white,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey[200]!,
+                  width: 1,
+                ),
+              ),
+            ),
             child: TabBar(
               controller: _tabController,
               isScrollable: true,
               indicatorSize: TabBarIndicatorSize.tab,
               indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: const Color(0xFF2196F3).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                ),
               ),
-              indicatorColor: const Color(0xFF2196F3),
-              labelColor: const Color(0xFF2196F3),
-              unselectedLabelColor: Colors.grey[600],
+              indicatorColor: Colors.transparent,
+              labelColor: Colors.white,
+              unselectedLabelColor: const Color(0xFF64748B),
               labelStyle: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
               ),
               unselectedLabelStyle: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               tabs: [
                 _buildTab(
                   'Tất cả',
@@ -208,8 +222,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
         actions: [
           if (_items.isNotEmpty)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
+              icon: const Icon(Icons.more_vert, color: Color(0xFF1A1A1A)),
               color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 8,
               onSelected: (value) {
                 if (value == 'mark_all_read' && _unread > 0) {
                   _markAllRead();
@@ -219,23 +237,57 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
               },
               itemBuilder: (context) => [
                 if (_unread > 0)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'mark_all_read',
                     child: Row(
                       children: [
-                        Icon(Icons.check_circle_outline, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text('Đánh dấu tất cả đã đọc'),
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6366F1).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.check_circle_outline,
+                            color: Color(0xFF6366F1),
+                            size: 18,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Đánh dấu tất cả đã đọc',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'delete_all',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline, color: Colors.black87),
-                      SizedBox(width: 8),
-                      Text('Xóa tất cả thông báo'),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEF4444).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.delete_outline,
+                          color: Color(0xFFEF4444),
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Xóa tất cả thông báo',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -257,38 +309,48 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
               children: [
                 // Header với số lượng thông báo
                 Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    gradient: _unread > 0
+                        ? const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                          )
+                        : LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              const Color(0xFF94A3B8),
+                              const Color(0xFF64748B),
+                            ],
+                          ),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: (_unread > 0 ? const Color(0xFF6366F1) : const Color(0xFF94A3B8))
+                            .withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(10),
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: _unread > 0 
-                                ? [const Color(0xFF4CAF50), const Color(0xFF45A049)]
-                                : [const Color(0xFF9E9E9E), const Color(0xFF757575)],
-                          ),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
                           Icons.notifications_active,
                           color: Colors.white,
-                          size: 20,
+                          size: 24,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -298,17 +360,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
                                   ? 'Bạn có $_unread thông báo mới'
                                   : 'Không có thông báo mới',
                               style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF2C3E50),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                                letterSpacing: -0.3,
                               ),
                             ),
-                            const SizedBox(height: 2),
+                            const SizedBox(height: 4),
                             Text(
                               'Cập nhật lần cuối: Hôm nay',
                               style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[500],
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.9),
+                                fontWeight: FontWeight.w400,
                               ),
                             ),
                           ],
@@ -348,31 +412,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
   // Widget tạo tab với badge số lượng
   Widget _buildTab(String label, int count, IconData icon) {
     return Tab(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16),
-          const SizedBox(width: 6),
-          Text(label),
-          if (count > 0) ...[
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16),
             const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
+            Text(label),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '$count',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -413,7 +480,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       itemCount: notifications.length,
       itemBuilder: (context, index) {
         final notification = notifications[index];
@@ -421,12 +488,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
           margin: const EdgeInsets.only(bottom: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: (notification['is_read'] as bool?) ?? false
+                  ? Colors.grey[200]!
+                  : const Color(0xFF6366F1).withOpacity(0.2),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 8,
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 10,
                 offset: const Offset(0, 2),
+                spreadRadius: 0,
               ),
             ],
           ),
@@ -546,122 +620,152 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
     switch (type) {
       case 'affiliate_order':
         return Container(
-          width: 50,
-          height: 50,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF4CAF50), Color(0xFF388E3C)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF10B981), Color(0xFF059669)],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF4CAF50).withOpacity(0.2),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF10B981).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.handshake_outlined,
             color: Colors.white,
-            size: 22,
+            size: 24,
           ),
         );
       case 'deposit':
         return Container(
-          width: 50,
-          height: 50,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF00BCD4), Color(0xFF0097A7)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF00BCD4).withOpacity(0.2),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF06B6D4).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.trending_up_outlined,
             color: Colors.white,
-            size: 22,
+            size: 24,
           ),
         );
       case 'withdrawal':
         return Container(
-          width: 50,
-          height: 50,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFFF9800), Color(0xFFF57C00)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFFFF9800).withOpacity(0.2),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFF59E0B).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.trending_down_outlined,
             color: Colors.white,
-            size: 22,
+            size: 24,
           ),
         );
       case 'voucher_new':
         return Container(
-          width: 50,
-          height: 50,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFFE91E63), Color(0xFFC2185B)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFEC4899), Color(0xFFDB2777)],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFFE91E63).withOpacity(0.2),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFEC4899).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.card_giftcard_outlined,
             color: Colors.white,
-            size: 22,
+            size: 24,
           ),
         );
       case 'voucher_expiring':
         return Container(
-          width: 50,
-          height: 50,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF9C27B0), Color(0xFF7B1FA2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFA855F7), Color(0xFF9333EA)],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF9C27B0).withOpacity(0.2),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFA855F7).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.timer_outlined,
             color: Colors.white,
-            size: 22,
+            size: 24,
           ),
         );
       default:
         return Container(
-          width: 50,
-          height: 50,
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF607D8B), Color(0xFF455A64)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF64748B), Color(0xFF475569)],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: const Color(0xFF607D8B).withOpacity(0.2),
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF64748B).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: const Icon(
             Icons.notifications_outlined,
             color: Colors.white,
-            size: 22,
+            size: 24,
           ),
         );
     }
@@ -671,123 +775,153 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
     // Phân tích title để xác định trạng thái đơn hàng
     if (title.contains('đã được xác nhận')) {
       return Container(
-        width: 50,
-        height: 50,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF2196F3), Color(0xFF1976D2)], // Xanh dương
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
           ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF2196F3).withOpacity(0.2),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF3B82F6).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Icon(
           Icons.check_circle_outlined,
           color: Colors.white,
-          size: 22,
+          size: 24,
         ),
       );
     } else if (title.contains('đang được giao')) {
       return Container(
-        width: 50,
-        height: 50,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFFF9800), Color(0xFFF57C00)], // Cam
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
           ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFFF9800).withOpacity(0.2),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFF59E0B).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Icon(
           Icons.local_shipping_outlined,
           color: Colors.white,
-          size: 22,
+          size: 24,
         ),
       );
     } else if (title.contains('đã giao thành công')) {
       return Container(
-        width: 50,
-        height: 50,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF4CAF50), Color(0xFF388E3C)], // Xanh lá
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF10B981), Color(0xFF059669)],
           ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF4CAF50).withOpacity(0.2),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF10B981).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Icon(
           Icons.done_all_outlined,
           color: Colors.white,
-          size: 22,
+          size: 24,
         ),
       );
     } else if (title.contains('đã bị hủy')) {
       return Container(
-        width: 50,
-        height: 50,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFFF44336), Color(0xFFD32F2F)], // Đỏ
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
           ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFF44336).withOpacity(0.2),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFEF4444).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Icon(
           Icons.cancel_outlined,
           color: Colors.white,
-          size: 22,
+          size: 24,
         ),
       );
     } else if (title.contains('đã hoàn trả')) {
       return Container(
-        width: 50,
-        height: 50,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF9C27B0), Color(0xFF7B1FA2)], // Tím
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFA855F7), Color(0xFF9333EA)],
           ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF9C27B0).withOpacity(0.2),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFA855F7).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Icon(
           Icons.undo_outlined,
           color: Colors.white,
-          size: 22,
+          size: 24,
         ),
       );
     } else {
       // Trạng thái mặc định
       return Container(
-        width: 50,
-        height: 50,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           gradient: const LinearGradient(
-            colors: [Color(0xFF607D8B), Color(0xFF455A64)], // Xám
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF64748B), Color(0xFF475569)],
           ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFF607D8B).withOpacity(0.2),
-            width: 1,
-          ),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF64748B).withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: const Icon(
           Icons.shopping_bag_outlined,
           color: Colors.white,
-          size: 22,
+          size: 24,
         ),
       );
     }
@@ -920,188 +1054,250 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
     // Kiểm tra nội dung có dài không
     bool isLongContent = widget.subtitle.length > 100;
     
-    return InkWell(
-      onTap: widget.onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          border: widget.priority == 'high' && !widget.isRead 
-              ? const Border(left: BorderSide(color: Color(0xFFEF4444), width: 3))
-              : null,
-        ),
-        child: ListTile(
-        leading: productImage != null && productImage.isNotEmpty
-            ? Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.grey[300]!,
-                    width: 1,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(7),
-                  child: Image.network(
-                    productImage,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        color: Colors.grey[100],
-                        child: Icon(
-                          Icons.image_not_supported_outlined,
-                          color: Colors.grey[400],
-                          size: 24,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: widget.onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: widget.isRead 
+                ? Colors.white 
+                : const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(16),
+            border: widget.priority == 'high' && !widget.isRead 
+                ? Border.all(
+                    color: const Color(0xFFEF4444).withOpacity(0.3),
+                    width: 1.5,
+                  )
+                : null,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon hoặc ảnh sản phẩm
+              productImage != null && productImage.isNotEmpty
+                  ? Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey[200]!,
+                          width: 1,
                         ),
-                      );
-                    },
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        color: Colors.grey[100],
-                        child: Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(11),
+                        child: Image.network(
+                          productImage,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              color: Colors.grey[100],
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                color: Colors.grey[400],
+                                size: 24,
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              color: Colors.grey[100],
+                              child: Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    )
+                  : widget.iconWidget,
+              const SizedBox(width: 12),
+              // Nội dung thông báo
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Tiêu đề và badge priority
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            widget.title,
+                            style: TextStyle(
+                              fontWeight: widget.isRead 
+                                  ? FontWeight.w600 
+                                  : FontWeight.w700,
+                              fontSize: 15,
+                              color: const Color(0xFF1A1A1A),
+                              letterSpacing: -0.2,
+                              height: 1.3,
                             ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              )
-            : widget.iconWidget,
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                widget.title,
-                style: TextStyle(
-                  fontWeight: widget.isRead ? FontWeight.w500 : FontWeight.w600,
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            if (widget.priority == 'high' && !widget.isRead)
-              Container(
-                margin: const EdgeInsets.only(left: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.priority_high,
-                  color: Colors.white,
-                  size: 12,
-                ),
-              ),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            // Nội dung thông báo với tính năng rút gọn
-            Text(
-              widget.subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-              maxLines: _isExpanded ? null : 2,
-              overflow: _isExpanded ? null : TextOverflow.ellipsis,
-            ),
-            if (isLongContent) ...[
-              const SizedBox(height: 4),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _isExpanded = !_isExpanded;
-                  });
-                },
-                child: Text(
-                  _isExpanded ? 'Thu gọn' : 'Xem thêm',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.blue[600],
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-            if (productTitle != null && productTitle.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 12,
-                    color: Colors.blue[600],
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      productTitle,
+                        if (widget.priority == 'high' && !widget.isRead) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(
+                              Icons.priority_high,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    // Nội dung thông báo
+                    Text(
+                      widget.subtitle,
                       style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.blue[600],
-                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                        color: const Color(0xFF64748B),
+                        height: 1.5,
+                        fontWeight: FontWeight.w400,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: _isExpanded ? null : 2,
+                      overflow: _isExpanded ? null : TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                    // Nút Xem thêm / Thu gọn
+                    if (isLongContent) ...[
+                      const SizedBox(height: 6),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _isExpanded = !_isExpanded;
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _isExpanded ? 'Thu gọn' : 'Xem thêm',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: const Color(0xFF6366F1),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _isExpanded 
+                                    ? Icons.keyboard_arrow_up 
+                                    : Icons.keyboard_arrow_down,
+                                size: 16,
+                                color: const Color(0xFF6366F1),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                    // Tên sản phẩm nếu có
+                    if (productTitle != null && productTitle.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF6366F1).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.shopping_cart_outlined,
+                              size: 14,
+                              color: const Color(0xFF6366F1),
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                productTitle,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: const Color(0xFF6366F1),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    // Thời gian và badge đọc/chưa đọc
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time_outlined,
+                          size: 12,
+                          color: Colors.grey[400],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.time,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!widget.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: widget.priority == 'high'
+                                    ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
+                                    : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time_outlined,
-                  size: 11,
-                  color: Colors.grey[500],
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  widget.time,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey[500],
-                  ),
-                ),
-                const Spacer(),
-                if (!widget.isRead)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: widget.priority == 'high' 
-                          ? const Color(0xFFEF4444) 
-                          : const Color(0xFFF59E0B),
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-              ],
-            ),
-          ],
+          ),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      ),
       ),
     );
   }

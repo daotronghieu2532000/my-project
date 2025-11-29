@@ -181,7 +181,7 @@ class AuthService {
       }
       
       return null;
-    } catch (e, stackTrace) {
+    } catch (e) {
       return null;
     }
   }
@@ -344,6 +344,7 @@ class AuthService {
       // Chỉ cần đảm bảo service đã được initialize
     }
   }
+  /// Gửi OTP qua SMS (eSMS)
   Future<Map<String, dynamic>> forgotPasswordSMS(String phoneNumber) async {
     try {
     
@@ -412,6 +413,92 @@ class AuthService {
     }
   }
 
+  /// Gửi OTP qua cuộc gọi Stringee
+  Future<Map<String, dynamic>> forgotPasswordStringeeCall(String phoneNumber) async {
+    try {
+      final response = await _apiService.post('/forgot_password_call', body: {
+        'phone_number': phoneNumber,
+      });
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data['success'] == true) {  
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Bạn sẽ nhận được cuộc gọi với mã OTP',
+              'data': data['data'],
+            };
+          } else {
+            String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
+            return {
+              'success': false,
+              'message': errorMessage,
+            };
+          }
+        } catch (e) {
+          return {
+            'success': false,
+            'message': 'Lỗi xử lý dữ liệu từ server',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Lỗi kết nối server',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Lỗi kết nối server',
+      };
+    }
+  }
+
+  /// Gửi OTP qua Zalo ZNS
+  Future<Map<String, dynamic>> forgotPasswordZNS(String phoneNumber) async {
+    try {
+      final response = await _apiService.post('/forgot_password_zns', body: {
+        'phone_number': phoneNumber,
+      });
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data['success'] == true) {  
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Mã OTP đã được gửi qua Zalo',
+              'data': data['data'],
+            };
+          } else {
+            String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
+            return {
+              'success': false,
+              'message': errorMessage,
+            };
+          }
+        } catch (e) {
+          return {
+            'success': false,
+            'message': 'Lỗi xử lý dữ liệu từ server',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Lỗi kết nối server',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Lỗi kết nối server',
+      };
+    }
+  }
+
   /// Xác thực OTP và đổi mật khẩu
   Future<Map<String, dynamic>> verifyOTPAndResetPassword({
     required String phoneNumber,
@@ -458,6 +545,167 @@ class AuthService {
       return {
         'success': false,
         'message': 'Lỗi kết nối server',
+      };
+    }
+  }
+
+  /// Đăng nhập bằng Google
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String googleId,
+    required String idToken,
+    String? email,
+    String? name,
+    String? photoUrl,
+  }) async {
+    try {
+      final response = await _apiService.post('/login_google', body: {
+        'google_id': googleId,
+        'id_token': idToken,
+        if (email != null) 'email': email,
+        if (name != null) 'name': name,
+        if (photoUrl != null) 'photo_url': photoUrl,
+      });
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          
+          if (data['success'] == true && data['data'] != null) {
+            // Đăng nhập thành công
+            final user = User.fromJson(data['data']);
+            await _saveUser(user);
+            
+            // ✅ Kiểm tra và tặng bonus lần đầu tải app
+            final bonusService = FirstTimeBonusService();
+            final bonusInfo = await bonusService.checkAndGrantBonus(user.userId);
+            
+            // Lưu thông tin bonus vào SharedPreferences để hiển thị UI
+            if (bonusInfo != null) {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('first_time_bonus_info', jsonEncode(bonusInfo));
+              
+              // Nếu là bonus mới, lưu flag để hiển thị dialog
+              if (bonusInfo['is_new_bonus'] == true) {
+                await prefs.setBool('show_bonus_dialog', true);
+              }
+            }
+            
+            // Register FCM token sau khi login thành công
+            _registerPushToken();
+            
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Đăng nhập thành công',
+              'user': user,
+            };
+          } else {
+            return {
+              'success': false,
+              'message': data['message'] ?? 'Đăng nhập thất bại',
+            };
+          }
+        } catch (jsonError) {
+          return {
+            'success': false,
+            'message': 'Lỗi xử lý dữ liệu từ server',
+          };
+        }
+      } else {
+        return {
+          'success': false,
+          'message': 'Không thể kết nối đến server',
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Có lỗi xảy ra: $e',
+      };
+    }
+  }
+
+  /// Đăng nhập bằng Facebook
+  /// CHỈ lấy: facebook_id, name, avatar
+  /// KHÔNG lấy: email, mobile, ngày sinh, địa chỉ - để user tự điền sau
+  Future<Map<String, dynamic>> loginWithFacebook({
+    required String facebookId,
+    required String accessToken,
+    String? email, // ✅ KHÔNG dùng - chỉ để backward compatibility
+    String? name,
+    String? pictureUrl,
+  }) async {
+    try {
+  
+   
+      final response = await _apiService.post('/login_facebook', body: {
+        'facebook_id': facebookId,
+        'access_token': accessToken,
+        // ✅ KHÔNG gửi email - để backend tạo user mới với email = null/empty
+        if (name != null) 'name': name,
+        if (pictureUrl != null) 'picture_url': pictureUrl,
+      });
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          
+          if (data['success'] == true && data['data'] != null) {
+            // Đăng nhập thành công
+            final userData = data['data'] as Map<String, dynamic>;
+
+            final user = User.fromJson(userData);
+
+            await _saveUser(user);
+            // Verify saved user
+            final savedUser = await getCurrentUser();
+            // ✅ Kiểm tra và tặng bonus lần đầu tải app
+            final bonusService = FirstTimeBonusService();
+            final bonusInfo = await bonusService.checkAndGrantBonus(user.userId);
+            
+            // Lưu thông tin bonus vào SharedPreferences để hiển thị UI
+            if (bonusInfo != null) {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('first_time_bonus_info', jsonEncode(bonusInfo));
+              
+              // Nếu là bonus mới, lưu flag để hiển thị dialog
+              if (bonusInfo['is_new_bonus'] == true) {
+                await prefs.setBool('show_bonus_dialog', true);
+              }
+            }
+            
+            // Register FCM token sau khi login thành công
+            _registerPushToken();
+            
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Đăng nhập thành công',
+              'user': user,
+            };
+          } else {
+            return {
+              'success': false,
+              'message': data['message'] ?? 'Đăng nhập thất bại',
+            };
+          }
+        } catch (jsonError) {
+         
+          return {
+            'success': false,
+            'message': 'Lỗi xử lý dữ liệu từ server',
+          };
+        }
+      } else {
+        print('❌ [Facebook Login] No response from server');
+        return {
+          'success': false,
+          'message': 'Không thể kết nối đến server',
+        };
+      }
+    } catch (e) {
+      print('❌ [Facebook Login] Exception: $e');
+      return {
+        'success': false,
+        'message': 'Có lỗi xảy ra: $e',
       };
     }
   }

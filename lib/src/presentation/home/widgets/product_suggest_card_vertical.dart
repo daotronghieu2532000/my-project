@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
 import '../../cart/cart_screen.dart';
 import '../../checkout/checkout_screen.dart';
 import '../../../core/utils/format_utils.dart';
+import '../../../core/utils/image_optimizer.dart';
 import '../../../core/models/product_suggest.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/services/cart_service.dart';
@@ -54,10 +56,19 @@ class ProductSuggestCardVertical extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(8)), // Giảm từ 12 xuống 8
                     child: product.imageUrl != null
-                          ? Image.network(
-                              product.imageUrl!,
-                              fit: BoxFit.cover, // Thay đổi từ contain thành cover để fill toàn bộ div
-                              errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+                          ? CachedNetworkImage(
+                              imageUrl: ImageOptimizer.getOptimizedUrl(
+                                product.imageUrl!,
+                                width: ImageSizes.cardWidth,
+                                height: ImageSizes.cardHeight,
+                              ),
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(color: Colors.grey[200]),
+                              errorWidget: (context, url, error) => _buildPlaceholderImage(),
+                              memCacheWidth: ImageSizes.cardWidth,
+                              memCacheHeight: ImageSizes.cardHeight,
+                              maxWidthDiskCache: ImageSizes.cardWidth,
+                              maxHeightDiskCache: ImageSizes.cardHeight,
                             )
                           : _buildPlaceholderImage(),
                       ),
@@ -337,18 +348,6 @@ class ProductSuggestCardVertical extends StatelessWidget {
     
     CartService().addItem(cartItem);
     
-    // Hiển thị thông báo
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm ${variant.name} vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }
-    
     // Chuyển đến trang thanh toán
     Navigator.push(
       context,
@@ -375,24 +374,6 @@ class ProductSuggestCardVertical extends StatelessWidget {
     );
     
     CartService().addItem(cartItem);
-    
-    // Hiển thị thông báo và chuyển đến giỏ hàng
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm ${product.name} (${variant.name}) x$quantity vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'Xem giỏ hàng',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartScreen()),
-            );
-          },
-        ),
-      ),
-    );
   }
 
   // Xử lý MUA NGAY cho sản phẩm không có biến thể
@@ -411,18 +392,6 @@ class ProductSuggestCardVertical extends StatelessWidget {
     );
     
     CartService().addItem(cartItem);
-    
-    // Hiển thị thông báo
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm ${product.name} vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }
     
     // Chuyển đến trang thanh toán
     Navigator.push(
@@ -449,27 +418,6 @@ class ProductSuggestCardVertical extends StatelessWidget {
     );
     
     CartService().addItem(cartItem);
-    
-    // Hiển thị thông báo và chuyển đến giỏ hàng
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm ${product.name} x$quantity vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          action: SnackBarAction(
-            label: 'Xem giỏ hàng',
-            textColor: Colors.white,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartScreen()),
-              );
-            },
-          ),
-        ),
-      );
-    }
   }
 
   // Helper method để check flash sale

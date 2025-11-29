@@ -247,15 +247,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
 
     _cartService.addItem(cartItem);
     
-    // Hiển thị thông báo
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm ${variant.name} vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 1),
-      ),
-    );
-    
     // Chuyển đến trang thanh toán
     Navigator.push(
       context,
@@ -284,24 +275,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
     
 
     _cartService.addItem(cartItem);
-    
-    // Hiển thị thông báo và chuyển đến giỏ hàng
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm ${product.name} (${variant.name}) x$quantity vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'Xem giỏ hàng',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartScreen()),
-            );
-          },
-        ),
-      ),
-    );
   }
 
   // Xử lý MUA NGAY cho sản phẩm không có biến thể
@@ -320,15 +293,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       addedAt: DateTime.now(),
     );
     _cartService.addItem(cartItem);
-    
-    // Hiển thị thông báo
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm ${product.name} vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 1),
-      ),
-    );
     
     // Chuyển đến trang thanh toán
     Navigator.push(
@@ -355,24 +319,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
       addedAt: DateTime.now(),
     );
     _cartService.addItem(cartItem);
-    
-    // Hiển thị thông báo và chuyển đến giỏ hàng
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm ${product.name} x$quantity vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'Xem giỏ hàng',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartScreen()),
-            );
-          },
-        ),
-      ),
-    );
   }
 
   void _showSimpleQuantityDialog(FlashSaleProduct product, {required bool isAddToCart}) {
@@ -578,23 +524,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
                           );
                           
                           _cartService.addItem(cartItem);
-                          
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Đã thêm ${product.name} x$quantity vào giỏ hàng'),
-                              backgroundColor: Colors.green,
-                              action: SnackBarAction(
-                                label: 'Xem giỏ hàng',
-                                textColor: Colors.white,
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const CartScreen()),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue,
@@ -624,14 +553,6 @@ class _FlashSaleScreenState extends State<FlashSaleScreen> with TickerProviderSt
                           );
                           
                           _cartService.addItem(cartItem);
-                          
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Đã thêm ${product.name} x$quantity vào giỏ hàng'),
-                              backgroundColor: Colors.green,
-                              duration: const Duration(seconds: 1),
-                            ),
-                          );
                           
                           // Navigate to checkout
                           Navigator.push(

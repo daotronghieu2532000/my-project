@@ -366,16 +366,6 @@ class CartServiceShopSection extends StatelessWidget {
               Navigator.pop(context);
               cartService.clearShopItems(items.first.shopId);
               onChanged();
-              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Đã xóa tất cả sản phẩm của "$shopName"'),
-                                  backgroundColor: Colors.red[600],
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                              );
                             },
                             borderRadius: BorderRadius.circular(12),
                             child: const Center(

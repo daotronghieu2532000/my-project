@@ -55,11 +55,33 @@ class _HeaderCardState extends State<HeaderCard> {
     try {
       final user = await _authService.getCurrentUser();
       if (user != null) {
+
         // Thử lấy thông tin mới nhất từ API user_profile
         try {
           final profile = await _apiService.getUserProfile(userId: user.userId);
           if (profile != null && profile['user'] != null) {
             final u = profile['user'] as Map<String, dynamic>;
+          
+            
+            // ✅ CRITICAL: Verify user_id matches before updating
+            final apiUserId = u['user_id'];
+            if (apiUserId != null) {
+              final apiUserIdInt = apiUserId is int ? apiUserId : int.tryParse(apiUserId.toString());
+              if (apiUserIdInt != null && apiUserIdInt != user.userId) {
+               
+                // DON'T UPDATE - Use saved user data instead
+                if (mounted) {
+                  setState(() {
+                    _currentUser = user;
+                    _isLoading = false;
+                  });
+                }
+                _loadCounts();
+                _startPolling();
+                return;
+              }
+            }
+            
             int parseInt(dynamic v) {
               if (v == null) return 0;
               if (v is int) return v;
@@ -67,6 +89,8 @@ class _HeaderCardState extends State<HeaderCard> {
               if (v is num) return v.toInt();
               return 0;
             }
+            
+            // ✅ Only update if user_id matches
             final updated = user.copyWith(
               name: (u['name']?.toString() ?? user.name),
               username: (u['username']?.toString() ?? user.username),
@@ -76,6 +100,9 @@ class _HeaderCardState extends State<HeaderCard> {
               userMoney: parseInt(u['user_money']),
               userMoney2: parseInt(u['user_money2']),
             );
+            
+
+          
             // CRITICAL: Chỉ update UI, KHÔNG lưu vào SharedPreferences để tránh restore sau logout
             if (mounted) {
               setState(() {
@@ -88,7 +115,9 @@ class _HeaderCardState extends State<HeaderCard> {
             _startPolling();
             return;
           }
-        } catch (_) {}
+        } catch (e) {
+          print('❌ [HeaderCard] Error loading profile: $e');
+        }
       }
       if (mounted) {
         setState(() {
@@ -99,6 +128,7 @@ class _HeaderCardState extends State<HeaderCard> {
       _loadCounts();
       _startPolling();
     } catch (e) {
+      print('❌ [HeaderCard] Error in _loadUserInfo: $e');
       if (mounted) {
         setState(() {
           _currentUser = null;

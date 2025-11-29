@@ -106,6 +106,8 @@ class ShopInfo {
   final int lastLogin;
   final int lastOnline;
   final int totalProducts;
+  final double shopRating;
+  final int shopReviews;
 
   const ShopInfo({
     required this.shopId,
@@ -127,6 +129,8 @@ class ShopInfo {
     required this.lastLogin,
     required this.lastOnline,
     required this.totalProducts,
+    this.shopRating = 0.0,
+    this.shopReviews = 0,
   });
 
   factory ShopInfo.fromJson(Map<String, dynamic> json) {
@@ -150,6 +154,8 @@ class ShopInfo {
       lastLogin: json['last_login'] as int? ?? 0,
       lastOnline: json['last_online'] as int? ?? 0,
       totalProducts: json['total_products'] as int? ?? 0,
+      shopRating: (json['shop_rating'] as num?)?.toDouble() ?? 0.0,
+      shopReviews: json['shop_reviews'] as int? ?? 0,
     );
   }
 }

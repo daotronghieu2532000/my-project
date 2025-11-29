@@ -11,7 +11,24 @@ import 'notification_handler.dart';
 /// Top-level function để handle background messages
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Background messages không thể hiển thị UI, chỉ log
+
+  
+  // Với data-only message, cần hiển thị notification manually
+  // Khởi tạo local notification service và hiển thị
+  final localNotifications = LocalNotificationService();
+  await localNotifications.initialize();
+  
+  final title = message.data['title'] ?? 'Thông báo';
+  final body = message.data['body'] ?? '';
+  
+  await localNotifications.showNotification(
+    id: message.hashCode,
+    title: title,
+    body: body,
+    payload: message.data,
+  );
+  
+  print('📱 [NOTIFICATION] Background notification shown');
 }
 
 class PushNotificationService {
@@ -71,24 +88,27 @@ class PushNotificationService {
   void _setupMessageHandlers() {
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    
       _handleForegroundMessage(message);
     });
 
     // Handle when app is opened from background/terminated
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+    
       _handleNotificationTap(message);
     });
 
     // Handle when app is opened from terminated state
     // Đợi một chút để đảm bảo Navigator đã sẵn sàng
     Future.delayed(const Duration(milliseconds: 500), () {
-      FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
-        if (message != null) {
+    FirebaseMessaging.instance.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+       
           // Đợi thêm một chút để Navigator context sẵn sàng
           Future.delayed(const Duration(milliseconds: 300), () {
-            _handleNotificationTap(message);
+        _handleNotificationTap(message);
           });
-        }
+      }
       });
     });
 
@@ -98,27 +118,28 @@ class PushNotificationService {
 
   /// Handle foreground message (app is open)
   void _handleForegroundMessage(RemoteMessage message) {
+   
     final notification = message.notification;
     final data = message.data;
-
-
-    if (notification != null) {
-      // Hiển thị local notification vì FCM không tự hiển thị khi app ở foreground
+    // Với data-only message, notification sẽ null
+    // Lấy title và body từ data
+    final title = notification?.title ?? data['title'] ?? 'Thông báo';
+    final body = notification?.body ?? data['body'] ?? '';
+    // Hiển thị local notification (foreground không tự hiển thị)
       _localNotifications.showNotification(
         id: message.hashCode,
-        title: notification.title ?? 'Thông báo',
-        body: notification.body ?? '',
+      title: title,
+      body: body,
         payload: data,
       );
-    }
-
+ 
     // Update notification count nếu cần
     _updateNotificationBadge();
   }
 
   /// Handle notification tap
   void _handleNotificationTap(RemoteMessage message) {
-    
+ 
     // FCM data payload là Map<String, dynamic>, nhưng values có thể là string (JSON)
     // Cần parse lại nếu cần
     final data = Map<String, dynamic>.from(message.data);
@@ -131,6 +152,7 @@ class PushNotificationService {
           final parsed = jsonDecode(value);
           if (parsed is Map || parsed is List) {
             data[key] = parsed;
+          
           }
         } catch (e) {
           // Không phải JSON, giữ nguyên string
@@ -138,6 +160,7 @@ class PushNotificationService {
       }
     });
     
+  
     _notificationHandler.handleNotificationData(data);
   }
 

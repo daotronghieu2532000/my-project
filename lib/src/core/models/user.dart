@@ -22,13 +22,13 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       userId: json['user_id'] as int,
-      name: json['name'] as String,
-      username: json['username'] as String,
-      email: json['email'] as String,
-      mobile: json['mobile'] as String,
+      name: json['name'] as String? ?? '',
+      username: json['username'] as String? ?? '',
+      email: json['email'] as String? ?? '', // ✅ Cho phép empty nếu chưa điền
+      mobile: json['mobile'] as String? ?? '', // ✅ Cho phép empty nếu chưa điền
       avatar: json['avatar'] as String?,
-      userMoney: json['user_money'] as int,
-      userMoney2: json['user_money2'] as int,
+      userMoney: (json['user_money'] as num?)?.toInt() ?? 0,
+      userMoney2: (json['user_money2'] as num?)?.toInt() ?? 0,
     );
   }
 

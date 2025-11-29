@@ -22,9 +22,6 @@ class ShopSection extends StatelessWidget {
             onPressed: () {
               Navigator.pop(context);
               // TODO: Implement delete shop functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Đã xóa tất cả sản phẩm của ${shop.name}')),
-              );
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Xóa'),

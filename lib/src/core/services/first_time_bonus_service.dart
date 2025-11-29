@@ -6,6 +6,10 @@ import 'api_service.dart';
 class FirstTimeBonusService {
   static const String baseUrl = 'https://api.socdo.vn/v1';
   
+  /// ✅ Danh sách shop được hưởng first-time bonus (10% của tổng tiền hàng)
+  /// Chỉ sản phẩm thuộc 5 shop này mới được tính vào eligible_total
+  static const List<int> eligibleBonusShops = [32373, 23933, 36893, 35683, 35681];
+  
   static final FirstTimeBonusService _instance = FirstTimeBonusService._internal();
   factory FirstTimeBonusService() => _instance;
   FirstTimeBonusService._internal();
@@ -84,14 +88,35 @@ class FirstTimeBonusService {
     return hasBonus && remainingAmount > 0 && !isUsed;
   }
   
-  /// Tính số tiền bonus có thể dùng (10% của order total, hoặc hết số còn lại nếu < 10%)
+  /// ✅ Tính tổng tiền hàng CHỈ từ các shop hợp lệ (32373, 23933, 36893)
+  /// Bonus 10% chỉ tính trên eligible_total, KHÔNG tính trên toàn bộ giỏ hàng
+  /// 
+  /// [items] - Danh sách items với format: [{'shopId': int, 'price': int, 'quantity': int}]
+  int calculateEligibleTotal(List<Map<String, dynamic>> items) {
+    int eligible = 0;
+    
+    for (final item in items) {
+      final shopId = item['shopId'] as int? ?? 0;
+      final price = item['price'] as int? ?? 0;
+      final quantity = item['quantity'] as int? ?? 1;
+      
+      if (eligibleBonusShops.contains(shopId)) {
+        eligible += price * quantity;
+      }
+    }
+    
+    return eligible;
+  }
+  
+  /// Tính số tiền bonus có thể dùng (10% của eligible_total, hoặc hết số còn lại nếu < 10%)
+  /// 
+  /// ⚠️ LƯU Ý: [orderTotal] bây giờ phải là ELIGIBLE_TOTAL (chỉ từ 3 shop hợp lệ)
+  /// KHÔNG truyền tổng tiền hàng toàn bộ giỏ vào đây
   int calculateBonusAmount(int orderTotal, int remainingBonus) {
-    print('🔍 [BONUS DEBUG] calculateBonusAmount called:');
-    print('   - orderTotal: $orderTotal (${orderTotal / 1000}k)');
-    print('   - remainingBonus: $remainingBonus (${remainingBonus / 1000}k)');
+  
     
     final bonus10Percent = (orderTotal * 10 / 100).floor();
-    print('   - bonus10Percent (10%): $bonus10Percent (${bonus10Percent / 1000}k)');
+  
     
     int result;
     if (remainingBonus < bonus10Percent) {

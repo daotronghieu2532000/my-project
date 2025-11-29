@@ -41,17 +41,46 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       Navigator.of(context).pop();
       return;
     }
+    
     setState(() { _user = current; });
     final data = await _api.getUserProfile(userId: current.userId);
-    if (data != null) {
+    
+    if (data != null && data['user'] != null) {
       final user = data['user'] as Map<String, dynamic>;
-      _nameCtrl.text = user['name']?.toString() ?? '';
-      _emailCtrl.text = user['email']?.toString() ?? '';
-      _mobileCtrl.text = user['mobile']?.toString() ?? '';
+
+      
+      // ✅ CRITICAL: Verify user_id matches before using data
+      final apiUserId = user['user_id'];
+      if (apiUserId != null) {
+        final apiUserIdInt = apiUserId is int ? apiUserId : int.tryParse(apiUserId.toString());
+        if (apiUserIdInt != null && apiUserIdInt != current.userId) {
+        
+          // DON'T USE API DATA - Use current user data instead
+          _nameCtrl.text = current.name;
+          _emailCtrl.text = current.email;
+          _mobileCtrl.text = current.mobile;
+          if (mounted) setState(() { _loading = false; });
+          return;
+        }
+      }
+      
+      // ✅ User ID matches - use API data
+      _nameCtrl.text = user['name']?.toString() ?? current.name;
+      _emailCtrl.text = user['email']?.toString() ?? current.email;
+      _mobileCtrl.text = user['mobile']?.toString() ?? current.mobile;
       _ngaysinhCtrl.text = user['ngaysinh']?.toString() ?? '';
       _gioiTinhCtrl.text = user['gioi_tinh']?.toString() ?? '';
       _diaChiCtrl.text = user['dia_chi']?.toString() ?? '';
+      
+    
+    } else {
+      // Fallback to current user data if API fails
+    
+      _nameCtrl.text = current.name;
+      _emailCtrl.text = current.email;
+      _mobileCtrl.text = current.mobile;
     }
+    
     if (mounted) setState(() { _loading = false; });
   }
 
@@ -258,11 +287,6 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() { _uploadingAvatar = false; });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
     }
-  }
-
-  Widget _buildText(String label, TextEditingController c, {TextInputType? keyboard, bool requiredField = false, int maxLines = 1}) {
-    // Kept for compatibility if used elsewhere
-    return _buildLabeledField(label, c, keyboard: keyboard, requiredField: requiredField, maxLines: maxLines);
   }
 
   Widget _buildLabeledField(String label, TextEditingController c, {String? hint, TextInputType? keyboard, bool requiredField = false, int maxLines = 1}) {

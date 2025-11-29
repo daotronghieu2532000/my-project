@@ -6,6 +6,7 @@ import '../../product/widgets/simple_purchase_dialog.dart';
 import '../../cart/cart_screen.dart';
 import '../../checkout/checkout_screen.dart';
 import '../../../core/utils/format_utils.dart';
+import '../../../core/utils/image_optimizer.dart';
 import '../../../core/models/product_suggest.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/services/cart_service.dart';
@@ -71,7 +72,13 @@ class ProductCardHorizontal extends StatelessWidget {
                         ),
                           child: product.imageUrl != null
                               ? CachedNetworkImage(
-                                  imageUrl: product.imageUrl!,
+                                  // Sử dụng optimized URL với CDN + resize
+                                  imageUrl: ImageOptimizer.getOptimizedUrl(
+                                    product.imageUrl!,
+                                    width: ImageSizes.cardWidth,
+                                    height: ImageSizes.cardHeight,
+                                    quality: 80,
+                                  ),
                                 width: double.infinity,
                                 height: double.infinity,
                                   fit: BoxFit.cover,
@@ -83,6 +90,11 @@ class ProductCardHorizontal extends StatelessWidget {
                                 errorWidget: (context, url, error) => _buildPlaceholderImage(imageWidth),
                                   fadeInDuration: const Duration(milliseconds: 300),
                                   fadeOutDuration: const Duration(milliseconds: 100),
+                                  // Tối ưu memory cache
+                                  memCacheWidth: ImageSizes.cardWidth,
+                                  memCacheHeight: ImageSizes.cardHeight,
+                                  maxWidthDiskCache: ImageSizes.cardWidth,
+                                  maxHeightDiskCache: ImageSizes.cardHeight,
                                 )
                             : _buildPlaceholderImage(imageWidth),
                         ),
@@ -434,17 +446,6 @@ class ProductCardHorizontal extends StatelessWidget {
     
     CartService().addItem(cartItem);
     
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm ${variant.name} vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }
-    
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CheckoutScreen()),
@@ -466,23 +467,6 @@ class ProductCardHorizontal extends StatelessWidget {
     );
     
     CartService().addItem(cartItem);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm ${product.name} (${variant.name}) x$quantity vào giỏ hàng'),
-        backgroundColor: Colors.green,
-        action: SnackBarAction(
-          label: 'Xem giỏ hàng',
-          textColor: Colors.white,
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CartScreen()),
-            );
-          },
-        ),
-      ),
-    );
   }
 
   void _handleBuyNowSimple(BuildContext context, ProductDetail product, int quantity) {
@@ -499,17 +483,6 @@ class ProductCardHorizontal extends StatelessWidget {
     );
     
     CartService().addItem(cartItem);
-    
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm ${product.name} vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }
     
     Navigator.push(
       context,
@@ -531,25 +504,5 @@ class ProductCardHorizontal extends StatelessWidget {
     );
     
     CartService().addItem(cartItem);
-    
-    final scaffoldMessenger = ScaffoldMessenger.maybeOf(context);
-    if (scaffoldMessenger != null) {
-      scaffoldMessenger.showSnackBar(
-        SnackBar(
-          content: Text('Đã thêm ${product.name} x$quantity vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          action: SnackBarAction(
-            label: 'Xem giỏ hàng',
-            textColor: Colors.white,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const CartScreen()),
-              );
-            },
-          ),
-        ),
-      );
-    }
   }
 }

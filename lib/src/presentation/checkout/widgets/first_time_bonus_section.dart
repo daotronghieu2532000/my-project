@@ -71,28 +71,18 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
 
   @override
   Widget build(BuildContext context) {
-    print('🔍 [FirstTimeBonusSection] build called');
-    print('   - widget.orderTotal: ${widget.orderTotal} (${widget.orderTotal / 1000}k)');
-    print('   - _loading: $_loading');
-    
+
     if (_loading) {
-      print('   - Skipping (loading)');
+     
       return const SizedBox.shrink();
     }
 
     if (!_bonusService.canUseBonus(_bonusInfo)) {
-      print('   - Skipping (cannot use bonus)');
-      print('   - _bonusInfo: $_bonusInfo');
+   
       return const SizedBox.shrink();
     }
-
     final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-    print('   - remainingAmount: $remainingAmount (${remainingAmount / 1000}k)');
-    
-    print('   - Calling calculateBonusAmount with orderTotal=${widget.orderTotal}, remainingBonus=$remainingAmount');
     final bonusAmount = _bonusService.calculateBonusAmount(widget.orderTotal, remainingAmount);
-    print('   - bonusAmount result: $bonusAmount (${bonusAmount / 1000}k)');
-
     if (bonusAmount <= 0) {
       print('   - Skipping (bonusAmount <= 0)');
       return const SizedBox.shrink();

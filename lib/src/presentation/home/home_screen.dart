@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-  import 'widgets/home_app_bar.dart';
+import 'widgets/home_app_bar.dart';
 import 'widgets/quick_actions.dart';
 import 'widgets/flash_sale_section.dart';
-import 'widgets/product_grid.dart';
+import 'widgets/product_grid_sliver.dart';
 import 'widgets/partner_banner_slider.dart';
 import 'widgets/featured_brands_slider.dart';
 import 'widgets/popup_banner_widget.dart';
@@ -356,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       // Ignore error
     }
   }
-
+  
   void _closePopup() async {
     setState(() {
       _showPopup = false;
@@ -497,86 +497,109 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         // KHÔNG restore scroll position - luôn bắt đầu từ đầu
                         return false;
                       },
-                    child: ListView(
+                    child: CustomScrollView(
                       controller: _scrollController,
-                      padding: EdgeInsets.zero,
-                      children: [
+                      slivers: [
                         // Partner Banner - Full width, 160px height (thay thế banner mobile)
-                        PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
+                        SliverToBoxAdapter(
+                          child: PartnerBannerSlider(key: ValueKey('partner_banner_$_refreshKey')),
+                        ),
                         
                         // Service Guarantees - Trả hàng 15 ngày, Chính hãng 100%, Giao miễn phí
-                        const ServiceGuarantees(),
-                        const SizedBox(height: 8),
+                        const SliverToBoxAdapter(
+                          child: ServiceGuarantees(),
+                        ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 8),
+                        ),
                         
                         // Quick actions
-                        Container(
-                          color: Colors.white,
-                          child: const QuickActions(),
+                        SliverToBoxAdapter(
+                          child: Container(
+                            color: Colors.white,
+                            child: const QuickActions(),
+                          ),
                         ),
                         // const SizedBox(height: 8),
                         
-                        // Dedication Section - Tận tâm - Tận tình - Tận tụy
-                        // "Tận tâm" (icon: fire.png)
-                        // "Tận tình" (icon: handshake.png)
-                        // "Tận tụy" (icon: heart.png)
-                        // const DedicationSection(),
-                        
                         // Banner Products - Đầu trang (sau QuickActions, trước FlashSale)
-                        BannerProductsWidget(
-                          key: ValueKey('banner_products_dau_trang_$_refreshKey'),
-                          position: 'dau_trang',
+                        SliverToBoxAdapter(
+                          child: BannerProductsWidget(
+                            key: ValueKey('banner_products_dau_trang_$_refreshKey'),
+                            position: 'dau_trang',
+                          ),
                         ),
                         
                         // Flash Sale section
-                        FlashSaleSection(key: ValueKey('flash_sale_$_refreshKey')),
-                        const SizedBox(height: 4),
+                        SliverToBoxAdapter(
+                          child: FlashSaleSection(key: ValueKey('flash_sale_$_refreshKey')),
+                        ),
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 4),
+                        ),
                         
                         // Banner Products - Giữa trang (sau FlashSale, trước FeaturedBrands)
-                        BannerProductsWidget(
-                          key: ValueKey('banner_products_giua_trang_$_refreshKey'),
-                          position: 'giua_trang',
+                        SliverToBoxAdapter(
+                          child: BannerProductsWidget(
+                            key: ValueKey('banner_products_giua_trang_$_refreshKey'),
+                            position: 'giua_trang',
+                          ),
                         ),
                         
                         // Featured Brands slider - Tách riêng với border
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border(
-                              top: BorderSide(color: Colors.grey[200]!, width: 1),
-                              bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                        SliverToBoxAdapter(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border(
+                                top: BorderSide(color: Colors.grey[200]!, width: 1),
+                                bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                              ),
                             ),
+                            child: FeaturedBrandsSlider(key: ValueKey('featured_brands_$_refreshKey')),
                           ),
-                          child: FeaturedBrandsSlider(key: ValueKey('featured_brands_$_refreshKey')),
                         ),
                         
                         // Banner Products - Cuối trang (sau FeaturedBrands, trước ProductGrid) - Tách riêng với border
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            border: Border(
-                              top: BorderSide(color: Colors.grey[200]!, width: 1),
-                              bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                        SliverToBoxAdapter(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border(
+                                top: BorderSide(color: Colors.grey[200]!, width: 1),
+                                bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                              ),
                             ),
-                          ),
-                          child: BannerProductsWidget(
-                            key: ValueKey('banner_products_cuoi_trang_$_refreshKey'),
-                            position: 'cuoi_trang',
+                            child: BannerProductsWidget(
+                              key: ValueKey('banner_products_cuoi_trang_$_refreshKey'),
+                              position: 'cuoi_trang',
+                            ),
                           ),
                         ),
                         
-                        // Suggested products grid - Tách riêng với border
-                        Container(
-                          decoration: BoxDecoration(
-                          color: Colors.white,
-                            border: Border(
-                              top: BorderSide(color: Colors.grey[200]!, width: 1),
-                              bottom: BorderSide(color: Colors.grey[200]!, width: 1),
+                        // Header cho ProductGrid
+                        SliverToBoxAdapter(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              border: Border(
+                                top: BorderSide(color: Colors.grey[200]!, width: 1),
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: const Text(
+                              'GỢI Ý CHO BẠN',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
                             ),
                           ),
-                          // Tối ưu: Không dùng key động để tránh widget bị dispose/tạo lại
-                          // ProductGrid tự quản lý refresh thông qua _onAuthStateChanged
-                          child: ProductGrid(title: 'GỢI Ý TỚI BẠN '),
                         ),
+                        
+                        // Suggested products grid - SỬ DỤNG SLIVER!
+                        const ProductGridSliver(),
                       ],
                     ),
                   ),

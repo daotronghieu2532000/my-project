@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'product_card_horizontal.dart';
 import '../../../core/services/cached_api_service.dart';
 import '../../../core/services/auth_service.dart';
@@ -25,15 +26,14 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
   
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
-  final ScrollController _scrollController = ScrollController();
   
   List<ProductSuggest> _allProducts = []; // Tất cả sản phẩm đã load từ API
   bool _isLoading = true;
   bool _isLoadingMore = false;
   String? _error;
   bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
-  static const int _apiLoadLimit = 50; // Số sản phẩm load từ API một lần
-  static const int _maxProductsLimit = 500; // Tối đa 1000 sản phẩm
+  static const int _apiLoadLimit = 20; // Giảm từ 50→20: Load ít hơn, nhanh hơn
+  static const int _maxProductsLimit = 50; // GIẢM TẠM từ 500→50 để test (shrinkWrap issue)
   bool _hasMore = true; // Còn sản phẩm để hiển thị không
   int? _cachedUserId; // Cache userId để tránh gọi getCurrentUser nhiều lần
   bool _isLoadingFromApi = false; // Flag để tránh gọi API nhiều lần cùng lúc
@@ -41,7 +41,6 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
   Timer? _loadMoreDebounceTimer; // Debounce timer để tránh gọi API quá nhiều
   double? _cachedScreenWidth; // Cache screenWidth để tránh tính toán lại
   double? _cachedCardWidth; // Cache cardWidth để tránh tính toán lại
-  double? _cachedItemHeight; // Cache itemHeight để tránh tính toán lại
 
   @override
   void initState() {
@@ -67,7 +66,6 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
   @override
   void dispose() {
     _authService.removeAuthStateListener(_onAuthStateChanged);
-    _scrollController.dispose();
     _loadMoreDebounceTimer?.cancel();
     // Cleanup: Clear products để giải phóng memory
     _allProducts.clear();
@@ -93,7 +91,6 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
         _lastLoadTriggerIndex = -1;
         _cachedScreenWidth = null; // Reset cache khi refresh
         _cachedCardWidth = null;
-        _cachedItemHeight = null;
       });
       // Force refresh để lấy sản phẩm mới theo user_id mới (hoặc mặc định nếu logout)
       _loadProductSuggestsWithRefresh();
@@ -333,36 +330,28 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
       );
     }
 
-    // Sử dụng GridView.builder với lazy loading - chỉ render items visible
-    // Đây là cách Shopee và các app lớn làm - mượt mà ngay cả với hàng nghìn sản phẩm
-    
-    // Cache screenWidth và các giá trị tính toán để tránh tính toán lại mỗi lần build
+    // Sử dụng Wrap thay vì GridView để cards tự co giãn theo nội dung
+    // Cache screenWidth để tránh tính toán lại mỗi lần build
     final screenWidth = MediaQuery.of(context).size.width;
     if (_cachedScreenWidth != screenWidth) {
       _cachedScreenWidth = screenWidth;
       _cachedCardWidth = (screenWidth - 16) / 2; // 2 cột với spacing
-      _cachedItemHeight = _cachedCardWidth! + 120; // Chiều cao ước tính của mỗi card (ảnh + text)
     }
     
     final cardWidth = _cachedCardWidth!;
-    final itemHeight = _cachedItemHeight!;
     
-    return GridView.builder(
-      controller: _scrollController,
-      shrinkWrap: true, // Quan trọng: Cho phép GridView fit trong parent ListView
-      physics: const NeverScrollableScrollPhysics(), // Disable scroll riêng - để parent ListView scroll
+    // MasonryGridView: Tự co giãn + Lazy loading + Smooth scroll
+    // Pinterest-style grid - cards tự động căn chỉnh theo chiều cao
+    return MasonryGridView.count(
+      crossAxisCount: 2, // 2 cột
+      mainAxisSpacing: 8, // Khoảng cách dọc
+      crossAxisSpacing: 8, // Khoảng cách ngang
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // 2 cột
-        childAspectRatio: cardWidth / itemHeight, // Tỷ lệ width/height
-        crossAxisSpacing: 8, // Khoảng cách ngang
-        mainAxisSpacing: 8, // Khoảng cách dọc
-      ),
       itemCount: _allProducts.length + (_isLoadingMore || _isLoadingFromApi ? 1 : 0),
-      cacheExtent: 250, // Cache một số items để scroll mượt hơn (250px)
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(), // Parent ListView scroll
       itemBuilder: (context, index) {
         // Tự động load thêm khi render item gần cuối (còn <= 20 items)
-        // Chỉ trigger một lần cho mỗi index để tránh gọi API nhiều lần
         if (index >= _allProducts.length - 20 &&
             index > _lastLoadTriggerIndex &&
             !_isLoadingFromApi &&
@@ -370,7 +359,6 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
             _hasMore &&
             _allProducts.length < _maxProductsLimit) {
           _lastLoadTriggerIndex = index;
-          // Debounce: Hủy timer cũ nếu có và tạo timer mới
           _loadMoreDebounceTimer?.cancel();
           _loadMoreDebounceTimer = Timer(const Duration(milliseconds: 300), () {
             if (mounted && !_isLoadingFromApi && _hasMore) {
@@ -379,15 +367,17 @@ class _ProductGridState extends State<ProductGrid> with AutomaticKeepAliveClient
           });
         }
         
-        // Hiển thị loading indicator ở cuối danh sách
+        // Loading indicator ở cuối
         if (index == _allProducts.length) {
           return const Center(
-            child: CircularProgressIndicator(color: Colors.red),
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(color: Colors.red),
+            ),
           );
         }
         
         final product = _allProducts[index];
-        // Sử dụng RepaintBoundary để tối ưu repaint - mỗi card chỉ repaint khi cần
         return RepaintBoundary(
           child: ProductCardHorizontal(
             product: product,

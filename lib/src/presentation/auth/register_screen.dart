@@ -238,21 +238,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                             ),
                           ),
-                          
-                          const SizedBox(height: 32),
-                          
-                          // Modern Typography
-                          Text(
-                            'Tạo tài khoản mới',
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF212529),
-                              letterSpacing: -0.5,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          
+
                           const SizedBox(height: 40),
                           
                           // Modern Form Container

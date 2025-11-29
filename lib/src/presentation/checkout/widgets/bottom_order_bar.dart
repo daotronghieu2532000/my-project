@@ -130,43 +130,29 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
     final shipFee = ShippingQuoteStore().lastFee;
     final shipSupport = ShippingQuoteStore().shipSupport;
-    
-    print('🔍 [BottomOrderBar] Calculation:');
-    print('   - totalGoods: $totalGoods (${totalGoods / 1000}k)');
-    print('   - voucherDiscount: $voucherDiscount (${voucherDiscount / 1000}k)');
-    print('   - shipFee: $shipFee (${shipFee / 1000}k)');
-    print('   - shipSupport: $shipSupport (${shipSupport / 1000}k)');
-    
+
     // ✅ Tính tổng thanh toán trước bonus (sau voucher và ship)
     final subtotalAfterVoucher = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
-    print('   - subtotalAfterVoucher: $subtotalAfterVoucher (${subtotalAfterVoucher / 1000}k)');
-    
+
     // ✅ Tính bonus discount: 10% của TỔNG TIỀN HÀNG (totalGoods), KHÔNG phải subtotalAfterVoucher
     int bonusDiscount = 0;
-    print('   - _bonusLoading: $_bonusLoading');
-    print('   - _bonusInfo: $_bonusInfo');
-    
+
     if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
       final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-      print('   - remainingAmount: $remainingAmount (${remainingAmount / 1000}k)');
-      print('   - Calling calculateBonusAmount with totalGoods=$totalGoods (10% của TỔNG TIỀN HÀNG), remainingBonus=$remainingAmount');
+     
       
       // ✅ Tính 10% của TỔNG TIỀN HÀNG (totalGoods), không phải subtotalAfterVoucher
       bonusDiscount = _bonusService.calculateBonusAmount(totalGoods, remainingAmount);
-      print('   - bonusDiscount result: $bonusDiscount (${bonusDiscount / 1000}k)');
+    
     } else {
       print('   - Skipping bonus calculation (loading=$_bonusLoading, canUse=${_bonusService.canUseBonus(_bonusInfo)})');
     }
     
     final grandTotal = (subtotalAfterVoucher - bonusDiscount).clamp(0, 1 << 31);
-    print('   - grandTotal: $grandTotal (${grandTotal / 1000}k)');
-    
+
     // Không để tiết kiệm vượt quá tổng tiền hàng (UX các sàn lớn)
     final totalSavings = (savingsFromOld + voucherDiscount + bonusDiscount).clamp(0, totalGoods + bonusDiscount);
-    print('   - totalSavings: $totalSavings (${totalSavings / 1000}k)');
-    
-    print('🔍 [BottomOrderBar] Final: grandTotal=$grandTotal, bonusDiscount=$bonusDiscount');
-    
+ 
     return SafeArea(
       top: false,
       child: Container(

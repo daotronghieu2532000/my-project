@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'token_manager.dart';
 import 'auth_service.dart';
+import 'request_priority_queue.dart';
 import '../models/freeship_product.dart';
 import '../models/voucher.dart';
 import '../models/flash_sale_product.dart';
@@ -32,6 +33,7 @@ class ApiService {
   ApiService._internal();
   
   final TokenManager _tokenManager = TokenManager();
+  final RequestPriorityQueue _requestQueue = RequestPriorityQueue();
 
   /// Lấy token từ API
   Future<String?> _fetchToken() async {
@@ -1093,12 +1095,13 @@ class ApiService {
     }
   }
 
-  /// Thực hiện API call với token
+  /// Thực hiện API call với token và priority queue
   Future<http.Response?> apiCall({
     required String endpoint,
     required String method,
     Map<String, dynamic>? body,
     Map<String, String>? additionalHeaders,
+    int priority = RequestPriority.normal, // Thêm priority parameter
   }) async {
     final token = await getValidToken();
     if (token == null) {
@@ -1114,26 +1117,33 @@ class ApiService {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
       
-      switch (method.toUpperCase()) {
-        case 'GET':
-          return await http.get(uri, headers: headers).timeout(requestTimeout);
-        case 'POST':
-          return await http.post(
-            uri, 
-            headers: headers, 
-            body: body != null ? jsonEncode(body) : null,
-          ).timeout(requestTimeout);
-        case 'PUT':
-          return await http.put(
-            uri, 
-            headers: headers, 
-            body: body != null ? jsonEncode(body) : null,
-          ).timeout(requestTimeout);
-        case 'DELETE':
-          return await http.delete(uri, headers: headers).timeout(requestTimeout);
-        default:
-          throw Exception('Unsupported HTTP method: $method');
-      }
+      // Wrap request trong priority queue
+      return await _requestQueue.execute(
+        () async {
+          switch (method.toUpperCase()) {
+            case 'GET':
+              return await http.get(uri, headers: headers);
+            case 'POST':
+              return await http.post(
+                uri, 
+                headers: headers, 
+                body: body != null ? jsonEncode(body) : null,
+              );
+            case 'PUT':
+              return await http.put(
+                uri, 
+                headers: headers, 
+                body: body != null ? jsonEncode(body) : null,
+              );
+            case 'DELETE':
+              return await http.delete(uri, headers: headers);
+            default:
+              throw Exception('Unsupported HTTP method: $method');
+          }
+        },
+        priority: priority,
+        timeout: requestTimeout,
+      );
     } on TimeoutException {
       return null;
     } catch (e) {
@@ -1142,23 +1152,23 @@ class ApiService {
   }
 
   /// GET request
-  Future<http.Response?> get(String endpoint, {Map<String, String>? headers}) {
-    return apiCall(endpoint: endpoint, method: 'GET', additionalHeaders: headers);
+  Future<http.Response?> get(String endpoint, {Map<String, String>? headers, int priority = RequestPriority.normal}) {
+    return apiCall(endpoint: endpoint, method: 'GET', additionalHeaders: headers, priority: priority);
   }
 
   /// POST request
-  Future<http.Response?> post(String endpoint, {Map<String, dynamic>? body, Map<String, String>? headers}) {
-    return apiCall(endpoint: endpoint, method: 'POST', body: body, additionalHeaders: headers);
+  Future<http.Response?> post(String endpoint, {Map<String, dynamic>? body, Map<String, String>? headers, int priority = RequestPriority.normal}) {
+    return apiCall(endpoint: endpoint, method: 'POST', body: body, additionalHeaders: headers, priority: priority);
   }
 
   /// PUT request
-  Future<http.Response?> put(String endpoint, {Map<String, dynamic>? body, Map<String, String>? headers}) {
-    return apiCall(endpoint: endpoint, method: 'PUT', body: body, additionalHeaders: headers);
+  Future<http.Response?> put(String endpoint, {Map<String, dynamic>? body, Map<String, String>? headers, int priority = RequestPriority.normal}) {
+    return apiCall(endpoint: endpoint, method: 'PUT', body: body, additionalHeaders: headers, priority: priority);
   }
 
   /// DELETE request
-  Future<http.Response?> delete(String endpoint, {Map<String, String>? headers}) {
-    return apiCall(endpoint: endpoint, method: 'DELETE', additionalHeaders: headers);
+  Future<http.Response?> delete(String endpoint, {Map<String, String>? headers, int priority = RequestPriority.normal}) {
+    return apiCall(endpoint: endpoint, method: 'DELETE', additionalHeaders: headers, priority: priority);
   }
 
   /// Làm mới token (force refresh)

@@ -441,30 +441,6 @@ class ShopSuggestedProductsSection extends StatelessWidget {
       addedAt: DateTime.now(),
     );
     cartService.addItem(cartItem);
-    
-    // Chỉ hiển thị thông báo, KHÔNG navigate - vẫn ở trang shop hiện tại
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Đã thêm vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-          action: SnackBarAction(
-            label: 'Xem giỏ hàng',
-            textColor: Colors.white,
-            onPressed: () {
-              // Chỉ navigate khi user click vào action, không tự động
-              if (context.mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartScreen()),
-                );
-              }
-            },
-          ),
-        ),
-      );
-    }
   }
 
   void _handleBuyNowSimple(BuildContext context, ProductDetail product, int quantity) {
@@ -508,30 +484,6 @@ class ShopSuggestedProductsSection extends StatelessWidget {
       addedAt: DateTime.now(),
     );
     cartService.addItem(cartItem);
-    
-    // Chỉ hiển thị thông báo, KHÔNG navigate - vẫn ở trang shop hiện tại
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Đã thêm vào giỏ hàng'),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-          action: SnackBarAction(
-            label: 'Xem giỏ hàng',
-            textColor: Colors.white,
-            onPressed: () {
-              // Chỉ navigate khi user click vào action, không tự động
-              if (context.mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartScreen()),
-                );
-              }
-            },
-          ),
-        ),
-      );
-    }
   }
 }
 
