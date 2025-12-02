@@ -19,9 +19,6 @@ class ImageCacheConfig {
     // Tăng số lượng images trong cache (mặc định: 1000)
     binding.imageCache.maximumSize = 500; // Giữ 500 images
     
-    // Clear cache khi hết memory (auto)
-    // Flutter tự động clear khi hết memory
-    
     debugPrint('✅ Image cache initialized: 150MB, 500 images');
   }
   
@@ -29,7 +26,7 @@ class ImageCacheConfig {
   static void clearCache() {
     PaintingBinding.instance.imageCache.clear();
     PaintingBinding.instance.imageCache.clearLiveImages();
-    debugPrint('🗑️ Image cache cleared');
+
   }
   
   /// Get cache stats (để debug)
@@ -43,13 +40,6 @@ class ImageCacheConfig {
     };
   }
   
-  /// Print cache stats (để debug)
-  static void printCacheStats() {
-    final stats = getCacheStats();
-    debugPrint('📊 Image Cache Stats:');
-    debugPrint('  Current: ${stats['currentSize']}/${stats['maximumSize']} images');
-    debugPrint('  Memory: ${(stats['currentSizeBytes'] / 1024 / 1024).toStringAsFixed(1)}MB / ${(stats['maximumSizeBytes'] / 1024 / 1024).toStringAsFixed(1)}MB');
-  }
 }
 
 /// Cách sử dụng:

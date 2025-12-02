@@ -113,23 +113,43 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     }).toList();
     final eligibleTotal = _bonusService.calculateEligibleTotal(eligibleItems);
 
+  
+    
     // Tính giảm giá: cộng dồn voucher shop (đã áp dụng) + voucher sàn trên subtotal
     final shopDiscount = voucherService.calculateTotalDiscount(
       totalGoods,
       items: items.map((e) => {'shopId': e.shopId, 'price': e.price, 'quantity': e.quantity}).toList(),
     );
+    print('   - shopDiscount: ${FormatUtils.formatCurrency(shopDiscount)}');
+    
+    // ✅ DEBUG: Kiểm tra voucher shop đang được áp dụng
+    final appliedVouchers = voucherService.appliedVouchers;
+    if (appliedVouchers.isNotEmpty) {
+      print('   - ⚠️ Có ${appliedVouchers.length} voucher shop đang được áp dụng:');
+      for (final entry in appliedVouchers.entries) {
+        final shopId = entry.key;
+        final voucher = entry.value;
+        print('     + Shop $shopId: ${voucher.code} - ${FormatUtils.formatCurrency(voucher.discountValue?.round() ?? 0)}');
+      }
+    } else {
+      print('   - ✅ Không có voucher shop nào được áp dụng');
+    }
 
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e.id).toList(),
       items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
     );
+    print('   - platformDiscount: ${FormatUtils.formatCurrency(platformDiscount)}');
 
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
+    print('   - ✅ Tổng voucherDiscount: ${FormatUtils.formatCurrency(voucherDiscount)}');
 
     // Lấy phí ship từ store đã cập nhật bởi OrderSummarySection
     final shipFee = ShippingQuoteStore().lastFee;
     final shipSupport = ShippingQuoteStore().shipSupport;
+
+   
 
     // ✅ Tính tổng thanh toán trước bonus (sau voucher và ship)
     final subtotalAfterVoucher = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
@@ -169,9 +189,33 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
           ),
           const SizedBox(height: 16),
           PaymentDetailRow('Tổng tiền hàng', FormatUtils.formatCurrency(totalGoods)),
-          if (shipSupport > 0)
-          PaymentDetailRow('Tổng phí vận chuyển', FormatUtils.formatCurrency(shipFee)),
-            PaymentDetailRow('Hỗ trợ ship', '-${FormatUtils.formatCurrency(shipSupport)}', isRed: true),
+          // ✅ DEBUG: Kiểm tra logic hiển thị phí ship
+          Builder(
+            builder: (context) {
+           
+              
+              // ✅ Vấn đề 2: Nếu không có hỗ trợ ship (shipSupport = 0) nhưng có phí ship (shipFee > 0)
+              // thì vẫn cần hiển thị phí ship
+              if (shipFee > 0) {
+                print('   - ✅ Hiển thị phí vận chuyển: ${FormatUtils.formatCurrency(shipFee)}');
+                if (shipSupport > 0) {
+                  print('   - ✅ Hiển thị hỗ trợ ship: ${FormatUtils.formatCurrency(shipSupport)}');
+                  return Column(
+                    children: [
+                      PaymentDetailRow('Tổng phí vận chuyển', FormatUtils.formatCurrency(shipFee)),
+                      PaymentDetailRow('Hỗ trợ ship', '-${FormatUtils.formatCurrency(shipSupport)}', isRed: true),
+                    ],
+                  );
+                } else {
+                  print('   - ⚠️ Không có hỗ trợ ship nhưng vẫn hiển thị phí ship');
+                  return PaymentDetailRow('Tổng phí vận chuyển', FormatUtils.formatCurrency(shipFee));
+                }
+              } else {
+                print('   - ❌ Không hiển thị phí vận chuyển (shipFee = 0)');
+                return const SizedBox.shrink();
+              }
+            },
+          ),
           
           PaymentDetailRow('Tổng Voucher giảm giá', '-${FormatUtils.formatCurrency(voucherDiscount)}', isRed: true),
           // ✅ Hiển thị bonus discount nếu có

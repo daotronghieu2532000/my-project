@@ -81,13 +81,13 @@ class NotificationHandler {
           break;
 
         case 'admin_manual':
-          print('👤 [NOTIFICATION] Handling admin_manual notification');
+         
           // Xử lý notification từ admin manual
           final action = data['action'] as String?;
           final productId = data['product_id'];
 
           if (action == 'open_product') {
-            print('🛍️ [NOTIFICATION] Action is open_product, checking product_id...');
+           
             if (productId != null) {
               final productIdInt = productId is int 
                   ? productId 
@@ -109,7 +109,7 @@ class NotificationHandler {
             print('⚠️ [NOTIFICATION] Action is not open_product: $action');
           }
           // Fallback: navigate to notifications list
-          print('📋 [NOTIFICATION] Falling back to notifications list');
+         
           _navigateToNotifications();
           break;
 

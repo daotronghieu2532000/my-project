@@ -314,9 +314,11 @@ class _ShopBannerHeaderState extends State<ShopBannerHeader> {
                             color: Colors.amber,
                           ),
                           const SizedBox(width: 4),
-                          const Text(
-                            '4.9',
-                            style: TextStyle(
+                          Text(
+                            widget.shopInfo.shopRating > 0 
+                                ? widget.shopInfo.shopRating.toStringAsFixed(1)
+                                : '0.0',
+                            style: const TextStyle(
                               fontSize: 14,
                               color: Colors.white,
                               fontWeight: FontWeight.w500,
@@ -328,13 +330,29 @@ class _ShopBannerHeaderState extends State<ShopBannerHeader> {
                               ],
                             ),
                           ),
+                          if (widget.shopInfo.shopReviews > 0) ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              '(${widget.shopInfo.shopReviews})',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.9),
+                                shadows: const [
+                                  Shadow(
+                                    color: Colors.black54,
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           const SizedBox(width: 12),
                           Text(
                             '${widget.shopInfo.totalProducts} Sản phẩm',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.white.withOpacity(0.9),
-                              shadows: [
+                              shadows: const [
                                 Shadow(
                                   color: Colors.black54,
                                   blurRadius: 4,

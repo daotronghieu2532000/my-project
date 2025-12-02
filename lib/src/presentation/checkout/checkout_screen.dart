@@ -34,6 +34,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final AffiliateTrackingService _affiliateTracking = AffiliateTrackingService();
   final VoucherService _voucherService = VoucherService();
   final ShippingQuoteService _shippingQuoteService = ShippingQuoteService(); // ✅ Service chuyên nghiệp
+  final ScrollController _scrollController = ScrollController();
 
   int get totalPrice => _cartService.items
       .where((item) => item.isSelected)
@@ -63,6 +64,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // ✅ Remove listeners
     _cartService.removeListener(_onCartChanged);
     _auth.removeAuthStateListener(_onAuthStateChanged);
+    _scrollController.dispose(); // ✅ Dispose scroll controller
     super.dispose();
   }
   
@@ -142,10 +144,24 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // ✅ Sticky header cho DeliveryInfoSection
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _StickyAddressHeaderDelegate(
+              child: DeliveryInfoSection(
+                scrollController: _scrollController,
+              ),
+            ),
+          ),
+          // ✅ Nội dung còn lại
+          SliverPadding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            sliver: SliverToBoxAdapter(
+              child: Column(
         children: [
-          const DeliveryInfoSection(),
           const SizedBox(height: 12),
           ProductSection(),
           const SizedBox(height: 12),
@@ -157,7 +173,6 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               // Bonus 10% CHỈ tính trên tiền hàng từ 3 shop này, KHÔNG tính toàn bộ giỏ
               final cart = _cartService;
               final items = cart.items.where((i) => i.isSelected).toList();
-              final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
               
               // ✅ Chuyển items sang format cho calculateEligibleTotal
               final bonusService = FirstTimeBonusService();
@@ -187,6 +202,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           const SizedBox(height: 12),
           const TermsSection(),
           const SizedBox(height: 100),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: BottomOrderBar(
@@ -664,5 +683,41 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         });
       }
     }
+  }
+}
+
+// ✅ Delegate class cho sticky address header
+class _StickyAddressHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final Widget child;
+
+  _StickyAddressHeaderDelegate({required this.child});
+
+  @override
+  double get minExtent => 52.0; // Chiều cao tối thiểu (compact mode)
+
+  @override
+  double get maxExtent => 60.0; // Chiều cao tối đa (full mode: đủ cho 1 dòng tên + 1 dòng địa chỉ)
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    // ✅ Đảm bảo layoutExtent = paintExtent để tránh lỗi geometry
+    final currentExtent = (maxExtent - shrinkOffset).clamp(minExtent, maxExtent);
+    // ✅ Giảm padding đáng kể
+    final progress = shrinkOffset / (maxExtent - minExtent);
+    final verticalPadding = progress > 0.5 ? 4.0 : 6.0;
+    
+    return SizedBox(
+      height: currentExtent,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: verticalPadding),
+        color: Colors.white,
+        child: child,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(_StickyAddressHeaderDelegate oldDelegate) {
+    return child != oldDelegate.child;
   }
 }

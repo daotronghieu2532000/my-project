@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../core/services/cart_service.dart';
 import '../../../core/services/api_service.dart';
 import '../../../core/utils/format_utils.dart';
+import '../../../core/models/product_detail.dart';
 import '../../product/product_detail_screen.dart';
 import 'qty_button.dart';
 
@@ -171,6 +172,20 @@ class CartServiceItemTile extends StatelessWidget {
             constraints: const BoxConstraints(),
           ),
         ],
+      ),
+    );
+  }
+
+  void _navigateToProductDetail(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(
+          productId: item.id,
+          title: item.name,
+          image: item.image,
+          price: item.price,
+        ),
       ),
     );
   }
@@ -395,9 +410,21 @@ class CartServiceItemTile extends StatelessWidget {
   }
 
   void _showVariantDialog(BuildContext context) async {
-    // Lấy thông tin sản phẩm để có danh sách biến thể
+    // ✅ Sử dụng API nhẹ hơn - chỉ lấy biến thể (nhanh hơn getProductDetail)
     final apiService = ApiService();
-    final productDetail = await apiService.getProductDetail(item.id);
+    
+    // Thử dùng getProductVariants trước (API nhẹ nhất, chỉ lấy biến thể)
+    ProductDetail? productDetail = await apiService.getProductVariants(item.id);
+    
+    // Nếu không có, fallback về getProductDetailBasic (nhẹ hơn getProductDetail)
+    if (productDetail == null) {
+      productDetail = await apiService.getProductDetailBasic(item.id);
+    }
+    
+    // Nếu vẫn không có, mới dùng getProductDetail (API đầy đủ - chậm nhất)
+    if (productDetail == null) {
+      productDetail = await apiService.getProductDetail(item.id);
+    }
     
     if (productDetail == null || productDetail.variants.isEmpty) {
       // Nếu không có biến thể, hiển thị thông báo
@@ -410,248 +437,310 @@ class CartServiceItemTile extends StatelessWidget {
       return;
     }
     
-    showDialog(
+    // ✅ Đảm bảo productDetail không null (đã check ở trên)
+    final validProductDetail = productDetail;
+    
+    // Tìm biến thể hiện tại được chọn
+    ProductVariant? currentSelectedVariant;
+    if (item.variant != null) {
+      currentSelectedVariant = validProductDetail.variants.firstWhere(
+        (v) => v.name == item.variant,
+        orElse: () => validProductDetail.variants.first,
+      );
+    } else {
+      currentSelectedVariant = validProductDetail.variants.first;
+    }
+    
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _VariantSelectionBottomSheet(
+        productDetail: validProductDetail,
+        currentSelectedVariant: currentSelectedVariant,
+        item: item,
+        onVariantChange: onVariantChange,
+      ),
+    );
+  }
+}
+
+// ✅ Widget riêng để quản lý state cho dialog chọn biến thể
+class _VariantSelectionBottomSheet extends StatefulWidget {
+  final ProductDetail productDetail;
+  final ProductVariant? currentSelectedVariant;
+  final CartItem item;
+  final Function(CartItem, String?) onVariantChange;
+
+  const _VariantSelectionBottomSheet({
+    required this.productDetail,
+    required this.currentSelectedVariant,
+    required this.item,
+    required this.onVariantChange,
+  });
+
+  @override
+  State<_VariantSelectionBottomSheet> createState() => _VariantSelectionBottomSheetState();
+}
+
+class _VariantSelectionBottomSheetState extends State<_VariantSelectionBottomSheet> {
+  late ProductVariant? _selectedVariant;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedVariant = widget.currentSelectedVariant;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.7,
+              minHeight: 240,
+            ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(20),
+                topRight: Radius.circular(20),
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[200]!, width: 1),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.style_outlined,
-                      color: Colors.grey[700],
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Chọn biến thể',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
-                        ),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header với ảnh sản phẩm
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey[200]!),
                       ),
                     ),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // Variants list
-              Container(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.5,
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: productDetail.variants.length,
-                  itemBuilder: (context, index) {
-                    final variant = productDetail.variants[index];
-                    final isSelected = item.variant == variant.name;
-                    
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      child: Material(
-                        color: Colors.transparent,
-                        child: InkWell(
+                    child: Row(
+                      children: [
+                        // Product image - có thể click để xem toàn màn hình
+                        GestureDetector(
                           onTap: () {
-                            Navigator.pop(context);
-                            // Chỉ cần gọi callback, CartService sẽ xử lý việc cập nhật giá
-                            onVariantChange(item, variant.name);
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.red[50] : Colors.white,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected ? Colors.red[400]! : Colors.grey[200]!,
-                                width: isSelected ? 1.5 : 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                // Variant icon
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: isSelected ? Colors.red[600] : Colors.grey[300],
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Icon(
-                                    Icons.style,
-                                    color: Colors.white,
-                                    size: 16,
+                            showDialog(
+                              context: context,
+                              builder: (_) => Dialog(
+                                insetPadding: const EdgeInsets.all(12),
+                                child: InteractiveViewer(
+                                  child: Image.network(
+                                    _selectedVariant?.imageUrl ?? widget.productDetail.imageUrl,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (context, error, stackTrace) => Container(
+                                      color: Colors.grey[200],
+                                      height: 300,
+                                      width: 300,
+                                      child: const Icon(Icons.image_not_supported, color: Colors.grey, size: 48),
+                                    ),
                                   ),
                                 ),
-                                
-                                const SizedBox(width: 12),
-                                
-                                // Variant info
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 78,
+                            height: 78,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                _selectedVariant?.imageUrl ?? widget.productDetail.imageUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.image_not_supported, color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        // Product info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.productDetail.name,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  Text(
+                                    FormatUtils.formatCurrency(_selectedVariant?.price ?? widget.productDetail.price),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                  if (_selectedVariant?.oldPrice != null && _selectedVariant!.oldPrice! > _selectedVariant!.price) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      FormatUtils.formatCurrency(_selectedVariant!.oldPrice!),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                        decoration: TextDecoration.lineThrough,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              if (_selectedVariant?.stock != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Còn lại: ${_selectedVariant!.stock} sản phẩm',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        // Close button
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(Icons.close),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Variant selection với Wrap layout
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Phân loại',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            for (final variant in widget.productDetail.variants)
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedVariant = variant;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: (_selectedVariant?.id == variant.id) ? Colors.red.withOpacity(0.1) : Colors.grey[100],
+                                    border: Border.all(
+                                      color: (_selectedVariant?.id == variant.id) ? Colors.red : Colors.grey[300]!,
+                                      width: (_selectedVariant?.id == variant.id) ? 1 : 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Variant name
+                                      // ✅ Hiển thị ảnh biến thể nếu có
+                                      if (variant.imageUrl != null && variant.imageUrl!.isNotEmpty) ...[
+                                        Container(
+                                          width: 24,
+                                          height: 24,
+                                          decoration: BoxDecoration(
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(
+                                              color: (_selectedVariant?.id == variant.id) ? Colors.red : Colors.grey[300]!,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(3),
+                                            child: Image.network(
+                                              variant.imageUrl!,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) => Container(
+                                                color: Colors.grey[200],
+                                                child: const Icon(Icons.image_not_supported, size: 12, color: Colors.grey),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                      ],
                                       Text(
                                         variant.name,
                                         style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: isSelected ? Colors.red[700] : Colors.grey[800],
+                                          fontSize: 13,
+                                          fontWeight: (_selectedVariant?.id == variant.id) ? FontWeight.w600 : FontWeight.normal,
+                                          color: (_selectedVariant?.id == variant.id) ? Colors.red : Colors.black87,
                                         ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      // Price info
-                                      Row(
-                                        children: [
-                                          Text(
-                                            FormatUtils.formatCurrency(variant.price),
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: Colors.red[600],
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            FormatUtils.formatCurrency(variant.oldPrice ?? 0),
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.grey[500],
-                                              decoration: TextDecoration.lineThrough,
-                                            ),
-                                          ),
-                                        ],
                                       ),
                                     ],
                                   ),
                                 ),
-                                
-                                // Selection indicator
-                                if (isSelected)
-                                  Icon(
-                                    Icons.check_circle,
-                                    color: Colors.red[600],
-                                    size: 20,
-                                  )
-                                else
-                                  Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey[400]!, width: 1.5),
-                                      borderRadius: BorderRadius.circular(9),
-                                    ),
-                                  ),
-                              ],
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Action button
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (_selectedVariant != null) {
+                                Navigator.pop(context);
+                                widget.onVariantChange(widget.item, _selectedVariant!.name);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Xác nhận',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              
-              // Footer
-              Container(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
-                  border: Border(
-                    top: BorderSide(color: Colors.grey[200]!, width: 1),
-                  ),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.red[600],
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => Navigator.pop(context),
-                      borderRadius: BorderRadius.circular(8),
-                      child: const Center(
-                        child: Text(
-                          'Đóng',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _navigateToProductDetail(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetailScreen(
-          productId: item.id,
-          title: item.name,
-          image: item.image,
-          price: item.price,
-        ),
-      ),
-    );
+            ),
+          );
   }
 }

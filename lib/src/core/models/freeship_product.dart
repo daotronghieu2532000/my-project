@@ -59,6 +59,12 @@ class FreeShipProduct {
   final String? chinhhangIcon;
   final String? warehouseName;
   final String? provinceName;
+  
+  // Thông tin affiliate
+  final bool isAffiliate;
+  final double? commissionValue;
+  final String? commissionType; // 'tru' hoặc 'phantram'
+  final String? commissionFormatted; // Đã format để hiển thị
 
   const FreeShipProduct({
     required this.id,
@@ -87,6 +93,10 @@ class FreeShipProduct {
     this.chinhhangIcon,
     this.warehouseName,
     this.provinceName,
+    this.isAffiliate = false,
+    this.commissionValue,
+    this.commissionType,
+    this.commissionFormatted,
   });
 
   factory FreeShipProduct.fromJson(Map<String, dynamic> json) {
@@ -122,6 +132,11 @@ class FreeShipProduct {
       chinhhangIcon: json['chinhhang_icon'] as String?,
       warehouseName: json['warehouse_name'] as String?,
       provinceName: json['province_name'] as String?,
+      // Parse affiliate info
+      isAffiliate: json['is_affiliate'] as bool? ?? false,
+      commissionValue: (json['commission_value'] as num?)?.toDouble(),
+      commissionType: json['commission_type'] as String?,
+      commissionFormatted: json['commission_formatted'] as String?,
     );
   }
 
@@ -147,6 +162,11 @@ class FreeShipProduct {
       'chinhhang_icon': chinhhangIcon,
       'warehouse_name': warehouseName,
       'province_name': provinceName,
+      // Thêm affiliate info
+      'is_affiliate': isAffiliate,
+      'commission_value': commissionValue,
+      'commission_type': commissionType,
+      'commission_formatted': commissionFormatted,
       // Thêm shipping_info
       'shipping_info': {
         'has_free_shipping': isFreeship,

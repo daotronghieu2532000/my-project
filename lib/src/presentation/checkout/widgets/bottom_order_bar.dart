@@ -134,21 +134,32 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     // ✅ Tính tổng thanh toán trước bonus (sau voucher và ship)
     final subtotalAfterVoucher = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
 
-    // ✅ Tính bonus discount: 10% của TỔNG TIỀN HÀNG (totalGoods), KHÔNG phải subtotalAfterVoucher
+
+
+    // ✅ Tính bonus discount: 10% của ELIGIBLE TOTAL (chỉ các shop hợp lệ), KHÔNG phải totalGoods
     int bonusDiscount = 0;
 
     if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
       final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-     
       
-      // ✅ Tính 10% của TỔNG TIỀN HÀNG (totalGoods), không phải subtotalAfterVoucher
-      bonusDiscount = _bonusService.calculateBonusAmount(totalGoods, remainingAmount);
+      // ✅ Tính eligibleTotal (chỉ các shop hợp lệ: 32373, 23933, 36893, 35683, 35681)
+      final eligibleItems = items.map((e) => {
+        'shopId': e.shopId,
+        'price': e.price,
+        'quantity': e.quantity,
+      }).toList();
+      final eligibleTotal = _bonusService.calculateEligibleTotal(eligibleItems);
+      
+    
+      bonusDiscount = _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
+     
     
     } else {
       print('   - Skipping bonus calculation (loading=$_bonusLoading, canUse=${_bonusService.canUseBonus(_bonusInfo)})');
     }
     
     final grandTotal = (subtotalAfterVoucher - bonusDiscount).clamp(0, 1 << 31);
+  
 
     // Không để tiết kiệm vượt quá tổng tiền hàng (UX các sàn lớn)
     final totalSavings = (savingsFromOld + voucherDiscount + bonusDiscount).clamp(0, totalGoods + bonusDiscount);

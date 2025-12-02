@@ -34,10 +34,21 @@ class ShippingQuoteService {
     try {
       final api = ApiService();
       final profile = await api.getUserProfile(userId: userId);
-      final addr = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstWhere(
+      final addresses = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>() ?? [];
+      
+      // ✅ Ưu tiên 1: Tìm địa chỉ mặc định (active = 1)
+      Map<String, dynamic>? addr = addresses.firstWhere(
               (a) => (a?['active'] == 1 || a?['active'] == '1'),
-              orElse: () => null) ??
-          (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstOrNull;
+        orElse: () => null,
+      );
+      
+      // ✅ Ưu tiên 2: Nếu không có địa chỉ mặc định, dùng địa chỉ đầu tiên (hoặc mới nhất)
+      // Nếu chỉ có 1 địa chỉ, tự động dùng nó để tính ship
+      if (addr == null && addresses.isNotEmpty) {
+        addr = addresses.firstOrNull;
+        print('   - ℹ️ Không có địa chỉ mặc định, sử dụng địa chỉ đầu tiên để tính ship');
+      }
+      
       if (addr != null) {
         tinh = int.tryParse('${addr['tinh'] ?? 0}') ?? 0;
         huyen = int.tryParse('${addr['huyen'] ?? 0}') ?? 0;
@@ -45,7 +56,9 @@ class ShippingQuoteService {
         tenTinh = addr['ten_tinh']?.toString();
         tenHuyen = addr['ten_huyen']?.toString();
         tenXa = addr['ten_xa']?.toString();
-     
+        print('   - ✅ Địa chỉ để tính ship: ${tenTinh} - ${tenHuyen} - ${tenXa}');
+      } else {
+        print('   - ⚠️ Không tìm thấy địa chỉ nào để tính ship');
       }
     } catch (e) {
       print('   - ⚠️ Không lấy được địa chỉ: $e');

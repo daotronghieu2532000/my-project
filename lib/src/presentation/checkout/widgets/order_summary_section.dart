@@ -76,18 +76,29 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
 
     final u = await _auth.getCurrentUser();
     
-    // ✅ DEBUG: Lấy và print địa chỉ mặc định
+    // ✅ DEBUG: Lấy và print địa chỉ để tính ship
     if (u != null) {
       try {
         final profile = await _api.getUserProfile(userId: u.userId);
-        final addr = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstWhere(
+        final addresses = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>() ?? [];
+        
+        // ✅ Ưu tiên 1: Tìm địa chỉ mặc định (active = 1)
+        Map<String, dynamic>? addr = addresses.firstWhere(
                 (a) => (a?['active'] == 1 || a?['active'] == '1'),
-                orElse: () => null) ??
-            (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstOrNull;
+          orElse: () => null,
+        );
+        
+        // ✅ Ưu tiên 2: Nếu không có địa chỉ mặc định, dùng địa chỉ đầu tiên
+        // Nếu chỉ có 1 địa chỉ, tự động dùng nó để tính ship
+        if (addr == null && addresses.isNotEmpty) {
+          addr = addresses.firstOrNull;
+          print('⚠️ [OrderSummarySection._loadShippingQuote] Không tìm thấy địa chỉ mặc định, sẽ dùng địa chỉ đầu tiên');
+        }
+        
         if (addr != null) {
-          print('   - Xã: ${addr['xa']} (${addr['ten_xa']})');
+          print('   - Địa chỉ để tính ship: ${addr['ten_xa']} - ${addr['ten_huyen']} - ${addr['ten_tinh']}');
         } else {
-          print('⚠️ [OrderSummarySection._loadShippingQuote] Không tìm thấy địa chỉ mặc định');
+          print('⚠️ [OrderSummarySection._loadShippingQuote] Không tìm thấy địa chỉ nào');
         }
       } catch (e) {
         print('❌ [OrderSummarySection._loadShippingQuote] Lỗi khi lấy địa chỉ: $e');

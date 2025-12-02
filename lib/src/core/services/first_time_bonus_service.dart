@@ -122,14 +122,12 @@ class FirstTimeBonusService {
     if (remainingBonus < bonus10Percent) {
       // Trừ hết số tiền còn lại
       result = remainingBonus;
-      print('   - Result: Trừ hết số còn lại = $result (${result / 1000}k)');
+     
     } else {
       // Trừ đúng 10%
       result = bonus10Percent;
-      print('   - Result: Trừ đúng 10% = $result (${result / 1000}k)');
-    }
     
-    print('🔍 [BONUS DEBUG] calculateBonusAmount result: $result');
+    }
     return result;
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../models/voucher.dart';
 import 'api_service.dart';
+import '../utils/format_utils.dart';
 
 class VoucherService extends ChangeNotifier {
   static final VoucherService _instance = VoucherService._internal();
@@ -75,6 +76,7 @@ class VoucherService extends ChangeNotifier {
   /// - totalPrice: tổng tiền hàng tất cả shop (để backward compatibility)
   /// - items: danh sách items với shopId và giá (để tính subtotal theo shop) - format: [{'shopId': int, 'price': int, 'quantity': int}]
   int calculateTotalDiscount(int totalPrice, {List<Map<String, dynamic>>? items}) {
+
     int totalDiscount = 0;
     
     // ✅ Tính subtotal theo từng shop từ items (nếu có)
@@ -90,6 +92,12 @@ class VoucherService extends ChangeNotifier {
         }
       }
     }
+    
+    print('   - Số lượng shops: ${shopSubtotals.length}');
+    for (final entry in shopSubtotals.entries) {
+      print('     + Shop ${entry.key}: ${FormatUtils.formatCurrency(entry.value)}');
+    }
+    print('   - Số lượng shops có voucher: ${_appliedVouchers.length}');
     
     for (final entry in _appliedVouchers.entries) {
       final shopId = entry.key;
@@ -114,13 +122,21 @@ class VoucherService extends ChangeNotifier {
   /// - items: danh sách items với giá (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int}]
   int calculatePlatformDiscountWithItems(int subtotal, List<int> cartProductIds, {List<Map<String, dynamic>>? items}) {
     final pv = _platformVoucher;
+    
+
     if (pv == null || pv.discountValue == null) {
+      print('   - ❌ Không có voucher sàn hoặc không có discountValue');
       return 0;
     }
 
+   
+
     // Kiểm tra min order (dùng subtotal tổng để check)
     if (pv.minOrderValue != null && subtotal < pv.minOrderValue!.round()) {
+     
       return 0;
+    } else if (pv.minOrderValue != null) {
+      print('   - ✅ Đủ điều kiện minOrderValue: subtotal (${subtotal}) >= minOrderValue (${pv.minOrderValue!.round()})');
     }
 
     // Kiểm tra danh sách sản phẩm áp dụng (nếu có)
@@ -165,37 +181,57 @@ class VoucherService extends ChangeNotifier {
 
     // Tính tiền giảm theo kiểu (trên applicableSubtotal, không phải subtotal tổng)
     int finalDiscount = 0;
+   
+    
     if (pv.discountType == 'percentage') {
       final discount = (applicableSubtotal * pv.discountValue! / 100).round();
+    
       
       if (pv.maxDiscountValue != null && pv.maxDiscountValue! > 0) {
         finalDiscount = discount > pv.maxDiscountValue!.round() ? pv.maxDiscountValue!.round() : discount;
+      
       } else {
         finalDiscount = discount;
+     
       }
     } else {
       finalDiscount = pv.discountValue!.round();
+      print('   - Final discount (fixed): ${finalDiscount}');
     }
     
+    print('   - ✅ Kết quả: Discount = ${finalDiscount}');
     return finalDiscount;
   }
 
   /// Tính tiền giảm cho shop cụ thể
   int calculateShopDiscount(int shopId, int shopTotal) {
     final voucher = _appliedVouchers[shopId];
-    if (voucher == null || voucher.discountValue == null) return 0;
+    if (voucher == null || voucher.discountValue == null) {
+      return 0;
+    }
     
+   
+    
+    // ✅ Kiểm tra minOrderValue trước khi tính discount
+    if (voucher.minOrderValue != null && shopTotal < voucher.minOrderValue!.round()) {
+      print('     + ❌ Không đủ điều kiện: shopTotal (${FormatUtils.formatCurrency(shopTotal)}) < minOrderValue (${FormatUtils.formatCurrency(voucher.minOrderValue!.round())})');
+      return 0;
+    }
+    
+    int discount = 0;
     if (voucher.discountType == 'percentage') {
-      final discount = (shopTotal * voucher.discountValue! / 100).round();
+      discount = (shopTotal * voucher.discountValue! / 100).round();
       if (voucher.maxDiscountValue != null) {
-        return discount > voucher.maxDiscountValue! 
+        discount = discount > voucher.maxDiscountValue! 
             ? voucher.maxDiscountValue!.round() 
             : discount;
       }
-      return discount;
     } else {
-      return voucher.discountValue!.round();
+      discount = voucher.discountValue!.round();
     }
+    
+   
+    return discount;
   }
 
   /// Kiểm tra voucher có thể áp dụng cho đơn hàng không

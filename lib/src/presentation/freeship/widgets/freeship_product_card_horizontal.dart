@@ -7,7 +7,6 @@ import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
 import '../../../core/services/cart_service.dart' as cart_service;
-import '../../cart/cart_screen.dart';
 import '../../checkout/checkout_screen.dart';
 import '../../shared/widgets/product_badges.dart';
 
@@ -132,6 +131,49 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                                 ),
                               ),
                             ),
+                        ),
+                      // Badge hoa hồng affiliate (góc trái bên dưới)
+                      if (product.isAffiliate && product.commissionFormatted != null)
+                        Positioned(
+                          bottom: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.purple.shade600, Colors.purple.shade800],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.purple.withOpacity(0.4),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.monetization_on,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  product.commissionFormatted!,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       // Icon giỏ hàng position nổi trên ảnh (góc dưới bên phải)
                       Positioned(

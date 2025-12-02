@@ -80,13 +80,13 @@ class LocalNotificationService {
         final now = DateTime.now();
         final age = now.difference(stat.modified);
         if (age.inHours < 24) {
-          print('🖼️ [LOCAL_NOTIFICATION] Using cached image: $fileName');
+         
           return imageFile.path;
         }
       }
       
       // Download image mới
-      print('🖼️ [LOCAL_NOTIFICATION] Downloading image from: $url');
+    
       final response = await http.get(
         Uri.parse(url),
         headers: {'User-Agent': 'SocdoApp/1.0'},

@@ -567,6 +567,23 @@ class AuthService {
       });
 
       if (response != null) {
+        // Kiểm tra status code
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          // Thử parse error message từ response
+          try {
+            final errorData = jsonDecode(response.body);
+            return {
+              'success': false,
+              'message': errorData['message'] ?? 'Đăng nhập thất bại (Status: ${response.statusCode})',
+            };
+          } catch (e) {
+            return {
+              'success': false,
+              'message': 'Đăng nhập thất bại (Status: ${response.statusCode})',
+            };
+          }
+        }
+        
         try {
           final data = jsonDecode(response.body);
           
@@ -605,9 +622,10 @@ class AuthService {
             };
           }
         } catch (jsonError) {
+
           return {
             'success': false,
-            'message': 'Lỗi xử lý dữ liệu từ server',
+            'message': 'Lỗi xử lý dữ liệu từ server. Vui lòng thử lại.',
           };
         }
       } else {
@@ -617,6 +635,7 @@ class AuthService {
         };
       }
     } catch (e) {
+     
       return {
         'success': false,
         'message': 'Có lỗi xảy ra: $e',
@@ -695,14 +714,14 @@ class AuthService {
           };
         }
       } else {
-        print('❌ [Facebook Login] No response from server');
+      
         return {
           'success': false,
           'message': 'Không thể kết nối đến server',
         };
       }
     } catch (e) {
-      print('❌ [Facebook Login] Exception: $e');
+     
       return {
         'success': false,
         'message': 'Có lỗi xảy ra: $e',

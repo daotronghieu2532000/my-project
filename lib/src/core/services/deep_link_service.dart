@@ -21,14 +21,14 @@ class DeepLinkService {
       // Check initial link (app opened via link when closed)
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
-        print('📱 [DeepLink] Initial link: ${initialUri.toString()}');
+       
         _handleDeepLink(initialUri.toString());
       }
 
       // Listen to incoming links (app opened via link when running)
       _sub = _appLinks.uriLinkStream.listen((Uri? uri) {
         if (uri != null) {
-          print('📱 [DeepLink] Incoming link: ${uri.toString()}');
+         
           _handleDeepLink(uri.toString());
         }
       }, onError: (err) {
@@ -42,7 +42,7 @@ class DeepLinkService {
   /// Xử lý deep link
   void _handleDeepLink(String url) {
     try {
-      print('🔗 [DeepLink] Processing URL: $url');
+   
       
       final uri = Uri.parse(url);
       
@@ -159,7 +159,6 @@ class DeepLinkService {
               );
             }
             
-            print('⚠️ [DeepLink] Cannot resolve slug: $slug, opening in browser');
             _openWeb(uri.toString());
           }
         }
