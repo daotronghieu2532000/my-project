@@ -10,10 +10,12 @@ class ShippingEvents {
   static Stream<void> get stream => _controller.stream;
 
   static void refresh() {
+   
+    // ✅ Clear cache khi địa chỉ thay đổi để buộc tính lại với địa chỉ mới
     try {
       final shippingQuoteService = ShippingQuoteService();
       shippingQuoteService.clearCache();
-
+   
     } catch (e) {
       print('❌ [ShippingEvents.refresh] Lỗi khi clear cache: $e');
     }

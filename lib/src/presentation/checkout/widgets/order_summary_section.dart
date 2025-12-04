@@ -20,6 +20,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
   final _auth = AuthService();
   final _api = ApiService();
   final _shippingQuoteService = ShippingQuoteService(); // ✅ Sử dụng service chuyên nghiệp
+  bool _isLoading = false; // ✅ Trạng thái đang load phí ship
   int? _shipFee;
   int? _originalShipFee; // Phí ship gốc
   int? _shipSupport; // Hỗ trợ ship
@@ -67,39 +68,29 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
   Future<void> _load() async {
     // ✅ Debounce: Hủy timer cũ nếu có, tạo timer mới
     _loadDebounceTimer?.cancel();
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
     _loadDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
       await _loadShippingQuote();
     });
   }
 
   Future<void> _loadShippingQuote() async {
-
+  
     final u = await _auth.getCurrentUser();
     
-    // ✅ DEBUG: Lấy và print địa chỉ để tính ship
+    // ✅ DEBUG: Lấy và print địa chỉ mặc định
     if (u != null) {
       try {
         final profile = await _api.getUserProfile(userId: u.userId);
-        final addresses = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>() ?? [];
-        
-        // ✅ Ưu tiên 1: Tìm địa chỉ mặc định (active = 1)
-        Map<String, dynamic>? addr = addresses.firstWhere(
+        final addr = (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstWhere(
                 (a) => (a?['active'] == 1 || a?['active'] == '1'),
-          orElse: () => null,
-        );
-        
-        // ✅ Ưu tiên 2: Nếu không có địa chỉ mặc định, dùng địa chỉ đầu tiên
-        // Nếu chỉ có 1 địa chỉ, tự động dùng nó để tính ship
-        if (addr == null && addresses.isNotEmpty) {
-          addr = addresses.firstOrNull;
-          print('⚠️ [OrderSummarySection._loadShippingQuote] Không tìm thấy địa chỉ mặc định, sẽ dùng địa chỉ đầu tiên');
-        }
-        
-        if (addr != null) {
-          print('   - Địa chỉ để tính ship: ${addr['ten_xa']} - ${addr['ten_huyen']} - ${addr['ten_tinh']}');
-        } else {
-          print('⚠️ [OrderSummarySection._loadShippingQuote] Không tìm thấy địa chỉ nào');
-        }
+                orElse: () => null) ??
+            (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstOrNull;
+     
       } catch (e) {
         print('❌ [OrderSummarySection._loadShippingQuote] Lỗi khi lấy địa chỉ: $e');
       }
@@ -127,6 +118,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         _etaText = null;
         _provider = null;
         _warehouseDetails = null;
+        _isLoading = false;
       });
       return;
     }
@@ -141,21 +133,64 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         _etaText = null;
         _provider = null;
         _warehouseDetails = null;
+        _isLoading = false;
       });
       return;
     }
+
+    // ✅ Kiểm tra xem có phải chỉ có shop 0 không (dựa trên cart items)
+    final cartItems = cart.items.where((i) => i.isSelected).toList();
+    final hasOnlyShop0 = cartItems.isNotEmpty && 
+      cartItems.every((item) => item.shopId == 0);
   
-    
     // ✅ Sử dụng ShippingQuoteService với retry, timeout, fallback, và cache
-    final rawQuote = await _shippingQuoteService.getShippingQuote(
+    //  - Ở checkout: tăng timeout lên 15s cho shop 0, retry 2 lần
+    Map<String, dynamic>? rawQuote;
+    try {
+      print('🚀 [OrderSummarySection] Requesting shipping quote: items=${items.length}, hasOnlyShop0=$hasOnlyShop0');
+      rawQuote = await _shippingQuoteService.getShippingQuote(
       userId: u.userId,
       items: items,
-      useCache: true,
+        useCache: !hasOnlyShop0, // ✅ Không dùng cache cho shop 0 để tránh cache cũ
       enableFallback: true,
-    );
-   
+        maxRetries: 2, // ✅ Tăng retry cho shop 0
+        timeout: const Duration(seconds: 15), // ✅ Tăng timeout lên 15s cho shop 0
+      );
+    } catch (e) {
+      print('❌ [OrderSummarySection] Lỗi khi lấy shipping quote: $e');
+      // ✅ Nếu có lỗi, dùng fallback hoặc giá trị mặc định
+      rawQuote = null;
+    }
+
+    if (!mounted) return;
+    
+    // ✅ Xử lý khi rawQuote là null (timeout hoặc lỗi)
+    if (rawQuote == null) {
+      print('⚠️ [OrderSummarySection] rawQuote is null - using fallback values');
     if (!mounted) return;
     setState(() {
+        _isLoading = false;
+        _isFallback = true;
+        _shipFee = 0;
+        _originalShipFee = 0;
+        _shipSupport = 0;
+        _etaText = 'dự kiến: Đang tính...';
+        _provider = null;
+        _warehouseDetails = null;
+        _shopFreeshipDetails = null;
+      });
+      return;
+    }
+    
+    // ✅ Debug: Log response để kiểm tra
+    print('✅ [OrderSummarySection] Received shipping quote: success=${rawQuote['success']}, fee=${rawQuote['fee']}, provider=${rawQuote['provider']}');
+    print('   - best: ${rawQuote['best']}');
+    print('   - data: ${rawQuote['data']}');
+    
+    setState(() {
+      try {
+        // ✅ Đảm bảo _isLoading luôn được set về false
+        _isLoading = false;
       // ✅ Kiểm tra xem có phải fallback không
       _isFallback = rawQuote?['is_fallback'] == true;
       // Robust parse of dynamic 'fee' (can be int/num/string)
@@ -175,32 +210,63 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       _provider = rawQuote?['provider']?.toString();
       
       // Lấy phí ship gốc và hỗ trợ ship từ API response
-        _originalShipFee = rawQuote?['fee'] as int? ?? 0; // Phí ship gốc
+        // ✅ Parse an toàn để tránh lỗi type cast
+        final originalFeeDyn = rawQuote?['fee'];
+        if (originalFeeDyn is int) {
+          _originalShipFee = originalFeeDyn;
+        } else if (originalFeeDyn is num) {
+          _originalShipFee = originalFeeDyn.toInt();
+        } else if (originalFeeDyn is String) {
+          final onlyDigits = originalFeeDyn.replaceAll(RegExp(r'[^0-9]'), '');
+          _originalShipFee = int.tryParse(onlyDigits) ?? parsedFee ?? 0;
+        } else {
+          _originalShipFee = parsedFee ?? 0;
+        }
+        
+        // ✅ Đảm bảo _originalShipFee và _shipFee luôn có giá trị
+        if (_originalShipFee == null || _originalShipFee! <= 0) {
+          _originalShipFee = parsedFee ?? 0;
+        }
+        if (_shipFee == null || _shipFee! <= 0) {
+          _shipFee = _originalShipFee ?? 0;
+        }
         
         // ✅ Lấy chi tiết phí ship từng kho (ưu tiên từ best, sau đó warehouse_shipping)
         List<dynamic>? warehouseDetailsList;
         
         // Thử lấy từ best['warehouse_details'] trước
-        final best = rawQuote?['best'] as Map<String, dynamic>?;
-        if (best != null) {
-          warehouseDetailsList = best['warehouse_details'] as List<dynamic>?;
+        final best = rawQuote?['best'];
+        if (best is Map<String, dynamic>) {
+          final warehouseDetails = best['warehouse_details'];
+          if (warehouseDetails is List) {
+            warehouseDetailsList = warehouseDetails;
+          }
         }
         
         // Nếu không có, thử lấy từ warehouse_shipping
         if (warehouseDetailsList == null || warehouseDetailsList.isEmpty) {
-          final warehouseShipping = rawQuote?['data']?['warehouse_shipping'] as Map<String, dynamic>?;
-        if (warehouseShipping != null) {
-            warehouseDetailsList = warehouseShipping['warehouse_details'] as List<dynamic>?;
+          final data = rawQuote?['data'];
+          if (data is Map<String, dynamic>) {
+            final warehouseShipping = data['warehouse_shipping'];
+            if (warehouseShipping is Map<String, dynamic>) {
+              final warehouseDetails = warehouseShipping['warehouse_details'];
+              if (warehouseDetails is List) {
+                warehouseDetailsList = warehouseDetails;
+              }
+            }
           }
         }
         
         // Nếu vẫn không có, thử lấy từ quotes[0]
         if (warehouseDetailsList == null || warehouseDetailsList.isEmpty) {
-          final quotes = rawQuote?['quotes'] as List<dynamic>?;
-          if (quotes != null && quotes.isNotEmpty) {
-            final firstQuote = quotes[0] as Map<String, dynamic>?;
-            if (firstQuote != null) {
-              warehouseDetailsList = firstQuote['warehouse_details'] as List<dynamic>?;
+          final quotes = rawQuote?['quotes'];
+          if (quotes is List && quotes.isNotEmpty) {
+            final firstQuote = quotes[0];
+            if (firstQuote is Map<String, dynamic>) {
+              final warehouseDetails = firstQuote['warehouse_details'];
+              if (warehouseDetails is List) {
+                warehouseDetailsList = warehouseDetails;
+              }
             }
           }
         }
@@ -217,12 +283,25 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         // Tránh lỗi tính ship_support theo sản phẩm (20.000 x 3 = 60.000)
         // Đúng: ship_support = 20.000/tổng đơn hàng shop (không nhân với số lượng sản phẩm)
         int calculatedShipSupport = 0;
-        final bestShipSupport = (rawQuote?['best']?['ship_support'] as num?)?.toInt() ?? 0;
+        int bestShipSupport = 0;
+        final bestObj = rawQuote?['best'];
+        if (bestObj is Map<String, dynamic>) {
+          final shipSupport = bestObj['ship_support'];
+          if (shipSupport is num) {
+            bestShipSupport = shipSupport.toInt();
+          }
+        }
         
         // ✅ Tính ship_support từ shop_freeship_details (nếu có)
         // shop_freeship_details chứa thông tin ship_support theo shop
-        final debug = rawQuote?['debug'] as Map<String, dynamic>?;
-        final shopFreeshipDetails = debug?['shop_freeship_details'] as Map<String, dynamic>?;
+        Map<String, dynamic>? shopFreeshipDetails;
+        final debug = rawQuote?['debug'];
+        if (debug is Map<String, dynamic>) {
+          final shopFreeship = debug['shop_freeship_details'];
+          if (shopFreeship is Map<String, dynamic>) {
+            shopFreeshipDetails = shopFreeship;
+          }
+        }
         
         // ✅ Lưu shop_freeship_details để hiển thị
         _shopFreeshipDetails = shopFreeshipDetails;
@@ -344,18 +423,36 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       // Check if there's freeship available using raw API response
       _checkFreeshipAvailability(rawQuote);
       
-      // Sử dụng ship_support từ API (đã tính toán chính xác)
-      // API trả về ship_support = 250.000₫ (2% của giá trị đơn hàng)
+        // ✅ Đảm bảo các giá trị không null trước khi lưu vào store
+        final finalShipFee = _shipFee ?? _originalShipFee ?? 0;
+        final finalOriginalShipFee = _originalShipFee ?? finalShipFee;
+        
+        // ✅ Debug log để kiểm tra giá trị
+        print('💰 [OrderSummarySection] Final values: shipFee=$finalShipFee, originalShipFee=$finalOriginalShipFee, shipSupport=${_shipSupport ?? 0}');
     
       // Lưu vào store dùng chung cho các section khác (PaymentDetails, Bottom bar)
       ShippingQuoteStore().setQuote(
-        fee: _shipFee!,
+          fee: finalShipFee,
         etaText: _etaText,
         provider: _provider,
         shipSupport: _shipSupport ?? 0,
       );
-      
-    
+        
+        // ✅ Đảm bảo _originalShipFee được set đúng
+        _originalShipFee = finalOriginalShipFee;
+        _shipFee = finalShipFee;
+      } catch (e) {
+        // ✅ Nếu có lỗi trong quá trình parse, dùng giá trị mặc định
+        print('❌ [OrderSummarySection] Lỗi khi parse shipping quote: $e');
+        _shipFee = _shipFee ?? 0;
+        _originalShipFee = _originalShipFee ?? 0;
+        _shipSupport = _shipSupport ?? 0;
+        _etaText = _etaText ?? 'dự kiến: Đang tính...';
+        _provider = _provider;
+      } finally {
+        // ✅ Đảm bảo _isLoading luôn được set về false
+        _isLoading = false;
+      }
     });
   }
 
@@ -547,6 +644,12 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                         Builder(
                           builder: (context) {
                             final shopId = entry.key;
+                            
+                            // ✅ Bỏ qua shop 0 (Sàn TMĐT) - không có voucher shop
+                            if (shopId <= 0) {
+                              return const SizedBox.shrink();
+                            }
+                            
                             final shopItems = entry.value.where((i) => i.isSelected).toList();
                             if (shopItems.isEmpty) return const SizedBox.shrink();
                             
@@ -639,6 +742,11 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     VoucherService voucherService,
     Map<String, dynamic>? shopFreeshipDetails,
   ) {
+    // ✅ Bỏ qua shop 0 (Sàn TMĐT) - không có voucher shop
+    if (shopId <= 0) {
+      return const SizedBox.shrink();
+    }
+    
     final selectedShopItems = shopItems.where((i) => i.isSelected).toList();
     if (selectedShopItems.isEmpty) return const SizedBox.shrink();
     
@@ -683,7 +791,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         ),
         const SizedBox(height: 12),
         
-        // ✅ Voucher shop
+        // ✅ Voucher shop (chỉ shop > 0)
         if (appliedVoucher != null) ...[
           _buildVoucherShopCardDialog(shopName, appliedVoucher, shopTotal),
           const SizedBox(height: 12),
@@ -1514,7 +1622,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.mobile_friendly_rounded, color: Colors.grey),
+              const Icon(Icons.where_to_vote_outlined, color: Color.fromARGB(255, 19, 129, 255)),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -1524,6 +1632,24 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_isLoading)
+                          Row(
+                            children: [
+                              const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Đang tính ...',
+                                style: TextStyle(color: Colors.orange),
+                              ),
+                            ],
+                          )
+                        else
                         Text(
                           _originalShipFee != null 
                             ? 'Phí vận chuyển: ${_formatCurrency(_originalShipFee!)}'
@@ -1541,7 +1667,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                                 Icon(Icons.info_outline, size: 14, color: Colors.orange[700]),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Đang sử dụng phí ship ước tính',
+                                  'Ước tính phí ship',
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.orange[700],
@@ -1569,7 +1695,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                     
                     if (_shipSupport != null && _shipSupport! > 0)
                       Text(
-                        'Hỗ trợ ship: -${_formatCurrency(_shipSupport!)}',
+                        'Hỗ trợ vận chuyển: -${_formatCurrency(_shipSupport!)}',
                         style: const TextStyle(
                           color: Colors.green,
                           fontSize: 12,
@@ -1607,12 +1733,12 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.access_time, color: Color.fromARGB(255, 255, 47, 47)),
+              const Icon(Icons.access_time, color: Color.fromARGB(255, 128, 128, 128)),
               const SizedBox(width: 8),
               Text(
                 _etaText != null 
                   ? 'Nhận hàng $_etaText'
-                  : 'Dự kiến: Vui lòng đăng nhập để tính thời gian',
+                  : 'Dự kiến: Đang tính...',
                 style: TextStyle(
                   color: _etaText == null ? Colors.orange : null,
                 ),
@@ -1623,7 +1749,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           if (_provider != null)
             Row(
               children: [
-                const Icon(Icons.local_shipping_outlined, color: Color.fromARGB(255, 5, 87, 2)),
+                const Icon(Icons.local_shipping_outlined, color: Color.fromARGB(255, 112, 112, 112)),
                 const SizedBox(width: 8),
                 Text(_provider!),
               ],
@@ -1741,6 +1867,12 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     // ✅ Hiển thị voucher shop theo từng shop
     for (final entry in itemsByShop.entries) {
       final shopId = entry.key;
+      
+      // ✅ Bỏ qua shop 0 (Sàn TMĐT) - không có voucher shop
+      if (shopId <= 0) {
+        continue;
+      }
+      
       final shopItems = entry.value.where((i) => i.isSelected).toList();
       if (shopItems.isEmpty) continue;
       

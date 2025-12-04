@@ -3,10 +3,12 @@ import 'widgets/suggest_section.dart';
 import 'widgets/bottom_checkout_bar.dart';
 import 'widgets/counter_bubble.dart';
 import 'widgets/cart_service_shop_section.dart';
+import '../checkout/widgets/voucher_section.dart' as checkout_widgets;
 import 'models/shop_cart.dart';
 import 'models/cart_item.dart';
 import '../../core/services/cart_service.dart' as cart_service;
 import '../../core/services/voucher_service.dart';
+import '../../core/utils/format_utils.dart';
 import '../home/widgets/product_grid.dart';
 
 class CartScreen extends StatefulWidget {
@@ -93,6 +95,11 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _onCartChanged() {
+    // ✅ DEBUG: Print thông tin cart khi thay đổi
+    final selectedItems = _cartService.items.where((i) => i.isSelected).toList();
+    final totalPrice = selectedItems.fold(0, (sum, i) => sum + i.price * i.quantity);
+    print('🛒 [CART - CartScreen] Cart changed: ${selectedItems.length} items selected, total: ${FormatUtils.formatCurrency(totalPrice)}');
+    
     setState(() {});
     // Tự động áp dụng voucher tốt nhất cho từng shop
     _autoApplyBestVouchers();
@@ -109,7 +116,12 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _autoApplyBestVouchers() async {
     final itemsByShop = _cartService.itemsByShop;
     
-    if (itemsByShop.isEmpty) return;
+    if (itemsByShop.isEmpty) {
+      print('🛒 [CART - _autoApplyBestVouchers] Cart is empty, skipping');
+      return;
+    }
+    
+    print('🛒 [CART - _autoApplyBestVouchers] Processing ${itemsByShop.length} shops');
     
     for (final entry in itemsByShop.entries) {
       final shopId = entry.key;
@@ -117,7 +129,10 @@ class _CartScreenState extends State<CartScreen> {
       
       // Chỉ tính cho các item đã chọn
       final selectedItems = items.where((item) => item.isSelected).toList();
-      if (selectedItems.isEmpty) continue;
+      if (selectedItems.isEmpty) {
+        print('   ⏭️ Shop $shopId: No selected items, skipping');
+        continue;
+      }
       
       // Tính tổng tiền của shop
       final shopTotal = selectedItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
@@ -125,9 +140,23 @@ class _CartScreenState extends State<CartScreen> {
       // Lấy danh sách product ID trong giỏ hàng của shop
       final cartProductIds = selectedItems.map((item) => item.id).toList();
       
+      print('   🏪 Shop $shopId: ${selectedItems.length} items, total: ${FormatUtils.formatCurrency(shopTotal)}, productIds: $cartProductIds');
+      
       // Tự động áp dụng voucher tốt nhất cho shop
       await _voucherService.autoApplyBestVoucher(shopId, shopTotal, cartProductIds);
+      
+      final appliedVoucher = _voucherService.getAppliedVoucher(shopId);
+      if (appliedVoucher != null) {
+        print('      ✅ Applied voucher: ${appliedVoucher.code} (${appliedVoucher.discountType == 'percentage' ? '${appliedVoucher.discountValue}%' : FormatUtils.formatCurrency(appliedVoucher.discountValue?.round() ?? 0)})');
+      } else {
+        print('      ❌ No voucher applied');
+      }
     }
+    
+    // ✅ DEBUG: Print tổng hợp voucher sau khi auto apply
+    final appliedVouchers = _voucherService.appliedVouchers;
+    final platformVouchers = _voucherService.platformVouchers;
+    print('   📊 Summary: ${appliedVouchers.length} shop vouchers, ${platformVouchers.length} platform vouchers');
     
     // Cập nhật UI sau khi áp dụng voucher
     if (mounted) {
@@ -184,6 +213,12 @@ class _CartScreenState extends State<CartScreen> {
                     onChanged: _onChanged,
                     isEditMode: _isEditMode,
                   ),
+                const SizedBox(height: 12),
+                
+                // Thêm VoucherSection để hiển thị voucher sàn
+                if (_cartService.items.any((item) => item.isSelected))
+                  checkout_widgets.VoucherSection(key: const ValueKey('platform_voucher_section')),
+                
                 const SizedBox(height: 12),
                 const SuggestSection(),
                 const SizedBox(height: 100),

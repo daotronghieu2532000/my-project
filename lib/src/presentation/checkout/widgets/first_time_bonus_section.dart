@@ -3,14 +3,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../../core/services/first_time_bonus_service.dart';
 import '../../../core/services/auth_service.dart';
+import '../../../core/services/cart_service.dart' as cart_service;
 
 class FirstTimeBonusSection extends StatefulWidget {
-  final int orderTotal;
-  
-  const FirstTimeBonusSection({
-    super.key,
-    required this.orderTotal,
-  });
+  const FirstTimeBonusSection({super.key});
 
   @override
   State<FirstTimeBonusSection> createState() => _FirstTimeBonusSectionState();
@@ -19,6 +15,7 @@ class FirstTimeBonusSection extends StatefulWidget {
 class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
   final FirstTimeBonusService _bonusService = FirstTimeBonusService();
   final AuthService _authService = AuthService();
+  final cart_service.CartService _cartService = cart_service.CartService();
   Map<String, dynamic>? _bonusInfo;
   bool _loading = true;
 
@@ -26,6 +23,18 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
   void initState() {
     super.initState();
     _loadBonusInfo();
+    // ✅ Lắng nghe thay đổi cart để cập nhật real-time
+    _cartService.addListener(_onCartChanged);
+  }
+
+  @override
+  void dispose() {
+    _cartService.removeListener(_onCartChanged);
+    super.dispose();
+  }
+
+  void _onCartChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadBonusInfo() async {
@@ -71,24 +80,31 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
 
   @override
   Widget build(BuildContext context) {
-
     if (_loading) {
-     
       return const SizedBox.shrink();
     }
 
     if (!_bonusService.canUseBonus(_bonusInfo)) {
-   
       return const SizedBox.shrink();
     }
+
+    // ✅ Tính eligible_total (CHỈ từ 5 shop hợp lệ: 32373, 23933, 36893, 35683, 35681)
+    final items = _cartService.items.where((i) => i.isSelected).toList();
+    final eligibleItems = items.map((i) => {
+      'shopId': i.shopId,
+      'price': i.price,
+      'quantity': i.quantity,
+    }).toList();
+    final eligibleTotal = _bonusService.calculateEligibleTotal(eligibleItems);
+
     final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-    final bonusAmount = _bonusService.calculateBonusAmount(widget.orderTotal, remainingAmount);
+    // ✅ Dùng eligibleTotal thay vì widget.orderTotal (tổng tất cả shop)
+    final bonusAmount = _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
+    
     if (bonusAmount <= 0) {
-      print('   - Skipping (bonusAmount <= 0)');
       return const SizedBox.shrink();
     }
     
-    print('   - Displaying bonus section with amount: $bonusAmount');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

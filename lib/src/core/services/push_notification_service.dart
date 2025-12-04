@@ -27,8 +27,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     body: body,
     payload: message.data,
   );
-  
-  print('📱 [NOTIFICATION] Background notification shown');
+ 
 }
 
 class PushNotificationService {

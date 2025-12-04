@@ -2488,17 +2488,16 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     return null;
   }
 
-  String _buildShareText(AffiliateProduct product) {
-    final discountPercent = product.oldPrice > product.price 
-        ? ' (Giảm ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%)'
-        : '';
-    
-    final oldPriceText = product.oldPrice > product.price 
-        ? '\n💸 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}'
-        : '';
-    
-    return '🔥 ${product.title}$discountPercent\n💰 Giá Bán: ${FormatUtils.formatCurrency(product.price.toInt())}$oldPriceText\n🏪 Thương hiệu: ${product.brandName}\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
-  }
+String _buildShareText(AffiliateProduct product) {
+  final discountPercent = product.oldPrice > product.price 
+      ? ' (Giảm ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%)'
+      : '';
+  
+  final oldPriceText = product.oldPrice > product.price 
+      ? '\n💸Giá Bán:  ̶${FormatUtils.formatCurrency(product.price.toInt())}̶'
+      : '';
+  return '🔥 ${product.title}$discountPercent\n💰 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}$oldPriceText\n🏪 Thương hiệu: ${product.brandName}\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
+}
 
   Widget _buildAffiliateRegistrationPrompt() {
     return Container(

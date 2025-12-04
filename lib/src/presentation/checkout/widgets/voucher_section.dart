@@ -40,22 +40,24 @@ class _VoucherSectionState extends State<VoucherSection> {
 
   void _onCartChanged() {
     // ✅ Tự động validate và xóa voucher sàn nếu không đủ điều kiện
-    final pv = _voucherService.platformVoucher;
-    if (pv != null) {
+    final platformVouchers = _voucherService.platformVouchers;
+    if (platformVouchers.isNotEmpty) {
       final cart = cart_service.CartService();
       // ✅ QUAN TRỌNG: Chỉ tính trên items ĐÃ CHỌN để thanh toán, không phải tất cả items
       final items = cart.items.where((i) => i.isSelected).toList();
-      final eligibility = _eligibilityForPlatformVoucher(pv, items);
       
-     
+      // ✅ Kiểm tra từng voucher platform
+      final vouchersToRemove = <String>[];
+      for (final entry in platformVouchers.entries) {
+        final code = entry.key;
+        final voucher = entry.value;
+        final eligibility = _eligibilityForPlatformVoucher(voucher, items);
+
+      }
       
-      if (!eligibility.$1) {
-     
-        _voucherService.setPlatformVoucher(null);
-        // ✅ setPlatformVoucher(null) sẽ gọi notifyListeners() tự động
-        // Nhưng để đảm bảo UI cập nhật, ta vẫn gọi setState()
-      } else {
-        print('✅ [VOUCHER VALIDATE] Voucher ${pv.code} vẫn đủ điều kiện');
+      // ✅ Xóa các voucher không đủ điều kiện
+      for (final code in vouchersToRemove) {
+        _voucherService.removePlatformVoucher(code);
       }
     }
     
@@ -66,10 +68,7 @@ class _VoucherSectionState extends State<VoucherSection> {
 
   @override
   Widget build(BuildContext context) {
-    final pv = _voucherService.platformVoucher;
-    
-    // ✅ DEBUG: Print để kiểm tra voucher hiện tại khi build
-    print('🎨 [VOUCHER UI] Build VoucherSection - voucher: ${pv?.code ?? "null"}');
+    final platformVouchers = _voucherService.platformVouchers;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -77,40 +76,87 @@ class _VoucherSectionState extends State<VoucherSection> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.confirmation_number, color: Colors.red),
-          const SizedBox(width: 8),
-          const Text('Voucher sàn'),
-          const Spacer(),
-          InkWell(
-            onTap: () async {
-              await _showPlatformVoucherDialog(context);
-              // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
-            },
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+          // ✅ Header row
+          Row(
+            children: [
+              const Icon(Icons.confirmation_number, color: Colors.red),
+              const SizedBox(width: 8),
+              const Text('Voucher sàn'),
+              const Spacer(),
+              InkWell(
+                onTap: () async {
+                  await _showPlatformVoucherDialog(context);
+                  // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
+                },
                 borderRadius: BorderRadius.circular(20),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    pv == null
-                        ? 'Chọn hoặc nhập mã'
-                        : '${pv.code} · ${_discountText(pv)}',
-                    style: const TextStyle(color: Colors.red, fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chevron_right, color: Colors.grey, size: 16),
-                ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        platformVouchers.isEmpty
+                            ? 'Chọn hoặc nhập mã'
+                            : 'Đã chọn ${platformVouchers.length} voucher',
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.chevron_right, color: Colors.grey, size: 16),
+                    ],
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
+          
+          // ✅ Hiển thị danh sách voucher đã áp dụng
+          if (platformVouchers.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            ...platformVouchers.entries.map((entry) {
+              final voucher = entry.value;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${voucher.code} · ${_discountText(voucher)}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      InkWell(
+                        onTap: () {
+                          _voucherService.removePlatformVoucher(entry.key);
+                        },
+                        child: const Icon(Icons.close, color: Colors.grey, size: 16),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
         ],
       ),
     );
@@ -141,52 +187,23 @@ class _VoucherSectionState extends State<VoucherSection> {
       return;
     }
 
-    final selected = await showModalBottomSheet<Voucher>(
+    // ✅ Hiển thị dialog với checkbox để chọn nhiều voucher
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
         // ✅ QUAN TRỌNG: Dùng StatefulWidget riêng để có thể rebuild khi giỏ hàng thay đổi
         return _VoucherDialogContent(
           vouchers: vouchers,
           cart: cart,
+          voucherService: _voucherService,
           onShowIneligibleReason: _showIneligibleReason,
           discountText: _discountText,
           eligibilityCheck: _eligibilityForPlatformVoucher,
         );
       },
     );
-
-    if (selected != null) {
-      // ✅ Kiểm tra lại điều kiện TRƯỚC KHI set voucher (đảm bảo giỏ hàng không thay đổi)
-      // ✅ QUAN TRỌNG: Chỉ tính trên items ĐÃ CHỌN để thanh toán
-      final currentItems = cart.items.where((i) => i.isSelected).toList();
-      final eligibility = _eligibilityForPlatformVoucher(selected, currentItems);
-      
-      if (!eligibility.$1) {
-        // ❌ Không đủ điều kiện, hiển thị lý do
-        print('⚠️ [VOUCHER SET] Không thể set voucher: ${eligibility.$2}');
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Không thể áp dụng: ${eligibility.$2}'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-      
-      // ✅ Đủ điều kiện, set voucher
-      print('✅ [VOUCHER SET] Set voucher sàn: ${selected.code}');
-      _voucherService.setPlatformVoucher(selected);
-      // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Đã áp dụng voucher sàn ${selected.code}'),
-          backgroundColor: Colors.green, // Thêm màu nền xanh lá cây
-        ),
-      );
-    }
   }
 
   String _discountText(Voucher v) {
@@ -196,37 +213,25 @@ class _VoucherSectionState extends State<VoucherSection> {
     return FormatUtils.formatCurrency(v.discountValue?.round() ?? 0);
   }
 
-  // Deprecated: thay bằng _eligibilityForPlatformVoucher
-
   // Trả về (canUse, reason)
   (bool, String) _eligibilityForPlatformVoucher(
     Voucher v,
     List<cart_service.CartItem> items,
   ) {
-   
-    
     // 1) HSD / trạng thái
     if (!v.canUse) {
-     
       return (false, 'Voucher đã hết hạn hoặc tạm dừng.');
     }
 
     // 2) Min order
     final subtotal = items.fold<int>(0, (s, i) => s + i.price * i.quantity);
-    print('   - Tổng tiền hàng (subtotal): ${FormatUtils.formatCurrency(subtotal)}');
-    print('   - Số lượng items: ${items.length}');
-    for (var item in items) {
-      print('     + Item ${item.id}: ${FormatUtils.formatCurrency(item.price)} x ${item.quantity} = ${FormatUtils.formatCurrency(item.price * item.quantity)}');
-    }
-    
+ 
+  
     if (v.minOrderValue != null && subtotal < v.minOrderValue!.round()) {
-      print('   - ❌ Không đủ điều kiện: subtotal (${FormatUtils.formatCurrency(subtotal)}) < minOrderValue (${FormatUtils.formatCurrency(v.minOrderValue!.round())})');
       return (
         false,
         'Đơn tối thiểu ${FormatUtils.formatCurrency(v.minOrderValue!.round())}.',
       );
-    } else if (v.minOrderValue != null) {
-      print('   - ✅ Đủ điều kiện minOrderValue: subtotal (${FormatUtils.formatCurrency(subtotal)}) >= minOrderValue (${FormatUtils.formatCurrency(v.minOrderValue!.round())})');
     }
 
     // 3) Applicable products (nếu có)
@@ -409,6 +414,7 @@ class _VoucherSectionState extends State<VoucherSection> {
 class _VoucherDialogContent extends StatefulWidget {
   final List<Voucher> vouchers;
   final cart_service.CartService cart;
+  final VoucherService voucherService;
   final Function(BuildContext, Voucher, String) onShowIneligibleReason;
   final String Function(Voucher) discountText;
   final (bool, String) Function(Voucher, List<cart_service.CartItem>) eligibilityCheck;
@@ -416,6 +422,7 @@ class _VoucherDialogContent extends StatefulWidget {
   const _VoucherDialogContent({
     required this.vouchers,
     required this.cart,
+    required this.voucherService,
     required this.onShowIneligibleReason,
     required this.discountText,
     required this.eligibilityCheck,
@@ -426,9 +433,21 @@ class _VoucherDialogContent extends StatefulWidget {
 }
 
 class _VoucherDialogContentState extends State<_VoucherDialogContent> {
+  // ✅ Lưu trạng thái chọn của từng voucher (local state)
+  final Map<String, bool> _selectedVouchers = {};
+
   @override
   void initState() {
     super.initState();
+    
+    // ✅ Khởi tạo trạng thái chọn từ VoucherService
+    final platformVouchers = widget.voucherService.platformVouchers;
+    for (final voucher in widget.vouchers) {
+      if (voucher.code != null) {
+        _selectedVouchers[voucher.code!] = platformVouchers.containsKey(voucher.code);
+      }
+    }
+    
     // ✅ Lắng nghe thay đổi giỏ hàng để rebuild
     widget.cart.addListener(_onCartChanged);
   }
@@ -452,10 +471,17 @@ class _VoucherDialogContentState extends State<_VoucherDialogContent> {
     
     if (currentItems.isEmpty) {
       return Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        ),
         padding: const EdgeInsets.all(16),
         child: const Text('Vui lòng chọn sản phẩm để thanh toán'),
       );
     }
+
+    // ✅ Đếm số voucher đã chọn
+    final selectedCount = _selectedVouchers.values.where((v) => v).length;
 
     return Container(
       decoration: const BoxDecoration(
@@ -475,9 +501,22 @@ class _VoucherDialogContentState extends State<_VoucherDialogContent> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Chọn Voucher sàn',
-            style: TextStyle(fontWeight: FontWeight.w700),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Chọn Voucher sàn',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              if (selectedCount > 0)
+                Text(
+                  'Đã chọn: $selectedCount',
+                  style: const TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 12),
           Flexible(
@@ -485,22 +524,35 @@ class _VoucherDialogContentState extends State<_VoucherDialogContent> {
               shrinkWrap: true,
               itemBuilder: (context, i) {
                 final v = widget.vouchers[i];
+                final voucherCode = v.code ?? '';
+                
                 // ✅ Dùng currentItems (lấy mới mỗi lần build) - QUAN TRỌNG!
                 final eligibility = widget.eligibilityCheck(v, currentItems);
                 final canUse = eligibility.$1;
+                final isSelected = _selectedVouchers[voucherCode] ?? false;
+                
                 final minTxt = v.minOrderValue != null
                     ? 'Đơn tối thiểu ${FormatUtils.formatCurrency(v.minOrderValue!.round())}'
                     : '';
+                    
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-                  leading: Icon(
-                    Icons.local_activity,
-                    color: canUse ? Colors.red : Colors.grey,
+                  leading: Checkbox(
+                    value: isSelected,
+                    onChanged: canUse
+                        ? (value) {
+                            setState(() {
+                              _selectedVouchers[voucherCode] = value ?? false;
+                            });
+                          }
+                        : null,
+                    activeColor: Colors.green,
                   ),
                   title: Text(
                     '${v.code} · ${widget.discountText(v)}',
                     style: TextStyle(
                       color: canUse ? Colors.black87 : Colors.grey,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                   subtitle: Text(
@@ -509,11 +561,8 @@ class _VoucherDialogContentState extends State<_VoucherDialogContent> {
                       color: canUse ? Colors.grey[700] : Colors.grey,
                     ),
                   ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!canUse)
-                        IconButton(
+                  trailing: !canUse
+                      ? IconButton(
                           tooltip: 'Điều kiện áp dụng',
                           icon: const Icon(
                             Icons.priority_high,
@@ -524,28 +573,14 @@ class _VoucherDialogContentState extends State<_VoucherDialogContent> {
                             v,
                             eligibility.$2,
                           ),
-                        ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: canUse ? Colors.green : Colors.grey,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          canUse ? 'Sử dụng' : 'Chưa đủ điều kiện',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                        )
+                      : null,
                   onTap: canUse
-                      ? () => Navigator.pop(context, v)
+                      ? () {
+                          setState(() {
+                            _selectedVouchers[voucherCode] = !isSelected;
+                          });
+                        }
                       : () => widget.onShowIneligibleReason(
                           context,
                           v,
@@ -555,6 +590,57 @@ class _VoucherDialogContentState extends State<_VoucherDialogContent> {
               },
               separatorBuilder: (_, __) => const Divider(height: 1),
               itemCount: widget.vouchers.length,
+            ),
+          ),
+          const SizedBox(height: 16),
+          // ✅ Nút xác nhận
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                // ✅ Áp dụng các voucher đã chọn
+                widget.voucherService.clearPlatformVouchers();
+                
+                for (final entry in _selectedVouchers.entries) {
+                  if (entry.value) {
+                    // Tìm voucher tương ứng
+                    final voucher = widget.vouchers.firstWhere(
+                      (v) => v.code == entry.key,
+                      orElse: () => widget.vouchers.first,
+                    );
+                    
+                    if (voucher.code == entry.key) {
+                      widget.voucherService.addPlatformVoucher(voucher);
+                    }
+                  }
+                }
+                
+                Navigator.pop(context);
+                
+                // Hiển thị thông báo
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      selectedCount > 0
+                          ? 'Đã áp dụng $selectedCount voucher sàn'
+                          : 'Đã bỏ chọn tất cả voucher',
+                    ),
+                    backgroundColor: selectedCount > 0 ? Colors.green : Colors.grey,
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                selectedCount > 0 ? 'Xác nhận ($selectedCount voucher)' : 'Đóng',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ),
         ],

@@ -135,6 +135,8 @@ class CartServiceShopSection extends StatelessWidget {
               },
               isEditMode: isEditMode,
             ),
+          // ✅ Shop 0 (Sàn TMĐT) không có voucher shop, bỏ qua phần này
+          if (shopId > 0) ...[
           const Divider(height: 1),
           // Shop discount code
           InkWell(
@@ -181,6 +183,7 @@ class CartServiceShopSection extends StatelessWidget {
               ),
             ),
           ),
+          ],
         ],
       ),
     );

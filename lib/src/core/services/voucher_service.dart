@@ -14,12 +14,17 @@ class VoucherService extends ChangeNotifier {
   // Voucher đã áp dụng (đã confirm)
   final Map<int, Voucher> _appliedVouchers = {};
 
-  // Voucher sàn hiện tại
-  Voucher? _platformVoucher;
+  // ✅ Thay đổi: Lưu nhiều voucher platform (key = voucher code)
+  final Map<String, Voucher> _platformVouchers = {};
 
   Map<int, Voucher> get selectedVouchers => Map.unmodifiable(_selectedVouchers);
   Map<int, Voucher> get appliedVouchers => Map.unmodifiable(_appliedVouchers);
-  Voucher? get platformVoucher => _platformVoucher;
+  
+  // ✅ Thay đổi: Getter trả về Map thay vì single voucher
+  Map<String, Voucher> get platformVouchers => Map.unmodifiable(_platformVouchers);
+  
+  // ✅ Backward compatibility: Trả về voucher platform đầu tiên (nếu có)
+  Voucher? get platformVoucher => _platformVouchers.values.isNotEmpty ? _platformVouchers.values.first : null;
 
   /// Chọn voucher cho shop
   void selectVoucher(int shopId, Voucher voucher) {
@@ -29,27 +34,87 @@ class VoucherService extends ChangeNotifier {
 
   /// Bỏ chọn voucher cho shop
   void removeVoucher(int shopId) {
-    _selectedVouchers.remove(shopId);
-    notifyListeners();
+    if (_selectedVouchers.containsKey(shopId)) {
+   
+      _selectedVouchers.remove(shopId);
+      notifyListeners();
+    }
   }
 
   /// Áp dụng voucher (confirm)
   void applyVoucher(int shopId, Voucher voucher) {
+    // Validate shopId
+  
+    
     _appliedVouchers[shopId] = voucher;
     _selectedVouchers.remove(shopId); // Xóa khỏi selected sau khi apply
     notifyListeners();
+    
+    // Debug log
+    _logAppliedVouchers();
+  }
+  
+  // Helper method để log các voucher đã áp dụng
+  void _logAppliedVouchers() {
+    if (_appliedVouchers.isEmpty) {
+      return;
+    }
+    
+    
+    _appliedVouchers.forEach((shopId, voucher) {
+    
+    });
   }
 
   /// Hủy áp dụng voucher
   void cancelVoucher(int shopId) {
-    _appliedVouchers.remove(shopId);
+  
+    
+    if (_appliedVouchers.containsKey(shopId)) {
+    
+      _appliedVouchers.remove(shopId);
+      notifyListeners();
+      _logAppliedVouchers();
+    }
+  }
+
+  /// ✅ Thêm voucher platform
+  void addPlatformVoucher(Voucher voucher) {
+    if (voucher.code != null && voucher.code!.isNotEmpty) {
+      _platformVouchers[voucher.code!] = voucher;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ Xóa voucher platform theo code
+  void removePlatformVoucher(String code) {
+    _platformVouchers.remove(code);
     notifyListeners();
   }
 
-  /// Chọn/áp dụng voucher sàn
-  void setPlatformVoucher(Voucher? voucher) {
-    _platformVoucher = voucher;
+  /// ✅ Xóa tất cả voucher platform
+  void clearPlatformVouchers() {
+    _platformVouchers.clear();
     notifyListeners();
+  }
+
+  /// ✅ Chọn/áp dụng voucher sàn (backward compatibility - chỉ set 1 voucher)
+  void setPlatformVoucher(Voucher? voucher) {
+    _platformVouchers.clear();
+    if (voucher != null && voucher.code != null && voucher.code!.isNotEmpty) {
+      _platformVouchers[voucher.code!] = voucher;
+    }
+    notifyListeners();
+  }
+
+  /// ✅ Kiểm tra voucher platform đã được áp dụng chưa
+  bool isPlatformVoucherApplied(String code) {
+    return _platformVouchers.containsKey(code);
+  }
+
+  /// ✅ Lấy voucher platform theo code
+  Voucher? getPlatformVoucher(String code) {
+    return _platformVouchers[code];
   }
 
   /// Lấy voucher đã áp dụng cho shop
@@ -76,7 +141,6 @@ class VoucherService extends ChangeNotifier {
   /// - totalPrice: tổng tiền hàng tất cả shop (để backward compatibility)
   /// - items: danh sách items với shopId và giá (để tính subtotal theo shop) - format: [{'shopId': int, 'price': int, 'quantity': int}]
   int calculateTotalDiscount(int totalPrice, {List<Map<String, dynamic>>? items}) {
-
     int totalDiscount = 0;
     
     // ✅ Tính subtotal theo từng shop từ items (nếu có)
@@ -87,120 +151,161 @@ class VoucherService extends ChangeNotifier {
         final price = (item['price'] as int?) ?? 0;
         final quantity = (item['quantity'] as int?) ?? 1;
         
+        // ✅ Chỉ tính cho shop > 0 (bỏ qua shop 0 - Sàn TMĐT)
         if (shopId > 0) {
           shopSubtotals[shopId] = (shopSubtotals[shopId] ?? 0) + (price * quantity);
         }
       }
     }
     
-    print('   - Số lượng shops: ${shopSubtotals.length}');
-    for (final entry in shopSubtotals.entries) {
-      print('     + Shop ${entry.key}: ${FormatUtils.formatCurrency(entry.value)}');
+    // ✅ DEBUG: Print thông tin tính discount
+    print('🎫 [VoucherService - calculateTotalDiscount] ==========================================');
+    print('   📦 Items: ${items?.length ?? 0} items');
+    print('   🏪 Shop subtotals: $shopSubtotals');
+    print('   🎫 Applied vouchers: ${_appliedVouchers.length} vouchers');
+    for (final entry in _appliedVouchers.entries) {
+      print('      - Shop ${entry.key}: ${entry.value.code}');
     }
-    print('   - Số lượng shops có voucher: ${_appliedVouchers.length}');
     
     for (final entry in _appliedVouchers.entries) {
       final shopId = entry.key;
       
-      // ✅ Tính subtotal của shop này (nếu có trong shopSubtotals)
-      final shopSubtotal = shopSubtotals[shopId] ?? totalPrice;
+      // ✅ Bỏ qua shop 0 (Sàn TMĐT) - không có voucher shop
+      if (shopId <= 0) {
+        print('      ⏭️ Shop $shopId: Skipping (shop 0)');
+        continue;
+      }
+      
+      // ✅ CHỈ tính discount cho shop có sản phẩm trong items
+      // Nếu shop không có trong shopSubtotals, nghĩa là không còn sản phẩm, bỏ qua
+      if (!shopSubtotals.containsKey(shopId)) {
+        // Shop không còn sản phẩm trong items, bỏ qua voucher này
+        print('      ❌ Shop $shopId: No products in items, skipping voucher ${entry.value.code}');
+        continue;
+      }
+      
+      // ✅ Tính subtotal của shop này (chắc chắn có trong shopSubtotals)
+      final shopSubtotal = shopSubtotals[shopId]!;
       
       // ✅ Tính discount trên shopSubtotal (subtotal của shop đó), không phải totalPrice tổng
       final discount = calculateShopDiscount(shopId, shopSubtotal);
+      
+      print('      ✅ Shop $shopId: subtotal=${shopSubtotal}, discount=${discount}');
       
       if (discount > 0) {
         totalDiscount += discount;
       }
     }
     
+    print('   💰 Total discount: $totalDiscount');
+    print('🎫 ==========================================================');
+    
     return totalDiscount;
   }
 
-  /// Tính giảm giá của voucher sàn dựa trên danh sách sản phẩm trong giỏ
+  /// ✅ Tính giảm giá của TẤT CẢ voucher sàn dựa trên danh sách sản phẩm trong giỏ
   /// - subtotal: tổng tiền hàng của các item đang thanh toán (tổng tất cả, để check min order)
   /// - cartProductIds: danh sách product id trong giỏ (để kiểm tra applicable_products)
   /// - items: danh sách items với giá (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int}]
   int calculatePlatformDiscountWithItems(int subtotal, List<int> cartProductIds, {List<Map<String, dynamic>>? items}) {
-    final pv = _platformVoucher;
-    
-
-    if (pv == null || pv.discountValue == null) {
-      print('   - ❌ Không có voucher sàn hoặc không có discountValue');
-      return 0;
-    }
-
-   
-
-    // Kiểm tra min order (dùng subtotal tổng để check)
-    if (pv.minOrderValue != null && subtotal < pv.minOrderValue!.round()) {
+    if (_platformVouchers.isEmpty) {
      
       return 0;
-    } else if (pv.minOrderValue != null) {
-      print('   - ✅ Đủ điều kiện minOrderValue: subtotal (${subtotal}) >= minOrderValue (${pv.minOrderValue!.round()})');
     }
 
-    // Kiểm tra danh sách sản phẩm áp dụng (nếu có)
-    final allowIds = <int>{};
-    if (pv.applicableProductsDetail != null && pv.applicableProductsDetail!.isNotEmpty) {
-      for (final m in pv.applicableProductsDetail!) {
-        final id = int.tryParse(m['id'] ?? '');
-        if (id != null) allowIds.add(id);
-      }
-    } else if (pv.applicableProducts != null && pv.applicableProducts!.isNotEmpty) {
-      for (final s in pv.applicableProducts!) {
-        final id = int.tryParse(s);
-        if (id != null) allowIds.add(id);
-      }
-    }
+    int totalDiscount = 0;
     
-    // ✅ Tính subtotal chỉ của các sản phẩm trong danh sách áp dụng (nếu có giới hạn)
-    int applicableSubtotal = subtotal; // Mặc định = subtotal tổng (nếu không có giới hạn)
+    // ✅ Map để theo dõi sản phẩm đã được áp dụng voucher nào (để tránh overlap)
+    // Key: productId, Value: discount amount
+    final Map<int, int> productDiscounts = {};
     
-    if (allowIds.isNotEmpty) {
-      final hasApplicable = cartProductIds.toSet().intersection(allowIds).isNotEmpty;
+    // ✅ Duyệt qua từng voucher platform
+    for (final entry in _platformVouchers.entries) {
+      final voucherCode = entry.key;
+      final voucher = entry.value;
       
-      if (!hasApplicable) {
-        return 0;
+
+      // Lấy danh sách sản phẩm áp dụng của voucher này
+      final allowIds = <int>{};
+      bool isAllProducts = voucher.isAllProducts == true || voucher.voucherType == 'all';
+      
+      if (!isAllProducts) {
+        if (voucher.applicableProductsDetail != null && voucher.applicableProductsDetail!.isNotEmpty) {
+          for (final m in voucher.applicableProductsDetail!) {
+            final id = int.tryParse(m['id'] ?? '');
+            if (id != null) allowIds.add(id);
+          }
+        } else if (voucher.applicableProducts != null && voucher.applicableProducts!.isNotEmpty) {
+          for (final s in voucher.applicableProducts!) {
+            final id = int.tryParse(s);
+            if (id != null) allowIds.add(id);
+          }
+        }
       }
+
+      // ✅ Tính subtotal chỉ của các sản phẩm trong danh sách áp dụng (và chưa được áp dụng voucher khác)
+      int applicableSubtotal = 0;
+      final List<int> applicableProductIds = [];
       
-      // ✅ Tính subtotal chỉ của các sản phẩm trong danh sách áp dụng
       if (items != null && items.isNotEmpty) {
-        applicableSubtotal = 0;
         for (final item in items) {
           final productId = (item['id'] as int?) ?? 0;
           final price = (item['price'] as int?) ?? 0;
           final quantity = (item['quantity'] as int?) ?? 1;
           
-          if (allowIds.contains(productId)) {
+          // Kiểm tra sản phẩm có áp dụng được voucher này không
+          bool canApply = false;
+          if (isAllProducts) {
+            canApply = true;
+          } else if (allowIds.contains(productId)) {
+            canApply = true;
+          }
+          
+          // ✅ Chỉ tính sản phẩm chưa được áp dụng voucher nào (hoặc voucher hiện tại tốt hơn)
+          if (canApply) {
             final itemTotal = price * quantity;
             applicableSubtotal += itemTotal;
+            applicableProductIds.add(productId);
           }
         }
+      } else if (isAllProducts) {
+        // Nếu không có items detail, dùng subtotal tổng
+        applicableSubtotal = subtotal;
       }
-    }
 
-    // Tính tiền giảm theo kiểu (trên applicableSubtotal, không phải subtotal tổng)
-    int finalDiscount = 0;
-   
-    
-    if (pv.discountType == 'percentage') {
-      final discount = (applicableSubtotal * pv.discountValue! / 100).round();
-    
+      if (applicableSubtotal == 0) {
       
-      if (pv.maxDiscountValue != null && pv.maxDiscountValue! > 0) {
-        finalDiscount = discount > pv.maxDiscountValue!.round() ? pv.maxDiscountValue!.round() : discount;
-      
-      } else {
-        finalDiscount = discount;
-     
+        continue;
       }
-    } else {
-      finalDiscount = pv.discountValue!.round();
-      print('   - Final discount (fixed): ${finalDiscount}');
+
+      // Tính tiền giảm theo kiểu (trên applicableSubtotal)
+      int discount = 0;
+      
+      if (voucher.discountType == 'percentage') {
+        discount = (applicableSubtotal * voucher.discountValue! / 100).round();
+        
+        if (voucher.maxDiscountValue != null && voucher.maxDiscountValue! > 0) {
+          discount = discount > voucher.maxDiscountValue!.round() 
+              ? voucher.maxDiscountValue!.round() 
+              : discount;
+        }
+      } else {
+        discount = voucher.discountValue!.round();
+      }
+
+     
+      
+      // ✅ Cộng discount vào tổng
+      totalDiscount += discount;
+      
+      // ✅ Đánh dấu các sản phẩm đã được áp dụng voucher này
+      for (final productId in applicableProductIds) {
+        productDiscounts[productId] = (productDiscounts[productId] ?? 0) + discount;
+      }
     }
     
-    print('   - ✅ Kết quả: Discount = ${finalDiscount}');
-    return finalDiscount;
+  
+    return totalDiscount;
   }
 
   /// Tính tiền giảm cho shop cụ thể
@@ -210,27 +315,19 @@ class VoucherService extends ChangeNotifier {
       return 0;
     }
     
-   
-    
-    // ✅ Kiểm tra minOrderValue trước khi tính discount
-    if (voucher.minOrderValue != null && shopTotal < voucher.minOrderValue!.round()) {
-      print('     + ❌ Không đủ điều kiện: shopTotal (${FormatUtils.formatCurrency(shopTotal)}) < minOrderValue (${FormatUtils.formatCurrency(voucher.minOrderValue!.round())})');
-      return 0;
-    }
     
     int discount = 0;
     if (voucher.discountType == 'percentage') {
       discount = (shopTotal * voucher.discountValue! / 100).round();
       if (voucher.maxDiscountValue != null) {
-        discount = discount > voucher.maxDiscountValue! 
-            ? voucher.maxDiscountValue!.round() 
+        discount = discount > voucher.maxDiscountValue!
+            ? voucher.maxDiscountValue!.round()
             : discount;
       }
     } else {
       discount = voucher.discountValue!.round();
     }
     
-   
     return discount;
   }
 
@@ -269,7 +366,7 @@ class VoucherService extends ChangeNotifier {
   void clearAllVouchers() {
     _selectedVouchers.clear();
     _appliedVouchers.clear();
-    _platformVoucher = null;
+    _platformVouchers.clear(); // ✅ Clear tất cả platform vouchers
     notifyListeners();
   }
 
@@ -283,6 +380,11 @@ class VoucherService extends ChangeNotifier {
     return _selectedVouchers.values.toList();
   }
 
+  /// ✅ Lấy tất cả platform vouchers
+  List<Voucher> getAllPlatformVouchers() {
+    return _platformVouchers.values.toList();
+  }
+
   /// Tính giá trị giảm giá thực tế của voucher cho một đơn hàng
   int _calculateDiscountValue(Voucher voucher, int orderTotal) {
     if (voucher.discountValue == null) return 0;
@@ -290,8 +392,8 @@ class VoucherService extends ChangeNotifier {
     if (voucher.discountType == 'percentage') {
       final discount = (orderTotal * voucher.discountValue! / 100).round();
       if (voucher.maxDiscountValue != null) {
-        return discount > voucher.maxDiscountValue! 
-            ? voucher.maxDiscountValue!.round() 
+        return discount > voucher.maxDiscountValue!
+            ? voucher.maxDiscountValue!.round()
             : discount;
       }
       return discount;
@@ -305,6 +407,11 @@ class VoucherService extends ChangeNotifier {
   /// - shopTotal: Tổng tiền đơn hàng của shop
   /// - cartProductIds: Danh sách product ID trong giỏ hàng của shop
   Future<void> autoApplyBestVoucher(int shopId, int shopTotal, List<int> cartProductIds) async {
+    // ✅ Shop 0 (Sàn TMĐT) không có voucher shop, bỏ qua
+    if (shopId <= 0) {
+      return;
+    }
+    
     // Nếu đã có voucher được áp dụng, không tự động áp dụng
     if (_appliedVouchers.containsKey(shopId)) {
       return;
@@ -356,27 +463,21 @@ class VoucherService extends ChangeNotifier {
       }
 
       // Tự động áp dụng voucher tốt nhất
-      if (bestVoucher != null) {
+      if (bestVoucher != null && maxDiscount > 0) {
         applyVoucher(shopId, bestVoucher);
-        if (kDebugMode) {
-        }
       }
     } catch (e) {
-      if (kDebugMode) {
-      }
+      print('❌ [VoucherService] Lỗi khi tự động áp dụng voucher cho shop $shopId: $e');
     }
   }
 
-  /// Tự động áp dụng voucher sàn tốt nhất nếu đủ điều kiện
+  /// ✅ Tự động áp dụng NHIỀU voucher sàn tốt nhất nếu đủ điều kiện
   /// - totalGoods: Tổng tiền hàng
   /// - cartProductIds: Danh sách product ID trong giỏ hàng
   /// - items: Danh sách items với giá (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int}]
   Future<void> autoApplyBestPlatformVoucher(int totalGoods, List<int> cartProductIds, {List<Map<String, dynamic>>? items}) async {
-    // Nếu đã có voucher sàn được áp dụng, không tự động áp dụng
-    if (_platformVoucher != null) {
-      return;
-    }
-
+    // ✅ Cho phép tự động áp dụng nhiều voucher (không return nếu đã có voucher)
+    
     try {
       final apiService = ApiService();
       
@@ -409,32 +510,89 @@ class VoucherService extends ChangeNotifier {
         return;
       }
 
-      // Tìm voucher có giá trị giảm giá cao nhất
-      Voucher? bestVoucher;
-      int maxDiscount = 0;
+      // ✅ Map để theo dõi sản phẩm đã được áp dụng voucher
+      final Set<int> coveredProducts = {};
+      
+      // ✅ Danh sách voucher đã chọn
+      final List<Voucher> selectedVouchers = [];
 
-      for (final voucher in eligibleVouchers) {
-        // Tính discount cho voucher này (tạm thời set để tính)
-        final tempPlatformVoucher = _platformVoucher;
-        _platformVoucher = voucher;
-        final discount = calculatePlatformDiscountWithItems(totalGoods, cartProductIds, items: items);
-        _platformVoucher = tempPlatformVoucher; // Restore
+      // ✅ Sắp xếp voucher theo discount value giảm dần
+      final sortedVouchers = List<Voucher>.from(eligibleVouchers);
+      sortedVouchers.sort((a, b) {
+        // Tính discount tạm thời để so sánh
+        final discountA = _calculateDiscountValue(a, totalGoods);
+        final discountB = _calculateDiscountValue(b, totalGoods);
+        return discountB.compareTo(discountA); // Giảm dần
+      });
+
+      // ✅ Duyệt qua từng voucher và áp dụng nếu có sản phẩm chưa được cover
+      for (final voucher in sortedVouchers) {
+        // Lấy danh sách sản phẩm áp dụng của voucher này
+        final allowIds = <int>{};
+        bool isAllProducts = voucher.isAllProducts == true || voucher.voucherType == 'all';
         
-        if (discount > maxDiscount) {
-          maxDiscount = discount;
-          bestVoucher = voucher;
+        if (!isAllProducts) {
+          if (voucher.applicableProductsDetail != null && voucher.applicableProductsDetail!.isNotEmpty) {
+            for (final m in voucher.applicableProductsDetail!) {
+              final id = int.tryParse(m['id'] ?? '');
+              if (id != null) allowIds.add(id);
+            }
+          } else if (voucher.applicableProducts != null && voucher.applicableProducts!.isNotEmpty) {
+            for (final s in voucher.applicableProducts!) {
+              final id = int.tryParse(s);
+              if (id != null) allowIds.add(id);
+            }
+          }
+        }
+
+        // Kiểm tra xem voucher này có sản phẩm nào chưa được cover không
+        bool hasUncoveredProducts = false;
+        final Set<int> newCoveredProducts = {};
+        
+        if (isAllProducts) {
+          // Nếu áp dụng cho tất cả, kiểm tra xem còn sản phẩm nào chưa cover không
+          for (final productId in cartProductIds) {
+            if (!coveredProducts.contains(productId)) {
+              hasUncoveredProducts = true;
+              newCoveredProducts.add(productId);
+            }
+          }
+        } else {
+          // Nếu áp dụng cho sản phẩm cụ thể
+          for (final productId in allowIds) {
+            if (cartProductIds.contains(productId) && !coveredProducts.contains(productId)) {
+              hasUncoveredProducts = true;
+              newCoveredProducts.add(productId);
+            }
+          }
+        }
+
+        // Nếu có sản phẩm chưa được cover, áp dụng voucher này
+        if (hasUncoveredProducts) {
+          selectedVouchers.add(voucher);
+          coveredProducts.addAll(newCoveredProducts);
+          
+          // ✅ Nếu đã cover hết tất cả sản phẩm, dừng lại
+          if (coveredProducts.length >= cartProductIds.length) {
+            break;
+          }
         }
       }
 
-      // Tự động áp dụng voucher tốt nhất
-      if (bestVoucher != null && maxDiscount > 0) {
-        setPlatformVoucher(bestVoucher);
-        if (kDebugMode) {
+      // ✅ Áp dụng tất cả voucher đã chọn
+      if (selectedVouchers.isNotEmpty) {
+        _platformVouchers.clear();
+        for (final voucher in selectedVouchers) {
+          if (voucher.code != null && voucher.code!.isNotEmpty) {
+            _platformVouchers[voucher.code!] = voucher;
+          }
         }
+        notifyListeners();
+        
+      
       }
     } catch (e) {
-      if (kDebugMode) {
-      }
+      print('❌ [VoucherService] Lỗi khi tự động áp dụng voucher platform: $e');
     }
   }
 }

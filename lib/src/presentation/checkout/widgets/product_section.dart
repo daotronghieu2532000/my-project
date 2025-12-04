@@ -83,70 +83,85 @@ class _ProductSectionState extends State<ProductSection> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.local_offer, color: Colors.red),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      shopName,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  InkWell(
-                    onTap: () async {
-                      final shopTotal = items.fold(
-                        0,
-                        (s, i) => s + i.price * i.quantity,
-                      );
-                      final selected = await showDialog(
-                        context: context,
-                        builder: (_) {
-                          // Get product IDs from items
-                          final cartProductIds = items.map((item) => item.id).toList();
-                          return VoucherDialog(
-                            shopId: shopId,
-                            shopName: shopName,
-                            shopTotal: shopTotal,
-                            currentVoucher: appliedVoucher,
-                            cartProductIds: cartProductIds,
-                          );
-                        },
-                      );
-                      if (selected != null && context.mounted) {
-                        // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Đã áp dụng voucher shop'),
-                            backgroundColor:
-                                Colors.green, // Màu nền xanh lá cây
-                          ),
-                        );
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
+              // ✅ Shop 0 (Sàn TMĐT) không có voucher shop, chỉ hiển thị tên shop
+              if (shopId <= 0)
+                Row(
+                  children: [
+                    const Icon(Icons.local_offer, color: Colors.red),
+                    const SizedBox(width: 6),
+                    Expanded(
                       child: Text(
-                        appliedVoucher == null
-                            ? 'Voucher shop'
-                            : '${appliedVoucher.code} · ${_discountText(appliedVoucher)}',
-                        style: const TextStyle(
-                          color: Colors.red,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                        shopName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    const Icon(Icons.local_offer, color: Colors.red),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        shopName,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    InkWell(
+                      onTap: () async {
+                        final shopTotal = items.fold(
+                          0,
+                          (s, i) => s + i.price * i.quantity,
+                        );
+                        final selected = await showDialog(
+                          context: context,
+                          builder: (_) {
+                            // Get product IDs from items
+                            final cartProductIds = items.map((item) => item.id).toList();
+                            return VoucherDialog(
+                              shopId: shopId,
+                              shopName: shopName,
+                              shopTotal: shopTotal,
+                              currentVoucher: appliedVoucher,
+                              cartProductIds: cartProductIds,
+                            );
+                          },
+                        );
+                        if (selected != null && context.mounted) {
+                          // ✅ setState() không cần thiết vì listener sẽ tự động rebuild
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Đã áp dụng voucher shop'),
+                              backgroundColor:
+                                  Colors.green, // Màu nền xanh lá cây
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          appliedVoucher == null
+                              ? 'Voucher shop'
+                              : '${appliedVoucher.code} · ${_discountText(appliedVoucher)}',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const Divider(height: 20),
               for (int i = 0; i < items.length; i++) ...[
                 if (i > 0) const SizedBox(height: 12),

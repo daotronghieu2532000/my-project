@@ -258,6 +258,9 @@ class CartService extends ChangeNotifier {
     // Lưu cart behavior vào database (chạy async, không ảnh hưởng UI)
     _saveCartBehavior(item);
     
+    // ✅ Validate tất cả voucher khi cart thay đổi
+    _validateAllVouchers();
+    
     notifyListeners();
     _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
@@ -339,7 +342,14 @@ class CartService extends ChangeNotifier {
     );
 
     if (index != -1) {
+      final shopId = _items[index].shopId;
       _items[index] = _items[index].copyWith(quantity: quantity);
+      
+      // ✅ Validate voucher của shop này khi thay đổi số lượng
+      _validateAndClearVouchers(shopId);
+      // ✅ Validate tất cả voucher khi cart thay đổi
+      _validateAllVouchers();
+      
       notifyListeners();
       _saveCart(); // Lưu giỏ hàng sau khi thay đổi
     }
@@ -353,8 +363,14 @@ class CartService extends ChangeNotifier {
     for (final shopId in shopIds) {
       voucherService.cancelVoucher(shopId);
     }
+    // ✅ Clear tất cả voucher platform
+    voucherService.clearPlatformVouchers();
     
     _items.clear();
+    
+    // ✅ Validate tất cả voucher sau khi clear (để đảm bảo không còn voucher nào)
+    _validateAllVouchers();
+    
     notifyListeners();
     _saveCart(); // Lưu giỏ hàng sau khi xóa (để xóa dữ liệu đã lưu)
   }
@@ -365,6 +381,10 @@ class CartService extends ChangeNotifier {
     // Clear voucher for this shop when all items are removed
     final voucherService = VoucherService();
     voucherService.cancelVoucher(shopId);
+    
+    // ✅ Validate tất cả voucher khi cart thay đổi
+    _validateAllVouchers();
+    
     notifyListeners();
     _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }
@@ -379,6 +399,9 @@ class CartService extends ChangeNotifier {
     
     // Validate and clear vouchers if products changed
     _validateAndClearVouchers(shopId);
+    
+    // ✅ Validate tất cả voucher khi cart thay đổi
+    _validateAllVouchers();
     
     notifyListeners();
     _saveCart(); // Lưu giỏ hàng sau khi thay đổi
@@ -406,6 +429,50 @@ class CartService extends ChangeNotifier {
     // Check if voucher still applies to remaining products
     if (!appliedVoucher.appliesToProducts(currentProductIds)) {
       voucherService.cancelVoucher(shopId);
+    }
+  }
+  
+  // ✅ Validate tất cả voucher khi cart thay đổi
+  void _validateAllVouchers() {
+    final voucherService = VoucherService();
+    
+    // Lấy danh sách shop hiện tại trong cart
+    final currentShopIds = _items.map((item) => item.shopId).toSet();
+    
+    // ✅ Xóa voucher của các shop không còn sản phẩm
+    final appliedShopIds = voucherService.appliedVouchers.keys.toSet();
+    for (final shopId in appliedShopIds) {
+      if (!currentShopIds.contains(shopId)) {
+        // Shop không còn trong cart, xóa voucher
+        voucherService.cancelVoucher(shopId);
+        continue;
+      }
+      
+      // ✅ Validate voucher của shop còn sản phẩm
+      _validateAndClearVouchers(shopId);
+    }
+    
+    // ✅ Validate voucher platform - chỉ giữ voucher nếu còn sản phẩm trong cart
+    final platformVouchers = voucherService.platformVouchers;
+    if (platformVouchers.isNotEmpty && _items.isEmpty) {
+      // Cart trống, xóa tất cả voucher platform
+      voucherService.clearPlatformVouchers();
+    } else if (platformVouchers.isNotEmpty) {
+      // Kiểm tra từng voucher platform có còn áp dụng không
+      final productIds = _items.map((item) => item.id).toList();
+      final vouchersToRemove = <String>[];
+      
+      for (final entry in platformVouchers.entries) {
+        final voucher = entry.value;
+        // Nếu voucher không áp dụng cho sản phẩm nào trong cart, xóa
+        if (!voucher.appliesToProducts(productIds)) {
+          vouchersToRemove.add(entry.key);
+        }
+      }
+      
+      for (final code in vouchersToRemove) {
+        voucherService.removePlatformVoucher(code);
+      }
     }
   }
 
@@ -468,9 +535,16 @@ class CartService extends ChangeNotifier {
     );
 
     if (index != -1) {
+      final shopId = _items[index].shopId;
       _items[index] = _items[index].copyWith(
         isSelected: !_items[index].isSelected,
       );
+      
+      // ✅ Validate voucher của shop này khi toggle selection
+      _validateAndClearVouchers(shopId);
+      // ✅ Validate tất cả voucher khi cart thay đổi
+      _validateAllVouchers();
+      
       notifyListeners();
       _saveCart(); // Lưu giỏ hàng sau khi thay đổi
     }
@@ -481,6 +555,10 @@ class CartService extends ChangeNotifier {
     for (int i = 0; i < _items.length; i++) {
       _items[i] = _items[i].copyWith(isSelected: isSelected);
     }
+    
+    // ✅ Validate tất cả voucher khi thay đổi selection
+    _validateAllVouchers();
+    
     notifyListeners();
     _saveCart(); // Lưu giỏ hàng sau khi thay đổi
   }

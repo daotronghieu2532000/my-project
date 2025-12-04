@@ -120,36 +120,58 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
       totalGoods,
       items: items.map((e) => {'shopId': e.shopId, 'price': e.price, 'quantity': e.quantity}).toList(),
     );
-    print('   - shopDiscount: ${FormatUtils.formatCurrency(shopDiscount)}');
+   
     
     // ✅ DEBUG: Kiểm tra voucher shop đang được áp dụng
     final appliedVouchers = voucherService.appliedVouchers;
     if (appliedVouchers.isNotEmpty) {
-      print('   - ⚠️ Có ${appliedVouchers.length} voucher shop đang được áp dụng:');
+      print('   🎫 Applied shop vouchers:');
       for (final entry in appliedVouchers.entries) {
         final shopId = entry.key;
         final voucher = entry.value;
-        print('     + Shop $shopId: ${voucher.code} - ${FormatUtils.formatCurrency(voucher.discountValue?.round() ?? 0)}');
+        print('      - Shop $shopId: ${voucher.code} (${voucher.discountType == 'percentage' ? '${voucher.discountValue}%' : FormatUtils.formatCurrency(voucher.discountValue?.round() ?? 0)})');
       }
-    } else {
-      print('   - ✅ Không có voucher shop nào được áp dụng');
     }
+
 
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e.id).toList(),
       items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
     );
-    print('   - platformDiscount: ${FormatUtils.formatCurrency(platformDiscount)}');
-
+  
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
-    print('   - ✅ Tổng voucherDiscount: ${FormatUtils.formatCurrency(voucherDiscount)}');
-
+ 
     // Lấy phí ship từ store đã cập nhật bởi OrderSummarySection
     final shipFee = ShippingQuoteStore().lastFee;
     final shipSupport = ShippingQuoteStore().shipSupport;
 
-   
+    // ✅ DEBUG: Print tính toán giá tiền trong PaymentDetailsSection
+    print('💳 [CHECKOUT - PaymentDetailsSection] ==========================================');
+    print('   📦 Items: ${items.length} sản phẩm');
+    final itemsByShop = <int, List<cart_service.CartItem>>{};
+    for (final item in items) {
+      if (!itemsByShop.containsKey(item.shopId)) {
+        itemsByShop[item.shopId] = [];
+      }
+      itemsByShop[item.shopId]!.add(item);
+    }
+    for (final entry in itemsByShop.entries) {
+      final shopId = entry.key;
+      final shopItems = entry.value;
+      final shopTotal = shopItems.fold(0, (s, i) => s + i.price * i.quantity);
+      print('      Shop $shopId: ${shopItems.length} sản phẩm = ${FormatUtils.formatCurrency(shopTotal)}');
+      for (final item in shopItems) {
+        print('         - ${item.name}: ${FormatUtils.formatCurrency(item.price)} x ${item.quantity} = ${FormatUtils.formatCurrency(item.price * item.quantity)}');
+      }
+    }
+    print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalGoods)}');
+    print('   🎫 Voucher shop discount: ${FormatUtils.formatCurrency(shopDiscount)}');
+    print('   🎫 Voucher platform discount: ${FormatUtils.formatCurrency(platformDiscount)}');
+    print('   🎫 Tổng voucher discount: ${FormatUtils.formatCurrency(voucherDiscount)}');
+    print('   🚚 Phí ship: ${FormatUtils.formatCurrency(shipFee)}');
+    print('   🚚 Hỗ trợ ship: ${FormatUtils.formatCurrency(shipSupport)}');
+    print('   💵 Subtotal sau voucher và ship: ${FormatUtils.formatCurrency(totalGoods + shipFee - shipSupport - voucherDiscount)}');
 
     // ✅ Tính tổng thanh toán trước bonus (sau voucher và ship)
     final subtotalAfterVoucher = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
@@ -165,14 +187,21 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
       // ✅ Tính 10% của ELIGIBLE_TOTAL (CHỈ 3 shop), không phải totalGoods
       bonusDiscount = _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
      
-    } else {
-      print('   - Skipping bonus calculation (loading=$_bonusLoading, canUse=${_bonusService.canUseBonus(_bonusInfo)})');
-    }
+    } 
     
     final grandTotal = (subtotalAfterVoucher - bonusDiscount).clamp(0, 1 << 31);
-
-    // Debug log để so sánh với BottomOrderBar
-   
+    
+    print('   🎁 Bonus discount: ${FormatUtils.formatCurrency(bonusDiscount)}');
+    print('   💵 Tổng thanh toán cuối cùng: ${FormatUtils.formatCurrency(grandTotal)}');
+    print('   ✅ Applied vouchers: ${voucherService.appliedVouchers.length} shop vouchers');
+    for (final entry in voucherService.appliedVouchers.entries) {
+      print('      - Shop ${entry.key}: ${entry.value.code} (${entry.value.discountType == 'percentage' ? '${entry.value.discountValue}%' : FormatUtils.formatCurrency(entry.value.discountValue?.round() ?? 0)})');
+    }
+    print('   ✅ Platform vouchers: ${voucherService.platformVouchers.length} vouchers');
+    for (final entry in voucherService.platformVouchers.entries) {
+      print('      - ${entry.key}: ${entry.value.discountType == 'percentage' ? '${entry.value.discountValue}%' : FormatUtils.formatCurrency(entry.value.discountValue?.round() ?? 0)}}');
+    }
+    print('💳 ==========================================================');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -197,9 +226,9 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
               // ✅ Vấn đề 2: Nếu không có hỗ trợ ship (shipSupport = 0) nhưng có phí ship (shipFee > 0)
               // thì vẫn cần hiển thị phí ship
               if (shipFee > 0) {
-                print('   - ✅ Hiển thị phí vận chuyển: ${FormatUtils.formatCurrency(shipFee)}');
+               
                 if (shipSupport > 0) {
-                  print('   - ✅ Hiển thị hỗ trợ ship: ${FormatUtils.formatCurrency(shipSupport)}');
+                 
                   return Column(
                     children: [
                       PaymentDetailRow('Tổng phí vận chuyển', FormatUtils.formatCurrency(shipFee)),
@@ -207,11 +236,11 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
                     ],
                   );
                 } else {
-                  print('   - ⚠️ Không có hỗ trợ ship nhưng vẫn hiển thị phí ship');
+                
                   return PaymentDetailRow('Tổng phí vận chuyển', FormatUtils.formatCurrency(shipFee));
                 }
               } else {
-                print('   - ❌ Không hiển thị phí vận chuyển (shipFee = 0)');
+                
                 return const SizedBox.shrink();
               }
             },
