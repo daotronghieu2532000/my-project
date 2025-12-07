@@ -16,6 +16,11 @@ class DeepLinkService {
   final ApiService _apiService = ApiService();
   static final GlobalKey<NavigatorState> navigatorKey =
       NotificationHandler.navigatorKey;
+  
+  // Debounce để tránh xử lý duplicate deep links
+  String? _lastHandledUrl;
+  DateTime? _lastHandledTime;
+  static const _debounceDuration = Duration(seconds: 2);
 
   /// Khởi tạo deep link handler
   Future<void> init() async {
@@ -42,9 +47,22 @@ class DeepLinkService {
     }
   }
 
-  /// Xử lý deep link
+  /// Xử lý deep link với debounce để tránh duplicate
   void _handleDeepLink(String url) {
     try {
+      final now = DateTime.now();
+      
+      // Debounce: Nếu cùng một URL được handle trong vòng 2 giây, bỏ qua
+      if (_lastHandledUrl == url && 
+          _lastHandledTime != null && 
+          now.difference(_lastHandledTime!) < _debounceDuration) {
+        // print('⏭️ [DeepLink] Skipping duplicate deep link: $url');
+        return;
+      }
+      
+      _lastHandledUrl = url;
+      _lastHandledTime = now;
+      
       final uri = Uri.parse(url);
 
       // Extract affiliate info from URL
@@ -70,52 +88,91 @@ class DeepLinkService {
     }
   }
 
-  /// Xử lý custom URL scheme: socdo://product/123?aff=8050
+  /// Xử lý custom URL scheme: socdo://product/123?aff=8050 hoặc socdo://product/slug?aff=8050
   Future<void> _handleCustomSchemeLink(Uri uri, String? affiliateId) async {
     try {
+      // print('🔗 [DeepLink] Custom scheme link: ${uri.toString()}');
+      // print('🔗 [DeepLink] URI query parameters: ${uri.queryParameters}');
+      
       // Extract affiliate from URL or query params
       final aff =
           affiliateId ??
           uri.queryParameters['aff'] ??
           uri.queryParameters['utm_source_shop'];
+      
+      // print('🔗 [DeepLink] Extracted affiliate ID: $aff');
 
-      // Format: socdo://product/123 hoặc socdo://product/123?aff=8050
-      // Custom scheme có thể có format: socdo://product/123 hoặc socdo://product/123/
+      // Format: socdo://product/123 hoặc socdo://product/slug?aff=8050
       if (uri.host == 'product') {
-        // Lấy product ID từ path
-        int? productId;
-
-        // Thử lấy từ pathSegments
+        String? productIdentifier;
+        
+        // Lấy product identifier từ path (có thể là ID hoặc slug)
         if (uri.pathSegments.isNotEmpty) {
-          final productIdStr = uri.pathSegments.first;
-          productId = int.tryParse(productIdStr);
-        }
-
-        // Nếu không có trong pathSegments, thử lấy từ path
-        if (productId == null && uri.path.isNotEmpty) {
+          productIdentifier = uri.pathSegments.first;
+        } else if (uri.path.isNotEmpty) {
           final pathParts = uri.path
               .split('/')
               .where((p) => p.isNotEmpty)
               .toList();
           if (pathParts.isNotEmpty) {
-            productId = int.tryParse(pathParts.first);
+            productIdentifier = pathParts.first;
           }
         }
-
-        // Nếu vẫn không có, thử parse từ toàn bộ host (backup)
-        if (productId == null) {
+        
+        // Nếu vẫn không có, thử parse từ toàn bộ URL
+        if (productIdentifier == null || productIdentifier.isEmpty) {
           final fullPath = uri
               .toString()
               .replaceAll('socdo://product/', '')
               .split('?')
-              .first;
-          productId = int.tryParse(fullPath);
+              .first
+              .replaceAll('/', '');
+          if (fullPath.isNotEmpty) {
+            productIdentifier = fullPath;
+          }
         }
 
+        if (productIdentifier == null || productIdentifier.isEmpty) {
+          print('⚠️ [DeepLink] Invalid custom scheme: no product identifier');
+          return;
+        }
+
+        // print('🔗 [DeepLink] Product identifier: $productIdentifier');
+
+        // ✅ Thử parse như product ID trước (số)
+        final productId = int.tryParse(productIdentifier);
+
         if (productId != null && productId > 0) {
+          // Là product ID - navigate trực tiếp
+          // print('🔗 [DeepLink] Detected product ID: $productId');
           await _navigateToProduct(productId: productId, affiliateId: aff);
           return;
         }
+
+        // ✅ Nếu không phải số, thì là slug - cần resolve sang product ID
+        // print('🔗 [DeepLink] Detected slug: $productIdentifier, resolving...');
+        final resolvedProductId = await _resolveProductIdFromSlug(productIdentifier);
+
+        if (resolvedProductId != null && resolvedProductId > 0) {
+          // Đã tìm thấy product ID từ slug
+          // print('✅ [DeepLink] Resolved slug to product ID: $resolvedProductId');
+          // Thêm delay nhỏ để đảm bảo app đã sẵn sàng
+          await Future.delayed(const Duration(milliseconds: 300));
+          await _navigateToProduct(productId: resolvedProductId, affiliateId: aff);
+          return;
+        }
+
+        // Nếu không tìm thấy product, lưu affiliate (nếu có) và mở browser
+        // print('⚠️ [DeepLink] Cannot resolve slug: $productIdentifier');
+        if (aff != null && aff.isNotEmpty) {
+          await _affiliateTracking.trackAffiliateClick(
+            affiliateId: aff,
+            productId: null,
+          );
+        }
+        // Mở web URL tương ứng
+        final webUrl = 'https://socdo.vn/product/$productIdentifier${aff != null ? '?utm_source_shop=$aff' : ''}';
+        _openWeb(webUrl);
       }
     } catch (e) {
       print('❌ [DeepLink] Error handling custom scheme: $e');
@@ -205,19 +262,27 @@ class DeepLinkService {
     }
   }
 
-  /// Resolve product slug thành product ID bằng search API
-  /// Giống cách banner xử lý: search với slug để tìm product
+  /// Resolve product slug thành product ID
+  /// Sử dụng API resolveProductIdBySlug để query trực tiếp với field 'link' (giống banner)
   Future<int?> _resolveProductIdFromSlug(String slug) async {
     try {
-      // Thử nhiều cách tìm kiếm:
-      // 1. Search với toàn bộ slug
-      // 2. Nếu không tìm thấy, thử search với vài từ đầu (tên sản phẩm chính)
-
-      // Cách 1: Search với toàn bộ slug
-      var searchResult = await _apiService.searchProducts(
+      // print('🔍 [DeepLink] Resolving slug: $slug');
+      
+      // ✅ Cách 1: Dùng API resolveProductIdBySlug (query trực tiếp với WHERE link = slug)
+      final productId = await _apiService.resolveProductIdBySlug(slug);
+      
+      if (productId != null && productId > 0) {
+        print('✅ [DeepLink] Resolved slug to product ID: $productId');
+        return productId;
+      }
+      
+      // print('⚠️ [DeepLink] Cannot resolve slug with direct query, trying fallback...');
+      
+      // ✅ Cách 2: Fallback - Thử search với exact match
+      final searchResult = await _apiService.searchProducts(
         keyword: slug,
         page: 1,
-        limit: 10, // Tăng limit để có nhiều kết quả hơn
+        limit: 50, // Tăng limit để có nhiều kết quả hơn
       );
 
       if (searchResult != null && searchResult['success'] == true) {
@@ -226,72 +291,68 @@ class DeepLinkService {
           final products = data['products'] as List?;
 
           if (products != null && products.isNotEmpty) {
-            // Tìm product có slug match chính xác nhất
-            // Slug trong URL affiliate: /product/{slug}.html
-            // Trong DB, slug được lưu trong cột 'link'
-            String slugLower = slug.toLowerCase();
+            // Tìm exact match với field 'link' (slug trong DB)
+            final slugLower = slug.toLowerCase();
 
             for (var product in products) {
               final productMap = product as Map<String, dynamic>;
               final productId = productMap['id'] as int?;
 
-              // Check field 'link' (slug trong DB)
-              final productLink =
-                  productMap['link']?.toString().toLowerCase() ?? '';
+              // Check field 'link' (slug trong DB) - exact match
+              final productLink = productMap['link']?.toString().toLowerCase() ?? '';
               if (productLink.isNotEmpty && productLink == slugLower) {
                 if (productId != null && productId > 0) {
+                  // print('✅ [DeepLink] Found exact match in search results: $productId');
                   return productId;
                 }
               }
 
-              // Check field 'slug' (nếu có)
-              final productSlug =
-                  productMap['slug']?.toString().toLowerCase() ?? '';
+              // Check field 'slug' (nếu có) - exact match
+              final productSlug = productMap['slug']?.toString().toLowerCase() ?? '';
               if (productSlug.isNotEmpty && productSlug == slugLower) {
                 if (productId != null && productId > 0) {
+                  // print('✅ [DeepLink] Found exact match (slug field): $productId');
                   return productId;
                 }
               }
-            }
-
-            // Fallback: Nếu không tìm thấy exact match, lấy product đầu tiên
-            // (có thể là kết quả liên quan)
-            final firstProduct = products.first as Map<String, dynamic>;
-            final productId = firstProduct['id'] as int?;
-            if (productId != null && productId > 0) {
-              return productId;
             }
           }
         }
       }
 
-      // Cách 2: Nếu slug quá dài, thử search với vài từ đầu (tên sản phẩm chính)
+      // ✅ Cách 3: Nếu slug quá dài, thử search với vài từ đầu (tên sản phẩm chính)
       // Ví dụ: "chi-ke-may-lau-troi-judydoll..." -> "chi-ke-may-lau-troi"
-      if (slug.length > 30) {
+      if (slug.length > 50) {
         final words = slug.split('-');
-        if (words.length > 3) {
-          final shortSlug = words.take(5).join('-'); // Lấy 5 từ đầu
-          print('🔍 [DeepLink] Trying shorter slug: $shortSlug');
-
-          searchResult = await _apiService.searchProducts(
+        if (words.length > 5) {
+          final shortSlug = words.take(8).join('-'); // Lấy 8 từ đầu
+          
+          // print('🔍 [DeepLink] Trying with shorter slug: $shortSlug');
+          
+          final searchResult2 = await _apiService.searchProducts(
             keyword: shortSlug,
             page: 1,
-            limit: 5,
+            limit: 20,
           );
 
-          if (searchResult != null && searchResult['success'] == true) {
-            final data = searchResult['data'] as Map<String, dynamic>?;
-            if (data != null) {
-              final products = data['products'] as List?;
-              if (products != null && products.isNotEmpty) {
-                // Lấy product đầu tiên
-                final firstProduct = products.first as Map<String, dynamic>;
-                final productId = firstProduct['id'] as int?;
-                if (productId != null && productId > 0) {
-                  print(
-                    '⚠️ [DeepLink] Using product ID from shorter slug: $productId',
-                  );
-                  return productId;
+          if (searchResult2 != null && searchResult2['success'] == true) {
+            final data2 = searchResult2['data'] as Map<String, dynamic>?;
+            if (data2 != null) {
+              final products2 = data2['products'] as List?;
+              if (products2 != null && products2.isNotEmpty) {
+                // Tìm exact match với slug đầy đủ trong kết quả
+                final slugLower = slug.toLowerCase();
+                for (var product in products2) {
+                  final productMap = product as Map<String, dynamic>;
+                  final productId = productMap['id'] as int?;
+                  final productLink = productMap['link']?.toString().toLowerCase() ?? '';
+                  
+                  if (productLink.isNotEmpty && productLink == slugLower) {
+                    if (productId != null && productId > 0) {
+                      // print('✅ [DeepLink] Found exact match with shorter search: $productId');
+                      return productId;
+                    }
+                  }
                 }
               }
             }
@@ -299,6 +360,7 @@ class DeepLinkService {
         }
       }
 
+      print('❌ [DeepLink] Cannot resolve slug: $slug');
       return null;
     } catch (e) {
       print('❌ [DeepLink] Error resolving slug: $e');
@@ -310,32 +372,63 @@ class DeepLinkService {
   Future<void> _navigateToProduct({
     required int productId,
     String? affiliateId,
+    int retryCount = 0,
   }) async {
     try {
-      // Track affiliate click
-      if (affiliateId != null && affiliateId.isNotEmpty) {
+      // print('🚀 [DeepLink] Navigating to product ID: $productId, affiliate: $affiliateId');
+      
+      // Track affiliate click (chỉ track 1 lần, không track khi retry)
+      if (retryCount == 0 && affiliateId != null && affiliateId.isNotEmpty) {
+        // print('📝 [DeepLink] Tracking affiliate: $affiliateId for product: $productId');
         await _affiliateTracking.trackAffiliateClick(
           affiliateId: affiliateId,
           productId: productId,
         );
+        print('✅ [DeepLink] Affiliate tracking saved');
+      }
+
+      // Kiểm tra xem context đã sẵn sàng chưa
+      var context = navigatorKey.currentContext;
+      
+      // Nếu context chưa sẵn sàng, đợi app init (SplashScreen: 3.5 giây)
+      if (context == null) {
+        // print('⏳ [DeepLink] App is starting, waiting 3500ms for initialization...');
+        await Future.delayed(const Duration(milliseconds: 3500));
+        context = navigatorKey.currentContext;
+      } else {
+        // App đã mở sẵn, chỉ đợi một chút để đảm bảo
+        // print('✅ [DeepLink] App already running, waiting 500ms...');
+        await Future.delayed(const Duration(milliseconds: 500));
       }
 
       // Navigate to product detail
-      final context = navigatorKey.currentContext;
       if (context != null) {
+        // print('✅ [DeepLink] Navigator context ready, pushing ProductDetailScreen...');
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ProductDetailScreen(productId: productId),
           ),
         );
+        // print('✅ [DeepLink] Navigation completed');
       } else {
-        // Retry after delay if context not ready
-        await Future.delayed(const Duration(milliseconds: 500));
-        _navigateToProduct(productId: productId, affiliateId: affiliateId);
+        // Nếu context chưa sẵn sàng sau 4 giây, retry thêm 2 lần nữa
+        if (retryCount < 2) {
+          final delay = 1000; // 1 giây mỗi lần retry
+          // print('⏳ [DeepLink] Navigator context not ready, retrying in ${delay}ms...');
+          await Future.delayed(Duration(milliseconds: delay));
+          await _navigateToProduct(
+            productId: productId,
+            affiliateId: affiliateId,
+            retryCount: retryCount + 1,
+          );
+        } else {
+          print('❌ [DeepLink] Navigation failed - context not available');
+        }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ [DeepLink] Error navigating to product: $e');
+      print('❌ [DeepLink] Stack trace: $stackTrace');
     }
   }
 

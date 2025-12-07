@@ -147,7 +147,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     //  - Ở checkout: tăng timeout lên 15s cho shop 0, retry 2 lần
     Map<String, dynamic>? rawQuote;
     try {
-      print('🚀 [OrderSummarySection] Requesting shipping quote: items=${items.length}, hasOnlyShop0=$hasOnlyShop0');
+      // print('🚀 [OrderSummarySection] Requesting shipping quote: items=${items.length}, hasOnlyShop0=$hasOnlyShop0');
       rawQuote = await _shippingQuoteService.getShippingQuote(
       userId: u.userId,
       items: items,
@@ -166,7 +166,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     
     // ✅ Xử lý khi rawQuote là null (timeout hoặc lỗi)
     if (rawQuote == null) {
-      print('⚠️ [OrderSummarySection] rawQuote is null - using fallback values');
+      // print('⚠️ [OrderSummarySection] rawQuote is null - using fallback values');
     if (!mounted) return;
     setState(() {
         _isLoading = false;
@@ -183,9 +183,9 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     }
     
     // ✅ Debug: Log response để kiểm tra
-    print('✅ [OrderSummarySection] Received shipping quote: success=${rawQuote['success']}, fee=${rawQuote['fee']}, provider=${rawQuote['provider']}');
-    print('   - best: ${rawQuote['best']}');
-    print('   - data: ${rawQuote['data']}');
+    // print('✅ [OrderSummarySection] Received shipping quote: success=${rawQuote['success']}, fee=${rawQuote['fee']}, provider=${rawQuote['provider']}');
+    // print('   - best: ${rawQuote['best']}');
+    // print('   - data: ${rawQuote['data']}');
     
     setState(() {
       try {
@@ -443,7 +443,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         _shipFee = finalShipFee;
       } catch (e) {
         // ✅ Nếu có lỗi trong quá trình parse, dùng giá trị mặc định
-        print('❌ [OrderSummarySection] Lỗi khi parse shipping quote: $e');
+        // print('❌ [OrderSummarySection] Lỗi khi parse shipping quote: $e');
         _shipFee = _shipFee ?? 0;
         _originalShipFee = _originalShipFee ?? 0;
         _shipSupport = _shipSupport ?? 0;

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_facebook_auth/flutter_facebook_auth.dart';
 import '../../core/services/auth_service.dart';
-import '../common/widgets/welcome_bonus_dialog.dart';
 import 'register_screen.dart';
 import 'forgot_password_screen.dart';
 
@@ -54,8 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
           
-          // ✅ Kiểm tra và hiển thị dialog cảm ơn nếu có bonus mới
-          await _showWelcomeBonusDialogIfNeeded(context);
+          // ✅ Dialog cảm ơn sẽ được hiển thị ở home_screen (giống như đăng ký)
+          // Không hiển thị ở đây để tránh conflict với context khi pop()
           
           // Quay lại màn hình trước
           Navigator.of(context).pop(true);
@@ -150,8 +148,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
 
-          // ✅ Kiểm tra và hiển thị dialog cảm ơn nếu có bonus mới
-          await _showWelcomeBonusDialogIfNeeded(context);
+          // ✅ Dialog cảm ơn sẽ được hiển thị ở home_screen (giống như đăng ký)
+          // Không hiển thị ở đây để tránh conflict với context khi pop()
 
           // Quay lại màn hình trước
           Navigator.of(context).pop(true);
@@ -284,8 +282,8 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
 
-          // ✅ Kiểm tra và hiển thị dialog cảm ơn nếu có bonus mới
-          await _showWelcomeBonusDialogIfNeeded(context);
+          // ✅ Dialog cảm ơn sẽ được hiển thị ở home_screen (giống như đăng ký)
+          // Không hiển thị ở đây để tránh conflict với context khi pop()
 
           // Quay lại màn hình trước
           Navigator.of(context).pop(true);
@@ -332,36 +330,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Hiển thị dialog cảm ơn nếu user vừa nhận bonus mới
-  Future<void> _showWelcomeBonusDialogIfNeeded(BuildContext context) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final shouldShow = prefs.getBool('show_bonus_dialog') ?? false;
-      
-      if (shouldShow) {
-        // Đánh dấu đã hiển thị để không hiển thị lại
-        await prefs.setBool('show_bonus_dialog', false);
-        await prefs.setBool('welcome_bonus_dialog_shown', true);
-        
-        // Hiển thị dialog sau một chút delay để UI mượt hơn
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false, // Không cho đóng bằng cách tap outside
-            builder: (context) => WelcomeBonusDialog(
-              onClose: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      // Ignore error
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -747,46 +715,46 @@ class _LoginScreenState extends State<LoginScreen> {
                               const SizedBox(width: 12),
                               
                               // Facebook Login Button
-                              Expanded(
-                                child: Container(
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF1877F2),
-                                    borderRadius: BorderRadius.circular(12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF1877F2).withOpacity(0.3),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ElevatedButton.icon(
-                                    onPressed: _isLoading ? null : _handleFacebookLogin,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.transparent,
-                                      shadowColor: Colors.transparent,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    ),
-                                    icon: const Icon(
-                                      Icons.facebook,
-                                      color: Colors.white,
-                                      size: 24,
-                                    ),
-                                    label: const Text(
-                                      'Facebook',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                              // Expanded(
+                              //   child: Container(
+                              //     height: 50,
+                              //     decoration: BoxDecoration(
+                              //       color: const Color(0xFF1877F2),
+                              //       borderRadius: BorderRadius.circular(12),
+                              //       boxShadow: [
+                              //         BoxShadow(
+                              //           color: const Color(0xFF1877F2).withOpacity(0.3),
+                              //           blurRadius: 8,
+                              //           offset: const Offset(0, 2),
+                              //         ),
+                              //       ],
+                              //     ),
+                              //     // child: ElevatedButton.icon(
+                              //     //   onPressed: _isLoading ? null : _handleFacebookLogin,
+                              //     //   style: ElevatedButton.styleFrom(
+                              //     //     backgroundColor: Colors.transparent,
+                              //     //     shadowColor: Colors.transparent,
+                              //     //     shape: RoundedRectangleBorder(
+                              //     //       borderRadius: BorderRadius.circular(12),
+                              //     //     ),
+                              //     //     padding: const EdgeInsets.symmetric(horizontal: 12),
+                              //     //   ),
+                              //     //   icon: const Icon(
+                              //     //     Icons.facebook,
+                              //     //     color: Colors.white,
+                              //     //     size: 24,
+                              //     //   ),
+                              //     //   label: const Text(
+                              //     //     'Facebook',
+                              //     //     style: TextStyle(
+                              //     //       fontSize: 15,
+                              //     //       fontWeight: FontWeight.w600,
+                              //     //       color: Colors.white,
+                              //     //     ),
+                              //     //   ),
+                              //     // ),
+                              //   ),
+                              // ),
                             ],
                           ),
                           

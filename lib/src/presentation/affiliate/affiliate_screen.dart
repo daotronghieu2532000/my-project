@@ -56,6 +56,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   bool _hasMoreData = true;
   final Map<int, bool> _followBusy = {};
   static const int _itemsPerPage = 20; // Load 20 items per page (like Shopee)
+  bool _isLoadingProducts = false; // Flag to prevent duplicate calls
   
   // Filters & search
   final TextEditingController _searchController = TextEditingController();
@@ -93,6 +94,16 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     // Only load more if we're near the bottom and not already loading
     if (!_productsScrollController.hasClients) return;
     
+    // Không load thêm nếu đang sort theo hoa hồng (sort client-side không chính xác với pagination)
+    if (_sortBy == 'commission_asc' || _sortBy == 'commission_desc') {
+      return;
+    }
+    
+    // Không load thêm khi đang search (chỉ hiển thị kết quả search)
+    if (_searchQuery.trim().isNotEmpty) {
+      return;
+    }
+    
     final maxScroll = _productsScrollController.position.maxScrollExtent;
     final currentScroll = _productsScrollController.position.pixels;
     final threshold = maxScroll * 0.8; // Load more when 80% scrolled (like Shopee)
@@ -100,7 +111,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     // Debounce scroll events to avoid too many API calls
     _scrollDebounceTimer?.cancel();
     _scrollDebounceTimer = Timer(const Duration(milliseconds: 300), () {
-      if (currentScroll >= threshold && _hasMoreData && !_isProductsLoading && !_isLoadingMore) {
+      if (currentScroll >= threshold && _hasMoreData && !_isProductsLoading && !_isLoadingMore && !_isLoadingProducts) {
         _loadProducts();
       }
     });
@@ -458,15 +469,23 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       return;
     }
     
+    // Prevent duplicate calls
+    if (_isLoadingProducts) {
+     
+      return;
+    }
+    
     // If products list is empty, treat as refresh
     final isFirstLoad = _products.isEmpty;
     final shouldRefresh = refresh || isFirstLoad;
-    
     
     // Prevent multiple simultaneous loads
     if (!shouldRefresh && (_isProductsLoading || _isLoadingMore)) {
       return;
     }
+    
+    // Set loading flag
+    _isLoadingProducts = true;
     
     if (shouldRefresh) {
       setState(() {
@@ -479,23 +498,47 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       });
     } else {
       // Loading more
-      if (!_hasMoreData) return; // No more data to load
-      if (_isLoadingMore) return; // Already loading more
+      if (!_hasMoreData) {
+        _isLoadingProducts = false;
+        return; // No more data to load
+      }
+      if (_isLoadingMore) {
+        _isLoadingProducts = false;
+        return; // Already loading more
+      }
       setState(() {
         _isLoadingMore = true;
       });
     }
+    
     try {
+      // Map sortBy to API format - API không hỗ trợ commission sort
+      String? apiSortBy = _sortBy;
+      int loadLimit = _itemsPerPage;
+      
+      // API chỉ hỗ trợ: newest, price_asc, price_desc, name_asc, name_desc, popular, discount
+      // Không hỗ trợ: commission_asc, commission_desc
+      if (_sortBy == 'commission_asc' || _sortBy == 'commission_desc') {
+        // API không hỗ trợ sort theo hoa hồng, để 'newest' và sort client-side
+        apiSortBy = 'newest';
+        // Load nhiều products khi sort theo hoa hồng để sort client-side chính xác
+        if (shouldRefresh) {
+          loadLimit = 500; // Load nhiều products để sort client-side
+        }
+      }
+      
+    
       
       final result = await _affiliateService.getProducts(
         userId: _currentUserId,
         page: _currentPage,
-        limit: _itemsPerPage, // Load only 20 items per page (like Shopee)
-        search: _searchQuery.isEmpty ? null : _searchQuery,
-        sortBy: _sortBy,
+        limit: loadLimit,
+        search: _searchQuery.trim().isEmpty ? null : _searchQuery.trim(),
+        sortBy: apiSortBy,
         onlyFollowing: _onlyFollowed,
       );
       
+    
       
       if (mounted) {
         if (result != null && result['products'] != null) {
@@ -513,7 +556,11 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             
             // Update pagination - check before incrementing page
             final pagination = result['pagination'];
-            if (pagination != null) {
+            
+            // Khi sort theo hoa hồng, không load thêm (sort client-side)
+            if (_sortBy == 'commission_asc' || _sortBy == 'commission_desc') {
+              _hasMoreData = false; // Tắt infinite scroll
+            } else if (pagination != null) {
               // Check if there are more pages after current page
               _hasMoreData = _currentPage < pagination['total_pages'];
             } else {
@@ -521,10 +568,18 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
               _hasMoreData = newProducts.length >= _itemsPerPage;
             }
             
-            // Increment page for next load
-            _currentPage++;
+            // Khi đang search, không load thêm (chỉ hiển thị kết quả search)
+            if (_searchQuery.trim().isNotEmpty) {
+              _hasMoreData = false;
+            }
+            
+            // Increment page for next load (chỉ khi không phải sort commission hoặc search)
+            if (_sortBy != 'commission_asc' && _sortBy != 'commission_desc' && _searchQuery.trim().isEmpty) {
+              _currentPage++;
+            }
             _isProductsLoading = false;
             _isLoadingMore = false;
+            _isLoadingProducts = false; // Reset flag
           });
           
         } else {
@@ -533,16 +588,21 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             _hasMoreData = false;
             _isProductsLoading = false;
             _isLoadingMore = false;
+            _isLoadingProducts = false; // Reset flag
           });
         }
       }
     } catch (e, stackTrace) {
+   
       if (mounted) {
         setState(() {
           _productsError = 'Lỗi khi tải sản phẩm: $e';
           _isProductsLoading = false;
           _isLoadingMore = false;
+          _isLoadingProducts = false; // Reset flag
         });
+      } else {
+        _isLoadingProducts = false; // Reset flag even if not mounted
       }
     }
   }
@@ -550,6 +610,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   void _applyFilters() {
     List<AffiliateProduct> list = List.of(_products);
 
+    // Apply client-side filters
     if (_onlyFollowed) {
       list = list.where((p) => p.isFollowing).toList();
     }
@@ -557,9 +618,63 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       list = list.where((p) => p.hasLink).toList();
     }
 
+    // Apply client-side sorting (especially for commission which API may not support)
+    list = _sortProducts(list, _sortBy);
+
     setState(() {
       _filteredProducts = list;
     });
+  }
+
+  List<AffiliateProduct> _sortProducts(List<AffiliateProduct> products, String sortBy) {
+    final sorted = List<AffiliateProduct>.from(products);
+    
+    switch (sortBy) {
+      case 'price_asc':
+        sorted.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case 'price_desc':
+        sorted.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case 'commission_asc':
+        sorted.sort((a, b) {
+          final aCommission = _getProductCommissionValue(a);
+          final bCommission = _getProductCommissionValue(b);
+          return aCommission.compareTo(bCommission);
+        });
+        break;
+      case 'commission_desc':
+        sorted.sort((a, b) {
+          final aCommission = _getProductCommissionValue(a);
+          final bCommission = _getProductCommissionValue(b);
+          return bCommission.compareTo(aCommission);
+        });
+        break;
+      case 'newest':
+      default:
+        // Sort by created_at descending (newest first)
+        sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+    }
+    
+    return sorted;
+  }
+
+  double _getProductCommissionValue(AffiliateProduct product) {
+    if (product.commissionInfo.isEmpty) {
+      return 0.0;
+    }
+    
+    // Lấy commission đầu tiên (main commission)
+    final mainCommission = product.commissionInfo.first;
+    
+    if (mainCommission.type == 'phantram') {
+      // Tính hoa hồng dựa trên giá sản phẩm
+      return product.price * mainCommission.value / 100;
+    } else {
+      // Hoa hồng cố định
+      return mainCommission.value;
+    }
   }
 
   String _buildAffiliateUrl(AffiliateProduct product) {
@@ -1022,8 +1137,33 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             
             // Main Content - Scrollable
             Expanded(
-              child: SingleChildScrollView(
-                controller: _productsScrollController,
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  final startTime = DateTime.now();
+                
+                  
+                  try {
+                  
+                    final apiStartTime = DateTime.now();
+                    
+                    // Refresh cả dashboard và products
+                    await Future.wait([
+                      _loadDashboard(forceRefresh: true),
+                      _loadProducts(refresh: true),
+                    ]);
+                    
+                    final apiDuration = DateTime.now().difference(apiStartTime).inMilliseconds;
+                    final totalDuration = DateTime.now().difference(startTime);
+                  
+                  
+                  } catch (e, stackTrace) {
+                    final totalDuration = DateTime.now().difference(startTime);
+                  
+                
+                  }
+                },
+                child: SingleChildScrollView(
+                  controller: _productsScrollController,
       padding: const EdgeInsets.all(16),
       child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1259,6 +1399,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                                   )
                                 : _buildProductsGrid(),
                   ],
+                ),
                 ),
               ),
             ),
@@ -1556,15 +1697,28 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                   _searchQuery = value;
                 });
                 
+                // Clear và reload khi search empty
+                if (value.trim().isEmpty) {
+                  _searchDebounceTimer?.cancel();
+                  setState(() {
+                    _searchQuery = '';
+                  });
+                  _loadProducts(refresh: true);
+                  return;
+                }
+                
+                // Debounce search khi có giá trị
                 _searchDebounceTimer?.cancel();
                 _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-                  if (value.trim().isNotEmpty) {
+                  if (mounted && value.trim().isNotEmpty) {
                     _loadProducts(refresh: true);
                   }
                 });
               },
               onSubmitted: (_) {
                 FocusScope.of(context).unfocus();
+                // Đảm bảo reload khi submit
+                _searchDebounceTimer?.cancel();
                 _loadProducts(refresh: true);
               },
             ),

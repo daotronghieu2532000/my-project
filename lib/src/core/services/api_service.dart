@@ -2555,6 +2555,86 @@ class ApiService {
     ];
   }
 
+  /// Resolve product slug thành product ID
+  /// Query trực tiếp với field 'link' trong database (giống cách banner xử lý)
+  Future<int?> resolveProductIdBySlug(String slug) async {
+    try {
+      // URL encode slug để xử lý tiếng Việt
+      final encodedSlug = Uri.encodeComponent(slug);
+      
+      // Call API endpoint để resolve slug
+      final response = await get('/resolve_product_slug?slug=$encodedSlug');
+      
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true && data['data'] != null) {
+          final productId = data['data']['product_id'] as int?;
+          if (productId != null && productId > 0) {
+            return productId;
+          }
+        }
+      }
+      
+      // Fallback: Thử search với exact match
+      // (Nếu API resolve_product_slug chưa có, dùng search nhưng tìm exact match)
+      return await _resolveProductIdBySlugFallback(slug);
+    } catch (e) {
+      print('❌ [ApiService] Error resolving slug: $e');
+      // Fallback
+      return await _resolveProductIdBySlugFallback(slug);
+    }
+  }
+
+  /// Fallback: Resolve bằng search với exact match
+  Future<int?> _resolveProductIdBySlugFallback(String slug) async {
+    try {
+      final searchResult = await searchProducts(
+        keyword: slug,
+        page: 1,
+        limit: 50, // Tăng limit để có nhiều kết quả hơn
+      );
+
+      if (searchResult != null && searchResult['success'] == true) {
+        final data = searchResult['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          final products = data['products'] as List?;
+
+          if (products != null && products.isNotEmpty) {
+            // Tìm exact match với field 'link' (slug trong DB)
+            final slugLower = slug.toLowerCase();
+
+            for (var product in products) {
+              final productMap = product as Map<String, dynamic>;
+              final productId = productMap['id'] as int?;
+
+              // Check field 'link' (slug trong DB) - exact match
+              final productLink = productMap['link']?.toString().toLowerCase() ?? '';
+              if (productLink.isNotEmpty && productLink == slugLower) {
+                if (productId != null && productId > 0) {
+                  return productId;
+                }
+              }
+
+              // Check field 'slug' (nếu có) - exact match
+              final productSlug = productMap['slug']?.toString().toLowerCase() ?? '';
+              if (productSlug.isNotEmpty && productSlug == slugLower) {
+                if (productId != null && productId > 0) {
+                  return productId;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return null;
+    } catch (e) {
+      print('❌ [ApiService] Error in fallback resolve slug: $e');
+      return null;
+    }
+  }
+
   /// Tìm kiếm sản phẩm
   Future<Map<String, dynamic>?> searchProducts({
     required String keyword,

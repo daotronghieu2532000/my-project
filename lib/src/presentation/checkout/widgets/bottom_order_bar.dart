@@ -159,8 +159,8 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     final grandTotal = (subtotalAfterVoucher - bonusDiscount).clamp(0, 1 << 31);
   
     // ✅ DEBUG: Print tính toán giá tiền trong BottomOrderBar
-    print('💰 [CHECKOUT - BottomOrderBar] ==========================================');
-    print('   📦 Items: ${items.length} sản phẩm');
+    // print('💰 [CHECKOUT - BottomOrderBar] ==========================================');
+    // print('   📦 Items: ${items.length} sản phẩm');
     final itemsByShop = <int, List<cart_service.CartItem>>{};
     for (final item in items) {
       if (!itemsByShop.containsKey(item.shopId)) {
@@ -172,20 +172,20 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
       final shopId = entry.key;
       final shopItems = entry.value;
       final shopTotal = shopItems.fold(0, (s, i) => s + i.price * i.quantity);
-      print('      Shop $shopId: ${shopItems.length} sản phẩm = ${FormatUtils.formatCurrency(shopTotal)}');
+      // print('      Shop $shopId: ${shopItems.length} sản phẩm = ${FormatUtils.formatCurrency(shopTotal)}');
     }
-    print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalGoods)}');
-    print('   🎫 Voucher shop discount: ${FormatUtils.formatCurrency(shopDiscount)}');
-    print('   🎫 Voucher platform discount: ${FormatUtils.formatCurrency(platformDiscount)}');
-    print('   🎫 Tổng voucher discount: ${FormatUtils.formatCurrency(voucherDiscount)}');
-    print('   🚚 Phí ship: ${FormatUtils.formatCurrency(shipFee)}');
-    print('   🚚 Hỗ trợ ship: ${FormatUtils.formatCurrency(shipSupport)}');
-    print('   💵 Subtotal sau voucher và ship: ${FormatUtils.formatCurrency(subtotalAfterVoucher)}');
-    print('   🎁 Bonus discount: ${FormatUtils.formatCurrency(bonusDiscount)}');
-    print('   💵 Tổng thanh toán cuối cùng: ${FormatUtils.formatCurrency(grandTotal)}');
-    print('   💰 Tiết kiệm từ giá cũ: ${FormatUtils.formatCurrency(savingsFromOld)}');
-    print('   💰 Tổng tiết kiệm: ${FormatUtils.formatCurrency((savingsFromOld + voucherDiscount + bonusDiscount).clamp(0, totalGoods + bonusDiscount))}');
-    print('💰 ==========================================================');
+    // print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalGoods)}');
+    // print('   🎫 Voucher shop discount: ${FormatUtils.formatCurrency(shopDiscount)}');
+    // print('   🎫 Voucher platform discount: ${FormatUtils.formatCurrency(platformDiscount)}');
+    // print('   🎫 Tổng voucher discount: ${FormatUtils.formatCurrency(voucherDiscount)}');
+    // print('   🚚 Phí ship: ${FormatUtils.formatCurrency(shipFee)}');
+    // print('   🚚 Hỗ trợ ship: ${FormatUtils.formatCurrency(shipSupport)}');
+    // print('   💵 Subtotal sau voucher và ship: ${FormatUtils.formatCurrency(subtotalAfterVoucher)}');
+    // print('   🎁 Bonus discount: ${FormatUtils.formatCurrency(bonusDiscount)}');
+    // print('   💵 Tổng thanh toán cuối cùng: ${FormatUtils.formatCurrency(grandTotal)}');
+    // print('   💰 Tiết kiệm từ giá cũ: ${FormatUtils.formatCurrency(savingsFromOld)}');
+    // print('   💰 Tổng tiết kiệm: ${FormatUtils.formatCurrency((savingsFromOld + voucherDiscount + bonusDiscount).clamp(0, totalGoods + bonusDiscount))}');
+    // print('💰 ==========================================================');
 
     // Không để tiết kiệm vượt quá tổng tiền hàng (UX các sàn lớn)
     final totalSavings = (savingsFromOld + voucherDiscount + bonusDiscount).clamp(0, totalGoods + bonusDiscount);

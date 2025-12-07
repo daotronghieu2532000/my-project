@@ -123,6 +123,7 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
 
   Future<void> _loadProducts({bool refresh = false}) async {
     if (refresh) {
+   
       setState(() {
         _currentPage = 1;
         _products = [];
@@ -139,6 +140,8 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
       // Sử dụng cached API service cho products
       
       // Không dùng cache, gọi API trực tiếp để đảm bảo data luôn mới nhất
+      print('🌐 [AFFILIATE PRODUCTS] Calling API - page: $_currentPage, limit: 300, search: "${_searchQuery}", sortBy: $_sortBy, onlyFollowing: $_onlyFollowed');
+      final apiStartTime = DateTime.now();
       final result = await _affiliateService.getProducts(
         userId: _currentUserId,
         page: _currentPage,
@@ -147,11 +150,13 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
         sortBy: _sortBy,
         onlyFollowing: _onlyFollowed,
       );
-     
+      final apiDuration = DateTime.now().difference(apiStartTime).inMilliseconds;
+
       if (mounted) {
         setState(() {
           if (result != null && result['products'] != null) {
             final newProducts = result['products'] as List<AffiliateProduct>;
+           
             if (refresh) {
               _products = newProducts;
             } else {
@@ -162,9 +167,9 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
             final pagination = result['pagination'];
             _hasMoreData = _currentPage < pagination['total_pages'];
             _currentPage++;
+           
   
-          } else {
-          }
+          } 
           _isLoading = false;
         });
       }
@@ -207,7 +212,6 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
       if (mounted) {
         if (result != null && result['short_link'] != null) {
           final short = result['short_link'] as String;
-          final longUrl = _buildAffiliateUrl(product);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Đã tạo link: $short'),
@@ -373,7 +377,25 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
                                 ),
                               )
                             : RefreshIndicator(
-                                onRefresh: () => _loadProducts(refresh: true),
+                                onRefresh: () async {
+                                  final startTime = DateTime.now();
+                                
+                                  try {
+                                 
+                                    final apiStartTime = DateTime.now();
+                                    
+                                    await _loadProducts(refresh: true);
+                                    
+                                    final apiDuration = DateTime.now().difference(apiStartTime).inMilliseconds;
+                                    final totalDuration = DateTime.now().difference(startTime);
+                                   
+                               
+                                  } catch (e, stackTrace) {
+                                    final totalDuration = DateTime.now().difference(startTime);
+                                  
+                              
+                                  }
+                                },
                                 child: ListView.builder(
                                   controller: _scrollController,
                                   padding: const EdgeInsets.only(bottom: 12),

@@ -98,7 +98,7 @@ class _CartScreenState extends State<CartScreen> {
     // ✅ DEBUG: Print thông tin cart khi thay đổi
     final selectedItems = _cartService.items.where((i) => i.isSelected).toList();
     final totalPrice = selectedItems.fold(0, (sum, i) => sum + i.price * i.quantity);
-    print('🛒 [CART - CartScreen] Cart changed: ${selectedItems.length} items selected, total: ${FormatUtils.formatCurrency(totalPrice)}');
+  
     
     setState(() {});
     // Tự động áp dụng voucher tốt nhất cho từng shop
@@ -121,7 +121,7 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
     
-    print('🛒 [CART - _autoApplyBestVouchers] Processing ${itemsByShop.length} shops');
+  
     
     for (final entry in itemsByShop.entries) {
       final shopId = entry.key;
@@ -140,7 +140,7 @@ class _CartScreenState extends State<CartScreen> {
       // Lấy danh sách product ID trong giỏ hàng của shop
       final cartProductIds = selectedItems.map((item) => item.id).toList();
       
-      print('   🏪 Shop $shopId: ${selectedItems.length} items, total: ${FormatUtils.formatCurrency(shopTotal)}, productIds: $cartProductIds');
+   
       
       // Tự động áp dụng voucher tốt nhất cho shop
       await _voucherService.autoApplyBestVoucher(shopId, shopTotal, cartProductIds);
@@ -156,7 +156,7 @@ class _CartScreenState extends State<CartScreen> {
     // ✅ DEBUG: Print tổng hợp voucher sau khi auto apply
     final appliedVouchers = _voucherService.appliedVouchers;
     final platformVouchers = _voucherService.platformVouchers;
-    print('   📊 Summary: ${appliedVouchers.length} shop vouchers, ${platformVouchers.length} platform vouchers');
+ 
     
     // Cập nhật UI sau khi áp dụng voucher
     if (mounted) {

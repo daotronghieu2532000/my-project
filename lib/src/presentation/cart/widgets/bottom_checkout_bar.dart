@@ -46,19 +46,19 @@ class BottomCheckoutBar extends StatelessWidget {
     final finalPrice = totalPrice - voucherDiscount;
     
     // ✅ DEBUG: Print tính toán giá tiền trong giỏ hàng
-    print('🛒 [CART - BottomCheckoutBar] ==========================================');
-    print('   📦 Items: ${items.length} sản phẩm');
+    // print('🛒 [CART - BottomCheckoutBar] ==========================================');
+    // print('   📦 Items: ${items.length} sản phẩm');
     for (final item in items) {
-      print('      - ${item.name} (shop: ${item.shopId}): ${FormatUtils.formatCurrency(item.price)} x ${item.quantity} = ${FormatUtils.formatCurrency(item.price * item.quantity)}');
+      // print('      - ${item.name} (shop: ${item.shopId}): ${FormatUtils.formatCurrency(item.price)} x ${item.quantity} = ${FormatUtils.formatCurrency(item.price * item.quantity)}');
     }
-    print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalPrice)}');
-    print('   🎫 Voucher shop discount: ${FormatUtils.formatCurrency(shopDiscount)}');
-    print('   🎫 Voucher platform discount: ${FormatUtils.formatCurrency(platformDiscount)}');
-    print('   🎫 Tổng voucher discount: ${FormatUtils.formatCurrency(voucherDiscount)}');
-    print('   💵 Giá cuối cùng: ${FormatUtils.formatCurrency(finalPrice)}');
-    print('   ✅ Applied vouchers: ${voucherService.appliedVouchers.length} shop vouchers');
-    print('   ✅ Platform vouchers: ${voucherService.platformVouchers.length} vouchers');
-    print('🛒 ==========================================================');
+    // print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalPrice)}');
+    // print('   🎫 Voucher shop discount: ${FormatUtils.formatCurrency(shopDiscount)}');
+    // print('   🎫 Voucher platform discount: ${FormatUtils.formatCurrency(platformDiscount)}');
+    // print('   🎫 Tổng voucher discount: ${FormatUtils.formatCurrency(voucherDiscount)}');
+    // print('   💵 Giá cuối cùng: ${FormatUtils.formatCurrency(finalPrice)}');
+    // print('   ✅ Applied vouchers: ${voucherService.appliedVouchers.length} shop vouchers');
+    // print('   ✅ Platform vouchers: ${voucherService.platformVouchers.length} vouchers');
+    // print('🛒 ==========================================================');
     
     return SafeArea(
       top: false,

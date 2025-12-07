@@ -49,6 +49,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     // Lưu scroll position khi scroll
     _scrollController.addListener(_onScroll);
     
+    // ✅ Lắng nghe sự thay đổi auth state để kiểm tra dialog bonus khi user đăng nhập
+    _authService.addAuthStateListener(_onAuthStateChanged);
+    
     _preloadData();
     // Load popup banner trong background, không block UI
     Future.delayed(const Duration(milliseconds: 1000), () {
@@ -66,6 +69,17 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     
     // KHÔNG restore scroll position - luôn bắt đầu từ đầu trang chủ
     // _restoreScrollPositionAfterLoad();
+  }
+  
+  /// Callback khi auth state thay đổi (đăng nhập/đăng xuất)
+  void _onAuthStateChanged() {
+    // ✅ Khi user đăng nhập thành công, kiểm tra lại flag bonus dialog
+    // Delay một chút để đảm bảo flag đã được set từ auth_service
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _showWelcomeBonusDialogIfNeeded();
+      }
+    });
   }
   
   // KHÔNG restore scroll position - luôn bắt đầu từ đầu
@@ -95,6 +109,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _authService.removeAuthStateListener(_onAuthStateChanged);
     _scrollController.removeListener(_onScroll);
     _scrollSaveTimer?.cancel();
     // KHÔNG lưu scroll position khi dispose
@@ -332,6 +347,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   /// Hiển thị dialog cảm ơn nếu user vừa nhận bonus mới
   Future<void> _showWelcomeBonusDialogIfNeeded() async {
     try {
+      // ✅ Chỉ hiển thị dialog nếu user đã đăng nhập
+      final isLoggedIn = await _authService.isLoggedIn();
+      if (!isLoggedIn) {
+        return;
+      }
+      
       final prefs = await SharedPreferences.getInstance();
       final shouldShow = prefs.getBool('show_bonus_dialog') ?? false;
       
@@ -339,6 +360,9 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         // Đánh dấu đã hiển thị để không hiển thị lại
         await prefs.setBool('show_bonus_dialog', false);
         await prefs.setBool('welcome_bonus_dialog_shown', true);
+        
+        // Delay một chút để đảm bảo UI đã render xong
+        await Future.delayed(const Duration(milliseconds: 300));
         
         if (mounted) {
           showDialog(

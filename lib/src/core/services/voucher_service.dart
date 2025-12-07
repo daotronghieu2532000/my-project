@@ -158,11 +158,7 @@ class VoucherService extends ChangeNotifier {
       }
     }
     
-    // ✅ DEBUG: Print thông tin tính discount
-    print('🎫 [VoucherService - calculateTotalDiscount] ==========================================');
-    print('   📦 Items: ${items?.length ?? 0} items');
-    print('   🏪 Shop subtotals: $shopSubtotals');
-    print('   🎫 Applied vouchers: ${_appliedVouchers.length} vouchers');
+ 
     for (final entry in _appliedVouchers.entries) {
       print('      - Shop ${entry.key}: ${entry.value.code}');
     }
@@ -190,15 +186,12 @@ class VoucherService extends ChangeNotifier {
       // ✅ Tính discount trên shopSubtotal (subtotal của shop đó), không phải totalPrice tổng
       final discount = calculateShopDiscount(shopId, shopSubtotal);
       
-      print('      ✅ Shop $shopId: subtotal=${shopSubtotal}, discount=${discount}');
+   
       
       if (discount > 0) {
         totalDiscount += discount;
       }
     }
-    
-    print('   💰 Total discount: $totalDiscount');
-    print('🎫 ==========================================================');
     
     return totalDiscount;
   }
