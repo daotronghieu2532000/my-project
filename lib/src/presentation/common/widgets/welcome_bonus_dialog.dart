@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../../core/models/bonus_config.dart';
+import '../../../core/utils/format_utils.dart';
 
 /// Dialog cảm ơn khi người dùng tải app và đăng nhập thành công lần đầu
-/// Hiển thị 1 lần duy nhất khi nhận được bonus 200.000đ
+/// Hiển thị 1 lần duy nhất khi nhận được bonus
 class WelcomeBonusDialog extends StatelessWidget {
   final VoidCallback onClose;
+  final BonusConfig config;
   
   const WelcomeBonusDialog({
     super.key,
     required this.onClose,
+    required this.config,
   });
 
   @override
@@ -48,9 +52,9 @@ class WelcomeBonusDialog extends StatelessWidget {
             // ),
             const SizedBox(height: 20),
             
-            // Tiêu đề
+            // Tiêu đề (từ config)
             Text(
-              'Cảm ơn bạn đã tin tưởng!',
+              config.dialogTitle,
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -60,9 +64,9 @@ class WelcomeBonusDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // Nội dung
+            // Nội dung (từ config)
             Text(
-              'Chúc mừng bạn đã tải ứng dụng và đăng nhập thành công! Chúng tôi xin gửi tặng bạn',
+              config.dialogMessage,
               style: TextStyle(
                 fontSize: 15,
                 color: Colors.grey.shade700,
@@ -72,7 +76,7 @@ class WelcomeBonusDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             
-            // Số tiền bonus
+            // Số tiền bonus (từ config)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
@@ -100,7 +104,7 @@ class WelcomeBonusDialog extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    '200.000₫',
+                    FormatUtils.formatCurrency(config.bonusAmount),
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -112,19 +116,30 @@ class WelcomeBonusDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // Mô tả
-            Text(
-              'Số tiền này sẽ tự động được áp dụng 10% vào mỗi đơn hàng sản phẩm thuộc nhà bán Socdo Choice, JUDYDOOL, CoCayHoaLa . Hãy bắt đầu mua sắm ngay nhé! 💝',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
+            // Mô tả (từ config - hiển thị danh sách shop)
+            Builder(
+              builder: (context) {
+                // Format danh sách shop (lấy tất cả shop, join bằng dấu phẩy)
+                final shopNames = config.eligibleShops
+                    .map((s) => s.shopName)
+                    .toList();
+                final shopNamesText = shopNames.join(', ');
+                final discountPercentText = config.discountPercent.toStringAsFixed(0);
+                
+                return Text(
+                  'Số tiền này sẽ tự động được áp dụng: $discountPercentText% trên tổng đơn hàng thuộc các Nhà bán: " $shopNamesText ". Xin trân trọng cảm ơn! 💝',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey.shade600,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                );
+              },
             ),
             const SizedBox(height: 24),
             
-            // Nút đóng
+            // Nút đóng (từ config)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -138,9 +153,9 @@ class WelcomeBonusDialog extends StatelessWidget {
                   ),
                   elevation: 2,
                 ),
-                child: const Text(
-                  'Bắt đầu mua sắm',
-                  style: TextStyle(
+                child: Text(
+                  config.dialogButtonText,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),

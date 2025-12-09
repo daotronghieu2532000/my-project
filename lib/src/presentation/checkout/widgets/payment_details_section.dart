@@ -21,6 +21,8 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _bonusInfo;
   bool _bonusLoading = true;
+  int? _cachedEligibleTotal;
+  int? _cachedBonusDiscount;
 
   @override
   void initState() {
@@ -41,7 +43,39 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
   }
 
   void _onCartChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _calculateBonus(); // Recalculate khi cart thay đổi
+    }
+  }
+
+  Future<void> _calculateBonus() async {
+    final cart = cart_service.CartService();
+    final items = cart.items.where((i) => i.isSelected).toList();
+    final eligibleItems = items.map((i) => {
+      'shopId': i.shopId,
+      'price': i.price,
+      'quantity': i.quantity,
+    }).toList();
+
+    if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
+      final eligibleTotal = await _bonusService.calculateEligibleTotal(eligibleItems);
+      final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
+      final bonusDiscount = await _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
+      
+      if (mounted) {
+        setState(() {
+          _cachedEligibleTotal = eligibleTotal;
+          _cachedBonusDiscount = bonusDiscount;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _cachedEligibleTotal = 0;
+          _cachedBonusDiscount = 0;
+        });
+      }
+    }
   }
 
   void _onVoucherChanged() {
@@ -94,6 +128,8 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
         _bonusInfo = bonusInfo;
         _bonusLoading = false;
       });
+      // Tính bonus sau khi có bonusInfo
+      await _calculateBonus();
     }
   }
 
@@ -104,14 +140,6 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     final voucherService = VoucherService();
     final items = cart.items.where((i) => i.isSelected).toList();
     final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
-
-    // ✅ Tính eligible_total (CHỈ từ 3 shop hợp lệ: 32373, 23933, 36893)
-    final eligibleItems = items.map((i) => {
-      'shopId': i.shopId,
-      'price': i.price,
-      'quantity': i.quantity,
-    }).toList();
-    final eligibleTotal = _bonusService.calculateEligibleTotal(eligibleItems);
 
   
     
@@ -176,18 +204,9 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     // ✅ Tính tổng thanh toán trước bonus (sau voucher và ship)
     final subtotalAfterVoucher = (totalGoods + shipFee - shipSupport - voucherDiscount).clamp(0, 1 << 31);
 
-    // ✅ Tính bonus discount: 10% của ELIGIBLE_TOTAL (CHỈ 3 shop), KHÔNG phải totalGoods
-    int bonusDiscount = 0;
-
-    
-    if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
-      final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-     
-      
-      // ✅ Tính 10% của ELIGIBLE_TOTAL (CHỈ 3 shop), không phải totalGoods
-      bonusDiscount = _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
-     
-    } 
+    // ✅ Tính bonus discount: từ config động (discount_percent của ELIGIBLE_TOTAL)
+    // Sử dụng cached value (đã tính trong _calculateBonus)
+    final bonusDiscount = _cachedBonusDiscount ?? 0;
     
     final grandTotal = (subtotalAfterVoucher - bonusDiscount).clamp(0, 1 << 31);
     

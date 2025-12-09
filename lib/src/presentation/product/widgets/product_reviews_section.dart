@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../product_reviews_screen.dart';
 import 'review_image_viewer.dart';
+import 'report_review_dialog.dart' show showReportReviewDialog;
 
 class ProductReviewsSection extends StatelessWidget {
   final List<Map<String, dynamic>>? reviews;
@@ -122,7 +123,7 @@ class ProductReviewsSection extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final review = reviews![index];
-                return _buildReviewItem(review);
+                return _buildReviewItem(context, review);
               },
           )
         else if (totalReviews != null && totalReviews! > 0)
@@ -163,7 +164,7 @@ class ProductReviewsSection extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewItem(Map<String, dynamic> review) {
+  Widget _buildReviewItem(BuildContext context, Map<String, dynamic> review) {
     final userName = review['user_name'] as String? ?? 'Người dùng';
     final userAvatar = review['user_avatar'] as String? ?? '';
     final content = review['content'] as String? ?? '';
@@ -244,6 +245,45 @@ class ProductReviewsSection extends StatelessWidget {
                               ],
                             ),
                           ),
+                        // Nút ba chấm để báo cáo
+                        PopupMenuButton<String>(
+                          icon: const Icon(
+                            Icons.more_vert,
+                            size: 18,
+                            color: Colors.grey,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          color: Colors.white,
+                          itemBuilder: (BuildContext context) => [
+                            PopupMenuItem<String>(
+                              value: 'report',
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.flag_outlined, size: 14, color: Colors.grey[700]),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Báo cáo',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (String value) {
+                            if (value == 'report') {
+                              showReportReviewDialog(context);
+                            }
+                          },
+                        ),
                       ],
                     ),
                     if (variantName != null && variantName.isNotEmpty) ...[
@@ -391,6 +431,31 @@ class ProductReviewsSection extends StatelessWidget {
               ),
             ),
           ],
+          // Nút "Hữu ích" và ba chấm ở cuối review
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  // TODO: Implement helpful functionality if needed
+                },
+                icon: const Icon(Icons.thumb_up_outlined, size: 16, color: Colors.grey),
+                label: const Text(
+                  'Hữu ích',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

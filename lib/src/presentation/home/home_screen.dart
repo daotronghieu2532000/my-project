@@ -18,6 +18,7 @@ import '../common/widgets/welcome_bonus_dialog.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/first_time_bonus_service.dart';
 import '../../core/models/popup_banner.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -35,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   final CachedApiService _cachedApiService = CachedApiService();
   final AuthService _authService = AuthService();
   final ApiService _apiService = ApiService();
+  final FirstTimeBonusService _bonusService = FirstTimeBonusService();
   bool _isPreloading = true;
   int _refreshKey = 0; // Key để trigger reload các widget con
   PopupBanner? _popupBanner;
@@ -361,6 +363,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         await prefs.setBool('show_bonus_dialog', false);
         await prefs.setBool('welcome_bonus_dialog_shown', true);
         
+        // Lấy config từ API
+        final config = await _bonusService.getBonusConfig();
+        if (config == null || !config.status) {
+          return; // Tính năng đã tắt, không hiển thị dialog
+        }
+        
         // Delay một chút để đảm bảo UI đã render xong
         await Future.delayed(const Duration(milliseconds: 300));
         
@@ -372,6 +380,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
               onClose: () {
                 Navigator.of(context).pop();
               },
+              config: config,
             ),
           );
         }

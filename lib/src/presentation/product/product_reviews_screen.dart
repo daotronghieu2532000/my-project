@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/services/api_service.dart';
 import 'widgets/review_image_viewer.dart';
+import 'widgets/report_review_dialog.dart' show showReportReviewDialog;
 
 class ProductReviewsScreen extends StatefulWidget {
   final int productId;
@@ -581,6 +582,45 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                               ],
                             ),
                           ),
+                        // Nút ba chấm để báo cáo
+                        PopupMenuButton<String>(
+                          icon: const Icon(
+                            Icons.more_vert,
+                            size: 18,
+                            color: Colors.grey,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          color: Colors.white,
+                          itemBuilder: (BuildContext context) => [
+                            PopupMenuItem<String>(
+                              value: 'report',
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.flag_outlined, size: 14, color: Colors.grey[700]),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Báo cáo',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onSelected: (String value) {
+                            if (value == 'report') {
+                              showReportReviewDialog(context);
+                            }
+                          },
+                        ),
                       ],
                     ),
                     if (variantName != null && variantName.isNotEmpty) ...[
@@ -729,6 +769,31 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
               ),
             ),
           ],
+          // Nút "Hữu ích" và ba chấm ở cuối review
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  // TODO: Implement helpful functionality if needed
+                },
+                icon: const Icon(Icons.thumb_up_outlined, size: 16, color: Colors.grey),
+                label: const Text(
+                  'Hữu ích',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );

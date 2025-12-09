@@ -1,84 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-	<dict>
-		<key>CFBundleDevelopmentRegion</key>
-		<string>$(DEVELOPMENT_LANGUAGE)</string>
-		<key>CFBundleDisplayName</key>
-		<string>Socdo</string>
-		<key>CFBundleExecutable</key>
-		<string>$(EXECUTABLE_NAME)</string>
-		<key>CFBundleIdentifier</key>
-		<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-		<key>CFBundleInfoDictionaryVersion</key>
-		<string>6.0</string>
-		<key>CFBundleName</key>
-		<string>socdo</string>
-		<key>CFBundlePackageType</key>
-		<string>APPL</string>
-		<key>CFBundleShortVersionString</key>
-		<string>$(FLUTTER_BUILD_NAME)</string>
-		<key>CFBundleSignature</key>
-		<string>????</string>
-		<key>CFBundleVersion</key>
-		<string>$(FLUTTER_BUILD_NUMBER)</string>
-		<key>LSRequiresIPhoneOS</key>
-		<true/>
-		<key>UILaunchStoryboardName</key>
-		<string>LaunchScreen</string>
-		<key>UIMainStoryboardFile</key>
-		<string>Main</string>
-		<key>UISupportedInterfaceOrientations</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>UISupportedInterfaceOrientations~ipad</key>
-		<array>
-			<string>UIInterfaceOrientationPortrait</string>
-			<string>UIInterfaceOrientationPortraitUpsideDown</string>
-			<string>UIInterfaceOrientationLandscapeLeft</string>
-			<string>UIInterfaceOrientationLandscapeRight</string>
-		</array>
-		<key>CADisableMinimumFrameDurationOnPhone</key>
-		<true/>
-		<key>UIApplicationSupportsIndirectInputEvents</key>
-		<true/>
-		<key>UIStatusBarHidden</key>
-		<false/>
-		<key>UIViewControllerBasedStatusBarAppearance</key>
-		<true/>
-		<key>UIStatusBarStyle</key>
-		<string>UIStatusBarStyleDefault</string>
-		<!-- Privacy Permissions - BẮT BUỘC cho App Store -->
-		<!-- App sử dụng image_picker để chọn ảnh từ thư viện và camera -->
-		<key>NSPhotoLibraryUsageDescription</key>
-		<string>Ứng dụng cần truy cập thư viện ảnh để bạn có thể chọn và tải ảnh lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
-		<key>NSCameraUsageDescription</key>
-		<string>Ứng dụng cần truy cập camera để bạn có thể chụp ảnh và tải lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
-		<!-- Export Compliance - Khai báo app không sử dụng encryption đặc biệt -->
-		<!-- Nếu app chỉ dùng HTTPS/SSL thông thường, set false -->
-		<key>ITSAppUsesNonExemptEncryption</key>
-		<false/>
-	<!-- Deep Linking - Universal Links -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>Editor</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>socdo</string>
-			</array>
-		</dict>
-	</array>
-	<!-- Associated Domains for Universal Links -->
-	<key>com.apple.developer.associated-domains</key>
-	<array>
-		<string>applinks:socdo.vn</string>
-		<string>applinks:www.socdo.vn</string>
-		<string>applinks:socdo.xyz</string>
-	</array>
-	</dict>
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>Socdo</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+    <key>CFBundleIdentifier</key>
+    <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>socdo</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>$(FLUTTER_BUILD_NAME)</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleVersion</key>
+    <string>$(FLUTTER_BUILD_NUMBER)</string>
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
+    <key>UILaunchStoryboardName</key>
+    <string>LaunchScreen</string>
+    <key>UIMainStoryboardFile</key>
+    <string>Main</string>
+    <key>UISupportedInterfaceOrientations</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>UISupportedInterfaceOrientations~ipad</key>
+    <array>
+        <string>UIInterfaceOrientationPortrait</string>
+        <string>UIInterfaceOrientationPortraitUpsideDown</string>
+        <string>UIInterfaceOrientationLandscapeLeft</string>
+        <string>UIInterfaceOrientationLandscapeRight</string>
+    </array>
+    <key>CADisableMinimumFrameDurationOnPhone</key>
+    <true/>
+    <key>UIApplicationSupportsIndirectInputEvents</key>
+    <true/>
+    <key>UIStatusBarHidden</key>
+    <false/>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
+    <true/>
+    <key>UIStatusBarStyle</key>
+    <string>UIStatusBarStyleDefault</string>
+
+    <key>GIDClientID</key>
+    <string>382956900555-r8kkvev6tlmt2q7dc82aqm5ba80q4mcs.apps.googleusercontent.com</string>
+    
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>socdo</string>
+            </array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.382956900555-r8kkvev6tlmt2q7dc82aqm5ba80q4mcs</string>
+            </array>
+        </dict>
+    </array>
+
+    <key>com.apple.developer.associated-domains</key>
+    <array>
+        <string>applinks:socdo.vn</string>
+        <string>applinks:www.socdo.vn</string>
+        <string>applinks:socdo.xyz</string>
+    </array>
+
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Ứng dụng cần truy cập thư viện ảnh để bạn có thể chọn và tải ảnh lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Ứng dụng cần truy cập camera để bạn có thể chụp ảnh và tải lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
+    
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+</dict>
 </plist>

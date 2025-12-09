@@ -18,6 +18,9 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
   final cart_service.CartService _cartService = cart_service.CartService();
   Map<String, dynamic>? _bonusInfo;
   bool _loading = true;
+  int? _eligibleTotal;
+  int? _bonusAmount;
+  double? _discountPercent;
 
   @override
   void initState() {
@@ -34,7 +37,42 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
   }
 
   void _onCartChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _calculateBonus(); // Recalculate khi cart thay đổi
+    }
+  }
+
+  Future<void> _calculateBonus() async {
+    if (!_bonusService.canUseBonus(_bonusInfo)) {
+      setState(() {
+        _eligibleTotal = 0;
+        _bonusAmount = 0;
+      });
+      return;
+    }
+
+    final items = _cartService.items.where((i) => i.isSelected).toList();
+    final eligibleItems = items.map((i) => {
+      'shopId': i.shopId,
+      'price': i.price,
+      'quantity': i.quantity,
+    }).toList();
+
+    final eligibleTotal = await _bonusService.calculateEligibleTotal(eligibleItems);
+    final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
+    final bonusAmount = await _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
+    
+    // Lấy discount_percent từ config để hiển thị
+    final config = await _bonusService.getBonusConfig();
+    final discountPercent = config?.discountPercent ?? 10.0;
+
+    if (mounted) {
+      setState(() {
+        _eligibleTotal = eligibleTotal;
+        _bonusAmount = bonusAmount;
+        _discountPercent = discountPercent;
+      });
+    }
   }
 
   Future<void> _loadBonusInfo() async {
@@ -75,6 +113,8 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
         _bonusInfo = bonusInfo;
         _loading = false;
       });
+      // Tính bonus sau khi có bonusInfo
+      await _calculateBonus();
     }
   }
 
@@ -88,22 +128,19 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
       return const SizedBox.shrink();
     }
 
-    // ✅ Tính eligible_total (CHỈ từ 5 shop hợp lệ: 32373, 23933, 36893, 35683, 35681)
-    final items = _cartService.items.where((i) => i.isSelected).toList();
-    final eligibleItems = items.map((i) => {
-      'shopId': i.shopId,
-      'price': i.price,
-      'quantity': i.quantity,
-    }).toList();
-    final eligibleTotal = _bonusService.calculateEligibleTotal(eligibleItems);
-
-    final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-    // ✅ Dùng eligibleTotal thay vì widget.orderTotal (tổng tất cả shop)
-    final bonusAmount = _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
-    
-    if (bonusAmount <= 0) {
+    // Nếu chưa tính toán, hiển thị loading
+    if (_eligibleTotal == null || _bonusAmount == null) {
       return const SizedBox.shrink();
     }
+
+    if (_bonusAmount! <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
+    final discountPercentText = _discountPercent != null 
+        ? _discountPercent!.toStringAsFixed(0) 
+        : '10';
     
 
     return Container(
@@ -144,7 +181,7 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Bạn được giảm: -${_formatPrice(bonusAmount)} (10%)',
+                  'Bạn được giảm: -${_formatPrice(_bonusAmount!)} ($discountPercentText%)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,

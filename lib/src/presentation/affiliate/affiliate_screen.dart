@@ -2650,7 +2650,7 @@ String _buildShareText(AffiliateProduct product) {
   final oldPriceText = product.oldPrice > product.price 
       ? '\n💸Giá Bán:  ̶${FormatUtils.formatCurrency(product.price.toInt())}̶'
       : '';
-  return '🔥 ${product.title}$discountPercent\n💰 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}$oldPriceText\n🏪 Thương hiệu: ${product.brandName}\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
+  return '🔥 ${product.title}$discountPercent\n💰 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}$oldPriceText\n📱 Sóc Đỏ : Hàng chuẩn - Giá siêu hấp dẫn';
 }
 
   Widget _buildAffiliateRegistrationPrompt() {

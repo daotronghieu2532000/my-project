@@ -5,6 +5,7 @@ import '../../core/services/socketio_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/models/chat.dart';
 import '../shop/shop_detail_screen.dart';
+import 'widgets/report_user_dialog.dart' show showReportUserDialog;
 
 class ChatScreen extends StatefulWidget {
   final int shopId;
@@ -565,6 +566,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 setState(() {
                   _isSearching = true;
                 });
+              } else if (value == 'report') {
+                showReportUserDialog(context);
               }
             },
             itemBuilder: (context) => [
@@ -597,6 +600,24 @@ class _ChatScreenState extends State<ChatScreen> {
                         fontSize: 15,
                         color: Colors.black87,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'report',
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [ 
+                    Icon(Icons.flag_outlined, size: 22, color: Colors.grey[700]),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Tố cáo ',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[700],
                       ),
                     ),
                   ],

@@ -29,6 +29,7 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
   final AuthService _authService = AuthService();
   Map<String, dynamic>? _bonusInfo;
   bool _bonusLoading = true;
+  int? _cachedBonusDiscount;
 
   @override
   void initState() {
@@ -49,7 +50,37 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
   }
 
   void _onCartChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _calculateBonus(); // Recalculate khi cart thay đổi
+    }
+  }
+
+  Future<void> _calculateBonus() async {
+    final cart = cart_service.CartService();
+    final items = cart.items.where((i) => i.isSelected).toList();
+    final eligibleItems = items.map((e) => {
+      'shopId': e.shopId,
+      'price': e.price,
+      'quantity': e.quantity,
+    }).toList();
+
+    if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
+      final eligibleTotal = await _bonusService.calculateEligibleTotal(eligibleItems);
+      final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
+      final bonusDiscount = await _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
+      
+      if (mounted) {
+        setState(() {
+          _cachedBonusDiscount = bonusDiscount;
+        });
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          _cachedBonusDiscount = 0;
+        });
+      }
+    }
   }
 
   void _onVoucherChanged() {
@@ -102,6 +133,8 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
         _bonusInfo = bonusInfo;
         _bonusLoading = false;
       });
+      // Tính bonus sau khi có bonusInfo
+      await _calculateBonus();
     }
   }
 
@@ -136,25 +169,9 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
 
 
 
-    // ✅ Tính bonus discount: 10% của ELIGIBLE TOTAL (chỉ các shop hợp lệ), KHÔNG phải totalGoods
-    int bonusDiscount = 0;
-
-    if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
-      final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-      
-      // ✅ Tính eligibleTotal (chỉ các shop hợp lệ: 32373, 23933, 36893, 35683, 35681)
-      final eligibleItems = items.map((e) => {
-        'shopId': e.shopId,
-        'price': e.price,
-        'quantity': e.quantity,
-      }).toList();
-      final eligibleTotal = _bonusService.calculateEligibleTotal(eligibleItems);
-      
-    
-      bonusDiscount = _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
-     
-    
-    } 
+    // ✅ Tính bonus discount: từ config động (discount_percent của ELIGIBLE_TOTAL)
+    // Sử dụng cached value (đã tính trong _calculateBonus)
+    final bonusDiscount = _cachedBonusDiscount ?? 0;
     
     final grandTotal = (subtotalAfterVoucher - bonusDiscount).clamp(0, 1 << 31);
   

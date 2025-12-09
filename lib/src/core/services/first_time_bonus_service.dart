@@ -1,20 +1,23 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:math' as math;
 import '../utils/device_id_helper.dart';
 import 'api_service.dart';
+import '../models/bonus_config.dart';
 
 class FirstTimeBonusService {
   static const String baseUrl = 'https://api.socdo.vn/v1';
-  
-  /// ✅ Danh sách shop được hưởng first-time bonus (10% của tổng tiền hàng)
-  /// Chỉ sản phẩm thuộc 5 shop này mới được tính vào eligible_total
-  static const List<int> eligibleBonusShops = [32373, 23933, 36893, 35683, 35681];
   
   static final FirstTimeBonusService _instance = FirstTimeBonusService._internal();
   factory FirstTimeBonusService() => _instance;
   FirstTimeBonusService._internal();
   
   final ApiService _apiService = ApiService();
+  
+  // ✅ Cache config trong memory (TTL 5 phút)
+  BonusConfig? _cachedConfig;
+  DateTime? _configCacheTime;
+  static const Duration _configCacheTTL = Duration(minutes: 5);
   
   /// Kiểm tra và tặng bonus khi đăng nhập lần đầu
   Future<Map<String, dynamic>?> checkAndGrantBonus(int userId) async {
@@ -88,47 +91,90 @@ class FirstTimeBonusService {
     return hasBonus && remainingAmount > 0 && !isUsed;
   }
   
-  /// ✅ Tính tổng tiền hàng CHỈ từ các shop hợp lệ (32373, 23933, 36893)
-  /// Bonus 10% chỉ tính trên eligible_total, KHÔNG tính trên toàn bộ giỏ hàng
+  /// Lấy cấu hình bonus từ API (có cache)
+  Future<BonusConfig?> getBonusConfig() async {
+    // Kiểm tra cache
+    if (_cachedConfig != null && _configCacheTime != null) {
+      if (DateTime.now().difference(_configCacheTime!) < _configCacheTTL) {
+        return _cachedConfig;
+      }
+    }
+
+    try {
+      final token = await _apiService.getValidToken();
+      if (token == null) {
+        // Fallback về config mặc định nếu không có token
+        return BonusConfig.defaultConfig();
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_bonus_config'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          _cachedConfig = BonusConfig.fromJson(data['data']);
+          _configCacheTime = DateTime.now();
+          return _cachedConfig;
+        }
+      }
+    } catch (e) {
+      // Fallback: dùng config mặc định nếu API fail
+      print('⚠️ [FirstTimeBonusService] Error getting config: $e');
+    }
+
+    // Fallback về config mặc định
+    return BonusConfig.defaultConfig();
+  }
+
+  /// Invalidate cache (gọi khi cần refresh config)
+  void invalidateCache() {
+    _cachedConfig = null;
+    _configCacheTime = null;
+  }
+
+  /// ✅ Tính tổng tiền hàng CHỈ từ các shop hợp lệ (từ config)
   /// 
   /// [items] - Danh sách items với format: [{'shopId': int, 'price': int, 'quantity': int}]
-  int calculateEligibleTotal(List<Map<String, dynamic>> items) {
+  Future<int> calculateEligibleTotal(List<Map<String, dynamic>> items) async {
+    final config = await getBonusConfig();
+    if (config == null || !config.status) return 0;
+
+    final eligibleShopIds = config.eligibleShops.map((s) => s.shopId).toList();
     int eligible = 0;
-    
+
     for (final item in items) {
       final shopId = item['shopId'] as int? ?? 0;
       final price = item['price'] as int? ?? 0;
       final quantity = item['quantity'] as int? ?? 1;
-      
-      if (eligibleBonusShops.contains(shopId)) {
+
+      if (eligibleShopIds.contains(shopId)) {
         eligible += price * quantity;
       }
     }
-    
+
     return eligible;
   }
-  
-  /// Tính số tiền bonus có thể dùng (10% của eligible_total, hoặc hết số còn lại nếu < 10%)
+
+  /// Tính số tiền bonus có thể dùng (từ config: discount_percent và max_discount_amount)
   /// 
-  /// ⚠️ LƯU Ý: [orderTotal] bây giờ phải là ELIGIBLE_TOTAL (chỉ từ 3 shop hợp lệ)
+  /// ⚠️ LƯU Ý: [eligibleTotal] phải là ELIGIBLE_TOTAL (chỉ từ shop hợp lệ)
   /// KHÔNG truyền tổng tiền hàng toàn bộ giỏ vào đây
-  int calculateBonusAmount(int orderTotal, int remainingBonus) {
-  
+  Future<int> calculateBonusAmount(int eligibleTotal, int remainingBonus) async {
+    final config = await getBonusConfig();
+    if (config == null || !config.status) return 0;
+    if (eligibleTotal <= 0 || remainingBonus <= 0) return 0;
+
+    // Tính bonus theo discount_percent từ config
+    final rawBonus = (eligibleTotal * config.discountPercent / 100).floor();
     
-    final bonus10Percent = (orderTotal * 10 / 100).floor();
-  
-    
-    int result;
-    if (remainingBonus < bonus10Percent) {
-      // Trừ hết số tiền còn lại
-      result = remainingBonus;
-     
-    } else {
-      // Trừ đúng 10%
-      result = bonus10Percent;
-    
-    }
-    return result;
+    // Lấy min của: rawBonus, remainingBonus, max_discount_amount
+    return math.min(math.min(rawBonus, remainingBonus), config.maxDiscountAmount);
   }
 }
 
