@@ -358,10 +358,9 @@ class AuthService {
           print('✅ Đã đăng ký FCM token thành công cho user ${user.userId}');
         }
       }
-    } catch (e, stackTrace) {
-      print('❌ Lỗi khi đăng ký FCM token: $e');
-     
-    }
+     } catch (e) {
+       print('❌ Lỗi khi đăng ký FCM token: $e');
+     }
   }
 
   /// Lấy thông tin thiết bị
@@ -396,105 +395,83 @@ class AuthService {
     }
   }
 
-  /// Gửi OTP qua SMS (eSMS)
-  Future<Map<String, dynamic>> forgotPasswordSMS(String phoneNumber) async {
-    try {
-      final response = await _apiService.post(
-        '/forgot_password_sms',
-        body: {'phone_number': phoneNumber},
-      );
+  /// Gửi OTP qua SMS (eSMS) - ĐÃ TẮT
+  // Future<Map<String, dynamic>> forgotPasswordSMS(String phoneNumber) async {
+  //   try {
+  //     final response = await _apiService.post(
+  //       '/forgot_password_sms',
+  //       body: {'phone_number': phoneNumber},
+  //     );
+  //
+  //     if (response != null) {
+  //       try {
+  //         final data = jsonDecode(response.body);
+  //         if (data['success'] == true) {
+  //           return {
+  //             'success': true,
+  //             'message':
+  //                 data['message'] ??
+  //                 'Mã OTP đã được gửi đến số điện thoại của bạn',
+  //             'data': data['data'],
+  //           };
+  //         } else {
+  //           String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
+  //           return {
+  //             'success': false,
+  //             'message': errorMessage,
+  //           };
+  //         }
+  //       } catch (e) {
+  //         return {
+  //           'success': false,
+  //           'message': 'Lỗi xử lý dữ liệu từ server',
+  //         };
+  //       }
+  //     } else {
+  //       return {'success': false, 'message': 'Lỗi kết nối server'};
+  //     }
+  //   } catch (e) {
+  //     return {
+  //       'success': false,
+  //       'message': 'Lỗi kết nối server',
+  //     };
+  //   }
+  // }
 
-      if (response != null) {
-        try {
-          final data = jsonDecode(response.body);
-          if (data['success'] == true) {
-            return {
-              'success': true,
-              'message':
-                  data['message'] ??
-                  'Mã OTP đã được gửi đến số điện thoại của bạn',
-              'data': data['data'],
-            };
-          } else {
-            String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
-            // String debugInfo = '';
-            //
-            // if (data['error'] != null) {
-            //   debugInfo += '\nError: ${data['error']}';
-            // }
-            // if (data['file'] != null) {
-            //   debugInfo += '\nFile: ${data['file']}';
-            // }
-            // if (data['line'] != null) {
-            //   debugInfo += '\nLine: ${data['line']}';
-            // }
-            // if (data['debug'] != null) {
-            //   debugInfo += '\nDebug: ${jsonEncode(data['debug'])}';
-            // }
-            //
-
-            return {
-              'success': false,
-              'message': errorMessage,
-              // 'error_details': data, // TODO: Bỏ comment khi cần debug
-            };
-          }
-        } catch (e /*, stackTrace*/) {
-          return {
-            'success': false,
-            'message': 'Lỗi xử lý dữ liệu từ server',
-            // TODO: Bỏ comment khi cần debug
-            // 'raw_response': response.body.length > 1000 ? response.body.substring(0, 1000) : response.body,
-            // 'response_length': response.body.length,
-            // 'status_code': response.statusCode,
-          };
-        }
-      } else {
-        return {'success': false, 'message': 'Lỗi kết nối server'};
-      }
-    } catch (e /*, stackTrace*/) {
-      return {
-        'success': false,
-        'message': 'Lỗi kết nối server',
-        // 'exception': e.toString(), // TODO: Bỏ comment khi cần debug
-      };
-    }
-  }
-
-  /// Gửi OTP qua cuộc gọi Stringee
-  Future<Map<String, dynamic>> forgotPasswordStringeeCall(
-    String phoneNumber,
-  ) async {
-    try {
-      final response = await _apiService.post(
-        '/forgot_password_call',
-        body: {'phone_number': phoneNumber},
-      );
-
-      if (response != null) {
-        try {
-          final data = jsonDecode(response.body);
-          if (data['success'] == true) {
-            return {
-              'success': true,
-              'message':
-                  data['message'] ?? 'Bạn sẽ nhận được cuộc gọi với mã OTP',
-              'data': data['data'],
-            };
-          } else {
-            String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
-            return {'success': false, 'message': errorMessage};
-          }
-        } catch (e) {
-          return {'success': false, 'message': 'Lỗi xử lý dữ liệu từ server'};
-        }
-      } else {
-        return {'success': false, 'message': 'Lỗi kết nối server'};
-      }
-    } catch (e) {
-      return {'success': false, 'message': 'Lỗi kết nối server'};
-    }
-  }
+  /// Gửi OTP qua cuộc gọi Stringee - ĐÃ TẮT
+  // Future<Map<String, dynamic>> forgotPasswordStringeeCall(
+  //   String phoneNumber,
+  // ) async {
+  //   try {
+  //     final response = await _apiService.post(
+  //       '/forgot_password_call',
+  //       body: {'phone_number': phoneNumber},
+  //     );
+  //
+  //     if (response != null) {
+  //       try {
+  //         final data = jsonDecode(response.body);
+  //         if (data['success'] == true) {
+  //           return {
+  //             'success': true,
+  //             'message':
+  //                 data['message'] ?? 'Bạn sẽ nhận được cuộc gọi với mã OTP',
+  //             'data': data['data'],
+  //           };
+  //         } else {
+  //           String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
+  //           return {'success': false, 'message': errorMessage};
+  //         }
+  //       } catch (e) {
+  //         return {'success': false, 'message': 'Lỗi xử lý dữ liệu từ server'};
+  //       }
+  //     } else {
+  //       return {'success': false, 'message': 'Lỗi kết nối server'};
+  //     }
+  //   } catch (e) {
+  //     return {'success': false, 'message': 'Lỗi kết nối server'};
+  //   }
+  // }
 
   /// Gửi OTP qua Zalo ZNS
   Future<Map<String, dynamic>> forgotPasswordZNS(String phoneNumber) async {
@@ -698,12 +675,10 @@ class AuthService {
             // Đăng nhập thành công
             final userData = data['data'] as Map<String, dynamic>;
 
-            final user = User.fromJson(userData);
+             final user = User.fromJson(userData);
 
-            await _saveUser(user);
-            // Verify saved user
-            final savedUser = await getCurrentUser();
-            // ✅ Kiểm tra và tặng bonus lần đầu tải app
+             await _saveUser(user);
+             // ✅ Kiểm tra và tặng bonus lần đầu tải app
             final bonusService = FirstTimeBonusService();
             final bonusInfo = await bonusService.checkAndGrantBonus(
               user.userId,

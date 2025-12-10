@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../../core/services/auth_service.dart';
 
 enum OTPMethod {
-  call,   // Cuộc gọi Stringee
-  sms,    // SMS eSMS
-  zns,    // Zalo ZNS
+  // call,   // Cuộc gọi Stringee - Đã tắt
+  // sms,    // SMS eSMS - Đã tắt
+  zns,    // Zalo ZNS - Đang sử dụng
 }
 
 class ForgotPasswordScreen extends StatefulWidget {
@@ -28,7 +28,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _obscureNewPassword = true;
   bool _obscureRePassword = true;
   int _countdown = 0;
-  OTPMethod _selectedMethod = OTPMethod.sms; // Mặc định là SMS
+  // OTPMethod _selectedMethod = OTPMethod.zns; // Chỉ dùng ZNS, không cần lựa chọn
   
   @override
   void dispose() {
@@ -68,18 +68,18 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       late Map<String, dynamic> result;
       
-      // Gọi API tương ứng với phương thức được chọn
-      switch (_selectedMethod) {
-        case OTPMethod.call:
-          result = await _authService.forgotPasswordStringeeCall(_phoneController.text.trim());
-          break;
-        case OTPMethod.sms:
-          result = await _authService.forgotPasswordSMS(_phoneController.text.trim());
-          break;
-        case OTPMethod.zns:
-          result = await _authService.forgotPasswordZNS(_phoneController.text.trim());
-          break;
-      }
+      // Chỉ sử dụng ZNS
+      // switch (_selectedMethod) {
+      //   case OTPMethod.call:
+      //     result = await _authService.forgotPasswordStringeeCall(_phoneController.text.trim());
+      //     break;
+      //   case OTPMethod.sms:
+      //     result = await _authService.forgotPasswordSMS(_phoneController.text.trim());
+      //     break;
+      //   case OTPMethod.zns:
+      result = await _authService.forgotPasswordZNS(_phoneController.text.trim());
+      //     break;
+      // }
       
       if (mounted) {
         if (result['success'] == true) {
@@ -340,117 +340,117 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     
                     const SizedBox(height: 32),
                     
-                    // Phương thức nhận OTP
-                    if (!_otpSent) ...[
-                      const Text(
-                        'Chọn phương thức nhận OTP',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF212529),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 12),
-                      
-                      // OTP Method Selection
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: Column(
-                          children: [
-                            RadioListTile<OTPMethod>(
-                              value: OTPMethod.call,
-                              groupValue: _selectedMethod,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedMethod = value!;
-                                });
-                              },
-                              title: const Row(
-                                children: [
-                                  Icon(Icons.phone_in_talk_rounded, color: Color(0xFF28A745), size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Cuộc gọi (Stringee)',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: const Text(
-                                'Nhận mã OTP qua cuộc gọi thoại',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              activeColor: const Color(0xFFDC3545),
-                            ),
-                            Divider(height: 1, color: Colors.grey[300]),
-                            RadioListTile<OTPMethod>(
-                              value: OTPMethod.sms,
-                              groupValue: _selectedMethod,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedMethod = value!;
-                                });
-                              },
-                              title: const Row(
-                                children: [
-                                  Icon(Icons.sms_rounded, color: Color(0xFF007BFF), size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Tin nhắn SMS (eSMS)',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: const Text(
-                                'Nhận mã OTP qua tin nhắn SMS',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              activeColor: const Color(0xFFDC3545),
-                            ),
-                            Divider(height: 1, color: Colors.grey[300]),
-                            RadioListTile<OTPMethod>(
-                              value: OTPMethod.zns,
-                              groupValue: _selectedMethod,
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedMethod = value!;
-                                });
-                              },
-                              title: const Row(
-                                children: [
-                                  Icon(Icons.chat_bubble_rounded, color: Color(0xFF0088FF), size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Zalo ZNS',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              subtitle: const Text(
-                                'Nhận mã OTP qua Zalo',
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              activeColor: const Color(0xFFDC3545),
-                            ),
-                          ],
-                        ),
-                      ),
-                      
-                      const SizedBox(height: 24),
-                    ],
+                    // Phương thức nhận OTP - Chỉ ZNS
+                    // if (!_otpSent) ...[
+                    //   const Text(
+                    //     'Chọn phương thức nhận OTP',
+                    //     style: TextStyle(
+                    //       fontSize: 15,
+                    //       fontWeight: FontWeight.w600,
+                    //       color: Color(0xFF212529),
+                    //     ),
+                    //   ),
+                    //   
+                    //   const SizedBox(height: 12),
+                    //   
+                    //   // OTP Method Selection - Đã tắt các phương thức khác
+                    //   Container(
+                    //     decoration: BoxDecoration(
+                    //       color: Colors.white,
+                    //       borderRadius: BorderRadius.circular(12),
+                    //       border: Border.all(color: Colors.grey[300]!),
+                    //     ),
+                    //     child: Column(
+                    //       children: [
+                    //         // RadioListTile<OTPMethod>(
+                    //         //   value: OTPMethod.call,
+                    //         //   groupValue: _selectedMethod,
+                    //         //   onChanged: (value) {
+                    //         //     setState(() {
+                    //         //       _selectedMethod = value!;
+                    //         //     });
+                    //         //   },
+                    //         //   title: const Row(
+                    //         //     children: [
+                    //         //       Icon(Icons.phone_in_talk_rounded, color: Color(0xFF28A745), size: 20),
+                    //         //       SizedBox(width: 8),
+                    //         //       Text(
+                    //         //         'Cuộc gọi (Stringee)',
+                    //         //         style: TextStyle(
+                    //         //           fontSize: 14,
+                    //         //           fontWeight: FontWeight.w500,
+                    //         //         ),
+                    //         //       ),
+                    //         //     ],
+                    //         //   ),
+                    //         //   subtitle: const Text(
+                    //         //     'Nhận mã OTP qua cuộc gọi thoại',
+                    //         //     style: TextStyle(fontSize: 12),
+                    //         //   ),
+                    //         //   activeColor: const Color(0xFFDC3545),
+                    //         // ),
+                    //         // Divider(height: 1, color: Colors.grey[300]),
+                    //         // RadioListTile<OTPMethod>(
+                    //         //   value: OTPMethod.sms,
+                    //         //   groupValue: _selectedMethod,
+                    //         //   onChanged: (value) {
+                    //         //     setState(() {
+                    //         //       _selectedMethod = value!;
+                    //         //     });
+                    //         //   },
+                    //         //   title: const Row(
+                    //         //     children: [
+                    //         //       Icon(Icons.sms_rounded, color: Color(0xFF007BFF), size: 20),
+                    //         //       SizedBox(width: 8),
+                    //         //       Text(
+                    //         //         'Tin nhắn SMS (eSMS)',
+                    //         //         style: TextStyle(
+                    //         //           fontSize: 14,
+                    //         //           fontWeight: FontWeight.w500,
+                    //         //         ),
+                    //         //       ),
+                    //         //     ],
+                    //         //   ),
+                    //         //   subtitle: const Text(
+                    //         //     'Nhận mã OTP qua tin nhắn SMS',
+                    //         //     style: TextStyle(fontSize: 12),
+                    //         //   ),
+                    //         //   activeColor: const Color(0xFFDC3545),
+                    //         // ),
+                    //         // Divider(height: 1, color: Colors.grey[300]),
+                    //         RadioListTile<OTPMethod>(
+                    //           value: OTPMethod.zns,
+                    //           groupValue: _selectedMethod,
+                    //           onChanged: (value) {
+                    //             setState(() {
+                    //               _selectedMethod = value!;
+                    //             });
+                    //           },
+                    //           title: const Row(
+                    //             children: [
+                    //               Icon(Icons.chat_bubble_rounded, color: Color(0xFF0088FF), size: 20),
+                    //               SizedBox(width: 8),
+                    //               Text(
+                    //                 'Zalo ZNS',
+                    //                 style: TextStyle(
+                    //                   fontSize: 14,
+                    //                   fontWeight: FontWeight.w500,
+                    //                 ),
+                    //               ),
+                    //             ],
+                    //           ),
+                    //           subtitle: const Text(
+                    //             'Nhận mã OTP qua Zalo',
+                    //             style: TextStyle(fontSize: 12),
+                    //           ),
+                    //           activeColor: const Color(0xFFDC3545),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                    //   
+                    //   const SizedBox(height: 24),
+                    // ],
                     
                     // Phone number field
                     TextFormField(
