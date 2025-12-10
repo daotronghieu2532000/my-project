@@ -210,23 +210,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (value == null || value.isEmpty) {
       return 'Vui lòng nhập mật khẩu';
     }
-    if (value.length < 8) {
-      return 'Mật khẩu phải có ít nhất 8 ký tự';
-    }
-    if (!RegExp(r'[A-Z]').hasMatch(value)) {
-      return 'Mật khẩu phải có ít nhất 1 chữ hoa';
-    }
-    if (!RegExp(r'[a-z]').hasMatch(value)) {
-      return 'Mật khẩu phải có ít nhất 1 chữ thường';
-    }
-    if (!RegExp(r'[0-9]').hasMatch(value)) {
-      return 'Mật khẩu phải có ít nhất 1 chữ số';
-    }
-    // Kiểm tra ký tự đặc biệt - tránh dấu nháy đơn trong raw string
-    final specialChars = r'!@#$%^&*()_+\-=\[\]{};:"\\|,.<>\/?';
-    final specialCharPattern = RegExp('[$specialChars]');
-    if (!specialCharPattern.hasMatch(value)) {
-      return 'Mật khẩu phải có ít nhất 1 ký tự đặc biệt';
+    // Chỉ cần tối thiểu 6 ký tự
+    if (value.length < 6) {
+      return 'Mật khẩu phải có ít nhất 6 ký tự';
     }
     return null;
   }
