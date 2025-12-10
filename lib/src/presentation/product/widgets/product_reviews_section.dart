@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../product_reviews_screen.dart';
 import 'review_image_viewer.dart';
 import 'report_review_dialog.dart' show showReportReviewDialog;
-
+import '../../../core/services/blocked_users_service.dart';
+ 
 class ProductReviewsSection extends StatelessWidget {
   final List<Map<String, dynamic>>? reviews;
   final int productId;
@@ -277,10 +278,30 @@ class ProductReviewsSection extends StatelessWidget {
                                 ],
                               ),
                             ),
+                            PopupMenuItem<String>(
+                              value: 'block',
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.block, size: 14, color: Colors.red[700]),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Chặn',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                           onSelected: (String value) {
                             if (value == 'report') {
                               showReportReviewDialog(context);
+                            } else if (value == 'block') {
+                              _handleBlockUser(context, review);
                             }
                           },
                         ),
@@ -523,6 +544,110 @@ class ProductReviewsSection extends StatelessWidget {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleBlockUser(BuildContext context, Map<String, dynamic> review) async {
+    final blockedService = BlockedUsersService();
+    await blockedService.initialize();
+    
+    final userId = review['user_id'] as int? ?? review['sender_id'] as int? ?? 0;
+    final userName = review['user_name'] as String? ?? 'Người dùng';
+    
+    if (userId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể xác định người dùng để chặn'),
+          backgroundColor: Colors.grey,
+        ),
+      );
+      return;
+    }
+    
+    // Hiển thị dialog xác nhận
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Chặn người dùng',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bạn có chắc chắn muốn chặn $userName?',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: Colors.grey[700]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Khi chặn, đánh giá và nội dung của người này sẽ bị ẩn ngay lập tức.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await blockedService.blockUser(userId);
+              
+              if (success && context.mounted) {
+                // Hiển thị thông báo
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã chặn người dùng. Nội dung của họ đã bị ẩn.'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey[800],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Chặn'),
+          ),
         ],
       ),
     );

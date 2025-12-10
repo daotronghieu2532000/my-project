@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../core/services/api_service.dart';
+import '../../core/services/blocked_users_service.dart';
 import 'widgets/review_image_viewer.dart';
 import 'widgets/report_review_dialog.dart' show showReportReviewDialog;
 
@@ -15,6 +16,7 @@ class ProductReviewsScreen extends StatefulWidget {
 
 class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
   final ApiService _api = ApiService();
+  final BlockedUsersService _blockedUsersService = BlockedUsersService();
   final ScrollController _scrollController = ScrollController();
 
   List<Map<String, dynamic>> _reviews = [];
@@ -22,6 +24,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
   int _page = 1;
   final int _limit = 400; // Tăng từ 20 lên 100 để hiển thị nhiều reviews hơn
   bool _hasMore = true;
+  Set<int> _blockedUserIds = {};
 
   // Filters
   int? _selectedRating; // null = all, 1-5 = specific rating
@@ -41,8 +44,19 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
   @override
   void initState() {
     super.initState();
+    _loadBlockedUsers();
     _loadReviews(); // Load reviews và stats ngay từ đầu
     _scrollController.addListener(_onScroll);
+  }
+
+  Future<void> _loadBlockedUsers() async {
+    await _blockedUsersService.initialize();
+    final blocked = await _blockedUsersService.getBlockedUsers();
+    if (mounted) {
+      setState(() {
+        _blockedUserIds = blocked;
+      });
+    }
   }
 
   @override
@@ -139,6 +153,18 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
 
   void _applyFilters() {
     _loadReviews(refresh: true);
+  }
+
+  // Lọc reviews: ẩn reviews từ người bị chặn và lọc profanity
+  List<Map<String, dynamic>> _getFilteredReviews() {
+    return _reviews.where((review) {
+      final userId = review['user_id'] as int? ?? review['sender_id'] as int? ?? 0;
+      // Ẩn review từ người bị chặn
+      if (userId > 0 && _blockedUserIds.contains(userId)) {
+        return false;
+      }
+      return true;
+    }).toList();
   }
 
   @override
@@ -324,10 +350,11 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                     child: ListView.separated(
                       controller: _scrollController,
                       padding: const EdgeInsets.all(16),
-                      itemCount: _reviews.length + (_hasMore ? 1 : 0),
+                      itemCount: _getFilteredReviews().length + (_hasMore ? 1 : 0),
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemBuilder: (context, index) {
-                        if (index == _reviews.length) {
+                        final filteredReviews = _getFilteredReviews();
+                        if (index == filteredReviews.length) {
                           return const Center(
                             child: Padding(
                               padding: EdgeInsets.all(16),
@@ -335,7 +362,7 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                             ),
                           );
                         }
-                        return _buildReviewItem(_reviews[index]);
+                        return _buildReviewItem(filteredReviews[index]);
                       },
                     ),
                   ),
@@ -614,10 +641,30 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
                                 ],
                               ),
                             ),
+                            PopupMenuItem<String>(
+                              value: 'block',
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.block, size: 14, color: Colors.grey[700]),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Chặn',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[700],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                           onSelected: (String value) {
                             if (value == 'report') {
                               showReportReviewDialog(context);
+                            } else if (value == 'block') {
+                              _handleBlockUser(review);
                             }
                           },
                         ),
@@ -861,6 +908,115 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleBlockUser(Map<String, dynamic> review) async {
+    await _blockedUsersService.initialize();
+    
+    final userId = review['user_id'] as int? ?? review['sender_id'] as int? ?? 0;
+    final userName = review['user_name'] as String? ?? 'Người dùng';
+    
+    if (userId == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không thể xác định người dùng để chặn'),
+          backgroundColor: Colors.grey,
+        ),
+      );
+      return;
+    }
+    
+    // Hiển thị dialog xác nhận
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Chặn người dùng',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bạn có chắc chắn muốn chặn $userName?',
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 18, color: Colors.grey[700]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Khi chặn, đánh giá và nội dung của người này sẽ bị ẩn ngay lập tức.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Hủy',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              final success = await _blockedUsersService.blockUser(userId);
+              
+              if (success && mounted) {
+                // Cập nhật danh sách chặn
+                await _loadBlockedUsers();
+                
+                // Reload để ẩn nội dung ngay lập tức
+                setState(() {});
+                
+                // Hiển thị thông báo
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã chặn người dùng. Nội dung của họ đã bị ẩn.'),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey[800],
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Chặn'),
+          ),
         ],
       ),
     );

@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../../core/services/chat_service.dart';
 import '../../core/services/socketio_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/blocked_users_service.dart';
+import '../../core/utils/profanity_filter.dart';
 import '../../core/models/chat.dart';
 import '../shop/shop_detail_screen.dart';
 import 'widgets/report_user_dialog.dart' show showReportUserDialog;
+import 'widgets/block_user_dialog.dart' show showBlockUserDialog;
 
 class ChatScreen extends StatefulWidget {
   final int shopId;
@@ -31,6 +34,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ChatService _chatService = ChatService();
   final SocketIOService _socketIOService = SocketIOService();
   final AuthService _authService = AuthService();
+  final BlockedUsersService _blockedUsersService = BlockedUsersService();
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -44,6 +48,7 @@ class _ChatScreenState extends State<ChatScreen> {
   List<ChatMessage> _filteredMessages = [];
   bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
+  Set<int> _blockedUserIds = {};
   
   // ✅ Mẫu chat tiêu biểu
   final List<String> _quickReplies = [
@@ -60,7 +65,18 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _loadBlockedUsers();
     _initializeChat();
+  }
+
+  Future<void> _loadBlockedUsers() async {
+    await _blockedUsersService.initialize();
+    final blocked = await _blockedUsersService.getBlockedUsers();
+    if (mounted) {
+      setState(() {
+        _blockedUserIds = blocked;
+      });
+    }
   }
 
   Timer? _pollingTimer;
@@ -392,6 +408,37 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  Future<void> _handleBlockUser() async {
+    // Hiển thị dialog xác nhận
+    showBlockUserDialog(
+      context,
+      widget.shopName,
+      () async {
+        // Chặn người dùng
+        final success = await _blockedUsersService.blockUser(widget.shopId);
+        
+        if (success && mounted) {
+          // Cập nhật danh sách chặn
+          await _loadBlockedUsers();
+          
+          // Lọc lại messages để ẩn nội dung của người bị chặn ngay lập tức
+          setState(() {
+            // Messages sẽ được lọc trong _buildChatScreen
+          });
+          
+          // Hiển thị thông báo
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Đã chặn người dùng. Nội dung của họ đã bị ẩn.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+    );
+  }
+
 
   void _filterMessages(String query) {
     setState(() {
@@ -417,6 +464,19 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _sendMessage() async {
     final content = _messageController.text.trim();
     if (content.isEmpty || _isSending || _phien == null) return;
+    
+    // ✅ Lọc từ ngữ thô tục trước khi gửi
+    final filterResult = ProfanityFilter.checkAndFilter(content);
+    if (filterResult['containsProfanity'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tin nhắn chứa nội dung không phù hợp. Vui lòng chỉnh sửa.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
     
     setState(() { _isSending = true; });
     
@@ -568,6 +628,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 });
               } else if (value == 'report') {
                 showReportUserDialog(context);
+              } else if (value == 'block') {
+                _handleBlockUser();
               }
             },
             itemBuilder: (context) => [
@@ -623,6 +685,24 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
+              PopupMenuItem(
+                value: 'block',
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.block, size: 22, color: Colors.red[700]),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Chặn người dùng này',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.red[700],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ],
@@ -650,10 +730,32 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildChatScreen() {
-    // ✅ Sử dụng filtered messages nếu đang search, nếu không thì dùng tất cả messages
+    // ✅ Lọc messages: ẩn tin nhắn từ người bị chặn và lọc profanity
+    final filteredByBlock = _messages.where((message) {
+      // Ẩn tin nhắn từ người dùng bị chặn (shopId)
+      if (!message.isOwn && _blockedUserIds.contains(widget.shopId)) {
+        return false;
+      }
+      // Ẩn tin nhắn từ sender bị chặn (nếu có senderId)
+      if (!message.isOwn && message.senderId > 0 && _blockedUserIds.contains(message.senderId)) {
+        return false;
+      }
+      return true;
+    }).toList();
+    
+    // ✅ Sử dụng filtered messages nếu đang search, nếu không thì dùng messages đã lọc chặn
     final displayMessages = _searchQuery != null && _searchQuery!.isNotEmpty
-        ? _filteredMessages
-        : _messages;
+        ? _filteredMessages.where((message) {
+            // Cũng lọc chặn trong search results
+            if (!message.isOwn && _blockedUserIds.contains(widget.shopId)) {
+              return false;
+            }
+            if (!message.isOwn && message.senderId > 0 && _blockedUserIds.contains(message.senderId)) {
+              return false;
+            }
+            return true;
+          }).toList()
+        : filteredByBlock;
     
     return Column(
       children: [
@@ -941,11 +1043,15 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageBubble(ChatMessage message, {bool isHighlighted = false}) {
     final isOwn = message.isOwn;
     
+    // ✅ Lọc profanity trong nội dung hiển thị
+    final filterResult = ProfanityFilter.checkAndFilter(message.content);
+    final displayContent = filterResult['filteredText'] as String;
+    
     // ✅ Highlight text nếu đang search
     Widget contentWidget;
     if (isHighlighted && _searchQuery != null && _searchQuery!.isNotEmpty) {
       final query = _searchQuery!.toLowerCase();
-      final content = message.content;
+      final content = displayContent; // Sử dụng nội dung đã lọc
       final contentLower = content.toLowerCase();
       final queryIndex = contentLower.indexOf(query);
       
@@ -1002,7 +1108,7 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       } else {
         contentWidget = Text(
-          message.content,
+          displayContent,
           style: TextStyle(
             color: isOwn ? Colors.white : Colors.black87,
             fontSize: 14,
@@ -1011,7 +1117,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } else {
       contentWidget = Text(
-        message.content,
+        displayContent,
         style: TextStyle(
           color: isOwn ? Colors.white : Colors.black87,
           fontSize: 14,

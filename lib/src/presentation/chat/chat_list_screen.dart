@@ -7,6 +7,7 @@ import '../../core/services/socketio_service.dart';
 import '../../core/models/user.dart';
 import '../../core/models/chat.dart';
 import 'chat_screen.dart';
+import 'widgets/eula_dialog.dart' show showEulaDialog, hasAgreedToEula;
 
 class ChatListScreen extends StatefulWidget {
   const ChatListScreen({super.key});
@@ -22,12 +23,39 @@ class _ChatListScreenState extends State<ChatListScreen> {
   User? _currentUser;
   List<ChatSession> _sessions = [];
   bool _isLoading = true;
+  bool _eulaAgreed = false;
+  bool _isCheckingEula = true;
   Timer? _pollingTimer;
 
   @override
   void initState() {
     super.initState();
-    _checkLoginStatus();
+    _checkEulaAndLogin();
+  }
+
+  Future<void> _checkEulaAndLogin() async {
+    // Kiểm tra EULA trước
+    final agreed = await hasAgreedToEula();
+    
+    if (mounted) {
+      setState(() {
+        _eulaAgreed = agreed;
+        _isCheckingEula = false;
+      });
+      
+      if (!agreed) {
+        // Hiển thị dialog EULA
+        showEulaDialog(context, () {
+          setState(() {
+            _eulaAgreed = true;
+          });
+          _checkLoginStatus();
+        });
+      } else {
+        // Đã đồng ý, kiểm tra login
+        _checkLoginStatus();
+      }
+    }
   }
 
   @override
@@ -228,7 +256,33 @@ class _ChatListScreenState extends State<ChatListScreen> {
         ),
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
-      body: _currentUser == null ? _buildNotLoggedInView() : _buildChatListView(),
+      body: _isCheckingEula
+          ? const Center(child: CircularProgressIndicator())
+          : !_eulaAgreed
+              ? _buildWaitingForEulaView()
+              : (_currentUser == null ? _buildNotLoggedInView() : _buildChatListView()),
+    );
+  }
+
+  Widget _buildWaitingForEulaView() {
+    return Container(
+      color: Colors.white,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text(
+              'Vui lòng đồng ý với điều khoản sử dụng',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
