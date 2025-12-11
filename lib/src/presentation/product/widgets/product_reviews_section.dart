@@ -5,12 +5,13 @@ import 'review_image_viewer.dart';
 import 'report_review_dialog.dart' show showReportReviewDialog;
 import '../../../core/services/blocked_users_service.dart';
  
-class ProductReviewsSection extends StatelessWidget {
+class ProductReviewsSection extends StatefulWidget {
   final List<Map<String, dynamic>>? reviews;
   final int productId;
   final int? totalReviews;
   final double? rating;
   final bool isLoading; // Thêm parameter để biết đang load
+  final VoidCallback? onBlockUser; // Callback khi block user
 
   const ProductReviewsSection({
     super.key,
@@ -19,12 +20,54 @@ class ProductReviewsSection extends StatelessWidget {
     this.totalReviews,
     this.rating,
     this.isLoading = false, // Default false
+    this.onBlockUser, // Callback khi block user
   });
 
   @override
+  State<ProductReviewsSection> createState() => _ProductReviewsSectionState();
+}
+
+class _ProductReviewsSectionState extends State<ProductReviewsSection> {
+  Set<int> _blockedUserIds = {};
+  bool _isLoadingBlocked = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBlockedUsers();
+  }
+
+  Future<void> _loadBlockedUsers() async {
+    final blockedService = BlockedUsersService();
+    await blockedService.initialize();
+    final blocked = await blockedService.getBlockedUsers();
+    if (mounted) {
+      setState(() {
+        _blockedUserIds = blocked;
+        _isLoadingBlocked = false;
+      });
+    }
+  }
+
+  // Lọc reviews: ẩn reviews từ người bị chặn
+  List<Map<String, dynamic>>? _getFilteredReviews() {
+    if (widget.reviews == null) return null;
+    
+    return widget.reviews!.where((review) {
+      final userId = review['user_id'] as int? ?? review['sender_id'] as int? ?? 0;
+      // Ẩn review từ người bị chặn
+      if (userId > 0 && _blockedUserIds.contains(userId)) {
+        return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // LUÔN HIỂN THỊ section, ngay cả khi chưa có reviews
-    final hasReviews = reviews != null && reviews!.isNotEmpty;
+    // Lọc reviews từ blocked users
+    final filteredReviews = _getFilteredReviews();
+    final hasReviews = filteredReviews != null && filteredReviews.isNotEmpty;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -46,12 +89,12 @@ class ProductReviewsSection extends StatelessWidget {
                         color: Colors.black87,
                       ),
                     ),
-                    if (rating != null && rating! > 0) ...[
+                    if (widget.rating != null && widget.rating! > 0) ...[
                       const SizedBox(width: 8),
                       const Icon(Icons.star, color: Colors.amber, size: 18),
                       const SizedBox(width: 4),
                       Text(
-                        rating!.toStringAsFixed(1),
+                        widget.rating!.toStringAsFixed(1),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -59,10 +102,10 @@ class ProductReviewsSection extends StatelessWidget {
                         ),
                       ),
                     ],
-                    if (totalReviews != null && totalReviews! > 0) ...[
+                    if (widget.totalReviews != null && widget.totalReviews! > 0) ...[
                       const SizedBox(width: 8),
                       Text(
-                        '($totalReviews)',
+                        '(${widget.totalReviews})',
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[600],
@@ -73,13 +116,13 @@ class ProductReviewsSection extends StatelessWidget {
                 ),
               ),
               // Luôn hiển thị nút "Xem tất cả" nếu có reviews hoặc có totalReviews
-              if (totalReviews != null && totalReviews! > 0)
+              if (widget.totalReviews != null && widget.totalReviews! > 0)
                 TextButton(
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => ProductReviewsScreen(productId: productId),
+                              builder: (_) => ProductReviewsScreen(productId: widget.productId),
                             ),
                           );
                         },
@@ -108,7 +151,7 @@ class ProductReviewsSection extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         // List đánh giá - hiển thị reviews nếu có, hoặc loading/empty state
-        if (isLoading)
+        if (widget.isLoading || _isLoadingBlocked)
           // Đang load reviews
           const Padding(
             padding: EdgeInsets.all(20),
@@ -120,14 +163,14 @@ class ProductReviewsSection extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               padding: EdgeInsets.zero,
-              itemCount: reviews!.length > 2 ? 2 : reviews!.length,
+              itemCount: filteredReviews.length > 2 ? 2 : filteredReviews.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
-                final review = reviews![index];
+                final review = filteredReviews[index];
                 return _buildReviewItem(context, review);
               },
           )
-        else if (totalReviews != null && totalReviews! > 0)
+        else if (widget.totalReviews != null && widget.totalReviews! > 0)
           // Có reviews nhưng chưa load được (có thể đang load hoặc lỗi)
           Padding(
             padding: const EdgeInsets.all(20),
@@ -629,14 +672,31 @@ class ProductReviewsSection extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
+              // Gọi API để chặn user
               final success = await blockedService.blockUser(userId);
               
-              if (success && context.mounted) {
+              if (success && mounted) {
+                // Reload blocked users và update UI ngay lập tức
+                await _loadBlockedUsers();
+                
+                // Gọi callback để parent reload reviews
+                if (widget.onBlockUser != null) {
+                  widget.onBlockUser!();
+                }
+                
                 // Hiển thị thông báo
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Đã chặn người dùng. Nội dung của họ đã bị ẩn.'),
                     backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Không thể chặn người dùng. Vui lòng thử lại.'),
+                    backgroundColor: Colors.red,
                     duration: Duration(seconds: 2),
                   ),
                 );

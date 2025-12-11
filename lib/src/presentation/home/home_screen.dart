@@ -1,5 +1,6 @@
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -42,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   PopupBanner? _popupBanner;
   bool _showPopup = false;
   Timer? _scrollSaveTimer; // Timer để debounce việc lưu scroll position (không dùng nữa)
+  bool _isShowingWelcomeDialog = false; // Flag để tránh hiển thị dialog nhiều lần đồng thời
 
   @override
   void initState() {
@@ -63,8 +65,23 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     });
     
     // ✅ Kiểm tra và hiển thị dialog cảm ơn nếu có bonus mới (sau khi vào home)
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    // Kiểm tra ngay sau khi widget được build xong
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
+        // Delay một chút để đảm bảo auth_service đã hoàn thành việc set flag
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            print('🔍 [HomeScreen] initState: Calling _showWelcomeBonusDialogIfNeeded() after postFrameCallback');
+            _showWelcomeBonusDialogIfNeeded();
+          }
+        });
+      }
+    });
+    
+    // ✅ Kiểm tra lại sau 2 giây để đảm bảo không bỏ sót (nếu có delay từ API)
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        print('🔍 [HomeScreen] initState: Calling _showWelcomeBonusDialogIfNeeded() after 2000ms (retry)');
         _showWelcomeBonusDialogIfNeeded();
       }
     });
@@ -75,11 +92,16 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   
   /// Callback khi auth state thay đổi (đăng nhập/đăng xuất)
   void _onAuthStateChanged() {
+    print('🔍 [HomeScreen] _onAuthStateChanged() called');
     // ✅ Khi user đăng nhập thành công, kiểm tra lại flag bonus dialog
     // Delay một chút để đảm bảo flag đã được set từ auth_service
-    Future.delayed(const Duration(milliseconds: 500), () {
+    // Tăng delay lên 1000ms để đảm bảo bonus check API đã hoàn thành
+    Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
+        print('🔍 [HomeScreen] Calling _showWelcomeBonusDialogIfNeeded() after auth state changed');
         _showWelcomeBonusDialogIfNeeded();
+      } else {
+        print('⚠️ [HomeScreen] Widget not mounted, skipping dialog check');
       }
     });
   }
@@ -349,44 +371,117 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   /// Hiển thị dialog cảm ơn nếu user vừa nhận bonus mới
   Future<void> _showWelcomeBonusDialogIfNeeded() async {
     try {
+      print('🔍 [HomeScreen] _showWelcomeBonusDialogIfNeeded() called');
+      
+      // ✅ Tránh hiển thị dialog nhiều lần đồng thời
+      if (_isShowingWelcomeDialog) {
+        print('⚠️ [HomeScreen] Dialog is already being shown, skipping');
+        return;
+      }
+      
       // ✅ Chỉ hiển thị dialog nếu user đã đăng nhập
       final isLoggedIn = await _authService.isLoggedIn();
+      print('🔍 [HomeScreen] isLoggedIn: $isLoggedIn');
       if (!isLoggedIn) {
+        print('⚠️ [HomeScreen] User not logged in, skipping dialog');
         return;
       }
       
       final prefs = await SharedPreferences.getInstance();
-      final shouldShow = prefs.getBool('show_bonus_dialog') ?? false;
       
-      if (shouldShow) {
-        // Đánh dấu đã hiển thị để không hiển thị lại
-        await prefs.setBool('show_bonus_dialog', false);
-        await prefs.setBool('welcome_bonus_dialog_shown', true);
-        
-        // Lấy config từ API
-        final config = await _bonusService.getBonusConfig();
-        if (config == null || !config.status) {
-          return; // Tính năng đã tắt, không hiển thị dialog
+      // ✅ Retry kiểm tra flag với tối đa 5 lần (mỗi lần cách nhau 500ms)
+      // Để đảm bảo flag đã được set từ auth_service (có thể mất thời gian do API call)
+      bool shouldShow = false;
+      for (int i = 0; i < 5; i++) {
+        shouldShow = prefs.getBool('show_bonus_dialog') ?? false;
+        print('🔍 [HomeScreen] Check attempt ${i + 1}/5: show_bonus_dialog = $shouldShow');
+        if (shouldShow) {
+          break;
         }
-        
-        // Delay một chút để đảm bảo UI đã render xong
-        await Future.delayed(const Duration(milliseconds: 300));
-        
-        if (mounted) {
-          showDialog(
-            context: context,
-            barrierDismissible: false, // Không cho đóng bằng cách tap outside
-            builder: (context) => WelcomeBonusDialog(
-              onClose: () {
-                Navigator.of(context).pop();
-              },
-              config: config,
-            ),
-          );
+        // Nếu chưa có flag, đợi một chút rồi thử lại
+        if (i < 4) {
+          await Future.delayed(const Duration(milliseconds: 500));
         }
       }
+      
+      if (!shouldShow) {
+        // ✅ Nếu flag = false, kiểm tra xem dialog đã được hiển thị chưa
+        final alreadyShown = prefs.getBool('welcome_bonus_dialog_shown') ?? false;
+        if (alreadyShown) {
+          print('⚠️ [HomeScreen] Dialog already shown before, skipping');
+          return;
+        }
+        print('⚠️ [HomeScreen] Flag is false after all retries, not showing dialog');
+        // Debug: Kiểm tra xem có bonus info không
+        final bonusInfoString = prefs.getString('first_time_bonus_info');
+        if (bonusInfoString != null) {
+          print('🔍 [HomeScreen] Found first_time_bonus_info in SharedPreferences');
+          try {
+            final bonusInfo = jsonDecode(bonusInfoString);
+            print('🔍 [HomeScreen] Bonus info: is_new_bonus = ${bonusInfo['is_new_bonus']}');
+          } catch (e) {
+            print('⚠️ [HomeScreen] Error parsing bonus info: $e');
+          }
+        } else {
+          print('⚠️ [HomeScreen] No first_time_bonus_info found in SharedPreferences');
+        }
+        return;
+      }
+      
+      // ✅ Flag = true, tiến hành hiển thị dialog
+      print('✅ [HomeScreen] Flag is true, proceeding to show dialog');
+      
+      // Clear flag ngay để tránh hiển thị lại nhiều lần
+      await prefs.setBool('show_bonus_dialog', false);
+      print('✅ [HomeScreen] Flag cleared, getting config...');
+      
+      // Lấy config từ API
+      final config = await _bonusService.getBonusConfig();
+      print('🔍 [HomeScreen] Config received: ${config != null ? "not null" : "null"}');
+      if (config != null) {
+        print('🔍 [HomeScreen] Config status: ${config.status}');
+      }
+      
+      if (config == null || !config.status) {
+        print('⚠️ [HomeScreen] Config is null or status is false, not showing dialog');
+        return; // Tính năng đã tắt, không hiển thị dialog
+      }
+      
+      // Delay một chút để đảm bảo UI đã render xong
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      if (!mounted) {
+        print('⚠️ [HomeScreen] Widget not mounted, cannot show dialog');
+        // ✅ Nếu widget unmount, restore flag để thử lại lần sau
+        await prefs.setBool('show_bonus_dialog', true);
+        return;
+      }
+      
+      print('✅ [HomeScreen] Showing WelcomeBonusDialog');
+      // ✅ Đánh dấu đang hiển thị dialog để tránh gọi lại
+      _isShowingWelcomeDialog = true;
+      
+      // ✅ CHỈ set welcome_bonus_dialog_shown = true SAU KHI dialog đã được đóng
+      // (để đảm bảo user đã thấy dialog)
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Không cho đóng bằng cách tap outside
+        builder: (context) => WelcomeBonusDialog(
+          onClose: () {
+            print('✅ [HomeScreen] WelcomeBonusDialog closed');
+            Navigator.of(context).pop();
+            // ✅ Đánh dấu đã hiển thị SAU KHI dialog đã được đóng (đảm bảo user đã thấy dialog)
+            SharedPreferences.getInstance().then((prefs) {
+              prefs.setBool('welcome_bonus_dialog_shown', true);
+            });
+            // ✅ Reset flag để có thể hiển thị lại nếu cần (mặc dù không nên xảy ra)
+            _isShowingWelcomeDialog = false;
+          },
+          config: config,
+        ),
+      );
     } catch (e) {
-      // Ignore error
+      print('❌ [HomeScreen] Error in _showWelcomeBonusDialogIfNeeded: $e');
     }
   }
   

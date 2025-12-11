@@ -9,11 +9,13 @@ import '../app_report_screen.dart';
 import '../support_center_screen.dart';
 import '../all_orders_account_screen.dart';
 import '../review_history_screen.dart';
+import '../change_password_screen.dart';
 
 class ActionRow extends StatelessWidget {
   final IconData icon;
   final String title;
-  const ActionRow({super.key, required this.icon, required this.title});
+  final VoidCallback? onTap;
+  const ActionRow({super.key, required this.icon, required this.title, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,7 @@ class ActionRow extends StatelessWidget {
       leading: Icon(icon, color: iconColor),
       title: Text(title),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: () => _handleNavigation(context),
+      onTap: onTap ?? () => _handleNavigation(context),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       dense: true,
     );
@@ -43,6 +45,8 @@ class ActionRow extends StatelessWidget {
         return Colors.blue;
       case 'Sổ địa chỉ':
         return Colors.green;
+      case 'Đổi mật khẩu':
+        return Colors.teal;
       case 'Mã giảm giá':
         return Colors.purple;
       case 'Lịch sử đánh giá':
@@ -55,6 +59,8 @@ class ActionRow extends StatelessWidget {
         return Colors.red;
       case 'Đánh giá ứng dụng':
         return Colors.amber;
+      case 'Xóa tài khoản':
+        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -72,6 +78,14 @@ class ActionRow extends StatelessWidget {
         break;
       case 'Thông tin cá nhân':
         Navigator.pushNamed(context, '/profile/edit');
+        break;
+      case 'Đổi mật khẩu':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const ChangePasswordScreen(),
+          ),
+        );
         break;
       case 'Sản phẩm yêu thích':
         Navigator.push(

@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/chat_service.dart';
 import '../../core/services/socketio_service.dart';
+import '../../core/services/blocked_users_service.dart';
 import '../../core/models/user.dart';
 import '../../core/models/chat.dart';
 import 'chat_screen.dart';
@@ -20,11 +21,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
   final _authService = AuthService();
   final _chatService = ChatService();
   final _socketIOService = SocketIOService();
+  final _blockedUsersService = BlockedUsersService();
   User? _currentUser;
   List<ChatSession> _sessions = [];
   bool _isLoading = true;
   bool _eulaAgreed = false;
   bool _isCheckingEula = true;
+  Set<int> _blockedShopIds = {};
   Timer? _pollingTimer;
 
   @override
@@ -55,6 +58,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
         // Đã đồng ý, kiểm tra login
         _checkLoginStatus();
       }
+    }
+  }
+
+  Future<void> _loadBlockedShops() async {
+    await _blockedUsersService.initialize();
+    final blocked = await _blockedUsersService.getBlockedShops();
+    if (mounted) {
+      setState(() {
+        _blockedShopIds = blocked;
+      });
     }
   }
 
@@ -97,8 +110,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
         final uniqueSessions = groupedSessions.values.toList()
           ..sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
         
+        // Lọc bỏ các shop bị chặn
+        final filteredSessions = uniqueSessions.where((session) {
+          return !_blockedShopIds.contains(session.shopId);
+        }).toList();
+        
         setState(() {
-          _sessions = uniqueSessions;
+          _sessions = filteredSessions;
         });
       }
     } catch (e) {
@@ -149,6 +167,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
         setState(() {
           _currentUser = user;
         });
+        await _loadBlockedShops();
         _loadChatSessions();
         _setupSocketIO();
         // ✅ Chỉ start polling nếu Socket.IO chưa connect (fallback)
@@ -198,8 +217,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
         final uniqueSessions = groupedSessions.values.toList()
           ..sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
         
+        // Lọc bỏ các shop bị chặn
+        final filteredSessions = uniqueSessions.where((session) {
+          return !_blockedShopIds.contains(session.shopId);
+        }).toList();
+        
         setState(() {
-          _sessions = uniqueSessions;
+          _sessions = filteredSessions;
           _isLoading = false;
         });
       }
@@ -230,8 +254,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
           shopAvatar: session.shopAvatar,
         ),
       ),
-    ).then((_) {
-      _loadChatSessions(); // Refresh after returning
+    ).then((shouldRefresh) {
+      // Refresh nếu có signal từ chat_screen (khi block shop)
+      if (shouldRefresh == true) {
+        _loadBlockedShops().then((_) {
+          _loadChatSessions(); // Refresh after returning
+        });
+      } else {
+        _loadChatSessions(); // Refresh after returning
+      }
     });
   }
 

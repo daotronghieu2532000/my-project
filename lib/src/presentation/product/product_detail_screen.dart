@@ -950,6 +950,51 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
   }
 
+  /// Reload reviews sau khi block user (không reset flags)
+  Future<void> _reloadReviewsAfterBlock() async {
+    if (widget.productId == null) return;
+    
+    try {
+      setState(() {
+        _isLoadingReviews = true;
+      });
+      
+      // Reload reviews với cùng limit
+      final reviewsData = await _apiService.getProductReviews(
+        productId: widget.productId!,
+        page: 1,
+        limit: 2,
+      );
+      
+      if (mounted && reviewsData != null && reviewsData['success'] == true) {
+        final data = reviewsData['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          setState(() {
+            final reviewsList = data['reviews'] as List?;
+            if (reviewsList != null) {
+              _reviews = reviewsList.cast<Map<String, dynamic>>();
+            }
+            _isLoadingReviews = false;
+          });
+        } else {
+          setState(() {
+            _isLoadingReviews = false;
+          });
+        }
+      } else {
+        setState(() {
+          _isLoadingReviews = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingReviews = false;
+        });
+      }
+    }
+  }
+
   /// Load rating stats và reviews cùng lúc (gộp thành 1 API call để tối ưu)
   /// Priority 2 - Load ngay sau basic info
   Future<void> _loadRatingAndReviews() async {
@@ -1919,6 +1964,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               totalReviews: _realReviewsCount ?? product?.reviewsCount ?? 0, // Ưu tiên dữ liệu thật từ product_reviews API
               rating: _realRating ?? product?.rating ?? 0.0, // Ưu tiên dữ liệu thật từ product_reviews API
               isLoading: _isLoadingReviews, // Truyền loading state
+              onBlockUser: () {
+                // Reload reviews sau khi block user
+                _reloadReviewsAfterBlock();
+              },
             ),
           ),
           ShopBar(

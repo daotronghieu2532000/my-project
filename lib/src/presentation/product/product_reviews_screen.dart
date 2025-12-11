@@ -56,6 +56,8 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
       setState(() {
         _blockedUserIds = blocked;
       });
+      // Reload reviews để ẩn content từ blocked users
+      _loadReviews(refresh: true);
     }
   }
 
@@ -992,20 +994,26 @@ class _ProductReviewsScreenState extends State<ProductReviewsScreen> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
+              // Gọi API để chặn user
               final success = await _blockedUsersService.blockUser(userId);
               
               if (success && mounted) {
-                // Cập nhật danh sách chặn
+                // Cập nhật danh sách chặn và reload reviews
                 await _loadBlockedUsers();
-                
-                // Reload để ẩn nội dung ngay lập tức
-                setState(() {});
                 
                 // Hiển thị thông báo
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Đã chặn người dùng. Nội dung của họ đã bị ẩn.'),
                     backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              } else if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Không thể chặn người dùng. Vui lòng thử lại.'),
+                    backgroundColor: Colors.red,
                     duration: Duration(seconds: 2),
                   ),
                 );

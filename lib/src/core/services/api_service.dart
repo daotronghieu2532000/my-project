@@ -1095,6 +1095,99 @@ class ApiService {
     }
   }
 
+  // =============== BLOCKED USERS ===============
+  /// Chặn một người dùng hoặc shop
+  Future<bool> blockUser({
+    required int userId,
+    required int blockedUserId,
+    int? blockedShopId,
+    String? reason,
+  }) async {
+    try {
+      final response = await post('/user_profile', body: {
+        'action': 'block_user',
+        'user_id': userId,
+        'blocked_user_id': blockedUserId,
+        if (blockedShopId != null && blockedShopId > 0) 'blocked_shop_id': blockedShopId,
+        'block_type': blockedShopId != null && blockedShopId > 0 ? 'shop' : 'user',
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      });
+      if (response != null) {
+        final data = jsonDecode(response.body);
+        return data['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Bỏ chặn một người dùng hoặc shop
+  Future<bool> unblockUser({
+    required int userId,
+    required int blockedUserId,
+    int? blockedShopId,
+  }) async {
+    try {
+      final response = await post('/user_profile', body: {
+        'action': 'unblock_user',
+        'user_id': userId,
+        'blocked_user_id': blockedUserId,
+        if (blockedShopId != null && blockedShopId > 0) 'blocked_shop_id': blockedShopId,
+      });
+      if (response != null) {
+        final data = jsonDecode(response.body);
+        return data['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Lấy danh sách người dùng/shop bị chặn
+  Future<List<Map<String, dynamic>>> getBlockedUsers({
+    required int userId,
+  }) async {
+    try {
+      final response = await post('/user_profile', body: {
+        'action': 'get_blocked_users',
+        'user_id': userId,
+      });
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          return List<Map<String, dynamic>>.from(data['data']);
+        }
+      }
+      return [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // =============== ACCOUNT DELETION ===============
+  /// Xóa tài khoản của người dùng
+  Future<bool> deleteAccount({
+    required int userId,
+    String? reason,
+  }) async {
+    try {
+      final response = await post('/user_profile', body: {
+        'action': 'delete_account',
+        'user_id': userId,
+        if (reason != null && reason.isNotEmpty) 'reason': reason,
+      });
+      if (response != null) {
+        final data = jsonDecode(response.body);
+        return data['success'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// Thực hiện API call với token và priority queue
   Future<http.Response?> apiCall({
     required String endpoint,

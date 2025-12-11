@@ -4,6 +4,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/utils/profanity_filter.dart';
 
 class AppRatingScreen extends StatefulWidget {
   const AppRatingScreen({super.key});
@@ -48,6 +49,24 @@ class _AppRatingScreenState extends State<AppRatingScreen> {
       return;
     }
 
+    // ✅ Lọc từ ngữ thô tục trong comment (nếu có)
+    final comment = _commentController.text.trim();
+    if (comment.isNotEmpty) {
+      final filterResult = ProfanityFilter.checkAndFilter(comment);
+      if (filterResult['containsProfanity'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bình luận chứa nội dung không phù hợp. Vui lòng chỉnh sửa.'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -76,7 +95,7 @@ class _AppRatingScreenState extends State<AppRatingScreen> {
       final result = await _apiService.submitAppRating(
         userId: user.userId,
         rating: _rating,
-        comment: _commentController.text.trim(),
+        comment: comment,
         deviceInfo: deviceInfo,
         appVersion: appVersion,
       );

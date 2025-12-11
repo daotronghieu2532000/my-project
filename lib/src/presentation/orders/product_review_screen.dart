@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/utils/profanity_filter.dart';
 
 class ProductReviewScreen extends StatefulWidget {
   final int orderId;
@@ -110,6 +111,21 @@ class _ProductReviewScreenState extends State<ProductReviewScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng chia sẻ trải nghiệm')),
       );
+      return;
+    }
+
+    // ✅ Lọc từ ngữ thô tục trước khi gửi đánh giá
+    final filterResult = ProfanityFilter.checkAndFilter(content);
+    if (filterResult['containsProfanity'] == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đánh giá chứa nội dung không phù hợp. Vui lòng chỉnh sửa.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
       return;
     }
 

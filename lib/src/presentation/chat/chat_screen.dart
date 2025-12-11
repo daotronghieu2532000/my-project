@@ -72,9 +72,14 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _loadBlockedUsers() async {
     await _blockedUsersService.initialize();
     final blocked = await _blockedUsersService.getBlockedUsers();
+    final blockedShops = await _blockedUsersService.getBlockedShops();
     if (mounted) {
       setState(() {
         _blockedUserIds = blocked;
+        // Kiểm tra nếu shop hiện tại bị chặn
+        if (blockedShops.contains(widget.shopId)) {
+          _blockedUserIds.add(widget.shopId);
+        }
       });
     }
   }
@@ -414,8 +419,8 @@ class _ChatScreenState extends State<ChatScreen> {
       context,
       widget.shopName,
       () async {
-        // Chặn người dùng
-        final success = await _blockedUsersService.blockUser(widget.shopId);
+        // Chặn shop (blockedShopId = shopId)
+        final success = await _blockedUsersService.blockUser(widget.shopId, shopId: widget.shopId);
         
         if (success && mounted) {
           // Cập nhật danh sách chặn
@@ -429,8 +434,23 @@ class _ChatScreenState extends State<ChatScreen> {
           // Hiển thị thông báo
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Đã chặn người dùng. Nội dung của họ đã bị ẩn.'),
+              content: Text('Đã chặn shop. Đang quay lại danh sách chat...'),
               backgroundColor: Colors.green,
+              duration: Duration(seconds: 1),
+            ),
+          );
+          
+          // Pop về chat_list_screen để refresh danh sách
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted) {
+              Navigator.pop(context, true); // Return true để báo hiệu cần refresh
+            }
+          });
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Không thể chặn shop. Vui lòng thử lại.'),
+              backgroundColor: Colors.red,
               duration: Duration(seconds: 2),
             ),
           );
@@ -676,7 +696,7 @@ class _ChatScreenState extends State<ChatScreen> {
                     Icon(Icons.flag_outlined, size: 22, color: Colors.grey[700]),
                     const SizedBox(width: 6),
                     Text(
-                      'Tố cáo ',
+                      'Báo cáo',
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.grey[700],

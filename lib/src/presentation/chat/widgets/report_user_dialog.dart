@@ -113,7 +113,7 @@ class _ReportUserDialogState extends State<ReportUserDialog> {
             child: Row(
               children: [
                 const Text(
-                  'Tố cáo người dùng này',
+                  'Báo cáo người dùng này',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,

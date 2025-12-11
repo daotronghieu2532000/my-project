@@ -549,6 +549,51 @@ class AuthService {
     }
   }
 
+  /// Đổi mật khẩu khi đã đăng nhập (không cần OTP)
+  Future<Map<String, dynamic>> changePasswordLoggedIn({
+    required String newPassword,
+    required String rePassword,
+  }) async {
+    try {
+      final currentUser = await getCurrentUser();
+      final userId = currentUser?.userId;
+
+      final response = await _apiService.post(
+        '/change_password_logged_in',
+        body: {
+          if (userId != null) 'user_id': userId,
+          'new_password': newPassword,
+          're_password': rePassword,
+        },
+      );
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data['success'] == true) {
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Đổi mật khẩu thành công',
+            };
+          } else {
+            return {
+              'success': false,
+              'message': data['message'] ?? 'Đổi mật khẩu thất bại',
+            };
+          }
+        } catch (e) {
+          return {'success': false, 'message': 'Lỗi xử lý dữ liệu từ server'};
+        }
+      } else {
+        return {'success': false, 'message': 'Lỗi kết nối server'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối server'};
+    }
+  }
+
+
+
   /// Đăng nhập bằng Google
   Future<Map<String, dynamic>> loginWithGoogle({
     required String googleId,

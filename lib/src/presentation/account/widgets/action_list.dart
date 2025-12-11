@@ -4,7 +4,8 @@ import '../models/action_item.dart';
 
 class ActionList extends StatelessWidget {
   final List<ActionItem> items;
-  const ActionList({super.key, required this.items});
+  final Map<String, VoidCallback>? onTapCallbacks;
+  const ActionList({super.key, required this.items, this.onTapCallbacks});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +14,11 @@ class ActionList extends StatelessWidget {
       child: Column(
         children: [
           for (final item in items)
-            ActionRow(icon: item.icon, title: item.title),
+            ActionRow(
+              icon: item.icon, 
+              title: item.title,
+              onTap: onTapCallbacks?[item.title],
+            ),
         ],
       ),
     );
