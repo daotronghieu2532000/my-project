@@ -63,9 +63,10 @@ class _CartScreenState extends State<CartScreen> {
       .where((i) => i.isSelected)
       .length;
 
+  // ✅ Tính tổng dựa trên originalPrice (giá gốc) để đồng bộ với checkout
   int get totalPrice => _cartService.items
       .where((i) => i.isSelected)
-      .fold(0, (sum, i) => sum + i.price * i.quantity);
+      .fold(0, (sum, i) => sum + ((i.originalPrice ?? i.price) * i.quantity));
 
   int get totalSavings => _cartService.items
       .where((i) => i.isSelected)

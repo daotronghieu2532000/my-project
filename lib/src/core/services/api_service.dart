@@ -844,16 +844,24 @@ class ApiService {
     String contentType = 'image/jpeg',
   }) async {
     try {
+      print('[ApiService] uploadAvatar START - userId: $userId, filename: $filename, contentType: $contentType, bytes: ${bytes.length}');
+      
       final token = await getValidToken();
       if (token == null) {
+        print('[ApiService] uploadAvatar ERROR: No token');
         return null;
       }
+      print('[ApiService] uploadAvatar - Token obtained');
 
       final uri = Uri.parse('$baseUrl/user_profile');
+      print('[ApiService] uploadAvatar - URI: $uri');
+      
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['action'] = 'upload_avatar';
       request.fields['user_id'] = userId.toString();
+      
+      print('[ApiService] uploadAvatar - Request fields: ${request.fields}');
       
       request.files.add(http.MultipartFile.fromBytes(
         'avatar',
@@ -862,19 +870,33 @@ class ApiService {
         contentType: MediaType.parse(contentType),
       ));
 
+      print('[ApiService] uploadAvatar - Sending request...');
       final streamed = await request.send();
+      print('[ApiService] uploadAvatar - Request sent, statusCode: ${streamed.statusCode}');
+      
       final response = await http.Response.fromStream(streamed);
+      print('[ApiService] uploadAvatar - Response received, statusCode: ${response.statusCode}');
+      print('[ApiService] uploadAvatar - Response body: ${response.body}');
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        print('[ApiService] uploadAvatar - Parsed data: $data');
         
         if (data['success'] == true) {
           final avatarPath = (data['data']?['avatar'] as String?) ?? '';
+          print('[ApiService] uploadAvatar SUCCESS - avatarPath: $avatarPath');
           return avatarPath;
+        } else {
+          print('[ApiService] uploadAvatar ERROR - success is false: ${data['message']}');
+          print('[ApiService] uploadAvatar ERROR - debug info: ${data['debug'] ?? 'No debug info'}');
         }
+      } else {
+        print('[ApiService] uploadAvatar ERROR - statusCode: ${response.statusCode}, body: ${response.body}');
       }
       return null;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[ApiService] uploadAvatar EXCEPTION: $e');
+      print('[ApiService] uploadAvatar STACKTRACE: $stackTrace');
       return null;
     }
   }

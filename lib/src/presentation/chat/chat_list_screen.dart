@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/scheduler.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/chat_service.dart';
 import '../../core/services/socketio_service.dart';
@@ -33,31 +34,72 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   void initState() {
     super.initState();
+    print('🚀 [ChatListScreen.initState] ChatListScreen được khởi tạo');
     _checkEulaAndLogin();
   }
 
   Future<void> _checkEulaAndLogin() async {
-    // Kiểm tra EULA trước
-    final agreed = await hasAgreedToEula();
+    print('🔍 [ChatListScreen._checkEulaAndLogin] Bắt đầu kiểm tra EULA...');
+    
+    // ✅ Lấy user ID trước để kiểm tra EULA theo từng user
+    int? userId;
+    try {
+      final isLoggedIn = await _authService.isLoggedIn();
+      if (isLoggedIn) {
+        final user = await _authService.getCurrentUser();
+        userId = user?.userId;
+        print('👤 [ChatListScreen._checkEulaAndLogin] User ID: $userId');
+      }
+    } catch (e) {
+      print('⚠️ [ChatListScreen._checkEulaAndLogin] Lỗi khi lấy user: $e');
+    }
+    
+    // Kiểm tra EULA theo user ID
+    final agreed = await hasAgreedToEula(userId: userId);
+    print('📋 [ChatListScreen._checkEulaAndLogin] Kết quả kiểm tra EULA (userId: $userId): agreed = $agreed');
     
     if (mounted) {
       setState(() {
         _eulaAgreed = agreed;
         _isCheckingEula = false;
       });
+      print('🔄 [ChatListScreen._checkEulaAndLogin] Đã setState: _eulaAgreed = $_eulaAgreed, _isCheckingEula = $_isCheckingEula');
       
       if (!agreed) {
-        // Hiển thị dialog EULA
-        showEulaDialog(context, () {
-          setState(() {
-            _eulaAgreed = true;
+        print('⚠️ [ChatListScreen._checkEulaAndLogin] Chưa đồng ý EULA, chuẩn bị hiển thị dialog...');
+        // ✅ Đợi widget tree được build xong trước khi hiển thị dialog
+        // Sử dụng SchedulerBinding để đảm bảo dialog hiển thị sau khi frame hiện tại render xong
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          print('📐 [ChatListScreen._checkEulaAndLogin] PostFrameCallback được gọi');
+          // Đợi thêm một microtask để chắc chắn context sẵn sàng
+          Future.microtask(() {
+            print('⚡ [ChatListScreen._checkEulaAndLogin] Microtask được gọi, mounted = $mounted');
+            if (mounted) {
+              print('✅ [ChatListScreen._checkEulaAndLogin] Gọi showEulaDialog với userId: $userId');
+              showEulaDialog(context, () {
+                print('👍 [ChatListScreen._checkEulaAndLogin] onAgree callback được gọi');
+                if (mounted) {
+                  setState(() {
+                    _eulaAgreed = true;
+                  });
+                  print('🔄 [ChatListScreen._checkEulaAndLogin] Đã setState: _eulaAgreed = true');
+                  _checkLoginStatus();
+                } else {
+                  print('❌ [ChatListScreen._checkEulaAndLogin] Widget không còn mounted trong onAgree');
+                }
+              }, userId: userId);
+            } else {
+              print('❌ [ChatListScreen._checkEulaAndLogin] Widget không còn mounted, không hiển thị dialog');
+            }
           });
-          _checkLoginStatus();
         });
       } else {
+        print('✅ [ChatListScreen._checkEulaAndLogin] Đã đồng ý EULA, chuyển sang kiểm tra login');
         // Đã đồng ý, kiểm tra login
         _checkLoginStatus();
       }
+    } else {
+      print('❌ [ChatListScreen._checkEulaAndLogin] Widget không còn mounted');
     }
   }
 
@@ -160,10 +202,13 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Future<void> _checkLoginStatus() async {
+    print('🔐 [ChatListScreen._checkLoginStatus] Bắt đầu kiểm tra login status...');
     try {
       final isLoggedIn = await _authService.isLoggedIn();
+      print('🔐 [ChatListScreen._checkLoginStatus] isLoggedIn = $isLoggedIn');
       if (isLoggedIn) {
         final user = await _authService.getCurrentUser();
+        print('👤 [ChatListScreen._checkLoginStatus] User: ${user?.userId}');
         setState(() {
           _currentUser = user;
         });
@@ -178,12 +223,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
           }
         });
       } else {
+        print('❌ [ChatListScreen._checkLoginStatus] Chưa đăng nhập');
         setState(() {
           _currentUser = null;
           _isLoading = false;
         });
       }
     } catch (e) {
+      print('❌ [ChatListScreen._checkLoginStatus] Lỗi: $e');
       setState(() {
         _currentUser = null;
         _isLoading = false;
@@ -268,6 +315,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print('🎨 [ChatListScreen.build] Building UI - _isCheckingEula: $_isCheckingEula, _eulaAgreed: $_eulaAgreed, _currentUser: ${_currentUser?.userId ?? "null"}');
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -296,6 +344,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   }
 
   Widget _buildWaitingForEulaView() {
+    print('⏳ [ChatListScreen._buildWaitingForEulaView] Đang hiển thị màn hình chờ EULA');
     return Container(
       color: Colors.white,
       child: const Center(

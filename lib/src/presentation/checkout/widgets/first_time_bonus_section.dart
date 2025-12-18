@@ -4,6 +4,7 @@ import 'dart:convert';
 import '../../../core/services/first_time_bonus_service.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/cart_service.dart' as cart_service;
+import 'bonus_info_bottom_sheet.dart';
 
 class FirstTimeBonusSection extends StatefulWidget {
   const FirstTimeBonusSection({super.key});
@@ -52,9 +53,10 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
     }
 
     final items = _cartService.items.where((i) => i.isSelected).toList();
+    // ✅ Dùng originalPrice (giá gốc) để tính toán đúng trong checkout
     final eligibleItems = items.map((i) => {
       'shopId': i.shopId,
-      'price': i.price,
+      'price': i.originalPrice ?? i.price,
       'quantity': i.quantity,
     }).toList();
 
@@ -163,17 +165,38 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '🎁 Quà tặng lần đầu tải ứng dụng',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade900,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      '🎁  Voucher giảm giá',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: const Color.fromRGBO(27, 94, 32, 1),
+                      ),
+                    ),
+                    const SizedBox(width: 18),
+                    // ✅ Icon chấm than để mở dialog
+                    GestureDetector(
+                      onTap: _showBonusInfoDialog,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(
+                          color: const Color.fromARGB(255, 208, 248, 209),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.info_outline,
+                          size: 19,
+                          color: const Color.fromARGB(255, 18, 104, 201),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tiền thưởng đang có: ${_formatPrice(remainingAmount)}',
+                  'Số dư: ${_formatPrice(remainingAmount)}',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.green.shade700,
@@ -181,7 +204,7 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Bạn được giảm: -${_formatPrice(_bonusAmount!)} ($discountPercentText%)',
+                  'Bạn được giảm: ${_formatPrice(_bonusAmount!)} ($discountPercentText%)',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -197,18 +220,53 @@ class _FirstTimeBonusSectionState extends State<FirstTimeBonusSection> {
   }
 
   String _formatPrice(int price) {
-    // Hiển thị chính xác, không làm tròn lên
-    if (price >= 1000) {
-      final thousands = price / 1000;
-      // Nếu là số nguyên thì hiển thị không có .0
-      if (thousands == thousands.floor()) {
-        return '${thousands.floor()}k';
-      } else {
-        // Hiển thị 1 chữ số thập phân nếu cần
-        return '${thousands.toStringAsFixed(1)}k';
+    // Hiển thị dạng tiền Việt đầy đủ, ví dụ: 200.000 đ, 22.400 đ
+    final priceStr = price.toString();
+    final buffer = StringBuffer();
+    int count = 0;
+
+    // Duyệt từ phải sang trái và chèn dấu chấm mỗi 3 chữ số
+    for (int i = priceStr.length - 1; i >= 0; i--) {
+      buffer.write(priceStr[i]);
+      count++;
+      if (count == 3 && i != 0) {
+        buffer.write('.');
+        count = 0;
       }
     }
-    return '${price}đ';
+
+    final formatted = buffer.toString().split('').reversed.join();
+    return '$formatted đ';
+  }
+
+  /// Hiển thị dialog thông tin bonus và danh sách shop
+  Future<void> _showBonusInfoDialog() async {
+    final config = await _bonusService.getBonusConfig();
+    if (config == null) return;
+
+    if (!mounted) return;
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final viewInsets = MediaQuery.of(context).viewInsets;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets.bottom),
+            child: BonusInfoBottomSheet(
+              bonusConfig: config,
+              remainingAmount: _bonusInfo?['remaining_amount'] as int? ?? 0,
+              bonusAmount: _bonusAmount ?? 0,
+              discountPercent: _discountPercent ?? 10.0,
+            ),
+          ),
+        );
+      },
+    );
   }
 }
 

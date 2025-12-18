@@ -143,22 +143,24 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     final cart = cart_service.CartService();
     final voucherService = VoucherService();
     final items = cart.items.where((i) => i.isSelected).toList();
-    final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+    // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+    final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
     final savingsFromOld = items.fold<int>(0, (s, i) {
-      if (i.oldPrice != null && i.oldPrice! > i.price) {
-        return s + (i.oldPrice! - i.price) * i.quantity;
+      final basePrice = i.originalPrice ?? i.price;
+      if (i.oldPrice != null && i.oldPrice! > basePrice) {
+        return s + (i.oldPrice! - basePrice) * i.quantity;
       }
       return s;
     });
-    // Cộng dồn giảm giá shop + sàn theo giỏ hàng hiện tại
+    // Cộng dồn giảm giá shop + sàn theo giỏ hàng hiện tại - ✅ Dùng originalPrice
     final shopDiscount = voucherService.calculateTotalDiscount(
       totalGoods,
-      items: items.map((e) => {'shopId': e.shopId, 'price': e.price, 'quantity': e.quantity}).toList(),
+      items: items.map((e) => {'shopId': e.shopId, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e.id).toList(),
-      items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
+      items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
     final shipFee = ShippingQuoteStore().lastFee;
@@ -188,7 +190,8 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     for (final entry in itemsByShop.entries) {
       final shopId = entry.key;
       final shopItems = entry.value;
-      final shopTotal = shopItems.fold(0, (s, i) => s + i.price * i.quantity);
+      // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+      final shopTotal = shopItems.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
       // print('      Shop $shopId: ${shopItems.length} sản phẩm = ${FormatUtils.formatCurrency(shopTotal)}');
     }
     // print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalGoods)}');

@@ -139,14 +139,16 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     final cart = cart_service.CartService();
     final voucherService = VoucherService();
     final items = cart.items.where((i) => i.isSelected).toList();
-    final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+    // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+    final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
 
   
     
     // Tính giảm giá: cộng dồn voucher shop (đã áp dụng) + voucher sàn trên subtotal
+    // ✅ QUAN TRỌNG: Dùng originalPrice khi tính voucher discount để đồng bộ với checkout
     final shopDiscount = voucherService.calculateTotalDiscount(
       totalGoods,
-      items: items.map((e) => {'shopId': e.shopId, 'price': e.price, 'quantity': e.quantity}).toList(),
+      items: items.map((e) => {'shopId': e.shopId, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
    
     
@@ -162,10 +164,11 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     }
 
 
+    // ✅ QUAN TRỌNG: Dùng originalPrice khi tính voucher discount để đồng bộ với checkout
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e.id).toList(),
-      items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
+      items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
   
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
@@ -187,10 +190,12 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     for (final entry in itemsByShop.entries) {
       final shopId = entry.key;
       final shopItems = entry.value;
-      final shopTotal = shopItems.fold(0, (s, i) => s + i.price * i.quantity);
+      // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+      final shopTotal = shopItems.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
       // print('      Shop $shopId: ${shopItems.length} sản phẩm = ${FormatUtils.formatCurrency(shopTotal)}');
       for (final item in shopItems) {
-        print('         - ${item.name}: ${FormatUtils.formatCurrency(item.price)} x ${item.quantity} = ${FormatUtils.formatCurrency(item.price * item.quantity)}');
+        final basePrice = item.originalPrice ?? item.price;
+        print('         - ${item.name}: ${FormatUtils.formatCurrency(basePrice)} x ${item.quantity} = ${FormatUtils.formatCurrency(basePrice * item.quantity)}');
       }
     }
     // print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalGoods)}');
@@ -264,10 +269,10 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
             },
           ),
           
-          PaymentDetailRow('Tổng Voucher giảm giá', '-${FormatUtils.formatCurrency(voucherDiscount)}', isRed: true),
+          PaymentDetailRow('Tổng Voucher giảm giá', '${FormatUtils.formatCurrency(voucherDiscount)}', isRed: true),
           // ✅ Hiển thị bonus discount nếu có
           if (bonusDiscount > 0)
-            PaymentDetailRow('🎁 Quà tặng lần đầu tải ứng dụng', '-${FormatUtils.formatCurrency(bonusDiscount)}', isRed: true),
+            PaymentDetailRow('🎁 Mã giới thiệu', '-${FormatUtils.formatCurrency(bonusDiscount)}', isRed: true),
           const Divider(height: 20),
           PaymentDetailRow('Tổng thanh toán', FormatUtils.formatCurrency(grandTotal), isBold: true),
         ],

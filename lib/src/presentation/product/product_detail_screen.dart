@@ -1142,12 +1142,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     final product = _productDetail!;
     
     // Thêm sản phẩm vào giỏ hàng
+    // Sử dụng originalPrice nếu có (giá gốc chưa trừ ưu đãi) để tính toán trong checkout
     final cartItem = CartItem(
       id: product.id,
       name: '${product.name} - ${variant.name}',
       image: product.imageUrl,
-      price: variant.price,
+      price: variant.price, // Giá hiển thị (final_price)
       oldPrice: variant.oldPrice,
+      originalPrice: variant.originalPrice, // Giá gốc để tính toán trong checkout
       quantity: quantity,
       variant: variant.name,
       shopId: int.tryParse(product.shopId ?? (widget.initialShopId?.toString() ?? '0')) ?? 0,
@@ -1209,12 +1211,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   void _handleBuyNowSimple(ProductDetail product, int quantity) {
    
     // Thêm sản phẩm vào giỏ hàng
+    // Sử dụng originalPrice nếu có (giá gốc chưa trừ ưu đãi) để tính toán trong checkout
     final cartItem = CartItem(
       id: product.id,
       name: product.name,
       image: product.imageUrl,
-      price: product.price,
+      price: product.price, // Giá hiển thị (final_price)
       oldPrice: product.oldPrice,
+      originalPrice: product.originalPrice, // Giá gốc để tính toán trong checkout
       quantity: quantity,
       shopId: int.tryParse(product.shopId ?? (widget.initialShopId?.toString() ?? '0')) ?? 0,
       shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : (widget.initialShopName ?? 'Unknown Shop'),
@@ -1237,12 +1241,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   // Xử lý THÊM VÀO GIỎ cho sản phẩm không có biến thể
   void _handleAddToCartSimple(ProductDetail product, int quantity) {
     // Thêm sản phẩm vào giỏ hàng
+    // Sử dụng originalPrice nếu có (giá gốc chưa trừ ưu đãi) để tính toán trong checkout
     final cartItem = CartItem(
       id: product.id,
       name: product.name,
       image: product.imageUrl,
-      price: product.price,
+      price: product.price, // Giá hiển thị (final_price)
       oldPrice: product.oldPrice,
+      originalPrice: product.originalPrice, // Giá gốc để tính toán trong checkout
       quantity: quantity,
       shopId: int.tryParse(product.shopId ?? (widget.initialShopId?.toString() ?? '0')) ?? 0,
       shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : (widget.initialShopName ?? 'Unknown Shop'),

@@ -32,18 +32,24 @@ class BottomCheckoutBar extends StatelessWidget {
     // ✅ Lấy items đã chọn để tính voucher đúng (theo shop)
     final items = cart.items.where((i) => i.isSelected).toList();
     
+    // ✅ Tính tổng dựa trên originalPrice (giá gốc) để đồng bộ với checkout
+    final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
+    
     // ✅ Tính voucher discount đúng như checkout (theo shop và theo sản phẩm áp dụng)
+    // ✅ QUAN TRỌNG: Dùng originalPrice khi tính voucher discount
     final shopDiscount = voucherService.calculateTotalDiscount(
-      totalPrice,
-      items: items.map((e) => {'shopId': e.shopId, 'price': e.price, 'quantity': e.quantity}).toList(),
+      totalGoods,
+      items: items.map((e) => {'shopId': e.shopId, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
-      totalPrice,
+      totalGoods,
       items.map((e) => e.id).toList(),
-      items: items.map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity}).toList(),
+      items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
-    final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalPrice);
-    final finalPrice = totalPrice - voucherDiscount;
+    final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
+    
+    // ✅ Tính giá cuối cùng (chỉ trừ voucher, không có ship fee/support vì chưa có địa chỉ)
+    final finalPrice = totalGoods - voucherDiscount;
     
     // ✅ DEBUG: Print tính toán giá tiền trong giỏ hàng
     // print('🛒 [CART - BottomCheckoutBar] ==========================================');
@@ -198,7 +204,7 @@ class BottomCheckoutBar extends StatelessWidget {
                               ),
                               Flexible(
                                 child: Text(
-                                  FormatUtils.formatCurrency(totalPrice),
+                                  FormatUtils.formatCurrency(totalGoods),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey[500],

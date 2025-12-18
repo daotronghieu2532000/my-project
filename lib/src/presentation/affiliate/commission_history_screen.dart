@@ -85,7 +85,11 @@ class _CommissionHistoryScreenState extends State<CommissionHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lịch sử hoa hồng'),
+        title: const Text('Lịch sử hoa hồng',
+        style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
+            ),),
         centerTitle: true,
         actions: [
           IconButton(

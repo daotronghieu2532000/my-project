@@ -28,10 +28,11 @@ class AffiliateScreen extends StatefulWidget {
   State<AffiliateScreen> createState() => _AffiliateScreenState();
 }
 
-class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAliveClientMixin {
+class _AffiliateScreenState extends State<AffiliateScreen>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
-  
+
   final AffiliateService _affiliateService = AffiliateService();
   final AuthService _authService = AuthService();
   final CachedApiService _cachedApiService = CachedApiService();
@@ -43,7 +44,8 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   bool? _isAffiliateRegistered;
   bool _agreeToTerms = false;
   bool _hasLoadedOnce = false; // Flag để tránh load lại khi rebuild
-  bool _isCheckingUserInBuild = false; // Flag để tránh check nhiều lần trong build
+  bool _isCheckingUserInBuild =
+      false; // Flag để tránh check nhiều lần trong build
 
   // Products state
   final ScrollController _productsScrollController = ScrollController();
@@ -57,7 +59,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   final Map<int, bool> _followBusy = {};
   static const int _itemsPerPage = 20; // Load 20 items per page (like Shopee)
   bool _isLoadingProducts = false; // Flag to prevent duplicate calls
-  
+
   // Filters & search
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -73,7 +75,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     super.initState();
     _initUser();
     _productsScrollController.addListener(_onProductsScroll);
-    
+
     // Thêm listener để cập nhật khi trạng thái đăng nhập thay đổi
     _authService.addAuthStateListener(_onAuthStateChanged);
   }
@@ -82,7 +84,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   void dispose() {
     // Xóa listener khi dispose
     _authService.removeAuthStateListener(_onAuthStateChanged);
-    
+
     _productsScrollController.dispose();
     _searchController.dispose();
     _searchDebounceTimer?.cancel();
@@ -93,25 +95,30 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   void _onProductsScroll() {
     // Only load more if we're near the bottom and not already loading
     if (!_productsScrollController.hasClients) return;
-    
+
     // Không load thêm nếu đang sort theo hoa hồng (sort client-side không chính xác với pagination)
     if (_sortBy == 'commission_asc' || _sortBy == 'commission_desc') {
       return;
     }
-    
+
     // Không load thêm khi đang search (chỉ hiển thị kết quả search)
     if (_searchQuery.trim().isNotEmpty) {
       return;
     }
-    
+
     final maxScroll = _productsScrollController.position.maxScrollExtent;
     final currentScroll = _productsScrollController.position.pixels;
-    final threshold = maxScroll * 0.8; // Load more when 80% scrolled (like Shopee)
-    
+    final threshold =
+        maxScroll * 0.8; // Load more when 80% scrolled (like Shopee)
+
     // Debounce scroll events to avoid too many API calls
     _scrollDebounceTimer?.cancel();
     _scrollDebounceTimer = Timer(const Duration(milliseconds: 300), () {
-      if (currentScroll >= threshold && _hasMoreData && !_isProductsLoading && !_isLoadingMore && !_isLoadingProducts) {
+      if (currentScroll >= threshold &&
+          _hasMoreData &&
+          !_isProductsLoading &&
+          !_isLoadingMore &&
+          !_isLoadingProducts) {
         _loadProducts();
       }
     });
@@ -128,13 +135,13 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   Future<void> _initUser() async {
     final user = await _authService.getCurrentUser();
     final newUserId = user?.userId;
-    
+
     // Chỉ update nếu userId thay đổi
     if (_currentUserId != newUserId) {
       setState(() {
         _currentUserId = newUserId;
       });
-      
+
       if (_currentUserId != null) {
         // User mới đăng nhập hoặc đổi user
         await _checkAffiliateStatus();
@@ -163,16 +170,17 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
 
   Future<void> _checkAffiliateStatus() async {
     if (_currentUserId == null) return;
-    
+
     try {
-      final isRegistered = await _affiliateService.getUserAffiliateStatus(userId: _currentUserId!);
+      final isRegistered = await _affiliateService.getUserAffiliateStatus(
+        userId: _currentUserId!,
+      );
       if (mounted) {
         setState(() {
           _isAffiliateRegistered = isRegistered;
         });
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   void _showAffiliateTermsDialog(BuildContext context) {
@@ -204,9 +212,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey[200]!),
-                  ),
+                  border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
                 ),
                 child: Row(
                   children: [
@@ -240,7 +246,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                   ],
                 ),
               ),
-              
+
               // Content - Scroll được
               Expanded(
                 child: SingleChildScrollView(
@@ -276,9 +282,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                         '7. THỜI HẠN VÀ CHẤM DỨT',
                         '7.1 Thời Hạn: Thỏa Thuận này có hiệu lực vào ngày mà Socdo.vn duyệt đăng ký tham gia Chương Trình Tiếp Thị Liên Kết.\n\n7.2 Chấm Dứt Bởi Socdo.vn: Socdo.vn có toàn quyền quyết định đơn phương chấm dứt Thỏa Thuận này bằng bất kỳ lý do gì mà Socdo.vn cho là hợp lý.\n\n7.3 Các Trường Hợp Chấm Dứt: Thỏa Thuận này sẽ chấm dứt ngay lập tức khi một bên thực hiện phá sản hoặc ngừng hoạt động kinh doanh.',
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
+
                       // Footer note
                       Container(
                         padding: const EdgeInsets.all(16),
@@ -352,37 +358,43 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
 
   Future<void> _registerAffiliate() async {
     if (_currentUserId == null) return;
-    
+
     // Check if user agreed to terms
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Vui lòng đồng ý với điều khoản chương trình Affiliate'),
+          content: Text(
+            'Vui lòng đồng ý với điều khoản chương trình Affiliate',
+          ),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),
       );
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
     });
-    
+
     try {
-      final result = await _affiliateService.registerAffiliate(userId: _currentUserId!);
-      
+      final result = await _affiliateService.registerAffiliate(
+        userId: _currentUserId!,
+      );
+
       if (mounted) {
         if (result != null && result['success'] == true) {
           // Đăng ký thành công
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(result['message'] ?? 'Đăng ký affiliate thành công'),
+              content: Text(
+                result['message'] ?? 'Đăng ký affiliate thành công',
+              ),
               backgroundColor: Colors.green,
               duration: const Duration(seconds: 3),
             ),
           );
-          
+
           // Cập nhật trạng thái và reload dashboard
           await _checkAffiliateStatus();
           await _loadDashboard();
@@ -408,7 +420,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         );
       }
     }
-    
+
     if (mounted) {
       setState(() {
         _isLoading = false;
@@ -421,7 +433,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     if (!forceRefresh && _hasLoadedOnce && _dashboard != null) {
       return;
     }
-    
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -433,10 +445,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         userId: _currentUserId,
         forceRefresh: forceRefresh,
       );
-      
+
       // Xử lý dữ liệu từ cache hoặc API
       AffiliateDashboard? dashboard;
-      
+
       if (dashboardData != null && dashboardData.isNotEmpty) {
         // Sử dụng dữ liệu từ cache
         if (dashboardData['data'] != null) {
@@ -444,9 +456,11 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         }
       } else {
         // Cache miss, gọi API trực tiếp
-        dashboard = await _affiliateService.getDashboard(userId: _currentUserId);
+        dashboard = await _affiliateService.getDashboard(
+          userId: _currentUserId,
+        );
       }
-      
+
       if (mounted) {
         setState(() {
           _dashboard = dashboard;
@@ -468,25 +482,24 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     if (_currentUserId == null) {
       return;
     }
-    
+
     // Prevent duplicate calls
     if (_isLoadingProducts) {
-     
       return;
     }
-    
+
     // If products list is empty, treat as refresh
     final isFirstLoad = _products.isEmpty;
     final shouldRefresh = refresh || isFirstLoad;
-    
+
     // Prevent multiple simultaneous loads
     if (!shouldRefresh && (_isProductsLoading || _isLoadingMore)) {
       return;
     }
-    
+
     // Set loading flag
     _isLoadingProducts = true;
-    
+
     if (shouldRefresh) {
       setState(() {
         _currentPage = 1;
@@ -510,12 +523,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         _isLoadingMore = true;
       });
     }
-    
+
     try {
       // Map sortBy to API format - API không hỗ trợ commission sort
       String? apiSortBy = _sortBy;
       int loadLimit = _itemsPerPage;
-      
+
       // API chỉ hỗ trợ: newest, price_asc, price_desc, name_asc, name_desc, popular, discount
       // Không hỗ trợ: commission_asc, commission_desc
       if (_sortBy == 'commission_asc' || _sortBy == 'commission_desc') {
@@ -526,9 +539,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
           loadLimit = 500; // Load nhiều products để sort client-side
         }
       }
-      
-    
-      
+
       final result = await _affiliateService.getProducts(
         userId: _currentUserId,
         page: _currentPage,
@@ -537,26 +548,24 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         sortBy: apiSortBy,
         onlyFollowing: _onlyFollowed,
       );
-      
-    
-      
+
       if (mounted) {
         if (result != null && result['products'] != null) {
           final newProducts = result['products'] as List<AffiliateProduct>;
-          
+
           setState(() {
             if (shouldRefresh) {
               _products = newProducts;
             } else {
               _products.addAll(newProducts);
             }
-            
+
             // Apply filters after adding products
             _applyFilters();
-            
+
             // Update pagination - check before incrementing page
             final pagination = result['pagination'];
-            
+
             // Khi sort theo hoa hồng, không load thêm (sort client-side)
             if (_sortBy == 'commission_asc' || _sortBy == 'commission_desc') {
               _hasMoreData = false; // Tắt infinite scroll
@@ -567,21 +576,22 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
               // If no pagination info, assume no more data if we got less than requested
               _hasMoreData = newProducts.length >= _itemsPerPage;
             }
-            
+
             // Khi đang search, không load thêm (chỉ hiển thị kết quả search)
             if (_searchQuery.trim().isNotEmpty) {
               _hasMoreData = false;
             }
-            
+
             // Increment page for next load (chỉ khi không phải sort commission hoặc search)
-            if (_sortBy != 'commission_asc' && _sortBy != 'commission_desc' && _searchQuery.trim().isEmpty) {
+            if (_sortBy != 'commission_asc' &&
+                _sortBy != 'commission_desc' &&
+                _searchQuery.trim().isEmpty) {
               _currentPage++;
             }
             _isProductsLoading = false;
             _isLoadingMore = false;
             _isLoadingProducts = false; // Reset flag
           });
-          
         } else {
           // No products returned
           setState(() {
@@ -593,7 +603,6 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         }
       }
     } catch (e, stackTrace) {
-   
       if (mounted) {
         setState(() {
           _productsError = 'Lỗi khi tải sản phẩm: $e';
@@ -626,9 +635,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     });
   }
 
-  List<AffiliateProduct> _sortProducts(List<AffiliateProduct> products, String sortBy) {
+  List<AffiliateProduct> _sortProducts(
+    List<AffiliateProduct> products,
+    String sortBy,
+  ) {
     final sorted = List<AffiliateProduct>.from(products);
-    
+
     switch (sortBy) {
       case 'price_asc':
         sorted.sort((a, b) => a.price.compareTo(b.price));
@@ -656,7 +668,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         break;
     }
-    
+
     return sorted;
   }
 
@@ -664,10 +676,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     if (product.commissionInfo.isEmpty) {
       return 0.0;
     }
-    
+
     // Lấy commission đầu tiên (main commission)
     final mainCommission = product.commissionInfo.first;
-    
+
     if (mainCommission.type == 'phantram') {
       // Tính hoa hồng dựa trên giá sản phẩm
       return product.price * mainCommission.value / 100;
@@ -687,7 +699,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   @override
   Widget build(BuildContext context) {
     super.build(context); // Bắt buộc cho AutomaticKeepAliveClientMixin
-    
+
     // Kiểm tra lại user nếu _currentUserId là null nhưng có thể user đã đăng nhập
     // (trường hợp user đăng nhập từ checkout rồi quay lại)
     if (_currentUserId == null && !_hasLoadedOnce && !_isCheckingUserInBuild) {
@@ -705,17 +717,14 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         }
       });
     }
-    
+
     return ScrollPreservationWrapper(
       tabIndex: 2, // Affiliate tab
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
             'TIẾP THỊ LIÊN KẾT',
-            style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
           ),
           centerTitle: true,
           backgroundColor: Colors.white,
@@ -729,8 +738,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                   });
                 },
                 icon: Icon(
-                  _isFilterVisible ? Icons.filter_list_off_rounded : Icons.filter_list_rounded,
-                  color: _hasActiveFilters() ? const Color(0xFFFF6B35) : Colors.black,
+                  _isFilterVisible
+                      ? Icons.filter_list_off_rounded
+                      : Icons.filter_list_rounded,
+                  color: _hasActiveFilters()
+                      ? const Color(0xFFFF6B35)
+                      : Colors.black,
                 ),
                 tooltip: _isFilterVisible ? 'Ẩn bộ lọc' : 'Hiện bộ lọc',
               ),
@@ -744,59 +757,84 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         body: _currentUserId == null
             ? _buildLoginPrompt()
             : _isAffiliateRegistered == false
-                ? _buildAffiliateRegistrationPrompt()
-                : _isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : _error != null
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(_error!),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: _loadDashboard,
-                                  child: const Text('Thử lại'),
-                                ),
-                              ],
-                            ),
-                          )
-                        : _dashboard == null
-                        ? const Center(child: Text('Không có dữ liệu'))
-                        : Column(
-                        children: [
-                          // Custom Tab Bar
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: _buildCustomTab('Tiếp thị liên kết', 0),
-                                ),
-                                Expanded(
-                                  child: _buildCustomTab('Các tiện ích khác', 1),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Tab Content
-                          Expanded(
-                            child: IndexedStack(
-                              index: _currentTabIndex,
-                              children: [
-                                _buildAffiliateMarketingTab(),
-                                _buildUtilitiesTab(),
-                              ],
-                            ),
-                          ),
-                        ],
+            ? _buildAffiliateRegistrationPrompt()
+            : _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(_error!),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: _loadDashboard,
+                      child: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              )
+            : _dashboard == null
+            ? const Center(child: Text('Không có dữ liệu'))
+            : Column(
+                children: [
+                  // Custom Tab Bar
+                  Container(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color.fromARGB(
+                          255,
+                          255,
+                          255,
+                          255,
+                        ), // màu viền
+                        width: 1, // độ dày viền
                       ),
+                    ),
+
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: const Color.fromARGB(255, 255, 255, 255)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: _buildCustomTab('Tiếp thị liên kết', 0),
+                          ),
+                        ),
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              border: Border.all(color: const Color.fromARGB(255, 255, 255, 255)),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: _buildCustomTab('Các tiện ích khác', 1),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Tab Content
+                  Expanded(
+                    child: IndexedStack(
+                      index: _currentTabIndex,
+                      children: [
+                        _buildAffiliateMarketingTab(),
+                        _buildUtilitiesTab(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -807,11 +845,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFFE3F2FD),
-            Color(0xFFF3E5F5),
-            Color(0xFFFFF3E0),
-          ],
+          colors: [Color(0xFFE3F2FD), Color(0xFFF3E5F5), Color(0xFFFFF3E0)],
         ),
       ),
       child: SafeArea(
@@ -890,7 +924,8 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                                   children: [
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           const Text(
                                             '💰 TIẾP THỊ LIÊN KẾT',
@@ -915,10 +950,15 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                                               vertical: 6,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(16),
+                                              color: Colors.white.withOpacity(
+                                                0.2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(16),
                                               border: Border.all(
-                                                color: Colors.white.withOpacity(0.3),
+                                                color: Colors.white.withOpacity(
+                                                  0.3,
+                                                ),
                                               ),
                                             ),
                                             child: const Text(
@@ -978,11 +1018,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                 ),
                 child: Column(
                   children: [
-                    const Icon(
-                      Icons.login,
-                      size: 48,
-                      color: Color(0xFF667eea),
-                    ),
+                    const Icon(Icons.login, size: 48, color: Color(0xFF667eea)),
                     const SizedBox(height: 16),
                     const Text(
                       'Đăng nhập để bắt đầu',
@@ -1003,7 +1039,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                       ),
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Login Button
                     SizedBox(
                       width: double.infinity,
@@ -1046,9 +1082,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Features
                     Row(
                       children: [
@@ -1087,17 +1123,11 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       decoration: BoxDecoration(
         color: const Color(0xFF667eea).withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF667eea).withOpacity(0.2),
-        ),
+        border: Border.all(color: const Color(0xFF667eea).withOpacity(0.2)),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: const Color(0xFF667eea),
-            size: 24,
-          ),
+          Icon(icon, color: const Color(0xFF667eea), size: 24),
           const SizedBox(height: 8),
           Text(
             title,
@@ -1111,10 +1141,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 10, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1132,274 +1159,286 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
               duration: const Duration(milliseconds: 300),
               curve: Curves.easeInOut,
               height: _isFilterVisible ? null : 0,
-              child: _isFilterVisible ? _buildFilterPanel() : const SizedBox.shrink(),
+              child: _isFilterVisible
+                  ? _buildFilterPanel()
+                  : const SizedBox.shrink(),
             ),
-            
+
             // Main Content - Scrollable
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
                   final startTime = DateTime.now();
-                
-                  
+
                   try {
-                  
                     final apiStartTime = DateTime.now();
-                    
+
                     // Refresh cả dashboard và products
                     await Future.wait([
                       _loadDashboard(forceRefresh: true),
                       _loadProducts(refresh: true),
                     ]);
-                    
-                    final apiDuration = DateTime.now().difference(apiStartTime).inMilliseconds;
+
+                    final apiDuration = DateTime.now()
+                        .difference(apiStartTime)
+                        .inMilliseconds;
                     final totalDuration = DateTime.now().difference(startTime);
-                  
-                  
                   } catch (e, stackTrace) {
                     final totalDuration = DateTime.now().difference(startTime);
-                  
-                
                   }
                 },
                 child: SingleChildScrollView(
                   controller: _productsScrollController,
-      padding: const EdgeInsets.all(16),
-      child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-                    // Statistics Cards
-          Row(
-            children: [
-              Expanded(
-                child: _buildSimpleCard(
-                  'Có thể rút',
-                  FormatUtils.formatCurrency(_dashboard!.withdrawableBalance.toInt()),
-                  Colors.green,
-                  Icons.account_balance_wallet,
-                            null,
-                ),
-              ),
-                        const SizedBox(width: 12),
-              Expanded(
-                child: _buildSimpleCard(
-                  'Lượt click',
-                  _dashboard!.totalClicks.toString(),
-                  Colors.blue,
-                  Icons.mouse,
-                  null,
-                ),
-              ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-              Expanded(
-                child: _buildSimpleCard(
-                  'Đơn hàng',
-                  _dashboard!.totalOrders.toString(),
-                  Colors.purple,
-                  Icons.shopping_bag,
-                            null,
-                ),
-              ),
-                        const SizedBox(width: 12),
-              Expanded(
-                child: _buildSimpleCard(
-                  'Tỷ lệ chuyển đổi',
-                  '${_dashboard!.conversionRate.toStringAsFixed(1)}%',
-                  _dashboard!.conversionRate >= 3
-                      ? Colors.green
-                      : _dashboard!.conversionRate >= 1
-                          ? Colors.orange
-                          : Colors.red,
-                  Icons.trending_up,
-                  null,
-                ),
-              ),
-            ],
-          ),
-
-                    const SizedBox(height: 16),
-
-                    // Affiliate Marketing Banner
-                    Container(
-                      width: double.infinity,
-                      height: 170, // Giảm từ 200 xuống 170 (giảm 30px)
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Statistics Cards
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSimpleCard(
+                              'Có thể rút',
+                              FormatUtils.formatCurrency(
+                                _dashboard!.withdrawableBalance.toInt(),
+                              ),
+                              Colors.green,
+                              null,
+                              'assets/images/icons/mobile-banking.png',
+                              null,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSimpleCard(
+                              'Lượt click',
+                              _dashboard!.totalClicks.toString(),
+                              Colors.blue,
+                              null,
+                              'assets/images/icons/left-click.png',
+                              null,
+                            ),
                           ),
                         ],
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: Stack(
-                          children: [
-                            Positioned.fill(
-                              child: Image.asset(
-                                'assets/images/affiliate-marketing-15725072874221438636530.jpg',
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.purple[600]!,
-                                          Colors.pink[500]!,
-                                          Colors.orange[400]!,
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.white,
-                                        size: 48,
-                                      ),
-      ),
-    );
-                                },
-                              ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSimpleCard(
+                              'Đơn hàng',
+                              _dashboard!.totalOrders.toString(),
+                              Colors.purple,
+                              null,
+                              'assets/images/icons/package.png',
+                              null,
                             ),
-                            Positioned.fill(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.black.withOpacity(0.3),
-                                      Colors.black.withOpacity(0.6),
-                                    ],
-                                  ),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Spacer(),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                const Text(
-                                                  '💰 TIẾP THỊ LIÊN KẾT',
-                                                  style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                const Text(
-                                                  'Kiếm tiền từ việc chia sẻ',
-                                                  style: TextStyle(
-                                                    color: Colors.white70,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  'Hoa đồng: ${FormatUtils.formatCurrency(_dashboard!.totalCommission.toInt())}',
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          Container(
-                                            padding: const EdgeInsets.all(12),
-                                            decoration: BoxDecoration(
-                                              color: Colors.white.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: const Icon(
-                                              Icons.trending_up,
-                                              color: Colors.white,
-                                              size: 24,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildSimpleCard(
+                              'Tỷ lệ chuyển đổi',
+                              '${_dashboard!.conversionRate.toStringAsFixed(1)}%',
+                              _dashboard!.conversionRate >= 3
+                                  ? Colors.green
+                                  : _dashboard!.conversionRate >= 1
+                                  ? Colors.orange
+                                  : Colors.red,
+                              Icons.trending_up,
+                              null,
+                              null,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Affiliate Marketing Banner
+                      Container(
+                        width: double.infinity,
+                        height: 170, // Giảm từ 200 xuống 170 (giảm 30px)
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.3),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Products Section
-                    const Text(
-                      'Chia sẻ sản phẩm',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Products List
-                    _isProductsLoading && _products.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : _productsError != null && _products.isEmpty
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(_productsError!),
-                                    const SizedBox(height: 16),
-                                    ElevatedButton(
-                                      onPressed: () => _loadProducts(refresh: true),
-                                      child: const Text('Thử lại'),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : _filteredProducts.isEmpty
-                                ? Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.inventory_2_outlined,
-                                          size: 64,
-                                          color: Colors.grey[400],
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Stack(
+                            children: [
+                              Positioned.fill(
+                                child: Image.asset(
+                                  'assets/images/affiliate-marketing-15725072874221438636530.jpg',
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.purple[600]!,
+                                            Colors.pink[500]!,
+                                            Colors.orange[400]!,
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
                                         ),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          'Không có sản phẩm affiliate',
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.grey[600],
-                                          ),
+                                      ),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.white,
+                                          size: 48,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withOpacity(0.3),
+                                        Colors.black.withOpacity(0.6),
+                                      ],
+                                    ),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Spacer(),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  const Text(
+                                                    '💰 TIẾP THỊ LIÊN KẾT',
+                                                    style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 4),
+                                                  const Text(
+                                                    'Kiếm tiền từ việc chia sẻ',
+                                                    style: TextStyle(
+                                                      color: Colors.white70,
+                                                      fontSize: 14,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    'Hoa đồng: ${FormatUtils.formatCurrency(_dashboard!.totalCommission.toInt())}',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Container(
+                                              padding: const EdgeInsets.all(12),
+                                              decoration: BoxDecoration(
+                                                color: Colors.white.withOpacity(
+                                                  0.2,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                              child: const Icon(
+                                                Icons.trending_up,
+                                                color: Colors.white,
+                                                size: 24,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),
-                                  )
-                                : _buildProductsGrid(),
-                  ],
-                ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Products Section
+                      const Text(
+                        'Chia sẻ sản phẩm',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Products List
+                      _isProductsLoading && _products.isEmpty
+                          ? const Center(child: CircularProgressIndicator())
+                          : _productsError != null && _products.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(_productsError!),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton(
+                                    onPressed: () =>
+                                        _loadProducts(refresh: true),
+                                    child: const Text('Thử lại'),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : _filteredProducts.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.inventory_2_outlined,
+                                    size: 64,
+                                    color: Colors.grey[400],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'Không có sản phẩm affiliate',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : _buildProductsGrid(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1416,56 +1455,71 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
 
   Widget _buildUtilitiesTab() {
     return SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           _buildMenuCard(
-            Icons.link,
+            null,
+            'assets/images/icons/booking.png',
             'Đang theo dõi',
             'Quản lý các sản phẩm đang theo dõi',
             () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const AffiliateLinksScreen()),
+              MaterialPageRoute(
+                builder: (context) => const AffiliateLinksScreen(),
+              ),
             ),
           ),
           const SizedBox(height: 12),
           _buildMenuCard(
-            Icons.receipt_long,
+            null,
+            'assets/images/icons/shopping-bag.png',
             'Đơn hàng',
             'Theo dõi đơn hàng & hoa hồng',
             () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const AffiliateOrdersScreen()),
+              MaterialPageRoute(
+                builder: (context) => const AffiliateOrdersScreen(),
+              ),
             ),
           ),
           const SizedBox(height: 12),
           _buildMenuCard(
-            Icons.account_balance_wallet,
+            null,
+            'assets/images/icons/payment.png',
             'Rút tiền',
             'Tạo yêu cầu rút hoa hồng',
             () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const AffiliateWithdrawScreen()),
+              MaterialPageRoute(
+                builder: (context) => const AffiliateWithdrawScreen(),
+              ),
             ),
           ),
           const SizedBox(height: 12),
           _buildMenuCard(
-            Icons.history,
+            null,
+            'assets/images/icons/history.png',
             'Lịch sử hoa hồng',
             'Xem chi tiết hoa hồng đã nhận',
             () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const CommissionHistoryScreen()),
+              MaterialPageRoute(
+                builder: (context) => const CommissionHistoryScreen(),
+              ),
             ),
           ),
           const SizedBox(height: 12),
           _buildMenuCard(
-            Icons.account_balance,
+            null,
+            'assets/images/icons/credit-card.png',
             'Lịch sử rút tiền',
             'Theo dõi yêu cầu rút tiền',
             () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const WithdrawalHistoryScreen()),
+              MaterialPageRoute(
+                builder: (context) => const WithdrawalHistoryScreen(),
+              ),
             ),
           ),
         ],
@@ -1473,7 +1527,14 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     );
   }
 
-  Widget _buildSimpleCard(String title, String value, Color color, IconData icon, VoidCallback? onTap) {
+  Widget _buildSimpleCard(
+    String title,
+    String value,
+    Color color,
+    IconData? icon,
+    String? imagePath,
+    VoidCallback? onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1493,7 +1554,21 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 18),
+            imagePath != null
+                ? Image.asset(
+                    imagePath,
+                    width: 18,
+                    height: 18,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(
+                        icon ?? Icons.error_outline,
+                        color: color,
+                        size: 18,
+                      );
+                    },
+                  )
+                : Icon(icon ?? Icons.error_outline, color: color, size: 18),
             const SizedBox(width: 6),
             Text(
               value,
@@ -1507,10 +1582,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             Flexible(
               child: Text(
                 title,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                ),
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -1520,11 +1592,17 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     );
   }
 
-  Widget _buildMenuCard(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _buildMenuCard(
+    IconData? icon,
+    String? imagePath,
+    String title,
+    String subtitle,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -1542,14 +1620,28 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.purple.withOpacity(0.1),
+                color: const Color.fromARGB(255, 255, 255, 255).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icon,
-                color: Colors.purple[600],
-                size: 24,
-              ),
+              child: imagePath != null
+                  ? Image.asset(
+                      imagePath,
+                      width: 30,
+                      height: 30,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          icon ?? Icons.error_outline,
+                          color: const Color.fromARGB(255, 255, 255, 255),
+                          size: 24,
+                        );
+                      },
+                    )
+                  : Icon(
+                      icon ?? Icons.error_outline,
+                      color: const Color.fromARGB(255, 255, 255, 255),
+                      size: 24,
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -1566,19 +1658,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
                   ),
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: Colors.grey[400],
-            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey[400]),
           ],
         ),
       ),
@@ -1597,7 +1682,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.purple[600] : Colors.transparent,
+          color: isSelected
+              ? const Color.fromARGB(255, 255, 55, 55)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
@@ -1614,10 +1701,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
   }
 
   bool _hasActiveFilters() {
-    return _searchQuery.isNotEmpty || 
-           _onlyFollowed || 
-           _onlyHasLink ||
-           _sortBy != 'newest';
+    return _searchQuery.isNotEmpty ||
+        _onlyFollowed ||
+        _onlyHasLink ||
+        _sortBy != 'newest';
   }
 
   Widget _buildFilterPanel() {
@@ -1644,10 +1731,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: 'Tìm kiếm sản phẩm...',
-                hintStyle: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 14,
-                ),
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
                 prefixIcon: Icon(
                   Icons.search_rounded,
                   color: Colors.grey[400],
@@ -1696,7 +1780,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                 setState(() {
                   _searchQuery = value;
                 });
-                
+
                 // Clear và reload khi search empty
                 if (value.trim().isEmpty) {
                   _searchDebounceTimer?.cancel();
@@ -1706,14 +1790,17 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                   _loadProducts(refresh: true);
                   return;
                 }
-                
+
                 // Debounce search khi có giá trị
                 _searchDebounceTimer?.cancel();
-                _searchDebounceTimer = Timer(const Duration(milliseconds: 500), () {
-                  if (mounted && value.trim().isNotEmpty) {
-                    _loadProducts(refresh: true);
-                  }
-                });
+                _searchDebounceTimer = Timer(
+                  const Duration(milliseconds: 500),
+                  () {
+                    if (mounted && value.trim().isNotEmpty) {
+                      _loadProducts(refresh: true);
+                    }
+                  },
+                );
               },
               onSubmitted: (_) {
                 FocusScope.of(context).unfocus();
@@ -1723,7 +1810,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
               },
             ),
           ),
-          
+
           // Filter Chips Row
           Container(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1800,13 +1887,13 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected 
-              ? const Color(0xFFFF6B35) 
+          color: isSelected
+              ? const Color(0xFFFF6B35)
               : backgroundColor ?? const Color(0xFFF8F9FA),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected 
-                ? const Color(0xFFFF6B35) 
+            color: isSelected
+                ? const Color(0xFFFF6B35)
                 : const Color(0xFFE9ECEF),
             width: 1,
           ),
@@ -1817,9 +1904,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             Icon(
               icon,
               size: 16,
-              color: isSelected 
-                  ? Colors.white 
-                  : iconColor ?? Colors.grey[600],
+              color: isSelected ? Colors.white : iconColor ?? Colors.grey[600],
             ),
             const SizedBox(width: 6),
             Text(
@@ -1827,8 +1912,8 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isSelected 
-                    ? Colors.white 
+                color: isSelected
+                    ? Colors.white
                     : textColor ?? Colors.grey[700],
               ),
             ),
@@ -1846,19 +1931,12 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
         decoration: BoxDecoration(
           color: const Color(0xFFF8F9FA),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: const Color(0xFFE9ECEF),
-            width: 1,
-          ),
+          border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.sort_rounded,
-              size: 16,
-              color: Colors.grey[600],
-            ),
+            Icon(Icons.sort_rounded, size: 16, color: Colors.grey[600]),
             const SizedBox(width: 6),
             Text(
               _getSortLabel(_sortBy),
@@ -1943,14 +2021,14 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: isSelected 
+                    color: isSelected
                         ? const Color(0xFFFF6B35).withOpacity(0.1)
                         : Colors.grey[100],
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
                     option['icon'] as IconData,
-                    color: isSelected 
+                    color: isSelected
                         ? const Color(0xFFFF6B35)
                         : Colors.grey[600],
                     size: 20,
@@ -1961,7 +2039,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color: isSelected 
+                    color: isSelected
                         ? const Color(0xFFFF6B35)
                         : const Color(0xFF333333),
                   ),
@@ -2063,10 +2141,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             padding: const EdgeInsets.all(16),
             child: Text(
               'Đã hiển thị tất cả sản phẩm',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ),
       ],
@@ -2075,7 +2150,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
 
   Widget _buildProductCard(AffiliateProduct product) {
     final commissionRange = _calculateCommissionRange(product);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -2098,10 +2173,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
           );
         },
         borderRadius: BorderRadius.circular(8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min, // Tự co giãn theo nội dung
-        children: [
+          children: [
             // Box trên: Ảnh sản phẩm + Badges
             LayoutBuilder(
               builder: (context, constraints) {
@@ -2117,33 +2192,33 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                     ),
                   ),
                   child: Stack(
-              children: [
-                ClipRRect(
+                    children: [
+                      ClipRRect(
                         borderRadius: const BorderRadius.only(
                           topLeft: Radius.circular(8),
                           topRight: Radius.circular(8),
                         ),
-                  child: Image.network(
-                    product.image,
+                        child: Image.network(
+                          product.image,
                           width: double.infinity,
                           height: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
                               width: double.infinity,
                               height: double.infinity,
-                        color: const Color(0xFFF5F5F5),
-                        child: const Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            size: 32,
-                            color: Color(0xFF999999),
-                          ),
+                              color: const Color(0xFFF5F5F5),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 32,
+                                  color: Color(0xFF999999),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ),
+                      ),
                       // Follow checkbox badge ở góc trên phải
                       Positioned(
                         top: 4,
@@ -2159,54 +2234,77 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                             child: _followBusy[product.id] == true
                                 ? const Padding(
                                     padding: EdgeInsets.all(4),
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : Checkbox(
                                     activeColor: const Color(0xFFFF6B35),
                                     value: product.isFollowing,
                                     onChanged: (v) async {
-                                      setState(() { _followBusy[product.id] = true; });
-                                      final result = await _affiliateService.toggleFollow(
-                                        userId: _currentUserId ?? 0,
-                                        spId: product.id,
-                                        shopId: product.shopId,
-                                        follow: v ?? false,
-                                      );
-                                      if (!mounted) return;
-                                      setState(() { _followBusy[product.id] = false; });
-                                      
-                                      if (result != null && result['success'] == true) {
-                                        final index = _products.indexWhere((p) => p.id == product.id);
-                                        if (index != -1) {
-                                          final updatedProduct = AffiliateProduct(
-                                            id: product.id,
-                                            name: product.name,
-                                            slug: product.slug,
-                                            image: product.image,
-                                            price: product.price,
-                                            oldPrice: product.oldPrice,
-                                            discountPercent: product.discountPercent,
+                                      setState(() {
+                                        _followBusy[product.id] = true;
+                                      });
+                                      final result = await _affiliateService
+                                          .toggleFollow(
+                                            userId: _currentUserId ?? 0,
+                                            spId: product.id,
                                             shopId: product.shopId,
-                                            categoryIds: product.categoryIds,
-                                            brandId: product.brandId,
-                                            brandName: product.brandName,
-                                            productUrl: product.productUrl,
-                                            commissionInfo: product.commissionInfo,
-                                            shortLink: product.shortLink,
-                                            campaignName: product.campaignName,
-                                            priceFormatted: product.priceFormatted,
-                                            oldPriceFormatted: product.oldPriceFormatted,
-                                            isFeatured: product.isFeatured,
-                                            isFlashSale: product.isFlashSale,
-                                            createdAt: product.createdAt,
-                                            updatedAt: product.updatedAt,
-                                            isFollowing: v ?? false,
+                                            follow: v ?? false,
                                           );
+                                      if (!mounted) return;
+                                      setState(() {
+                                        _followBusy[product.id] = false;
+                                      });
+
+                                      if (result != null &&
+                                          result['success'] == true) {
+                                        final index = _products.indexWhere(
+                                          (p) => p.id == product.id,
+                                        );
+                                        if (index != -1) {
+                                          final updatedProduct =
+                                              AffiliateProduct(
+                                                id: product.id,
+                                                name: product.name,
+                                                slug: product.slug,
+                                                image: product.image,
+                                                price: product.price,
+                                                oldPrice: product.oldPrice,
+                                                discountPercent:
+                                                    product.discountPercent,
+                                                shopId: product.shopId,
+                                                categoryIds:
+                                                    product.categoryIds,
+                                                brandId: product.brandId,
+                                                brandName: product.brandName,
+                                                productUrl: product.productUrl,
+                                                commissionInfo:
+                                                    product.commissionInfo,
+                                                shortLink: product.shortLink,
+                                                campaignName:
+                                                    product.campaignName,
+                                                priceFormatted:
+                                                    product.priceFormatted,
+                                                oldPriceFormatted:
+                                                    product.oldPriceFormatted,
+                                                isFeatured: product.isFeatured,
+                                                isFlashSale:
+                                                    product.isFlashSale,
+                                                createdAt: product.createdAt,
+                                                updatedAt: product.updatedAt,
+                                                isFollowing: v ?? false,
+                                              );
                                           setState(() {
                                             _products[index] = updatedProduct;
-                                            final fIndex = _filteredProducts.indexWhere((p) => p.id == updatedProduct.id);
+                                            final fIndex = _filteredProducts
+                                                .indexWhere(
+                                                  (p) =>
+                                                      p.id == updatedProduct.id,
+                                                );
                                             if (fIndex != -1) {
-                                              _filteredProducts[fIndex] = updatedProduct;
+                                              _filteredProducts[fIndex] =
+                                                  updatedProduct;
                                             } else {
                                               _applyFilters();
                                             }
@@ -2224,7 +2322,10 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                           top: 4,
                           left: 4,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFF6B35),
                               borderRadius: BorderRadius.circular(2),
@@ -2251,18 +2352,25 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                                 : () => _createAffiliateLink(product),
                             borderRadius: BorderRadius.circular(4),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
-                                color: (product.hasLink ? const Color(0xFF1976D2) : const Color(0xFFFF6B35)).withOpacity(0.95),
+                                color:
+                                    (product.hasLink
+                                            ? const Color(0xFF1976D2)
+                                            : const Color(0xFFFF6B35))
+                                        .withOpacity(0.95),
                                 borderRadius: BorderRadius.circular(4),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withOpacity(0.2),
                                     blurRadius: 4,
                                     offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
+                                  ),
+                                ],
+                              ),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -2291,7 +2399,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                 );
               },
             ),
-            
+
             // Box dưới: Thông tin sản phẩm
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
@@ -2311,87 +2419,94 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 4),
-                  
+
                   // Giá
-                      Row(
-                        children: [
-                          Text(
-                            FormatUtils.formatCurrency(product.price.toInt()),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFFFF6B35),
-                            ),
-                          ),
-                          if (product.oldPrice > product.price) ...[
+                  Row(
+                    children: [
+                      Text(
+                        FormatUtils.formatCurrency(product.price.toInt()),
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFFF6B35),
+                        ),
+                      ),
+                      if (product.oldPrice > product.price) ...[
                         const SizedBox(width: 6),
-                            Text(
-                              FormatUtils.formatCurrency(product.oldPrice.toInt()),
-                              style: const TextStyle(
+                        Text(
+                          FormatUtils.formatCurrency(product.oldPrice.toInt()),
+                          style: const TextStyle(
                             fontSize: 11,
-                                color: Color(0xFF999999),
-                                decoration: TextDecoration.lineThrough,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                        const SizedBox(height: 4),
-                  
-                  // Hoa hồng
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF0F9FF),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: const Color(0xFFE1F5FE)),
+                            color: Color(0xFF999999),
+                            decoration: TextDecoration.lineThrough,
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF1976D2),
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                              child: Text(
-                                product.mainCommission,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                        Flexible(
-                          child: Text(
-                              commissionRange.replaceAll('↓', '→'),
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF1976D2),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                      ],
                     ],
                   ),
-                ),
                   const SizedBox(height: 4),
-                  
+
+                  // Hoa hồng
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0F9FF),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: const Color(0xFFE1F5FE)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1976D2),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
+                          child: Text(
+                            product.mainCommission,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            commissionRange.replaceAll('↓', '→'),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF1976D2),
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+
                   // Link rows
-                _buildLinkRow(_buildAffiliateUrl(product)),
-                if (product.hasLink) ...[
-                    const SizedBox(height: 4),
-                  _buildLinkRow(product.shortLink!),
+                  // TODO: Uncomment sau này sẽ bỏ comment dùng lại
+                  // _buildLinkRow(_buildAffiliateUrl(product)),
+                  // if (product.hasLink) ...[
+                  //     const SizedBox(height: 4),
+                  //   _buildLinkRow(product.shortLink!),
+                  // ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
         ),
       ),
     );
@@ -2401,31 +2516,36 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     if (product.commissionInfo.isEmpty) {
       return 'Hoa hồng: ${product.mainCommission}';
     }
-    
+
     final commissions = <double>[];
-    
+
     for (final commission in product.commissionInfo) {
       if (commission.type == 'phantram') {
         final minPrice = product.price;
-        final maxPrice = product.oldPrice > product.price ? product.oldPrice : product.price * 1.2;
-        
+        final maxPrice = product.oldPrice > product.price
+            ? product.oldPrice
+            : product.price * 1.2;
+
         final minCommission = (minPrice * commission.value / 100).round();
         final maxCommission = (maxPrice * commission.value / 100).round();
-        
-        commissions.addAll([minCommission.toDouble(), maxCommission.toDouble()]);
+
+        commissions.addAll([
+          minCommission.toDouble(),
+          maxCommission.toDouble(),
+        ]);
       } else {
         commissions.add(commission.value);
       }
     }
-    
+
     if (commissions.isEmpty) {
       return 'Hoa hồng: ${product.mainCommission}';
     }
-    
+
     commissions.sort();
     final minCommission = commissions.first;
     final maxCommission = commissions.last;
-    
+
     if (minCommission == maxCommission) {
       return 'Hoa hồng: ${FormatUtils.formatCurrency(minCommission.round())}';
     } else {
@@ -2439,49 +2559,53 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: const Color(0xFFE9ECEF)),
-      ),
-      child: Row(
-        children: [
+        decoration: BoxDecoration(
+          color: const Color(0xFFF8F9FA),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: const Color(0xFFE9ECEF)),
+        ),
+        child: Row(
+          children: [
             const Icon(Icons.link, size: 11, color: Color(0xFF6C757D)),
             const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              url,
-              style: const TextStyle(
+            Expanded(
+              child: Text(
+                url,
+                style: const TextStyle(
                   fontSize: 9,
-                color: Color(0xFF495057),
-                fontWeight: FontWeight.w400,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          GestureDetector(
-            onTap: () {
-              Clipboard.setData(ClipboardData(text: url));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Đã copy link!'),
-                  backgroundColor: const Color(0xFF28A745),
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+                  color: Color(0xFF495057),
+                  fontWeight: FontWeight.w400,
                 ),
-              );
-            },
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            GestureDetector(
+              onTap: () {
+                Clipboard.setData(ClipboardData(text: url));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: const Text('Đã copy link!'),
+                    backgroundColor: const Color(0xFF28A745),
+                    behavior: SnackBarBehavior.floating,
+                    duration: const Duration(seconds: 1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                );
+              },
               behavior: HitTestBehavior.opaque, // Prevent event bubbling
               child: Container(
                 padding: const EdgeInsets.all(4),
-                child: const Icon(Icons.copy, size: 11, color: Color(0xFF6C757D)),
+                child: const Icon(
+                  Icons.copy,
+                  size: 11,
+                  color: Color(0xFF6C757D),
+                ),
               ),
-          ),
-        ],
+            ),
+          ],
         ),
       ),
     );
@@ -2516,7 +2640,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
             final updated = _cloneWithShortLink(_products[index], short);
             setState(() {
               _products[index] = updated;
-              final fIndex = _filteredProducts.indexWhere((p) => p.id == updated.id);
+              final fIndex = _filteredProducts.indexWhere(
+                (p) => p.id == updated.id,
+              );
               if (fIndex != -1) {
                 _filteredProducts[fIndex] = updated;
               } else {
@@ -2541,10 +2667,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -2579,8 +2702,14 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
 
   void _shareToOther(AffiliateProduct product) async {
     final shareText = _buildShareText(product);
-    final shareUrl = _buildAffiliateUrl(product);
-    
+    // Ưu tiên dùng link rút gọn nếu có, nếu không thì dùng link gốc
+    final shareUrl =
+        (product.hasLink &&
+            product.shortLink != null &&
+            product.shortLink!.isNotEmpty)
+        ? product.shortLink!
+        : _buildAffiliateUrl(product);
+
     try {
       if (product.image.isNotEmpty) {
         final imageFile = await _downloadImageToTemp(product.image);
@@ -2588,7 +2717,7 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
           try {
             await Share.shareXFiles(
               [XFile(imageFile.path)],
-              text: '$shareText\n\n$shareUrl',
+              text: '$shareText\n\nMua ngay: $shareUrl',
               subject: product.title,
             );
             return;
@@ -2597,15 +2726,9 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
           }
         }
       }
-      Share.share(
-        '$shareText\n\n$shareUrl',
-        subject: product.title,
-      );
+      Share.share('$shareText\n\nMua ngay: $shareUrl', subject: product.title);
     } catch (e) {
-      Share.share(
-        '$shareText\n\n$shareUrl',
-        subject: product.title,
-      );
+      Share.share('$shareText\n\nMua ngay: $shareUrl', subject: product.title);
     }
   }
 
@@ -2614,26 +2737,29 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
       if (!imageUrl.startsWith('http')) {
         return null;
       }
-      
-      final response = await http.get(
-        Uri.parse(imageUrl),
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'image/*',
-        },
-      ).timeout(const Duration(seconds: 30));
-      
+
+      final response = await http
+          .get(
+            Uri.parse(imageUrl),
+            headers: {
+              'User-Agent':
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'image/*',
+            },
+          )
+          .timeout(const Duration(seconds: 30));
+
       if (response.statusCode == 200) {
         final tempDir = await getTemporaryDirectory();
         final fileName = 'product_${DateTime.now().millisecondsSinceEpoch}.jpg';
         final file = File('${tempDir.path}/$fileName');
         await file.writeAsBytes(response.bodyBytes);
-        
+
         final fileSize = await file.length();
         if (fileSize < 100) {
           return null;
         }
-        
+
         return file;
       }
     } catch (e) {
@@ -2642,16 +2768,22 @@ class _AffiliateScreenState extends State<AffiliateScreen> with AutomaticKeepAli
     return null;
   }
 
-String _buildShareText(AffiliateProduct product) {
-  final discountPercent = product.oldPrice > product.price 
-      ? ' (Giảm ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%)'
-      : '';
-  
-  final oldPriceText = product.oldPrice > product.price 
-      ? '\n💸Giá Bán:  ̶${FormatUtils.formatCurrency(product.price.toInt())}̶'
-      : '';
-  return '🔥 ${product.title}$discountPercent\n💰 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}$oldPriceText\n📱 Sóc Đỏ : Hàng chuẩn - Giá siêu hấp dẫn';
-}
+  String _buildShareText(AffiliateProduct product) {
+    final discountPercent = product.oldPrice > product.price
+        ? ' (Giảm ${((product.oldPrice - product.price) / product.oldPrice * 100).round()}%)'
+        : '';
+
+    final oldPriceText = product.oldPrice > product.price
+        ? '\n💸Giá Bán:  ${FormatUtils.formatCurrency(product.price.toInt())} 🔥🔥'
+        : '';
+
+    // Sử dụng ký tự gạch ngang cho "Giá Niêm Yết" (text-decoration: line-through)
+    final giaNiemYet = product.oldPrice > product.price
+        ? '💰 Giá Niêm Yết: ̶${FormatUtils.formatCurrency(product.oldPrice.toInt())}̶'
+        : '💰 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}';
+
+    return '🔥 ${product.title}$discountPercent\n$giaNiemYet$oldPriceText\n📱 Sóc Đỏ : Hàng chính hãng - Giá siêu hấp dẫn';
+  }
 
   Widget _buildAffiliateRegistrationPrompt() {
     return Container(
@@ -2659,11 +2791,7 @@ String _buildShareText(AffiliateProduct product) {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF667eea),
-            Color(0xFF764ba2),
-            Color(0xFFf093fb),
-          ],
+          colors: [Color(0xFF667eea), Color(0xFF764ba2), Color(0xFFf093fb)],
         ),
       ),
       child: SafeArea(
@@ -2741,7 +2869,8 @@ String _buildShareText(AffiliateProduct product) {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const Text(
                                           '💰 TIẾP THỊ LIÊN KẾT',
@@ -2766,10 +2895,16 @@ String _buildShareText(AffiliateProduct product) {
                                             vertical: 6,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(0.2),
-                                            borderRadius: BorderRadius.circular(16),
+                                            color: Colors.white.withOpacity(
+                                              0.2,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                             border: Border.all(
-                                              color: Colors.white.withOpacity(0.3),
+                                              color: Colors.white.withOpacity(
+                                                0.3,
+                                              ),
                                             ),
                                           ),
                                           child: const Text(
@@ -2828,7 +2963,7 @@ String _buildShareText(AffiliateProduct product) {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [               
+                  children: [
                     const SizedBox(height: 12),
                     _buildBenefitItem(
                       Icons.monetization_on,
@@ -2853,18 +2988,16 @@ String _buildShareText(AffiliateProduct product) {
                       'Rút tiền nhanh',
                       'Rút tiền về tài khoản ngân hàng dễ dàng',
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Terms Checkbox
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey.withOpacity(0.2),
-                        ),
+                        border: Border.all(color: Colors.grey.withOpacity(0.2)),
                       ),
                       child: Row(
                         children: [
@@ -2880,12 +3013,16 @@ String _buildShareText(AffiliateProduct product) {
                           Expanded(
                             child: RichText(
                               text: TextSpan(
-                                style: const TextStyle(color: Colors.black, fontSize: 14),
+                                style: const TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 14,
+                                ),
                                 children: [
                                   const TextSpan(text: 'Tôi đồng ý với '),
                                   WidgetSpan(
                                     child: GestureDetector(
-                                      onTap: () => _showAffiliateTermsDialog(context),
+                                      onTap: () =>
+                                          _showAffiliateTermsDialog(context),
                                       child: const Text(
                                         'điều khoản chương trình Affiliate',
                                         style: TextStyle(
@@ -2906,9 +3043,9 @@ String _buildShareText(AffiliateProduct product) {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Register Button
                     SizedBox(
                       width: double.infinity,
@@ -2929,7 +3066,9 @@ String _buildShareText(AffiliateProduct product) {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
                                 ),
                               )
                             : const Row(
@@ -2967,11 +3106,7 @@ String _buildShareText(AffiliateProduct product) {
             color: const Color(0xFF667eea).withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            color: const Color(0xFF667eea),
-            size: 20,
-          ),
+          child: Icon(icon, color: const Color(0xFF667eea), size: 20),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -2989,10 +3124,7 @@ String _buildShareText(AffiliateProduct product) {
               const SizedBox(height: 2),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF718096),
-                ),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF718096)),
               ),
             ],
           ),
@@ -3000,6 +3132,4 @@ String _buildShareText(AffiliateProduct product) {
       ],
     );
   }
-
-
 }

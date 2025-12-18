@@ -232,25 +232,46 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
 
   Future<void> _pickAndUploadAvatar() async {
     try {
+      print('[ProfileEditScreen] _pickAndUploadAvatar START');
       final picker = ImagePicker();
       final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-      if (picked == null || _user == null) return;
+      if (picked == null || _user == null) {
+        print('[ProfileEditScreen] _pickAndUploadAvatar - No image picked or user is null');
+        return;
+      }
+      print('[ProfileEditScreen] _pickAndUploadAvatar - Image picked: ${picked.name}, path: ${picked.path}');
+      
       setState(() { _uploadingAvatar = true; });
       final bytes = await picked.readAsBytes();
+      print('[ProfileEditScreen] _pickAndUploadAvatar - Image bytes loaded: ${bytes.length} bytes');
+      
       final String filename = picked.name;
       final String contentType = filename.toLowerCase().endsWith('.png') ? 'image/png' : (filename.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg');
+      print('[ProfileEditScreen] _pickAndUploadAvatar - Calling API: userId=${_user!.userId}, filename=$filename, contentType=$contentType');
+      
       final uploadedPath = await _api.uploadAvatar(userId: _user!.userId, bytes: bytes, filename: filename, contentType: contentType);
-      if (!mounted) return;
+      print('[ProfileEditScreen] _pickAndUploadAvatar - API response: uploadedPath=$uploadedPath');
+      
+      if (!mounted) {
+        print('[ProfileEditScreen] _pickAndUploadAvatar - Widget not mounted, returning');
+        return;
+      }
+      
       setState(() { _uploadingAvatar = false; });
+      
       if (uploadedPath != null && uploadedPath.isNotEmpty) {
+        print('[ProfileEditScreen] _pickAndUploadAvatar SUCCESS - Updating user with avatar: $uploadedPath');
         final updated = _user!.copyWith(avatar: uploadedPath);
         await _auth.updateUser(updated);
         setState(() { _user = updated; });
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật avatar thành công'), backgroundColor: Colors.green));
       } else {
+        print('[ProfileEditScreen] _pickAndUploadAvatar FAILED - uploadedPath is null or empty');
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật avatar thất bại'), backgroundColor: Colors.red));
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('[ProfileEditScreen] _pickAndUploadAvatar EXCEPTION: $e');
+      print('[ProfileEditScreen] _pickAndUploadAvatar STACKTRACE: $stackTrace');
       if (!mounted) return;
       setState(() { _uploadingAvatar = false; });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));

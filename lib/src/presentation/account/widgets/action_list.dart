@@ -16,6 +16,7 @@ class ActionList extends StatelessWidget {
           for (final item in items)
             ActionRow(
               icon: item.icon, 
+              imagePath: item.imagePath,
               title: item.title,
               onTap: onTapCallbacks?[item.title],
             ),

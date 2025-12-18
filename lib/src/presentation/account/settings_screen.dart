@@ -204,19 +204,19 @@ class SettingsScreen extends StatelessWidget {
           const SizedBox(height: 12),
           const SectionHeader(title: 'Tài khoản'),
           ActionList(items: const [
-            ActionItem(Icons.manage_accounts_outlined, 'Thông tin cá nhân'),
-            ActionItem(Icons.lock_reset_outlined, 'Đổi mật khẩu'),
-            ActionItem(Icons.location_on_outlined, 'Sổ địa chỉ'),
+            ActionItem.withImage('assets/images/icons/user-setting.png', 'Thông tin cá nhân'),
+            ActionItem.withImage('assets/images/icons/change-pass.png', 'Đổi mật khẩu'),
+            ActionItem.withImage('assets/images/icons/user-location.png', 'Sổ địa chỉ'),
           ]),
         
           const SizedBox(height: 12),
           const SectionHeader(title: 'Hỗ trợ'),
           ActionList(
             items: const [
-              ActionItem(Icons.headset_mic_outlined, 'Trung tâm trợ giúp'),
-              ActionItem(Icons.bug_report_outlined, 'Báo lỗi cho chúng tôi'),
-              ActionItem(Icons.star_outline, 'Đánh giá ứng dụng'),
-              ActionItem(Icons.delete_outline, 'Xóa tài khoản'),
+              ActionItem.withImage('assets/images/icons/customer-service.png', 'Trung tâm trợ giúp'),
+              ActionItem.withImage('assets/images/icons/error-message.png', 'Báo lỗi cho chúng tôi'),
+              ActionItem.withImage('assets/images/icons/rating-stars.png', 'Đánh giá ứng dụng'),
+              ActionItem.withImage('assets/images/icons/delete_user.png', 'Xóa tài khoản'),
             ],
             onTapCallbacks: {
               'Xóa tài khoản': () => _handleDeleteAccount(context),
@@ -300,7 +300,7 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'App version V3.4.34',
+                  'App version Socdo 1.0.0',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,
@@ -308,7 +308,7 @@ class SettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Last updated 10.08.2025',
+                  'Phát triển bởi Socdo',
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade600,

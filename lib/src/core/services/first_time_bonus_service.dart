@@ -20,17 +20,26 @@ class FirstTimeBonusService {
   static const Duration _configCacheTTL = Duration(minutes: 5);
   
   /// Kiểm tra và tặng bonus khi đăng nhập lần đầu
-  Future<Map<String, dynamic>?> checkAndGrantBonus(int userId) async {
+  /// [promoCodeId] - ID mã thưởng (optional, chỉ dùng khi đăng ký có mã thưởng)
+  Future<Map<String, dynamic>?> checkAndGrantBonus(
+    int userId, {
+    int? promoCodeId,
+  }) async {
     try {
       final deviceId = await DeviceIdHelper.getDeviceId();
       final token = await _apiService.getValidToken();
-      
+
       if (token == null) {
         return null;
       }
-      
+
+      String url = '$baseUrl/check_first_time_bonus?user_id=$userId&device_id=$deviceId';
+      if (promoCodeId != null) {
+        url += '&promo_code_id=$promoCodeId';
+      }
+
       final response = await http.get(
-        Uri.parse('$baseUrl/check_first_time_bonus?user_id=$userId&device_id=$deviceId'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -39,12 +48,24 @@ class FirstTimeBonusService {
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        if (data['success'] == true) {
+        if (data['success'] == true && data['data'] != null) {
           return data['data'] as Map<String, dynamic>?;
+        } else {
+          // ❌ API trả về success = false hoặc không có data
+          print('❌ [BONUS] API trả về success = false hoặc không có data: ${response.body}');
+          return {
+            'has_bonus': false,
+            'message': data['message'] ?? data['data']?['message'] ?? 'Không thể tạo bonus'
+          };
         }
+      } else {
+        // ❌ HTTP status code không phải 200
+        print('❌ [BONUS] HTTP ${response.statusCode}: ${response.body}');
+        return {
+          'has_bonus': false,
+          'message': 'Lỗi kết nối API (${response.statusCode})'
+        };
       }
-      
-      return null;
     } catch (e) {
       return null;
     }

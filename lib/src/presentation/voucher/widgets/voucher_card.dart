@@ -41,7 +41,7 @@ class VoucherCard extends StatelessWidget {
             children: [
               // Discount badge (left side)
               Container(
-                width: 56,
+                width: 85,
                 height: 56,
                 decoration: BoxDecoration(
                   color: primaryColor,

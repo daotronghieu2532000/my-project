@@ -33,16 +33,24 @@ class AuthService {
     required String phoneNumber,
     required String password,
     required String rePassword,
+    String? promoCode, // Thêm parameter mã thưởng (optional)
   }) async {
     try {
+      final body = {
+        'full_name': fullName,
+        'phone_number': phoneNumber,
+        'password': password,
+        're_password': rePassword,
+      };
+      
+      // Thêm promo_code vào body nếu có
+      if (promoCode != null && promoCode.isNotEmpty) {
+        body['promo_code'] = promoCode;
+      }
+      
       final response = await _apiService.post(
         '/register',
-        body: {
-          'full_name': fullName,
-          'phone_number': phoneNumber,
-          'password': password,
-          're_password': rePassword,
-        },
+        body: body,
       );
 
       if (response != null) {
@@ -286,28 +294,46 @@ class AuthService {
   }
 
   /// Lấy URL avatar (với fallback)
+  /// Xử lý linh động 3 loại đường dẫn:
+  /// 1. /uploads/avatar/... (tương đối)
+  /// 2. /www/wwwroot/socdo.vn/uploads/avatar/... (tuyệt đối server)
+  /// 3. Đường dẫn tương đối khác
   String getAvatarUrl(String? avatar) {
     if (avatar == null || avatar.isEmpty) {
       return 'lib/src/core/assets/images/user_default.png';
     }
 
-    // Nếu avatar là URL đầy đủ
-    if (avatar.startsWith('http')) {
+    // Nếu avatar là URL đầy đủ (http/https)
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
       return avatar;
     }
 
-    // Xử lý trường hợp có prefix socdo.vn trong path
+    // Xử lý đường dẫn tuyệt đối server: /www/wwwroot/socdo.vn/uploads/avatar/...
+    // Chuyển thành đường dẫn tương đối web
     String cleanPath = avatar;
-    if (avatar.startsWith('socdo.vn/')) {
-      cleanPath = avatar.substring(9); // Bỏ "socdo.vn/"
+    if (cleanPath.startsWith('/www/wwwroot/socdo.vn')) {
+      // Bỏ phần /www/wwwroot/socdo.vn, giữ lại phần sau
+      cleanPath = cleanPath.substring(22); // Bỏ '/www/wwwroot/socdo.vn'
+      if (!cleanPath.startsWith('/')) {
+        cleanPath = '/$cleanPath';
+      }
+    }
+    
+    // Xử lý trường hợp có prefix socdo.vn trong path
+    if (cleanPath.startsWith('socdo.vn/')) {
+      cleanPath = cleanPath.substring(9); // Bỏ "socdo.vn/"
+      if (!cleanPath.startsWith('/')) {
+        cleanPath = '/$cleanPath';
+      }
+    }
+
+    // Đảm bảo đường dẫn bắt đầu bằng /
+    if (!cleanPath.startsWith('/')) {
+      cleanPath = '/$cleanPath';
     }
 
     // Nếu avatar là path relative, thêm tiền tố https://socdo.vn/
-    if (cleanPath.startsWith('/')) {
-      return 'https://socdo.vn$cleanPath';
-    } else {
-      return 'https://socdo.vn/$cleanPath';
-    }
+    return 'https://socdo.vn$cleanPath';
   }
 
   /// Lấy tên hiển thị
@@ -579,6 +605,84 @@ class AuthService {
             return {
               'success': false,
               'message': data['message'] ?? 'Đổi mật khẩu thất bại',
+            };
+          }
+        } catch (e) {
+          return {'success': false, 'message': 'Lỗi xử lý dữ liệu từ server'};
+        }
+      } else {
+        return {'success': false, 'message': 'Lỗi kết nối server'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối server'};
+    }
+  }
+
+  /// Gửi OTP qua Zalo ZNS cho đăng ký
+  Future<Map<String, dynamic>> registerSendOTP(String phoneNumber) async {
+    try {
+      final response = await _apiService.post(
+        '/register_send_otp',
+        body: {'phone_number': phoneNumber},
+      );
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data['success'] == true) {
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Mã OTP đã được gửi qua Zalo',
+              'data': data['data'],
+            };
+          } else {
+            String errorMessage = data['message'] ?? 'Gửi OTP thất bại';
+            return {
+              'success': false,
+              'message': errorMessage,
+              'wait_seconds': data['wait_seconds'] as int?,
+              'error_code': data['error_code'] as String?,
+              'attempt_number': data['attempt_number'] as int?,
+            };
+          }
+        } catch (e) {
+          return {'success': false, 'message': 'Lỗi xử lý dữ liệu từ server'};
+        }
+      } else {
+        return {'success': false, 'message': 'Lỗi kết nối server'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Lỗi kết nối server'};
+    }
+  }
+
+  /// Xác thực OTP cho đăng ký
+  Future<Map<String, dynamic>> registerVerifyOTP({
+    required String phoneNumber,
+    required String otp,
+  }) async {
+    try {
+      final response = await _apiService.post(
+        '/register_verify_otp',
+        body: {
+          'phone_number': phoneNumber,
+          'otp': otp,
+        },
+      );
+
+      if (response != null) {
+        try {
+          final data = jsonDecode(response.body);
+
+          if (data['success'] == true) {
+            return {
+              'success': true,
+              'message': data['message'] ?? 'Xác thực OTP thành công',
+            };
+          } else {
+            return {
+              'success': false,
+              'message': data['message'] ?? 'Xác thực OTP thất bại',
             };
           }
         } catch (e) {

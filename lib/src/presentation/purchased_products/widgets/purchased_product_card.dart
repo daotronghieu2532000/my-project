@@ -29,19 +29,19 @@ class _PurchasedProductCardState extends State<PurchasedProductCard> {
   bool _isAddingToCart = false;
 
   // Helper method để build text rating và sold từ dữ liệu thật
-  String _buildRatingSoldText() {
-    final rating = widget.product.rating;
-    final reviews = widget.product.reviewCount;
-    final sold = widget.product.soldCount;
+  // String _buildRatingSoldText() {
+  //   final rating = widget.product.rating;
+  //   final reviews = widget.product.reviewCount;
+  //   final sold = widget.product.soldCount;
     
-    if (rating > 0 && reviews > 0) {
-      return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
-    } else if (rating > 0) {
-      return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
-    } else {
-      return 'Đã bán ${FormatUtils.formatNumber(sold)}';
-    }
-  }
+  //   if (rating > 0 && reviews > 0) {
+  //     return '${rating.toStringAsFixed(1)} ($reviews) | Đã bán ${FormatUtils.formatNumber(sold)}';
+  //   } else if (rating > 0) {
+  //     return '${rating.toStringAsFixed(1)} | Đã bán ${FormatUtils.formatNumber(sold)}';
+  //   } else {
+  //     return 'Đã bán ${FormatUtils.formatNumber(sold)}';
+  //   }
+  // }
 
   // Helper function to build full image URL
   String _buildImageUrl(String? imagePath) {
@@ -204,21 +204,21 @@ class _PurchasedProductCardState extends State<PurchasedProductCard> {
                             ],
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        // Rating và đã bán - dữ liệu thật từ API
-                        Row(
-                          children: [
-                            const Icon(Icons.star, size: 14, color: Colors.amber),
-                            const SizedBox(width: 2),
-                            Flexible(
-                              child: Text(
-                                _buildRatingSoldText(),
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
+                        // const SizedBox(height: 6),
+                        // // Rating và đã bán - dữ liệu thật từ API
+                        // Row(
+                        //   children: [
+                        //     const Icon(Icons.star, size: 14, color: Colors.amber),
+                        //     const SizedBox(width: 2),
+                        //     Flexible(
+                        //       child: Text(
+                        //         _buildRatingSoldText(),
+                        //         style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        //         overflow: TextOverflow.ellipsis,
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
                         const SizedBox(height: 6),
                         // Badge "Đã mua" với icon tích v
                         Container(
@@ -248,8 +248,8 @@ class _PurchasedProductCardState extends State<PurchasedProductCard> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        // Badges
+                        // const SizedBox(height: 6),
+                        // // Badges
                         ProductIconsRow(
                           voucherIcon: widget.product.voucherIcon,
                           freeshipIcon: widget.product.freeshipIcon,
@@ -296,7 +296,7 @@ class _PurchasedProductCardState extends State<PurchasedProductCard> {
                           ),
                         )
                       : const Text(
-                          'Mua lại',
+                          'Mua ngay',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,

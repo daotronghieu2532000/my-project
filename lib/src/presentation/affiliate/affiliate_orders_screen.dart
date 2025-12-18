@@ -67,7 +67,11 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đơn hàng Affiliate'),
+        title: const Text('Đơn hàng Affiliate',
+        style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
+            ),),
         centerTitle: true,
         actions: [
           IconButton(

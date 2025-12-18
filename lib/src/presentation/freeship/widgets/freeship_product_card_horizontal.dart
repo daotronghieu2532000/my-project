@@ -450,34 +450,18 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
   }
 
   void _handleAddToCart(BuildContext context, ProductDetail product, ProductVariant variant, int quantity) {
-    final cartItem = cart_service.CartItem(
-      id: product.id,
-      name: '${product.name} - ${variant.name}',
-      image: product.imageUrl,
-      price: variant.price,
-      oldPrice: variant.oldPrice,
+    // ✅ Sử dụng extension method để tự động lấy originalPrice
+    final cartItem = product.toCartItemWithVariant(
+      variant: variant,
       quantity: quantity,
-      variant: variant.name,
-      shopId: int.tryParse(product.shopId ?? '0') ?? 0,
-      shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : 'Unknown Shop',
-      addedAt: DateTime.now(),
     );
     
     cart_service.CartService().addItem(cartItem);
   }
 
   void _handleBuyNowSimple(BuildContext context, ProductDetail product, int quantity) {
-    final cartItem = cart_service.CartItem(
-      id: product.id,
-      name: product.name,
-      image: product.imageUrl,
-      price: product.price,
-      oldPrice: product.oldPrice,
-      quantity: quantity,
-      shopId: int.tryParse(product.shopId ?? '0') ?? 0,
-      shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : 'Unknown Shop',
-      addedAt: DateTime.now(),
-    );
+    // ✅ Sử dụng extension method để tự động lấy originalPrice
+    final cartItem = product.toCartItem(quantity: quantity);
     
     cart_service.CartService().addItem(cartItem);
     
@@ -488,17 +472,8 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
   }
 
   void _handleAddToCartSimple(BuildContext context, ProductDetail product, int quantity) {
-    final cartItem = cart_service.CartItem(
-      id: product.id,
-      name: product.name,
-      image: product.imageUrl,
-      price: product.price,
-      oldPrice: product.oldPrice,
-      quantity: quantity,
-      shopId: int.tryParse(product.shopId ?? '0') ?? 0,
-      shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : 'Unknown Shop',
-      addedAt: DateTime.now(),
-    );
+    // ✅ Sử dụng extension method để tự động lấy originalPrice
+    final cartItem = product.toCartItem(quantity: quantity);
     
     cart_service.CartService().addItem(cartItem);
   }

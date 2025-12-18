@@ -640,123 +640,119 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           
-                          const SizedBox(height: 24),
+                          // const SizedBox(height: 24),
+                          // Row(
+                          //   children: [
+                          //     Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
+                          //     Padding(
+                          //       padding: const EdgeInsets.symmetric(horizontal: 16),
+                          //       child: Text(
+                          //         'Hoặc',
+                          //         style: TextStyle(
+                          //           color: const Color(0xFF6C757D),
+                          //           fontSize: 14,
+                          //           fontWeight: FontWeight.w500,
+                          //         ),
+                          //       ),
+                          //     ),
+                          //     Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
+                          //   ],
+                          // ),
                           
-                          // Divider with "Hoặc"
-                          Row(
-                            children: [
-                              Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'Hoặc',
-                                  style: TextStyle(
-                                    color: const Color(0xFF6C757D),
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 24),
-                          
-                          // Social Login Buttons
-                          Row(
-                            children: [
-                              // Google Login Button
-                              Expanded(
-                                child: Container(
-                                  height: 50,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFFE9ECEF),
-                                      width: 1.5,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: ElevatedButton.icon(
-                                    onPressed: _isLoading ? null : _handleGoogleLogin,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.transparent,
-                                      shadowColor: Colors.transparent,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                                    ),
-                                    icon: Image.asset(
-                                      'assets/images/icons/google-color.png',
-                                      width: 24,
-                                      height: 24,
-                                    ),
-                                    label: const Text(
-                                      'Google',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF212529),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
+                          // const SizedBox(height: 24),
+                          // Row(
+                          //   children: [
+                          //     // Google Login Button
+                          //     Expanded(
+                          //       child: Container(
+                          //         height: 50,
+                          //         decoration: BoxDecoration(
+                          //           color: Colors.white,
+                          //           borderRadius: BorderRadius.circular(12),
+                          //           border: Border.all(
+                          //             color: const Color(0xFFE9ECEF),
+                          //             width: 1.5,
+                          //           ),
+                          //           boxShadow: [
+                          //             BoxShadow(
+                          //               color: Colors.black.withOpacity(0.05),
+                          //               blurRadius: 8,
+                          //               offset: const Offset(0, 2),
+                          //             ),
+                          //           ],
+                          //         ),
+                          //         child: ElevatedButton.icon(
+                          //           onPressed: _isLoading ? null : _handleGoogleLogin,
+                          //           style: ElevatedButton.styleFrom(
+                          //             backgroundColor: Colors.transparent,
+                          //             shadowColor: Colors.transparent,
+                          //             shape: RoundedRectangleBorder(
+                          //               borderRadius: BorderRadius.circular(12),
+                          //             ),
+                          //             padding: const EdgeInsets.symmetric(horizontal: 12),
+                          //           ),
+                          //           icon: Image.asset(
+                          //             'assets/images/icons/google-color.png',
+                          //             width: 24,
+                          //             height: 24,
+                          //           ),
+                          //           label: const Text(
+                          //             'Google',
+                          //             style: TextStyle(
+                          //               fontSize: 15,
+                          //               fontWeight: FontWeight.w600,
+                          //               color: Color(0xFF212529),
+                          //             ),
+                          //           ),
+                          //         ),
+                          //       ),
+                          //     ),
                               
-                              const SizedBox(width: 12),
+                          //     const SizedBox(width: 12),
                               
-                              // Facebook Login Button
-                              // Expanded(
-                              //   child: Container(
-                              //     height: 50,
-                              //     decoration: BoxDecoration(
-                              //       color: const Color(0xFF1877F2),
-                              //       borderRadius: BorderRadius.circular(12),
-                              //       boxShadow: [
-                              //         BoxShadow(
-                              //           color: const Color(0xFF1877F2).withOpacity(0.3),
-                              //           blurRadius: 8,
-                              //           offset: const Offset(0, 2),
-                              //         ),
-                              //       ],
-                              //     ),
-                              //     // child: ElevatedButton.icon(
-                              //     //   onPressed: _isLoading ? null : _handleFacebookLogin,
-                              //     //   style: ElevatedButton.styleFrom(
-                              //     //     backgroundColor: Colors.transparent,
-                              //     //     shadowColor: Colors.transparent,
-                              //     //     shape: RoundedRectangleBorder(
-                              //     //       borderRadius: BorderRadius.circular(12),
-                              //     //     ),
-                              //     //     padding: const EdgeInsets.symmetric(horizontal: 12),
-                              //     //   ),
-                              //     //   icon: const Icon(
-                              //     //     Icons.facebook,
-                              //     //     color: Colors.white,
-                              //     //     size: 24,
-                              //     //   ),
-                              //     //   label: const Text(
-                              //     //     'Facebook',
-                              //     //     style: TextStyle(
-                              //     //       fontSize: 15,
-                              //     //       fontWeight: FontWeight.w600,
-                              //     //       color: Colors.white,
-                              //     //     ),
-                              //     //   ),
-                              //     // ),
-                              //   ),
-                              // ),
-                            ],
-                          ),
+                          //     // Facebook Login Button
+                          //     // Expanded(
+                          //     //   child: Container(
+                          //     //     height: 50,
+                          //     //     decoration: BoxDecoration(
+                          //     //       color: const Color(0xFF1877F2),
+                          //     //       borderRadius: BorderRadius.circular(12),
+                          //     //       boxShadow: [
+                          //     //         BoxShadow(
+                          //     //           color: const Color(0xFF1877F2).withOpacity(0.3),
+                          //     //           blurRadius: 8,
+                          //     //           offset: const Offset(0, 2),
+                          //     //         ),
+                          //     //       ],
+                          //     //     ),
+                          //     //     // child: ElevatedButton.icon(
+                          //     //     //   onPressed: _isLoading ? null : _handleFacebookLogin,
+                          //     //     //   style: ElevatedButton.styleFrom(
+                          //     //     //     backgroundColor: Colors.transparent,
+                          //     //     //     shadowColor: Colors.transparent,
+                          //     //     //     shape: RoundedRectangleBorder(
+                          //     //     //       borderRadius: BorderRadius.circular(12),
+                          //     //     //     ),
+                          //     //     //     padding: const EdgeInsets.symmetric(horizontal: 12),
+                          //     //     //   ),
+                          //     //     //   icon: const Icon(
+                          //     //     //     Icons.facebook,
+                          //     //     //     color: Colors.white,
+                          //     //     //     size: 24,
+                          //     //     //   ),
+                          //     //     //   label: const Text(
+                          //     //     //     'Facebook',
+                          //     //     //     style: TextStyle(
+                          //     //     //       fontSize: 15,
+                          //     //     //       fontWeight: FontWeight.w600,
+                          //     //     //       color: Colors.white,
+                          //     //     //     ),
+                          //     //     //   ),
+                          //     //     // ),
+                          //     //   ),
+                          //     // ),
+                          //   ],
+                          // ),
                           
                           const SizedBox(height: 24),
                           

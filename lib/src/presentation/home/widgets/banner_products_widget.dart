@@ -175,6 +175,7 @@ class _BannerProductsWidgetState extends State<BannerProductsWidget> with Automa
               key: ValueKey('banner_products_horizontal_${widget.position}'),
               products: banner.products,
               cardWidth: (screenWidth - 16) / 2,
+              showNextArrow: false,
             ),
           ],
         ),
@@ -424,6 +425,7 @@ class _BannerVerticalWithHeight extends StatefulWidget {
 class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
   double? _productCardHeight;
   final GlobalKey _productCardKey = GlobalKey();
+  final GlobalKey<_BannerProductsHorizontalListState> _productsListKey = GlobalKey<_BannerProductsHorizontalListState>();
 
   @override
   void initState() {
@@ -451,6 +453,12 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
 
   @override
   Widget build(BuildContext context) {
+    // Trường hợp không có sản phẩm, vẫn hiển thị banner dọc
+    if (widget.products.isEmpty) {
+      final fallbackHeight = widget.bannerWidth * 1.2; // tỷ lệ dọc
+      return _buildBannerOnly(fallbackHeight);
+    }
+
     // Nếu chưa đo được height, hiển thị card mẫu để đo (ẩn bằng Offstage)
     if (_productCardHeight == null && widget.products.isNotEmpty) {
       return Offstage(
@@ -478,80 +486,93 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Banner dọc với height khớp product card
-        GestureDetector(
-          onTap: widget.onTap,
-          child: Container(
-            width: widget.bannerWidth,
-            height: bannerHeight,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: SweepGradient(
-                center: Alignment.center,
-                startAngle: 0,
-                endAngle: 2 * 3.14159, // 360 độ
-                colors: const [
-                  Color(0xFFFF0080), // Hồng
-                  Color(0xFFFF8000), // Cam
-                  Color(0xFFFFD700), // Vàng
-                  Color(0xFF00FF80), // Xanh lá
-                  Color(0xFF0080FF), // Xanh dương
-                  Color(0xFF8000FF), // Tím
-                  Color(0xFFFF0080), // Hồng (lặp lại)
-                ],
-                stops: const [0.0, 0.16, 0.33, 0.5, 0.66, 0.83, 1.0],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(2), // Border width
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.network(
-                widget.bannerUrl,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.fill,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: Colors.grey[300],
-                    child: const Icon(
-                      Icons.image_not_supported,
-                      color: Colors.grey,
-                      size: 40,
-                    ),
-                  );
-                },
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+        _buildBannerWithNextButton(bannerHeight),
         const SizedBox(width: 8),
         // Sản phẩm - cuộn ngang với height đã đo
         Expanded(
           child: SizedBox(
             height: bannerHeight,
             child: _BannerProductsHorizontalList(
-              key: ValueKey('banner_products_vertical_horizontal'),
+              key: _productsListKey,
               products: widget.products,
               cardWidth: widget.cardWidth,
+              showNextArrow: true,
             ),
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBannerOnly(double bannerHeight) {
+    return Container(
+      width: widget.bannerWidth,
+      height: bannerHeight,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        gradient: SweepGradient(
+          center: Alignment.center,
+          startAngle: 0,
+          endAngle: 2 * 3.14159,
+          colors: const [
+            Color(0xFFFF0080),
+            Color(0xFFFF8000),
+            Color(0xFFFFD700),
+            Color(0xFF00FF80),
+            Color(0xFF0080FF),
+            Color(0xFF8000FF),
+            Color(0xFFFF0080),
+          ],
+          stops: const [0.0, 0.16, 0.33, 0.5, 0.66, 0.83, 1.0],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(2),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(6),
+        child: Image.network(
+          widget.bannerUrl,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.fill,
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.grey[300],
+              child: const Icon(
+                Icons.image_not_supported,
+                color: Colors.grey,
+                size: 40,
+              ),
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.grey[200],
+              child: const Center(child: CircularProgressIndicator()),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBannerWithNextButton(double bannerHeight) {
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: widget.onTap,
+          child: _buildBannerOnly(bannerHeight),
         ),
       ],
     );
@@ -562,11 +583,13 @@ class _BannerVerticalWithHeightState extends State<_BannerVerticalWithHeight> {
 class _BannerProductsHorizontalList extends StatefulWidget {
   final List<ProductSuggest> products;
   final double cardWidth;
+  final bool showNextArrow;
 
   const _BannerProductsHorizontalList({
     super.key,
     required this.products,
     required this.cardWidth,
+    this.showNextArrow = true,
   });
 
   @override
@@ -579,10 +602,12 @@ class _BannerProductsHorizontalListState extends State<_BannerProductsHorizontal
   final ScrollController _scrollController = ScrollController();
   int _measureAttempts = 0;
   static const int _maxMeasureAttempts = 5;
+  bool _canScrollRight = false;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScroll);
     // Reset scroll về đầu khi init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _resetScrollPosition();
@@ -615,6 +640,7 @@ class _BannerProductsHorizontalListState extends State<_BannerProductsHorizontal
 
   @override
   void dispose() {
+    _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -626,6 +652,8 @@ class _BannerProductsHorizontalListState extends State<_BannerProductsHorizontal
         _measuredHeight = renderBox.size.height;
         _measureAttempts = 0; // Reset counter khi đo thành công
       });
+      // Sau khi đo xong, cập nhật trạng thái hiển thị mũi tên
+      WidgetsBinding.instance.addPostFrameCallback((_) => _updateScrollIndicators());
     } else if (renderBox != null && !renderBox.hasSize && mounted && _measureAttempts < _maxMeasureAttempts) {
       // Nếu chưa có size, đợi thêm một frame nữa (giới hạn số lần thử)
       _measureAttempts++;
@@ -640,6 +668,37 @@ class _BannerProductsHorizontalListState extends State<_BannerProductsHorizontal
         _measuredHeight = 200.0; // Giá trị mặc định
       });
     }
+  }
+
+  void _handleScroll() {
+    _updateScrollIndicators();
+  }
+
+  void _updateScrollIndicators() {
+    if (!mounted || !_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    final maxExtent = position.maxScrollExtent;
+    final offset = position.pixels;
+
+    final canScrollRight = offset < maxExtent - 4;
+
+    if (canScrollRight != _canScrollRight) {
+      setState(() {
+        _canScrollRight = canScrollRight;
+      });
+    }
+  }
+
+  Future<void> scrollNext() async {
+    if (!_scrollController.hasClients || !_canScrollRight) return;
+    final position = _scrollController.position;
+    final step = widget.cardWidth + 8; // card width + margin
+    final target = (position.pixels + step).clamp(0.0, position.maxScrollExtent);
+    await _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+    );
   }
 
   @override
@@ -667,22 +726,54 @@ class _BannerProductsHorizontalListState extends State<_BannerProductsHorizontal
 
     return SizedBox(
       height: _measuredHeight,
-      child: ListView.builder(
-        controller: _scrollController,
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: widget.products.length,
-        itemBuilder: (context, index) {
-          final product = widget.products[index];
-          return Container(
-            width: widget.cardWidth,
-            margin: const EdgeInsets.only(right: 8),
-            child: BannerProductCard(
-              product: product,
-              index: index,
+      child: Stack(
+        children: [
+          ListView.builder(
+            controller: _scrollController,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            itemCount: widget.products.length,
+            itemBuilder: (context, index) {
+              final product = widget.products[index];
+              return Container(
+                width: widget.cardWidth,
+                margin: const EdgeInsets.only(right: 8),
+                child: BannerProductCard(
+                  product: product,
+                  index: index,
+                ),
+              );
+            },
+          ),
+          if (widget.showNextArrow && _canScrollRight && widget.products.length > 1)
+            Positioned(
+              right: 4,
+              top: 78, // Hạ thấp để tránh lệch vào icon giỏ hàng
+              child: GestureDetector(
+                onTap: scrollNext,
+                behavior: HitTestBehavior.translucent,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.12),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_ios,
+                    size: 18,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
             ),
-          );
-        },
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'widgets/delivery_info_section.dart';
+import 'widgets/delivery_info_sticky_header.dart';
 import 'widgets/product_section.dart';
 import 'widgets/order_summary_section.dart';
 import 'widgets/first_time_bonus_section.dart';
@@ -15,6 +16,8 @@ import '../../core/services/shipping_quote_store.dart';
 import '../../core/services/voucher_service.dart';
 import '../../core/services/shipping_events.dart';
 import '../../core/services/shipping_quote_service.dart';
+import '../../core/models/user.dart';
+import 'dart:async';
 
 class CheckoutScreen extends StatefulWidget {
   const CheckoutScreen({super.key});
@@ -32,34 +35,166 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final VoucherService _voucherService = VoucherService();
   final ShippingQuoteService _shippingQuoteService =
       ShippingQuoteService(); // ✅ Service chuyên nghiệp
+  
+  // ✅ State cho sticky header
+  final ScrollController _scrollController = ScrollController();
+  bool _showStickyHeader = false;
+  User? _user;
+  Map<String, dynamic>? _defaultAddress;
 
+  // ✅ Tính tổng giá dựa trên originalPrice (giá gốc) để hiển thị chính xác
   int get totalPrice => _cartService.items
       .where((item) => item.isSelected)
-      .fold(0, (sum, item) => sum + (item.price * item.quantity));
+      .fold(0, (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity));
 
   int get selectedCount =>
       _cartService.items.where((item) => item.isSelected).length;
+
+  StreamSubscription? _shippingEventsSubscription;
 
   @override
   void initState() {
     super.initState();
     // Tự động áp dụng voucher tốt nhất khi mở checkout
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // ✅ QUAN TRỌNG: Load originalPrice cho các CartItem chưa có giá gốc
+      await _loadOriginalPricesForCartItems();
       _autoApplyBestVouchers();
+      _loadUserAddress();
     });
+    
+    // ✅ Lắng nghe scroll để hiển thị/ẩn sticky header
+    _scrollController.addListener(_onScroll);
     
     // ✅ Lắng nghe thay đổi cart để rebuild khi cart thay đổi
     _cartService.addListener(_onCartChanged);
     
     // ✅ Lắng nghe thay đổi auth state để reload sau khi đăng nhập
     _auth.addAuthStateListener(_onAuthStateChanged);
+    
+    // ✅ Lắng nghe ShippingEvents để reload địa chỉ khi địa chỉ thay đổi
+    _shippingEventsSubscription = ShippingEvents.stream.listen((_) {
+      _loadUserAddress();
+    });
+  }
+  
+  /// ✅ QUAN TRỌNG: Load originalPrice cho các CartItem chưa có giá gốc
+  /// Đảm bảo checkout luôn dùng giá gốc (chưa trừ ưu đãi) để tính toán
+  Future<void> _loadOriginalPricesForCartItems() async {
+    final selectedItems = _cartService.items
+        .where((item) => item.isSelected)
+        .toList();
+    
+    if (selectedItems.isEmpty) return;
+    
+    // Tìm các item chưa có originalPrice
+    final itemsNeedUpdate = selectedItems
+        .where((item) => item.originalPrice == null)
+        .toList();
+    
+    if (itemsNeedUpdate.isEmpty) return;
+    
+    // Load originalPrice cho từng item
+    for (final item in itemsNeedUpdate) {
+      try {
+        // Gọi API để lấy product detail với originalPrice
+        final productDetail = await _api.getProductDetailBasic(item.id);
+        
+        if (productDetail != null) {
+          // Nếu có variant, tìm variant tương ứng
+          int? originalPrice;
+          
+          if (item.variant != null && productDetail.variants.isNotEmpty) {
+            // Tìm variant theo tên
+            final variant = productDetail.variants.firstWhere(
+              (v) => v.name == item.variant,
+              orElse: () => productDetail.variants.first,
+            );
+            originalPrice = variant.originalPrice ?? variant.price;
+          } else {
+            // Không có variant, dùng giá của product chính
+            originalPrice = productDetail.originalPrice ?? productDetail.price;
+          }
+          
+          // ✅ Cập nhật originalPrice cho CartItem (originalPrice đã được đảm bảo không null từ fallback)
+          if (originalPrice > 0) {
+            _cartService.updateItemOriginalPrice(
+              item.id,
+              originalPrice,
+              variant: item.variant,
+            );
+          }
+        }
+      } catch (e) {
+        // Nếu lỗi, bỏ qua item này
+        print('⚠️ [Checkout] Không thể load originalPrice cho item ${item.id}: $e');
+      }
+    }
+    
+    // Trigger rebuild sau khi cập nhật
+    if (mounted) {
+      setState(() {});
+    }
+  }
+  
+  // ✅ Load user và địa chỉ cho sticky header
+  Future<void> _loadUserAddress() async {
+    final u = await _auth.getCurrentUser();
+    if (u == null) return;
+    final data = await _api.getUserProfile(userId: u.userId);
+    Map<String, dynamic>? def;
+    if (data != null) {
+      final list = (data['addresses'] as List?)?.cast<Map<String, dynamic>>() ?? <Map<String, dynamic>>[];
+      def = list.firstWhere((a) => (a['active']?.toString() ?? '0') == '1', orElse: () => (list.isNotEmpty ? list.first : <String,dynamic>{}));
+    }
+    if (!mounted) return;
+    setState(() {
+      _user = u;
+      _defaultAddress = def;
+    });
+  }
+  
+  // ✅ Handle scroll để hiển thị/ẩn sticky header
+  void _onScroll() {
+    // Hiển thị sticky header khi cuộn xuống hơn 150px (đã qua DeliveryInfoSection)
+    final shouldShow = _scrollController.offset > 150;
+    if (shouldShow != _showStickyHeader) {
+      setState(() {
+        _showStickyHeader = shouldShow;
+      });
+    }
+  }
+  
+  // ✅ Xử lý mở address book từ sticky header
+  Future<void> _openAddressBook() async {
+    // Kiểm tra đăng nhập trước
+    final u = await _auth.getCurrentUser();
+    if (u == null) {
+      // Nếu chưa đăng nhập, navigate đến trang đăng nhập
+      final loginResult = await Navigator.pushNamed(context, '/login');
+      // Nếu đăng nhập thành công, reload lại địa chỉ và trigger refresh shipping
+      if (loginResult == true) {
+        await _loadUserAddress();
+        // Trigger refresh shipping
+        ShippingEvents.refresh();
+      }
+      return;
+    }
+    // Nếu đã đăng nhập, mở trang địa chỉ
+    await Navigator.of(context).pushNamed('/profile/address');
+    await _loadUserAddress();
+    // Trigger refresh shipping để tính lại phí ship với địa chỉ mới
+    ShippingEvents.refresh();
   }
   
   @override
   void dispose() {
     // ✅ Remove listeners
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     _cartService.removeListener(_onCartChanged);
     _auth.removeAuthStateListener(_onAuthStateChanged);
+    _shippingEventsSubscription?.cancel();
     super.dispose();
   }
   
@@ -77,6 +212,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     if (mounted) {
       // Reload cart sau khi đăng nhập
       await _cartService.loadCartForUser();
+      // Reload user và address
+      await _loadUserAddress();
       // Trigger rebuild
       setState(() {});
       // Trigger refresh shipping
@@ -93,10 +230,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     
     if (selectedItems.isEmpty) return;
     
-    // Tính tổng tiền hàng
+    // ✅ Tính tổng tiền hàng dựa trên originalPrice (giá gốc)
     final totalGoods = selectedItems.fold(
       0,
-      (sum, item) => sum + (item.price * item.quantity),
+      (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity),
     );
     
     // Lấy danh sách product ID trong giỏ hàng
@@ -111,10 +248,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final shopSelectedItems = items.where((item) => item.isSelected).toList();
       if (shopSelectedItems.isEmpty) continue;
       
-      // Tính tổng tiền của shop
+      // ✅ Tính tổng tiền của shop dựa trên originalPrice (giá gốc)
       final shopTotal = shopSelectedItems.fold(
         0,
-        (sum, item) => sum + (item.price * item.quantity),
+        (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity),
       );
       
       // Lấy danh sách product ID trong giỏ hàng của shop
@@ -153,31 +290,53 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
+      body: Stack(
         children: [
-          const DeliveryInfoSection(),
-          const SizedBox(height: 12),
-          ProductSection(),
-          const SizedBox(height: 12),
-          const OrderSummarySection(),
-          const SizedBox(height: 12),
-          // ✅ FirstTimeBonusSection tự tính eligibleTotal từ cart items (chỉ 5 shop hợp lệ)
-          const FirstTimeBonusSection(),
-          const SizedBox(height: 12),
-          const VoucherSection(),
-          const SizedBox(height: 12),
-          PaymentMethodsSection(
-            selectedPaymentMethod: selectedPaymentMethod,
-            onPaymentMethodChanged: (value) {
-              // Không cần thay đổi vì chỉ có COD
-            },
+          // ✅ ListView chính với scroll controller
+          ListView(
+            controller: _scrollController,
+            padding: const EdgeInsets.all(12),
+            // ✅ Đảm bảo ListView có thể cuộn bình thường
+            physics: const AlwaysScrollableScrollPhysics(),
+            shrinkWrap: false,
+            children: [
+              // ✅ DeliveryInfoSection là một child bình thường trong ListView, sẽ cuộn theo trang
+              const DeliveryInfoSection(),
+              const SizedBox(height: 12),
+              ProductSection(),
+              const SizedBox(height: 12),
+              const OrderSummarySection(),
+              const SizedBox(height: 12),
+              // ✅ FirstTimeBonusSection tự tính eligibleTotal từ cart items (chỉ 5 shop hợp lệ)
+              const FirstTimeBonusSection(),
+              const SizedBox(height: 12),
+              const VoucherSection(),
+              const SizedBox(height: 12),
+              PaymentMethodsSection(
+                selectedPaymentMethod: selectedPaymentMethod,
+                onPaymentMethodChanged: (value) {
+                  // Không cần thay đổi vì chỉ có COD
+                },
+              ),
+              const SizedBox(height: 12),
+              const PaymentDetailsSection(),
+              const SizedBox(height: 12),
+              const TermsSection(),
+              const SizedBox(height: 100),
+            ],
           ),
-          const SizedBox(height: 12),
-          const PaymentDetailsSection(),
-          const SizedBox(height: 12),
-          const TermsSection(),
-          const SizedBox(height: 100),
+          // ✅ Sticky header hiển thị khi cuộn
+          if (_showStickyHeader)
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: DeliveryInfoStickyHeader(
+                user: _user,
+                defaultAddress: _defaultAddress,
+                onTap: _openAddressBook,
+              ),
+            ),
         ],
       ),
       bottomNavigationBar: BottomOrderBar(
@@ -234,21 +393,137 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     });
     
     try {
-      // Chuẩn bị payload theo API create_order
-    final items = _cartService.items
-        .where((i) => i.isSelected)
-          .map(
-            (i) => {
-              'id': i.id,
-              'tieu_de': i.name,
-              'anh_chinh': i.image,
-              'quantity': i.quantity,
-              'gia_moi': i.price,
-              'thanh_tien': i.price * i.quantity,
-              'shop': i.shopId,
-            },
-          )
-        .toList();
+      // ✅ Helper function để format số thành string với dấu phẩy (giống website)
+      String formatPrice(int price) {
+        return price.toString().replaceAllMapped(
+          RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+          (match) => '${match[1]},',
+        );
+      }
+      
+      // ✅ Helper function để chuyển full URL thành relative path
+      String getRelativeImagePath(String imageUrl) {
+        if (imageUrl.isEmpty) return '';
+        // Nếu là full URL, lấy phần path sau domain
+        final uri = Uri.tryParse(imageUrl);
+        if (uri != null && uri.path.isNotEmpty) {
+          return uri.path;
+        }
+        // Nếu đã là relative path, trả về nguyên
+        if (imageUrl.startsWith('/')) {
+          return imageUrl;
+        }
+        return imageUrl;
+      }
+      
+      // ✅ Helper function để parse pl từ variant (nếu variant là pl ID hoặc chứa pl)
+      int? parsePlFromVariant(String? variant) {
+        if (variant == null || variant.isEmpty) return null;
+        // Thử parse variant như là pl ID
+        final plId = int.tryParse(variant);
+        if (plId != null) return plId;
+        // Nếu variant có format "sp_id_pl", extract pl
+        final parts = variant.split('_');
+        if (parts.length >= 2) {
+          final lastPart = int.tryParse(parts.last);
+          if (lastPart != null) return lastPart;
+        }
+        return null;
+      }
+      
+      // ✅ Helper function để parse color và size từ variant name
+      Map<String, String> parseColorSizeFromVariant(String? variant) {
+        if (variant == null || variant.isEmpty) {
+          return {'color': '', 'size': '+'};
+        }
+        // Tách variant name để lấy color và size
+        // Format thường là: "Color: #02, Size: +" hoặc "#02, +"
+        String color = '';
+        String size = '+';
+        
+        // Tìm color (thường bắt đầu bằng #)
+        final colorMatch = RegExp(r'#[\w\d]+').firstMatch(variant);
+        if (colorMatch != null) {
+          color = colorMatch.group(0) ?? '';
+        }
+        
+        // Tìm size (thường là chữ hoặc số)
+        final sizeMatch = RegExp(r'Size[:\s]+([^,]+)', caseSensitive: false).firstMatch(variant);
+        if (sizeMatch != null) {
+          size = sizeMatch.group(1)?.trim() ?? '+';
+        } else {
+          // Nếu không tìm thấy, thử tìm pattern khác
+          final parts = variant.split(',');
+          if (parts.length >= 2) {
+            size = parts.last.trim();
+          }
+        }
+        
+        return {'color': color, 'size': size};
+      }
+      
+      // ✅ Helper function để tạo link từ tieu_de
+      String createLinkFromTitle(String title) {
+        // Chuyển tiêu đề thành link (lowercase, thay space bằng dấu gạch ngang)
+        return title
+            .toLowerCase()
+            .replaceAll(RegExp(r'[^\w\s-]'), '')
+            .replaceAll(RegExp(r'\s+'), '-')
+            .replaceAll(RegExp(r'-+'), '-')
+            .trim();
+      }
+      
+      // Chuẩn bị payload theo format website (object với key sp_id_pl)
+      final selectedItems = _cartService.items.where((i) => i.isSelected).toList();
+      
+      // ✅ Tạo map items theo format website: { "sp_id_pl": { ... } }
+      final Map<String, Map<String, dynamic>> itemsMap = {};
+      
+      for (final item in selectedItems) {
+        // Parse pl từ variant (nếu có)
+        final pl = parsePlFromVariant(item.variant) ?? 0;
+        final key = '${item.id}_$pl';
+        
+        // Parse color và size từ variant
+        final colorSize = parseColorSizeFromVariant(item.variant);
+        
+        // ✅ Sử dụng originalPrice (giá gốc) để tính toán trong checkout, nếu không có thì dùng price
+        // Trong checkout sẽ trừ các ưu đãi, nên phải dùng giá gốc để tránh trừ 2 lần
+        final basePrice = item.originalPrice ?? item.price;
+        final giaMoiFormatted = formatPrice(basePrice);
+        final thanhTienFormatted = formatPrice(basePrice * item.quantity);
+        
+        // Chuyển anh_chinh thành minh_hoa (relative path)
+        final minhHoa = getRelativeImagePath(item.image);
+        
+        // Tạo link từ tieu_de
+        final link = createLinkFromTitle(item.name);
+        
+        // ✅ Tạo item theo format website
+        itemsMap[key] = {
+          'sp_id': item.id,
+          'pl': pl,
+          'quantity': item.quantity,
+          'gia_moi': giaMoiFormatted,  // String với dấu phẩy
+          'thanhtien': thanhTienFormatted,  // String với dấu phẩy
+          'tieu_de': item.name,
+          'color': colorSize['color'] ?? '',
+          'size': colorSize['size'] ?? '+',
+          'link': link,
+          'minh_hoa': minhHoa,
+          'hoa_hong': '0',
+          // 'utm_source': user.userId.toString(),
+          // 'utm_campaign': '',
+          // ✅ Thêm các field bổ sung từ app (để backend xử lý)
+          'shop': item.shopId,
+          // ✅ Giữ giá trị số để tính toán (dùng basePrice - giá gốc)
+          '_gia_moi_number': basePrice,
+          '_thanh_tien_number': basePrice * item.quantity,
+        };
+      }
+      
+      // ✅ Chuyển map thành list để xử lý (giữ format cũ cho logic tính toán)
+      final items = itemsMap.values.toList();
 
     // Lấy địa chỉ mặc định từ user_profile để điền
     final profile = await _api.getUserProfile(userId: user.userId);
@@ -275,7 +550,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // ✅ Tính voucher discount theo từng shop để gửi chính xác
       final totalGoods = items.fold(
         0,
-        (s, i) => s + (i['gia_moi'] as int) * (i['quantity'] as int),
+        (s, i) => s + (i['_gia_moi_number'] as int? ?? 0) * (i['quantity'] as int? ?? 1),
       );
     
     // ✅ Tính shop discount cho từng shop
@@ -300,7 +575,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final shopItems = entry.value;
         final shopTotal = shopItems.fold(
           0,
-          (s, i) => s + (i['gia_moi'] as int) * (i['quantity'] as int),
+          (s, i) => s + (i['_gia_moi_number'] as int? ?? 0) * (i['quantity'] as int? ?? 1),
         );
         final shopDiscount = voucherService.calculateShopDiscount(
           shopId,
@@ -354,15 +629,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               // Áp dụng cho tất cả sản phẩm trong shop
               applicableSubtotal = shopItems.fold(
                 0,
-                (s, i) => s + (i['gia_moi'] as int) * (i['quantity'] as int),
+                (s, i) => s + (i['_gia_moi_number'] as int? ?? 0) * (i['quantity'] as int? ?? 1),
               );
             } else if (allowIds.isNotEmpty) {
           // Chỉ tính sản phẩm trong danh sách áp dụng
           for (final item in shopItems) {
-            final productId = item['id'] as int? ?? 0;
+            final productId = item['sp_id'] as int? ?? item['id'] as int? ?? 0;
             if (allowIds.contains(productId)) {
                   applicableSubtotal +=
-                      (item['gia_moi'] as int) * (item['quantity'] as int);
+                      (item['_gia_moi_number'] as int? ?? 0) * (item['quantity'] as int? ?? 1);
             }
           }
         }
@@ -391,15 +666,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                     shopSubtotal = items.fold(
                       0,
                       (s, i) =>
-                          s + (i['gia_moi'] as int) * (i['quantity'] as int),
+                          s + (i['_gia_moi_number'] as int? ?? 0) * (i['quantity'] as int? ?? 1),
                     );
                   } else if (allowIds.isNotEmpty) {
                     for (final item in items) {
-                      final productId = item['id'] as int? ?? 0;
+                      final productId = item['sp_id'] as int? ?? item['id'] as int? ?? 0;
                       if (allowIds.contains(productId)) {
                         shopSubtotal +=
-                            (item['gia_moi'] as int) *
-                            (item['quantity'] as int);
+                            (item['_gia_moi_number'] as int? ?? 0) *
+                            (item['quantity'] as int? ?? 1);
                       }
                     }
                   }
@@ -460,10 +735,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         final shippingItems = items
             .map(
               (item) => {
-        'product_id': item['id'],
+        'product_id': item['sp_id'] ?? item['id'],
         'quantity': item['quantity'],
                 'price':
-                    item['gia_moi'], // ✅ Thêm giá để fallback tính chính xác
+                    item['_gia_moi_number'] ?? item['gia_moi'], // ✅ Thêm giá để fallback tính chính xác
               },
             )
             .toList();
@@ -640,6 +915,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // ✅ Đảm bảo tất cả items trong cùng shop có cùng provider, phí ship và discount
     final itemsWithProvider = items.map((item) {
       final shopId = item['shop'] as int? ?? 0;
+      // ✅ Giữ nguyên format website, chỉ thêm các field bổ sung
       // ✅ Ưu tiên lấy từ shopShippingProviders (từ warehouse_details)
       // Nếu không có, dùng fallback từ ship.provider
       final provider = shopShippingProviders[shopId] ?? ship.provider ?? '';
@@ -652,19 +928,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       
       // ✅ Đảm bảo gửi discount ngay cả khi = 0 để backend biết shop này không có discount
         // ✅ QUAN TRỌNG: Shop 0 phải có shipping_fee (kể cả = 0) để backend không chia theo tỷ lệ
-      return {
-        ...item,
-          'shipping_provider':
-              provider, // ✅ Thêm shipping_provider vào mỗi item
-          'shipping_fee':
-              itemShippingFee, // ✅ Thêm shipping_fee vào mỗi item (kể cả shop 0, kể cả = 0)
-          if (itemShipSupport > 0)
-            'ship_support': itemShipSupport, // ✅ Thêm ship_support vào mỗi item
-          'shop_discount_per_shop':
-              itemShopDiscount, // ✅ Thêm shop_discount vào mỗi item (kể cả 0)
-          'platform_discount_per_shop':
-              itemPlatformDiscount, // ✅ Thêm platform_discount vào mỗi item (kể cả 0)
-      };
+      // ✅ Giữ nguyên format website, chỉ thêm các field bổ sung cho backend xử lý
+      final itemWithProvider = Map<String, dynamic>.from(item);
+      itemWithProvider['shipping_provider'] = provider;
+      itemWithProvider['shipping_fee'] = itemShippingFee;
+      if (itemShipSupport > 0) {
+        itemWithProvider['ship_support'] = itemShipSupport;
+      }
+      itemWithProvider['shop_discount_per_shop'] = itemShopDiscount;
+      itemWithProvider['platform_discount_per_shop'] = itemPlatformDiscount;
+      return itemWithProvider;
     }).toList();
     
     // ✅ Validation: Kiểm tra tất cả items trong cùng shop có cùng provider
@@ -680,7 +953,23 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       }
     }
     
-    // final grandTotal = totalGoods + finalShipFee - shopDiscount - platformDiscount;
+    // ✅ Chuyển itemsWithProvider thành format object với key sp_id_pl (giống website)
+    final Map<String, Map<String, dynamic>> finalItemsMap = {};
+    for (final item in itemsWithProvider) {
+      final spId = item['sp_id'] as int? ?? item['id'] as int? ?? 0;
+      final pl = item['pl'] as int? ?? 0;
+      final key = '${spId}_$pl';
+      
+      // ✅ Xóa các field tạm thời (_gia_moi_number, _thanh_tien_number) trước khi gửi
+      final finalItem = Map<String, dynamic>.from(item);
+      finalItem.remove('_gia_moi_number');
+      finalItem.remove('_thanh_tien_number');
+      
+      finalItemsMap[key] = finalItem;
+    }
+    
+    // ✅ Chuyển map thành list để gửi (backend sẽ group lại theo shop)
+    final finalItemsList = finalItemsMap.values.toList();
     
     final res = await _api.createOrder(
       userId: user.userId,
@@ -691,8 +980,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       tinh: int.tryParse('${addr['tinh'] ?? 0}') ?? 0,
       huyen: int.tryParse('${addr['huyen'] ?? 0}') ?? 0,
       xa: int.tryParse('${addr['xa'] ?? 0}'),
-        sanpham: itemsWithProvider
-            .cast<Map<String, dynamic>>(), // ✅ Sử dụng itemsWithProvider
+        sanpham: finalItemsList
+            .cast<Map<String, dynamic>>(), // ✅ Sử dụng finalItemsList với format website
       thanhtoan: selectedPaymentMethod.toUpperCase(),
       ghiChu: '',
       coupon: couponCode,
@@ -704,6 +993,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             .provider, // ✅ Vẫn giữ để tương thích, nhưng sẽ bị override bởi provider trong items
     );
     
+
     if (res?['success'] == true) {
       final data = res?['data'];
       final maDon = data?['ma_don'] ?? '';
@@ -751,11 +1041,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         },
       );
     } else {
+      // ✅ DEBUG: Hiển thị lỗi chi tiết hơn
+      final errorMsg = res?['message'] ?? 'Lỗi không xác định';
+      final errorDetail = res?['error'] ?? '';
+      final errorCode = res?['error_code'] ?? '';
+      final shopId = res?['shop_id'] ?? '';
+
+      String displayMessage = 'Đặt hàng thất bại: $errorMsg';
+      if (errorDetail.isNotEmpty) {
+        displayMessage += '\nChi tiết: $errorDetail';
+      }
+      if (errorCode.toString().isNotEmpty) {
+        displayMessage += '\nMã lỗi: $errorCode';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Đặt hàng thất bại: ${res?['message'] ?? 'Lỗi không xác định'}',
+              displayMessage,
+              style: const TextStyle(color: Colors.white),
             ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 10), // Hiển thị lâu hơn để đọc
           ),
       );
     }

@@ -12,18 +12,49 @@ import '../review_history_screen.dart';
 import '../change_password_screen.dart';
 
 class ActionRow extends StatelessWidget {
-  final IconData icon;
+  final IconData? icon;
+  final String? imagePath;
   final String title;
   final VoidCallback? onTap;
-  const ActionRow({super.key, required this.icon, required this.title, this.onTap});
+  const ActionRow({
+    super.key, 
+    this.icon, 
+    this.imagePath,
+    required this.title, 
+    this.onTap
+  });
 
   @override
   Widget build(BuildContext context) {
     // Lấy màu icon dựa trên title nếu không có màu được chỉ định
     final iconColor = _getIconColor(title);
     
+    Widget leadingWidget;
+    if (imagePath != null) {
+      // Use image if imagePath is provided
+      leadingWidget = Image.asset(
+        imagePath!,
+        width: 24,
+        height: 24,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return Icon(
+            Icons.error_outline,
+            color: iconColor,
+            size: 24,
+          );
+        },
+      );
+    } else if (icon != null) {
+      // Use icon if icon is provided
+      leadingWidget = Icon(icon, color: iconColor);
+    } else {
+      // Fallback to a default icon
+      leadingWidget = Icon(Icons.help_outline, color: iconColor);
+    }
+    
     return ListTile(
-      leading: Icon(icon, color: iconColor),
+      leading: leadingWidget,
       title: Text(title),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       onTap: onTap ?? () => _handleNavigation(context),

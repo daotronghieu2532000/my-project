@@ -394,17 +394,10 @@ class RelatedProductCardHorizontal extends StatelessWidget {
   }
 
   void _handleAddToCart(BuildContext context, ProductDetail product, ProductVariant variant, int quantity) {
-    final cartItem = CartItem(
-      id: product.id,
-      name: '${product.name} - ${variant.name}',
-      image: product.imageUrl,
-      price: variant.price,
-      oldPrice: variant.oldPrice,
+    // ✅ Sử dụng extension method để tự động lấy originalPrice
+    final cartItem = product.toCartItemWithVariant(
+      variant: variant,
       quantity: quantity,
-      variant: variant.name,
-      shopId: int.tryParse(product.shopId ?? '0') ?? 0,
-      shopName: product.shopNameFromInfo.isNotEmpty ? product.shopNameFromInfo : 'Unknown Shop',
-      addedAt: DateTime.now(),
     );
     
     CartService().addItem(cartItem);

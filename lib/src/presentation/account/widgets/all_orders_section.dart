@@ -313,7 +313,7 @@ class _AllOrdersSectionState extends State<AllOrdersSection> {
                       Expanded(
                         child: Text(
                           etaText.isNotEmpty
-                              ? 'Thời gian giao dự kiến: $etaText'
+                              ? 'Nhận hàng $etaText'
                               : 'Cập nhật: ${o['date_update_formatted']?.toString() ?? ''}',
                           style: const TextStyle(
                             fontSize: 12,

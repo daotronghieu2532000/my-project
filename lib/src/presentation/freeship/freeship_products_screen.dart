@@ -294,14 +294,7 @@ class _FreeShipProductsScreenState extends State<FreeShipProductsScreen> {
           ),
           child: Row(
             children: [
-              Text(
-                'Tìm thấy $totalCount sản phẩm',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF666666),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              
               const Spacer(),
               GestureDetector(
                 onTap: () {

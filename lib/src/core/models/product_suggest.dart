@@ -114,7 +114,8 @@ class ProductSuggest {
       name: json['name'] as String? ?? json['tieu_de'] as String? ?? json['title'] as String? ?? json['product_name'] as String? ?? 'Sản phẩm',
       image: json['image'] as String? ?? json['minh_hoa'] as String? ?? json['image_url'] as String?,
       thumbnail: json['thumbnail'] as String? ?? json['thumb'] as String?,
-      price: safeParseInt(json['price']) ?? safeParseInt(json['gia_moi']) ?? safeParseInt(json['sale_price']) ?? safeParseInt(json['current_price']) ?? 0,
+      // Ưu tiên final_price (giá sau khi trừ voucher và ship support), nếu không có thì dùng price
+      price: safeParseInt(json['final_price']) ?? safeParseInt(json['price']) ?? safeParseInt(json['gia_moi']) ?? safeParseInt(json['sale_price']) ?? safeParseInt(json['current_price']) ?? 0,
       oldPrice: safeParseInt(json['old_price']) ?? safeParseInt(json['gia_cu']) ?? safeParseInt(json['original_price']) ?? safeParseInt(json['list_price']),
       discount: safeParseDouble(json['discount']) ?? safeParseDouble(json['discount_percent']),
       stock: safeParseInt(json['stock']) ?? safeParseInt(json['quantity']) ?? safeParseInt(json['available_stock']) ?? safeParseInt(json['kho']),

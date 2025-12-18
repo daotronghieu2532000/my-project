@@ -99,98 +99,117 @@ class _DeliveryInfoSectionState extends State<DeliveryInfoSection> {
 
     final hasInfo = displayName.isNotEmpty || displayPhone.isNotEmpty || fullAddress.isNotEmpty;
 
-    return InkWell(
-      onTap: _openAddressBook,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey[200]!, width: 1),
-        ),
-        child: hasInfo
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Hàng 1: Tên và số điện thoại
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _buildNamePhoneText(displayName, displayPhone),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: Colors.black87,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Colors.grey[400],
-                        size: 20,
-                      ),
-                    ],
-                  ),
-                  
-                  // Hàng 2: Địa chỉ đầy đủ
-                  if (fullAddress.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+    // ✅ Thay đổi cấu trúc hoàn toàn: Sử dụng Material + InkWell với borderRadius
+    // Đảm bảo widget có thể cuộn bình thường trong ListView
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _openAddressBook,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey[300]!, width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: hasInfo
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    // ✅ Hàng 1: Icon + Tên và số điện thoại + Chevron
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(width: 28), // Align với icon ở hàng trên
-                        Expanded(
-                          child: Text(
-                            fullAddress,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                        Container(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: Colors.red,
+                            size: 22,
                           ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Tên và số điện thoại
+                              Text(
+                                _buildNamePhoneText(displayName, displayPhone),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 15,
+                                  color: Colors.black87,
+                                  height: 1.3,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              // Địa chỉ đầy đủ
+                              if (fullAddress.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  fullAddress,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[600],
+                                    height: 1.4,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.grey[400],
+                          size: 22,
                         ),
                       ],
                     ),
                   ],
-                ],
-              )
-            : Row(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    color: Colors.red,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'Chọn địa chỉ nhận hàng',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: Colors.black87,
+                )
+              : Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on_rounded,
+                      color: Colors.red,
+                      size: 22,
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(
+                      child: Text(
+                        'Chọn địa chỉ nhận hàng',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                          color: Colors.black87,
+                        ),
                       ),
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: Colors.grey[400],
-                    size: 20,
-                  ),
-                ],
-              ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.grey[400],
+                      size: 22,
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -220,6 +239,6 @@ class _DeliveryInfoSectionState extends State<DeliveryInfoSection> {
     if (phoneText.isEmpty) {
       return nameText;
     }
-    return '$nameText • $phoneText';
+    return '$nameText | $phoneText';
   }
 }

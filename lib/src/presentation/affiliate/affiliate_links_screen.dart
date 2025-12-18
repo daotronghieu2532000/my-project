@@ -131,7 +131,10 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Affiliate của tôi'),
+        title: const Text('Đang theo dõi',
+        style: TextStyle(
+              color: Colors.black,
+            ),),
         centerTitle: true,
         actions: [
           IconButton(
@@ -437,7 +440,10 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () {
-                              final affiliateUrl = link.fullLink.isNotEmpty ? link.fullLink : link.shortLink;
+                              // Ưu tiên dùng link rút gọn nếu có, nếu không thì dùng link gốc
+                              final affiliateUrl = (link.shortLink.isNotEmpty) 
+                                  ? link.shortLink 
+                                  : link.fullLink;
                               final shareText = _buildShareTextForLink(link);
                               _shareWithImage(link, shareText, affiliateUrl);
                             },
@@ -536,11 +542,12 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                   const SizedBox(height: 4),
                   
                   // Link rows
-                  _buildLinkRow(link.fullLink),
-                  if (hasShort) ...[
-                    const SizedBox(height: 4),
-                    _buildLinkRow(link.shortLink),
-            ],
+                  // TODO: Uncomment sau này sẽ bỏ comment dùng lại
+                  // _buildLinkRow(link.fullLink),
+                  // if (hasShort) ...[
+                  //   const SizedBox(height: 4),
+                  //   _buildLinkRow(link.shortLink),
+                  // ],
                   const SizedBox(height: 4),
             
             // Statistics
@@ -661,20 +668,21 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
 
 
   String _buildShareTextForLink(AffiliateLink link) {
-    // Nội dung tương tự bên sản phẩm
-    final price = FormatUtils.formatCurrency(link.productPrice.toInt());
-    final old = link.oldPrice > link.productPrice ? ' (Giảm ${link.discountPercent}%)' : '';
-    final commissionText = _commissionRangeText(link);
+    // Nội dung đồng bộ với affiliate_screen.dart
+    final discountPercent = link.oldPrice > link.productPrice 
+        ? ' (Giảm ${link.discountPercent}%)'
+        : '';
+    
     final oldPriceText = link.oldPrice > link.productPrice 
-        ? '\n💸 Giá gốc: ${FormatUtils.formatCurrency(link.oldPrice.toInt())}'
+        ? '\n💸Giá Bán:  ${FormatUtils.formatCurrency(link.productPrice.toInt())} 🔥🔥'
         : '';
     
-    // Add more context about the product
-    final statsText = link.clicks > 0 || link.orders > 0 
-        ? '\n📊 Thống kê: ${link.clicks} clicks, ${link.orders} đơn hàng'
-        : '';
+    // Sử dụng ký tự gạch ngang cho "Giá Niêm Yết" (text-decoration: line-through)
+    final giaNiemYet = link.oldPrice > link.productPrice 
+        ? '💰 Giá Niêm Yết: ̶${FormatUtils.formatCurrency(link.oldPrice.toInt())}̶'
+        : '💰 Giá Niêm Yết: ${FormatUtils.formatCurrency(link.oldPrice.toInt())}';
     
-    return '🔥 ${link.productTitle}$old\n💰 Giá: $price$oldPriceText\n$commissionText$statsText\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
+    return '🔥 ${link.productTitle}$discountPercent\n$giaNiemYet$oldPriceText\n📱 Sóc Đỏ : Hàng chính hãng - Giá siêu hấp dẫn';
   }
 
   // Commission range badge and text (reuse logic like products)
@@ -730,7 +738,7 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
           try {
             await Share.shareXFiles(
               [XFile(imageFile.path)],
-              text: '$shareText\n\n$affiliateUrl',
+              text: '$shareText\n\nMua ngay: $affiliateUrl',
               subject: link.productTitle,
             );
             return;
@@ -741,7 +749,7 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
           try {
             // Share text first
             await Share.share(
-              '$shareText\n\n$affiliateUrl',
+              '$shareText\n\nMua ngay: $affiliateUrl',
               subject: link.productTitle,
             );
             
@@ -763,13 +771,13 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
       
       // Fallback to text-only sharing
       Share.share(
-        '$shareText\n\n$affiliateUrl',
+        '$shareText\n\nMua ngay: $affiliateUrl',
         subject: link.productTitle,
       );
     } catch (e) {
       // If image sharing fails, fallback to text-only
       Share.share(
-        '$shareText\n\n$affiliateUrl',
+        '$shareText\n\nMua ngay: $affiliateUrl',
         subject: link.productTitle,
       );
     }
@@ -1085,4 +1093,3 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
     _loadLinks(refresh: true);
   }
 }
-

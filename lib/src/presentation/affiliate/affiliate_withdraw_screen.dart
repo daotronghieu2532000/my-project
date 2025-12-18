@@ -245,7 +245,11 @@ class _AffiliateWithdrawScreenState extends State<AffiliateWithdrawScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Rút tiền về tài khoản'),
+        title: const Text('Rút tiền về tài khoản',
+        style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
+            ),),
         centerTitle: true,
         actions: [
           IconButton(

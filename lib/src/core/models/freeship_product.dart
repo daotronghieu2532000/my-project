@@ -107,7 +107,8 @@ class FreeShipProduct {
       id: json['id'] as int? ?? json['product_id'] as int? ?? 0,
       name: json['name'] as String? ?? json['title'] as String? ?? json['product_name'] as String? ?? 'Sản phẩm',
       image: json['image'] as String? ?? json['image_url'] as String? ?? json['thumbnail'] as String?,
-      price: json['price'] as int? ?? json['current_price'] as int? ?? json['sale_price'] as int? ?? 0,
+      // Ưu tiên final_price (giá sau khi trừ voucher và ship support), nếu không có thì dùng price
+      price: json['final_price'] as int? ?? json['price'] as int? ?? json['current_price'] as int? ?? json['sale_price'] as int? ?? 0,
       oldPrice: json['old_price'] as int? ?? json['original_price'] as int? ?? json['list_price'] as int?,
       rating: (json['rating'] as num?)?.toDouble() ?? (json['average_rating'] as num?)?.toDouble(),
       sold: json['sold'] as int? ?? json['sold_count'] as int? ?? json['quantity_sold'] as int?,

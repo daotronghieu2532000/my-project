@@ -138,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _buildDefaultImage() {
     return Image.asset(
-      'lib/src/core/assets/images/logo_socdo.png',
+      'lib/src/core/assets/images/mau_logo.jpg',
       fit: BoxFit.cover, // Fill toàn màn hình, không có khoảng trắng
       alignment: Alignment.center, // Căn giữa - ảnh 300x658px phù hợp với tỉ lệ màn hình
       filterQuality: FilterQuality.high,

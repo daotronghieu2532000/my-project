@@ -629,9 +629,9 @@ class _OrdersListState extends State<_OrdersList> {
                       Expanded(
                         child: Text(
                           etaText.isNotEmpty
-                              ? 'Thời gian giao dự kiến: $etaText'
+                              ? 'Nhận hàng $etaText'
                               : (o['delivery_eta_text'] ?? '').toString().isNotEmpty
-                                  ? 'Thời gian giao dự kiến: ${o['delivery_eta_text']}'
+                                  ? 'Nhận hàng ${o['delivery_eta_text']}'
                                   : 'Cập nhật: ${o['date_update_formatted']?.toString() ?? ''}',
                           style: const TextStyle(fontSize: 12, color: Color(0xFF1890FF), fontWeight: FontWeight.w600),
                         ),

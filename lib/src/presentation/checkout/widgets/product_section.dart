@@ -110,9 +110,10 @@ class _ProductSectionState extends State<ProductSection> {
                     ),
                     InkWell(
                       onTap: () async {
+                        // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
                         final shopTotal = items.fold(
                           0,
-                          (s, i) => s + i.price * i.quantity,
+                          (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity),
                         );
                         final selected = await showDialog(
                           context: context,
@@ -196,15 +197,16 @@ class _ProductSectionState extends State<ProductSection> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
+                              // ✅ Hiển thị giá gốc (originalPrice) trong checkout, không phải giá đã trừ ưu đãi
                               Text(
-                                FormatUtils.formatCurrency(items[i].price),
+                                FormatUtils.formatCurrency(items[i].originalPrice ?? items[i].price),
                                 style: const TextStyle(
                                   color: Colors.red,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
                               if (items[i].oldPrice != null &&
-                                  items[i].oldPrice! > items[i].price) ...[
+                                  items[i].oldPrice! > (items[i].originalPrice ?? items[i].price)) ...[
                                 const SizedBox(width: 8),
                                 Text(
                                   FormatUtils.formatCurrency(

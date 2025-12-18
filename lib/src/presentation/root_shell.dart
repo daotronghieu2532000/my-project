@@ -18,16 +18,20 @@ class RootShell extends StatefulWidget {
   State<RootShell> createState() => _RootShellState();
 }
 
-class _RootShellState extends State<RootShell> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin, TickerProviderStateMixin {
+class _RootShellState extends State<RootShell>
+    with
+        WidgetsBindingObserver,
+        AutomaticKeepAliveClientMixin,
+        TickerProviderStateMixin {
   late int _currentIndex = widget.initialIndex;
   final cart_service.CartService _cart = cart_service.CartService();
   final AppLifecycleManager _lifecycleManager = AppLifecycleManager();
   final CartAnimationService _cartAnimationService = CartAnimationService();
   bool _isInitialized = false;
-  
+
   // GlobalKey cho icon giỏ hàng để animation bay vào
   final GlobalKey _cartIconKey = GlobalKey();
-  
+
   // Animation controller cho bounce effect của icon giỏ hàng
   late AnimationController _cartBounceController;
   late Animation<double> _cartBounceAnimation;
@@ -41,25 +45,28 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
     WidgetsBinding.instance.addObserver(this);
     _cart.addListener(_onCartChanged);
     _initializeAppState();
-    
+
     // Setup animation cho icon giỏ hàng
     _cartBounceController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    _cartBounceAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
-    ]).animate(CurvedAnimation(
-      parent: _cartBounceController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _cartBounceAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+          TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+        ]).animate(
+          CurvedAnimation(
+            parent: _cartBounceController,
+            curve: Curves.easeInOut,
+          ),
+        );
+
     // Set GlobalKey vào CartAnimationService
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cartAnimationService.cartIconKey = _cartIconKey;
     });
-    
+
     // Listen to cart changes để trigger bounce animation
     _cart.addListener(_onCartItemAdded);
   }
@@ -76,7 +83,7 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    
+
     if (state == AppLifecycleState.paused) {
       // Lưu state khi app bị pause
       _lifecycleManager.saveCurrentTab(_currentIndex);
@@ -93,7 +100,7 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
       // Chỉ restore nếu state hợp lệ và app có thể đã bị kill
       if (_lifecycleManager.isStateValid()) {
         final savedTab = await _lifecycleManager.getSavedTab();
-        
+
         if (savedTab != null && savedTab != _currentIndex) {
           // Chỉ restore nếu tab khác - tránh rebuild không cần thiết
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -113,7 +120,7 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   void _onCartChanged() {
     if (mounted) setState(() {});
   }
-  
+
   void _onCartItemAdded() {
     // Trigger bounce animation khi có sản phẩm mới thêm vào giỏ
     if (mounted && _cartBounceController.status != AnimationStatus.forward) {
@@ -126,23 +133,23 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
     if (_isInitialized) {
       return;
     }
-    
+
     try {
       // Khởi tạo AppLifecycleManager
       _lifecycleManager.initialize();
-      
+
       // Đợi một chút để đảm bảo pause time đã được load từ storage
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       // Thử khôi phục tab đã lưu
       final savedTab = await _lifecycleManager.getSavedTab();
-      
+
       if (savedTab != null && savedTab != widget.initialIndex) {
         setState(() {
           _currentIndex = savedTab;
         });
       }
-      
+
       _isInitialized = true;
     } catch (e) {
       // Error initializing app state
@@ -167,11 +174,13 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
     final Color iconColor = selected ? Colors.red : Colors.black;
     final Color textColor = selected ? Colors.red : Colors.black;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Breakpoints: width >= 380: 11px, width >= 320: 10px, width < 320: ẩn text
     final bool showText = screenWidth >= 320;
-    final double fontSize = screenWidth >= 380 ? 11 : (screenWidth >= 320 ? 10 : 11);
-    
+    final double fontSize = screenWidth >= 380
+        ? 11
+        : (screenWidth >= 320 ? 10 : 11);
+
     return Expanded(
       child: InkWell(
         onTap: () => _onTabChanged(index),
@@ -182,16 +191,16 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
             children: [
               Icon(icon, color: iconColor.withOpacity(0.7), size: 24),
               if (showText) ...[
-              const SizedBox(height: 3),
-              Text(
-                label,
-                style: TextStyle(
-                  color: textColor, 
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
                     fontSize: fontSize,
-                  fontWeight: FontWeight.w500,
-                  height: 1.0,
+                    fontWeight: FontWeight.w500,
+                    height: 1.0,
+                  ),
                 ),
-              ),
               ],
             ],
           ),
@@ -206,7 +215,7 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
       setState(() {
         _currentIndex = newIndex;
       });
-      
+
       // Lưu tab hiện tại
       _lifecycleManager.saveCurrentTab(newIndex);
     }
@@ -216,10 +225,7 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _tabs,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _tabs),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
@@ -231,9 +237,24 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
               Expanded(
                 child: Row(
                   children: [
-                    _buildNavItem(index: 0, icon: Icons.home_outlined, label: 'Trang chủ', context: context),
-                    _buildNavItem(index: 1, icon: Icons.grid_view_rounded, label: 'Danh mục', context: context),
-                    _buildNavItem(index: 2, icon: Icons.people_outline, label: 'Affiliate', context: context),
+                    _buildNavItem(
+                      index: 0,
+                      icon: Icons.home_outlined,
+                      label: 'Trang chủ',
+                      context: context,
+                    ),
+                    _buildNavItem(
+                      index: 1,
+                      icon: Icons.grid_view_rounded,
+                      label: 'Danh mục',
+                      context: context,
+                    ),
+                    _buildNavItem(
+                      index: 2,
+                      icon: Icons.people_outline,
+                      label: 'Affiliate',
+                      context: context,
+                    ),
                   ],
                 ),
               ),
@@ -244,19 +265,29 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
                   listenable: _cart,
                   builder: (context, child) {
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE9ECEF), // Màu đậm hơn cho phần giỏ hàng
+                        color: const Color(
+                          0xFFE9ECEF,
+                        ), // Màu đậm hơn cho phần giỏ hàng
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       child: Row(
                         children: [
                           // Icon + nhãn Giỏ hàng hiển thị badge động
                           InkWell(
                             onTap: () {
                               Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const CartScreen()),
+                                MaterialPageRoute(
+                                  builder: (_) => const CartScreen(),
+                                ),
                               );
                             },
                             borderRadius: BorderRadius.circular(6),
@@ -269,7 +300,8 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
                                     return Transform.scale(
                                       scale: _cartBounceAnimation.value,
                                       child: Stack(
-                                        key: _cartIconKey, // GlobalKey cho animation
+                                        key:
+                                            _cartIconKey, // GlobalKey cho animation
                                         clipBehavior: Clip.none,
                                         children: [
                                           const Icon(
@@ -278,30 +310,31 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
                                             size: 24,
                                           ),
                                           if (_cart.itemCount > 0)
-                                          Positioned(
-                                            top: -4,
-                                            right: -6,
-                                            child: Container(
-                                              width: 16,
-                                              height: 16,
-                                              decoration: const BoxDecoration(
-                                                color: Colors.red,
-                                                shape: BoxShape.circle,
-                                              ),
-                                              child: Center(
-                                                child: Text(
-                                                  _cart.itemCount.toString(),
-                                                  style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
+                                            Positioned(
+                                              top: -4,
+                                              right: -6,
+                                              child: Container(
+                                                width: 16,
+                                                height: 16,
+                                                decoration: const BoxDecoration(
+                                                  color: Colors.red,
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    _cart.itemCount.toString(),
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       height: 1.0,
-                                                  ),
+                                                    ),
                                                     textAlign: TextAlign.center,
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
                                         ],
                                       ),
                                     );
@@ -309,25 +342,31 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
                                 ),
                                 Builder(
                                   builder: (context) {
-                                    final screenWidth = MediaQuery.of(context).size.width;
+                                    final screenWidth = MediaQuery.of(
+                                      context,
+                                    ).size.width;
                                     final bool showText = screenWidth >= 320;
-                                    final double fontSize = screenWidth >= 380 ? 11 : (screenWidth >= 320 ? 10 : 11);
-                                    
-                                    return showText ? Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                const SizedBox(height: 2),
-                                        Text(
-                                  'Giỏ hàng',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                            fontSize: fontSize,
-                                    height: 1.0,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                        ),
-                                      ],
-                                    ) : const SizedBox.shrink();
+                                    final double fontSize = screenWidth >= 380
+                                        ? 11
+                                        : (screenWidth >= 320 ? 10 : 11);
+
+                                    return showText
+                                        ? Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                'Giỏ hàng',
+                                                style: TextStyle(
+                                                  color: Colors.black,
+                                                  fontSize: fontSize,
+                                                  height: 1.0,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          )
+                                        : const SizedBox.shrink();
                                   },
                                 ),
                               ],
@@ -339,20 +378,32 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
                             child: ElevatedButton(
                               onPressed: () {
                                 Navigator.of(context).push(
-                                  MaterialPageRoute(builder: (_) => const CartScreen()),
+                                  MaterialPageRoute(
+                                    builder: (_) => const CartScreen(),
+                                  ),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.red,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                elevation: 0, // Bỏ shadow để hòa hợp với container
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                elevation:
+                                    0, // Bỏ shadow để hòa hợp với container
                               ),
                               child: Text(
                                 'Đặt mua (${_cart.selectedItemCount})\n${FormatUtils.formatCurrency(_cart.selectedTotalPrice)}',
                                 textAlign: TextAlign.center,
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, height: 1.1),
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.1,
+                                ),
                               ),
                             ),
                           ),
@@ -369,6 +420,7 @@ class _RootShellState extends State<RootShell> with WidgetsBindingObserver, Auto
     );
   }
 }
+
 /// Bottom bar có thể tái sử dụng ở các màn con
 class RootShellBottomBar extends StatefulWidget {
   const RootShellBottomBar({super.key});
@@ -377,13 +429,14 @@ class RootShellBottomBar extends StatefulWidget {
   State<RootShellBottomBar> createState() => _RootShellBottomBarState();
 }
 
-class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProviderStateMixin {
+class _RootShellBottomBarState extends State<RootShellBottomBar>
+    with TickerProviderStateMixin {
   final cart_service.CartService _cart = cart_service.CartService();
   final CartAnimationService _cartAnimationService = CartAnimationService();
-  
+
   // GlobalKey cho icon giỏ hàng để animation bay vào
   final GlobalKey _cartIconKey = GlobalKey();
-  
+
   // Animation controller cho bounce effect của icon giỏ hàng
   late AnimationController _cartBounceController;
   late Animation<double> _cartBounceAnimation;
@@ -392,25 +445,28 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
   void initState() {
     super.initState();
     _cart.addListener(_onCartChanged);
-    
+
     // Setup animation cho icon giỏ hàng
     _cartBounceController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    _cartBounceAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
-      TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
-    ]).animate(CurvedAnimation(
-      parent: _cartBounceController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _cartBounceAnimation =
+        TweenSequence<double>([
+          TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.3), weight: 50),
+          TweenSequenceItem(tween: Tween(begin: 1.3, end: 1.0), weight: 50),
+        ]).animate(
+          CurvedAnimation(
+            parent: _cartBounceController,
+            curve: Curves.easeInOut,
+          ),
+        );
+
     // Set GlobalKey vào CartAnimationService
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _cartAnimationService.cartIconKey = _cartIconKey;
     });
-    
+
     // Listen to cart changes để trigger bounce animation
     _cart.addListener(_onCartItemAdded);
   }
@@ -426,7 +482,7 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
   void _onCartChanged() {
     if (mounted) setState(() {});
   }
-  
+
   void _onCartItemAdded() {
     // Trigger bounce animation khi có sản phẩm mới thêm vào giỏ
     if (mounted && _cartBounceController.status != AnimationStatus.forward) {
@@ -446,9 +502,24 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
             Expanded(
               child: Row(
                 children: [
-                  _navItem(context, icon: Icons.home_outlined, label: 'Trang chủ', onTap: () => _openHome(context)),
-                  _navItem(context, icon: Icons.grid_view_rounded, label: 'Danh mục', onTap: () => _openCategory(context)),
-                  _navItem(context, icon: Icons.people_outline, label: 'Affiliate', onTap: () => _openAffiliate(context)),
+                  _navItem(
+                    context,
+                    icon: Icons.home_outlined,
+                    label: 'Trang chủ',
+                    onTap: () => _openHome(context),
+                  ),
+                  _navItem(
+                    context,
+                    icon: Icons.grid_view_rounded,
+                    label: 'Danh mục',
+                    onTap: () => _openCategory(context),
+                  ),
+                  _navItem(
+                    context,
+                    icon: Icons.people_outline,
+                    label: 'Affiliate',
+                    onTap: () => _openAffiliate(context),
+                  ),
                 ],
               ),
             ),
@@ -456,12 +527,17 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
             Expanded(
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                decoration: BoxDecoration(color: const Color(0xFFE9ECEF), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE9ECEF),
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Row(
                   children: [
                     InkWell(
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CartScreen())),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const CartScreen()),
+                      ),
                       borderRadius: BorderRadius.circular(6),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -475,16 +551,23 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
                                   key: _cartIconKey, // GlobalKey cho animation
                                   clipBehavior: Clip.none,
                                   children: [
-                                    const Icon(Icons.shopping_cart_outlined, color: Colors.red, size: 24),
+                                    const Icon(
+                                      Icons.shopping_cart_outlined,
+                                      color: Colors.red,
+                                      size: 24,
+                                    ),
                                     if (_cart.itemCount > 0)
-                                    Positioned(
-                                      top: -4,
-                                      right: -6,
-                                      child: Container(
-                                        width: 16,
-                                        height: 16,
-                                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                        child: Center(
+                                      Positioned(
+                                        top: -4,
+                                        right: -6,
+                                        child: Container(
+                                          width: 16,
+                                          height: 16,
+                                          decoration: const BoxDecoration(
+                                            color: Colors.red,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Center(
                                             child: Text(
                                               _cart.itemCount.toString(),
                                               style: const TextStyle(
@@ -495,9 +578,9 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
                                               ),
                                               textAlign: TextAlign.center,
                                             ),
+                                          ),
                                         ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               );
@@ -505,17 +588,31 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
                           ),
                           Builder(
                             builder: (context) {
-                              final screenWidth = MediaQuery.of(context).size.width;
+                              final screenWidth = MediaQuery.of(
+                                context,
+                              ).size.width;
                               final bool showText = screenWidth >= 320;
-                              final double fontSize = screenWidth >= 380 ? 11 : (screenWidth >= 320 ? 10 : 11);
-                              
-                              return showText ? Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                          const SizedBox(height: 2),
-                                  Text('Giỏ hàng', style: TextStyle(color: Colors.black, fontSize: fontSize, height: 1.0, fontWeight: FontWeight.w500)),
-                                ],
-                              ) : const SizedBox.shrink();
+                              final double fontSize = screenWidth >= 380
+                                  ? 11
+                                  : (screenWidth >= 320 ? 10 : 11);
+
+                              return showText
+                                  ? Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Giỏ hàng',
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontSize: fontSize,
+                                            height: 1.0,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : const SizedBox.shrink();
                             },
                           ),
                         ],
@@ -524,9 +621,30 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
                     const SizedBox(width: 8),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CartScreen())),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0),
-                        child: Text('Đặt mua (${_cart.selectedItemCount})\n${FormatUtils.formatCurrency(_cart.selectedTotalPrice)}', textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, height: 1.1)),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const CartScreen()),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Đặt mua (${_cart.selectedItemCount})\n${FormatUtils.formatCurrency(_cart.selectedTotalPrice)}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            height: 1.1,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -539,13 +657,20 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
     );
   }
 
-  Widget _navItem(BuildContext context, {required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _navItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Breakpoints: width >= 380: 11px, width >= 320: 10px, width < 320: ẩn text
     final bool showText = screenWidth >= 320;
-    final double fontSize = screenWidth >= 380 ? 11 : (screenWidth >= 320 ? 10 : 11);
-    
+    final double fontSize = screenWidth >= 380
+        ? 11
+        : (screenWidth >= 320 ? 10 : 11);
+
     return Expanded(
       child: InkWell(
         onTap: onTap,
@@ -556,8 +681,16 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
             children: [
               Icon(icon, color: Colors.black.withOpacity(0.7), size: 24),
               if (showText) ...[
-              const SizedBox(height: 3),
-                Text(label, style: TextStyle(color: Colors.black, fontSize: fontSize, fontWeight: FontWeight.w500, height: 1.0)),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                    height: 1.0,
+                  ),
+                ),
               ],
             ],
           ),
@@ -565,21 +698,21 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
       ),
     );
   }
-  
+
   void _openHome(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const RootShell(initialIndex: 0)),
       (route) => false,
     );
   }
-  
+
   void _openCategory(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const RootShell(initialIndex: 1)),
       (route) => false,
     );
   }
-  
+
   void _openAffiliate(BuildContext context) {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const RootShell(initialIndex: 2)),
@@ -589,5 +722,3 @@ class _RootShellBottomBarState extends State<RootShellBottomBar> with TickerProv
 }
 
 // removed unused placeholder screen
-
-

@@ -1,3 +1,5 @@
+import '../services/cart_service.dart' show CartItem;
+
 // Image URL normalizer
 // Hỗ trợ CDN: https://socdo.cdn.vccloud.vn/
 // Fallback về https://socdo.vn/ nếu CDN lỗi (được xử lý ở Image widget)
@@ -37,6 +39,7 @@ class ProductDetail {
   final String? thumbnail;
   final int price;
   final int? oldPrice;
+  final int? originalPrice; // Giá gốc chưa trừ ưu đãi (để dùng trong checkout)
   final double? discount;
   final int? stock;
   final String? brand;
@@ -70,6 +73,7 @@ class ProductDetail {
     this.thumbnail,
     required this.price,
     this.oldPrice,
+    this.originalPrice,
     this.discount,
     this.stock,
     this.brand,
@@ -213,8 +217,10 @@ class ProductDetail {
        
         return fixedUrl;
       }(),
-      price: safeParseInt(json['price']) ?? safeParseInt(json['gia_moi']) ?? safeParseInt(json['gia']) ?? 0,
+      // Ưu tiên final_price (giá sau khi trừ voucher và ship support), nếu không có thì dùng price
+      price: safeParseInt(json['final_price']) ?? safeParseInt(json['price']) ?? safeParseInt(json['gia_moi']) ?? safeParseInt(json['gia']) ?? 0,
       oldPrice: safeParseInt(json['old_price']) ?? safeParseInt(json['gia_cu']) ?? safeParseInt(json['gia_goc']),
+      originalPrice: safeParseInt(json['original_price']) ?? safeParseInt(json['gia_moi']), // Giá gốc chưa trừ ưu đãi
       discount: safeParseDouble(json['discount']) ?? safeParseDouble(json['giam_gia']),
       stock: safeParseInt(json['stock']) ?? safeParseInt(json['so_luong']) ?? safeParseInt(json['ton_kho']),
       brand: json['brand'] as String? ?? json['thuong_hieu'] as String?,
@@ -361,12 +367,59 @@ class ProductDetail {
   }
 }
 
+/// ✅ Extension để tạo CartItem từ ProductDetail (tự động lấy originalPrice)
+extension ProductDetailCartExtension on ProductDetail {
+  /// Tạo CartItem từ ProductDetail (không có variant)
+  CartItem toCartItem({
+    required int quantity,
+    int? shopId,
+    String? shopName,
+  }) {
+    return CartItem(
+      id: id,
+      name: name,
+      image: imageUrl,
+      price: price, // Giá hiển thị (final_price)
+      oldPrice: oldPrice,
+      originalPrice: originalPrice, // ✅ Giá gốc để tính toán trong checkout
+      quantity: quantity,
+      shopId: shopId ?? (int.tryParse(this.shopId ?? '0') ?? 0),
+      shopName: shopName ?? (shopNameFromInfo.isNotEmpty ? shopNameFromInfo : 'Unknown Shop'),
+      addedAt: DateTime.now(),
+    );
+  }
+  
+  /// Tạo CartItem từ ProductDetail với variant
+  CartItem toCartItemWithVariant({
+    required ProductVariant variant,
+    required int quantity,
+    String? variantName,
+    int? shopId,
+    String? shopName,
+  }) {
+    return CartItem(
+      id: id,
+      name: '$name - ${variant.name}',
+      image: imageUrl,
+      price: variant.price, // Giá hiển thị (final_price)
+      oldPrice: variant.oldPrice,
+      originalPrice: variant.originalPrice, // ✅ Giá gốc để tính toán trong checkout
+      quantity: quantity,
+      variant: variantName ?? variant.name,
+      shopId: shopId ?? (int.tryParse(this.shopId ?? '0') ?? 0),
+      shopName: shopName ?? (shopNameFromInfo.isNotEmpty ? shopNameFromInfo : 'Unknown Shop'),
+      addedAt: DateTime.now(),
+    );
+  }
+}
+
 class ProductVariant {
   final String id;
   final String name;
   final Map<String, String> attributes;
   final int price;
   final int? oldPrice;
+  final int? originalPrice; // Giá gốc chưa trừ ưu đãi (để dùng trong checkout)
   final int? stock;
   final String? imageUrl;
   final bool isDefault;
@@ -377,6 +430,7 @@ class ProductVariant {
     required this.attributes,
     required this.price,
     this.oldPrice,
+    this.originalPrice,
     this.stock,
     this.imageUrl,
     this.isDefault = false,
@@ -418,6 +472,7 @@ class ProductVariant {
       attributes: parseAttributes(json['attributes'] ?? json['thuoc_tinh']),
       price: safeParseInt(json['gia_moi']) ?? safeParseInt(json['price']) ?? safeParseInt(json['gia']) ?? 0,
       oldPrice: safeParseInt(json['gia_cu']) ?? safeParseInt(json['old_price']),
+      originalPrice: safeParseInt(json['original_price']), // Giá gốc chưa trừ ưu đãi
       stock: safeParseInt(json['kho_sanpham_socdo']) ?? safeParseInt(json['stock']) ?? safeParseInt(json['so_luong']),
       imageUrl: json['image_url'] as String? ?? json['image_phanloai'] as String? ?? json['hinh_anh'] as String?,
       isDefault: safeParseBool(json['is_default'] ?? json['mac_dinh']),

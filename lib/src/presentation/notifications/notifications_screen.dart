@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart'; // Cần cho RichText
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../root_shell.dart';
@@ -16,17 +17,18 @@ class NotificationsScreen extends StatefulWidget {
   State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen> with SingleTickerProviderStateMixin {
+class _NotificationsScreenState extends State<NotificationsScreen>
+    with SingleTickerProviderStateMixin {
   final ApiService _api = ApiService();
   final AuthService _auth = AuthService();
   bool _loading = true;
   int _unread = 0;
   List<dynamic> _items = [];
   int? _userId;
-  
+
   // Phân loại thông báo theo category
   Map<String, List<dynamic>> _groupedNotifications = {};
-  
+
   // TabController cho tabs
   late TabController _tabController;
 
@@ -36,7 +38,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
     _tabController = TabController(length: 5, vsync: this);
     _init();
   }
-  
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -61,11 +63,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
   Future<void> _load() async {
     if (_userId == null) return;
     setState(() => _loading = true);
-    final data = await _api.getNotifications(userId: _userId!, page: 1, limit: 100);
+    final data = await _api.getNotifications(
+      userId: _userId!,
+      page: 1,
+      limit: 100,
+    );
     if (!mounted) return;
-    
+
     final items = (data?['data']?['notifications'] as List?) ?? [];
-    
+
     // Nhóm thông báo theo category
     final grouped = <String, List<dynamic>>{
       'orders': [],
@@ -74,7 +80,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
       'affiliate': [],
       'other': [],
     };
-    
+
     for (var item in items) {
       final type = item['type']?.toString() ?? '';
       if (type == 'order') {
@@ -89,7 +95,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
         grouped['other']!.add(item);
       }
     }
-    
+
     setState(() {
       _loading = false;
       _items = items;
@@ -113,7 +119,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
       }
     }
   }
-  
+
   Future<void> _deleteAllNotifications() async {
     if (_userId == null) return;
     final ok = await _api.deleteAllNotifications(userId: _userId!);
@@ -132,7 +138,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
 
   Future<void> _markRead(int id) async {
     if (_userId == null) return;
-    final ok = await _api.markNotificationRead(userId: _userId!, notificationId: id);
+    final ok = await _api.markNotificationRead(
+      userId: _userId!,
+      notificationId: id,
+    );
     if (ok) await _load();
   }
 
@@ -160,10 +169,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border(
-                bottom: BorderSide(
-                  color: Colors.grey[200]!,
-                  width: 1,
-                ),
+                bottom: BorderSide(color: Colors.grey[200]!, width: 1),
               ),
             ),
             child: TabBar(
@@ -329,8 +335,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: (_unread > 0 ? const Color(0xFF6366F1) : const Color(0xFF94A3B8))
-                            .withOpacity(0.3),
+                        color:
+                            (_unread > 0
+                                    ? const Color(0xFF6366F1)
+                                    : const Color(0xFF94A3B8))
+                                .withOpacity(0.3),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -381,7 +390,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
                     ],
                   ),
                 ),
-                
+
                 // TabBarView với nội dung từng tab
                 Expanded(
                   child: TabBarView(
@@ -394,9 +403,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
                       // Tab: Voucher
                       _buildTabContent(_groupedNotifications['vouchers'] ?? []),
                       // Tab: Giao dịch
-                      _buildTabContent(_groupedNotifications['transactions'] ?? []),
+                      _buildTabContent(
+                        _groupedNotifications['transactions'] ?? [],
+                      ),
                       // Tab: Affiliate
-                      _buildTabContent(_groupedNotifications['affiliate'] ?? []),
+                      _buildTabContent(
+                        _groupedNotifications['affiliate'] ?? [],
+                      ),
                     ],
                   ),
                 ),
@@ -451,11 +464,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.notifications_none,
-              size: 64,
-              color: Colors.grey[300],
-            ),
+            Icon(Icons.notifications_none, size: 64, color: Colors.grey[300]),
             const SizedBox(height: 16),
             Text(
               'Chưa có thông báo',
@@ -468,10 +477,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             const SizedBox(height: 8),
             Text(
               'Khi có thông báo mới, chúng sẽ xuất hiện ở đây',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -485,7 +491,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
       itemBuilder: (context, index) {
         final notification = notifications[index];
         return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+          margin: const EdgeInsets.only(bottom: 4),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -529,9 +535,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
     final type = notification['type']?.toString() ?? '';
     final relatedId = notification['related_id'];
     final data = notification['data'] as Map<String, dynamic>?;
-    
+
     if (_userId == null) return;
-    
+
     switch (type) {
       case 'order':
         // Nếu có order_id hoặc order_code, đi đến chi tiết đơn hàng
@@ -542,7 +548,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             MaterialPageRoute(
               builder: (_) => OrderDetailScreen(
                 userId: _userId!,
-                orderId: relatedId is int ? relatedId : int.tryParse(relatedId.toString()),
+                orderId: relatedId is int
+                    ? relatedId
+                    : int.tryParse(relatedId.toString()),
                 maDon: orderCode,
               ),
             ),
@@ -555,7 +563,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
           );
         }
         break;
-        
+
       case 'voucher_new':
       case 'voucher_expiring':
         // Đi đến màn hình voucher
@@ -564,7 +572,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
           MaterialPageRoute(builder: (_) => const VoucherScreen()),
         );
         break;
-        
+
       case 'deposit':
       case 'withdrawal':
         // Đi đến màn hình affiliate (có phần giao dịch)
@@ -573,7 +581,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
           MaterialPageRoute(builder: (_) => const AffiliateScreen()),
         );
         break;
-        
+
       case 'affiliate_order':
       case 'affiliate_product':
       case 'affiliate_daily':
@@ -581,10 +589,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
         // Nếu có product_id trong data, có thể navigate đến product detail
         final productId = data?['product_id'];
         if (productId != null) {
-          final productIdInt = productId is int 
-              ? productId 
+          final productIdInt = productId is int
+              ? productId
               : (productId is String ? int.tryParse(productId) : null);
-          
+
           if (productIdInt != null && productIdInt > 0) {
             // Navigate đến product detail
             Navigator.push(
@@ -596,14 +604,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             break;
           }
         }
-        
+
         // Fallback: Navigate đến affiliate screen
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const AffiliateScreen()),
         );
         break;
-        
+
       default:
         // Không làm gì cho các loại khác
         break;
@@ -615,7 +623,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
     if (type == 'order' && title != null) {
       return _getOrderStatusIcon(title);
     }
-    
+
     // Các loại thông báo khác
     switch (type) {
       case 'affiliate_order':
@@ -638,12 +646,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             ],
           ),
           child: const Icon(
-            Icons.handshake_outlined,
+            Icons.monetization_on_outlined,
             color: Colors.white,
             size: 24,
           ),
         );
-      case 'deposit':
+      case 'affiliate_product':
         return Container(
           width: 56,
           height: 56,
@@ -651,24 +659,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
+              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
             ),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF06B6D4).withOpacity(0.3),
+                color: const Color(0xFF6366F1).withOpacity(0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: const Icon(
-            Icons.trending_up_outlined,
+            Icons.star_border_purple500_outlined,
             color: Colors.white,
             size: 24,
           ),
         );
-      case 'withdrawal':
+      case 'voucher_new':
         return Container(
           width: 56,
           height: 56,
@@ -688,37 +696,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             ],
           ),
           child: const Icon(
-            Icons.trending_down_outlined,
-            color: Colors.white,
-            size: 24,
-          ),
-        );
-      case 'voucher_new':
-        return Container(
-          width: 56,
-          height: 56,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFEC4899), Color(0xFFDB2777)],
-            ),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFFEC4899).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: const Icon(
             Icons.card_giftcard_outlined,
             color: Colors.white,
             size: 24,
           ),
         );
-      case 'voucher_expiring':
+      case 'deposit':
         return Container(
           width: 56,
           height: 56,
@@ -726,22 +709,43 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFA855F7), Color(0xFF9333EA)],
+              colors: [Color(0xFF10B981), Color(0xFF059669)],
             ),
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFA855F7).withOpacity(0.3),
+                color: const Color(0xFF10B981).withOpacity(0.3),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
             ],
           ),
           child: const Icon(
-            Icons.timer_outlined,
+            Icons.arrow_downward,
             color: Colors.white,
             size: 24,
           ),
+        );
+      case 'withdrawal':
+        return Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+            ),
+            borderRadius: BorderRadius.circular(14),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6366F1).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.arrow_upward, color: Colors.white, size: 24),
         );
       default:
         return Container(
@@ -762,18 +766,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
               ),
             ],
           ),
-          child: const Icon(
-            Icons.notifications_outlined,
-            color: Colors.white,
-            size: 24,
-          ),
+          child: const Icon(Icons.info_outline, color: Colors.white, size: 24),
         );
     }
   }
 
   Widget _getOrderStatusIcon(String title) {
-    // Phân tích title để xác định trạng thái đơn hàng
-    if (title.contains('đã được xác nhận')) {
+    if (title.contains('đã được tiếp nhận')) {
       return Container(
         width: 56,
         height: 56,
@@ -793,12 +792,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
           ],
         ),
         child: const Icon(
-          Icons.check_circle_outlined,
+          Icons.check_circle_outline,
           color: Colors.white,
           size: 24,
         ),
       );
-    } else if (title.contains('đang được giao')) {
+    } else if (title.contains('đã giao cho đơn vị vận chuyển') ||
+        title.contains('đang trên đường đến bạn')) {
       return Container(
         width: 56,
         height: 56,
@@ -806,12 +806,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+            colors: [Color(0xFF14B8A6), Color(0xFF0D9488)],
           ),
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFF59E0B).withOpacity(0.3),
+              color: const Color(0xFF14B8A6).withOpacity(0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -867,11 +867,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             ),
           ],
         ),
-        child: const Icon(
-          Icons.cancel_outlined,
-          color: Colors.white,
-          size: 24,
-        ),
+        child: const Icon(Icons.cancel_outlined, color: Colors.white, size: 24),
       );
     } else if (title.contains('đã hoàn trả')) {
       return Container(
@@ -892,11 +888,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
             ),
           ],
         ),
-        child: const Icon(
-          Icons.undo_outlined,
-          color: Colors.white,
-          size: 24,
-        ),
+        child: const Icon(Icons.undo_outlined, color: Colors.white, size: 24),
       );
     } else {
       // Trạng thái mặc định
@@ -963,17 +955,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
           ),
           content: const Text(
             'Bạn có chắc chắn muốn xóa tất cả thông báo? Hành động này không thể hoàn tác.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.black87,
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.black87),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               style: TextButton.styleFrom(
                 foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 'Hủy',
@@ -987,7 +979,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> with SingleTi
               },
               style: TextButton.styleFrom(
                 foregroundColor: Colors.black87,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 'Xóa',
@@ -1027,46 +1022,115 @@ class _NotificationItemWidget extends StatefulWidget {
   });
 
   @override
-  State<_NotificationItemWidget> createState() => _NotificationItemWidgetState();
+  State<_NotificationItemWidget> createState() =>
+      _NotificationItemWidgetState();
 }
 
 class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
   bool _isExpanded = false;
 
+  // ✅ HÀM TIỆN ÍCH: Highlight các biến trong nội dung thông báo
+  List<TextSpan> _highlightVariables(String text) {
+    // Regex để tìm các biến phổ biến:
+    // 1. Mã đơn hàng/sản phẩm (ví dụ: SD123456, OR123)
+    // 2. Số tiền/phần trăm (ví dụ: 100.000đ, 50%)
+    // 3. Tên sản phẩm/shop (các từ viết hoa)
+    final regex = RegExp(
+      r'([A-Z]{2,}\d{4,})|(\d{1,3}(?:\.\d{3})*(?:,\d+)?\s*(?:đ|%))|(\"[^\"]+\")',
+      caseSensitive: false,
+    );
+
+    final List<TextSpan> spans = [];
+    int lastMatchEnd = 0;
+
+    final highlightStyle = TextStyle(
+      fontWeight: FontWeight.w700,
+      color: const Color(0xFF3B82F6), // Màu xanh biển
+    );
+
+    for (final match in regex.allMatches(text)) {
+      // 1. Thêm phần văn bản không phải biến
+      if (match.start > lastMatchEnd) {
+        spans.add(TextSpan(text: text.substring(lastMatchEnd, match.start)));
+      }
+
+      // 2. Thêm phần biến (highlight)
+      String variable = match.group(0)!;
+
+      // Loại bỏ dấu ngoặc kép nếu có (ví dụ: tên sản phẩm)
+      if (variable.startsWith('"') && variable.endsWith('"')) {
+        variable = variable.substring(1, variable.length - 1);
+      }
+
+      spans.add(TextSpan(text: variable, style: highlightStyle));
+
+      lastMatchEnd = match.end;
+    }
+
+    // 3. Thêm phần văn bản còn lại
+    if (lastMatchEnd < text.length) {
+      spans.add(TextSpan(text: text.substring(lastMatchEnd)));
+    }
+
+    return spans;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Lấy thông tin sản phẩm từ data
+    // ✅ Hỗ trợ nhiều field image: product_image (ưu tiên), image (fallback)
     String? productImage;
-    String? productTitle;
     if (widget.data != null) {
-      productImage = widget.data!['product_image']?.toString();
+      // ✅ DEBUG: Log toàn bộ data nhận được
+      print('📸 [DEBUG NotificationsScreen] Notification ID: ${widget.id}');
+      print('📸 [DEBUG NotificationsScreen] Data keys: ${widget.data!.keys.toList()}');
+      print('📸 [DEBUG NotificationsScreen] product_image: ${widget.data!['product_image']}');
+      print('📸 [DEBUG NotificationsScreen] image: ${widget.data!['image']}');
+      print('📸 [DEBUG NotificationsScreen] Full data: ${widget.data}');
+      
+      // Ưu tiên product_image, nếu không có thì dùng image
+      productImage =
+          widget.data!['product_image']?.toString() ??
+          widget.data!['image']?.toString();
+      
+      print('📸 [DEBUG NotificationsScreen] productImage sau khi lấy: $productImage');
+
       // Sửa URL ảnh nếu bắt đầu bằng /uploads/
-      if (productImage != null && productImage.isNotEmpty) {
+      if (productImage != null && productImage.isNotEmpty && productImage.trim().isNotEmpty) {
+        final originalImage = productImage;
         if (productImage.startsWith('/uploads/')) {
           productImage = 'https://socdo.vn$productImage';
         } else if (!productImage.startsWith('http')) {
           productImage = 'https://socdo.vn/uploads/$productImage';
         }
+        print('📸 [DEBUG NotificationsScreen] productImage sau khi sửa URL: $originalImage -> $productImage');
+      } else {
+        print('⚠️ [DEBUG NotificationsScreen] productImage RỖNG hoặc NULL!');
+        // ✅ Fallback ảnh nếu rỗng
+        productImage = 'https://socdo.vn/uploads/logo/logo.png';
+        print('📸 [DEBUG NotificationsScreen] Dùng fallback ảnh: $productImage');
       }
-      productTitle = widget.data!['product_title']?.toString();
+    } else {
+      print('⚠️ [DEBUG NotificationsScreen] widget.data là NULL!');
+      // ✅ Fallback ảnh nếu data null
+      productImage = 'https://socdo.vn/uploads/logo/logo.png';
     }
 
     // Kiểm tra nội dung có dài không
-    bool isLongContent = widget.subtitle.length > 100;
-    
+    // ĐÃ SỬA: Hạ ngưỡng từ 120 xuống 90 ký tự để bao gồm các thông báo Đơn hàng
+    bool isLongContent = widget.subtitle.length > 90;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: widget.isRead 
-                ? Colors.white 
-                : const Color(0xFFF8FAFC),
+            color: widget.isRead ? Colors.white : const Color(0xFFF8FAFC),
             borderRadius: BorderRadius.circular(16),
-            border: widget.priority == 'high' && !widget.isRead 
+            border: widget.priority == 'high' && !widget.isRead
                 ? Border.all(
                     color: const Color(0xFFEF4444).withOpacity(0.3),
                     width: 1.5,
@@ -1076,63 +1140,93 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icon hoặc ảnh sản phẩm
-              productImage != null && productImage.isNotEmpty
-                  ? Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.grey[200]!,
-                          width: 1,
-                        ),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(11),
-                        child: Image.network(
-                          productImage,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              color: Colors.grey[100],
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                color: Colors.grey[400],
-                                size: 24,
-                              ),
-                            );
-                          },
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Container(
-                              color: Colors.grey[100],
-                              child: Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    value: loadingProgress.expectedTotalBytes != null
-                                        ? loadingProgress.cumulativeBytesLoaded /
-                                            loadingProgress.expectedTotalBytes!
-                                        : null,
+              // Cột bên trái: Ảnh/icon + thời gian bên dưới
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  productImage != null && productImage.isNotEmpty
+                      ? Container(
+                          width: 56,
+                          height: 56,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.grey[200]!,
+                              width: 1,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(11),
+                            child: Image.network(
+                              productImage,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  color: Colors.grey[100],
+                                  child: Icon(
+                                    Icons.image_not_supported_outlined,
+                                    color: Colors.grey[400],
+                                    size: 24,
                                   ),
-                                ),
-                              ),
-                            );
-                          },
+                                );
+                              },
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  color: Colors.grey[100],
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        value:
+                                            loadingProgress
+                                                    .expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                      .cumulativeBytesLoaded /
+                                                  loadingProgress
+                                                      .expectedTotalBytes!
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        )
+                      : widget.iconWidget,
+                  const SizedBox(height: 8),
+                  // Thời gian
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time_outlined,
+                        size: 12,
+                        color: Colors.grey[400],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        widget.time,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
-                    )
-                  : widget.iconWidget,
+                    ],
+                  ),
+                ],
+              ),
               const SizedBox(width: 12),
               // Nội dung thông báo
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Tiêu đề và badge priority
+                    // Tiêu đề và badge priority + dot unread
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1140,8 +1234,8 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
                           child: Text(
                             widget.title,
                             style: TextStyle(
-                              fontWeight: widget.isRead 
-                                  ? FontWeight.w600 
+                              fontWeight: widget.isRead
+                                  ? FontWeight.w600
                                   : FontWeight.w700,
                               fontSize: 15,
                               color: const Color(0xFF1A1A1A),
@@ -1152,23 +1246,28 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (widget.priority == 'high' && !widget.isRead) ...[
+
+                        // Icon Chấm Than Màu Đỏ đã bị xóa hoàn toàn ở đây.
+
+                        // Vẫn giữ lại DẤU CHẤM UNREAD (dot) nếu chưa đọc
+                        if (!widget.isRead) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 3,
-                            ),
+                            width: 8,
+                            height: 8,
                             decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                              gradient: LinearGradient(
+                                colors: widget.priority == 'high'
+                                    ? [
+                                        const Color(0xFFEF4444),
+                                        const Color(0xFFDC2626),
+                                      ]
+                                    : [
+                                        const Color(0xFF6366F1),
+                                        const Color(0xFF8B5CF6),
+                                      ],
                               ),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: const Icon(
-                              Icons.priority_high,
-                              color: Colors.white,
-                              size: 12,
+                              shape: BoxShape.circle,
                             ),
                           ),
                         ],
@@ -1176,43 +1275,54 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
                     ),
                     const SizedBox(height: 8),
                     // Nội dung thông báo
-                    Text(
-                      widget.subtitle,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: const Color(0xFF64748B),
-                        height: 1.5,
-                        fontWeight: FontWeight.w400,
+                    // ✅ SỬ DỤNG RICHTEXT ĐỂ HIGHLIGHT CÁC BIẾN
+                    RichText(
+                      text: TextSpan(
+                        children: _highlightVariables(widget.subtitle),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                          height: 1.5,
+                          fontWeight: FontWeight.w400,
+                        ),
                       ),
                       maxLines: _isExpanded ? null : 2,
-                      overflow: _isExpanded ? null : TextOverflow.ellipsis,
+                      overflow: _isExpanded
+                          ? TextOverflow.visible
+                          : TextOverflow.ellipsis,
                     ),
+
                     // Nút Xem thêm / Thu gọn
                     if (isLongContent) ...[
-                      const SizedBox(height: 6),
-                      GestureDetector(
+                      const SizedBox(height: 8),
+                      // ĐÃ SỬA: Tăng padding để tăng diện tích click
+                      InkWell(
                         onTap: () {
                           setState(() {
                             _isExpanded = !_isExpanded;
                           });
                         },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
+                        borderRadius: BorderRadius.circular(8),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 0,
+                            horizontal: 4,
+                          ), // Tăng diện tích click
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
                                 _isExpanded ? 'Thu gọn' : 'Xem thêm',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 12,
-                                  color: const Color(0xFF6366F1),
+                                  color: Color(0xFF6366F1),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                               const SizedBox(width: 4),
                               Icon(
-                                _isExpanded 
-                                    ? Icons.keyboard_arrow_up 
+                                _isExpanded
+                                    ? Icons.keyboard_arrow_up
                                     : Icons.keyboard_arrow_down,
                                 size: 16,
                                 color: const Color(0xFF6366F1),
@@ -1222,76 +1332,6 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
                         ),
                       ),
                     ],
-                    // Tên sản phẩm nếu có
-                    if (productTitle != null && productTitle.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6366F1).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.shopping_cart_outlined,
-                              size: 14,
-                              color: const Color(0xFF6366F1),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                productTitle,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: const Color(0xFF6366F1),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 10),
-                    // Thời gian và badge đọc/chưa đọc
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time_outlined,
-                          size: 12,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          widget.time,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                        const Spacer(),
-                        if (!widget.isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: widget.priority == 'high'
-                                    ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
-                                    : [const Color(0xFF6366F1), const Color(0xFF8B5CF6)],
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                      ],
-                    ),
                   ],
                 ),
               ),
@@ -1301,115 +1341,108 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
       ),
     );
   }
-
 }
 
 class _LoggedOutView extends StatelessWidget {
   final VoidCallback onLoginSuccess;
-  
+
   const _LoggedOutView({required this.onLoginSuccess});
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
       child: Center(
         child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Logo/Icon
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(40),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  size: 40,
-                  color: Color(0xFFDC3545),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Bạn chưa đăng nhập',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Đăng nhập để xem thông báo của bạn',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.symmetric(horizontal: 40),
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFFDC3545),
-                      Color(0xFFC82333),
-                    ],
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Logo/Icon
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
                   ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFDC3545).withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                ],
+              ),
+              child: const Icon(
+                Icons.notifications_outlined,
+                size: 40,
+                color: Color(0xFFDC3545),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Bạn chưa đăng nhập',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Đăng nhập để xem thông báo của bạn',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.symmetric(horizontal: 40),
+              height: 48,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFDC3545), Color(0xFFC82333)],
                 ),
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final result = await Navigator.of(context).push<bool>(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    );
-                    
-                    // Nếu đăng nhập thành công, refresh trạng thái
-                    if (result == true) {
-                      onLoginSuccess();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFDC3545).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
-                  child: const Text(
-                    'Đăng nhập',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                ],
+              ),
+              child: ElevatedButton(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+
+                  // Nếu đăng nhập thành công, refresh trạng thái
+                  if (result == true) {
+                    onLoginSuccess();
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Đăng nhập',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     );
   }
 }

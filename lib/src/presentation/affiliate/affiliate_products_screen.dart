@@ -742,14 +742,16 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
                 ),
 
                 // Always show long affiliate URL (with utm_source_shop)
-                const SizedBox(height: 8),
-                _buildLinkRow(_buildAffiliateUrl(product)),
+                // TODO: Uncomment sau này sẽ bỏ comment dùng lại
+                // const SizedBox(height: 8),
+                // _buildLinkRow(_buildAffiliateUrl(product)),
 
                 // Show short link if available
-                if (product.hasLink) ...[
-                  const SizedBox(height: 6),
-                  _buildLinkRow(product.shortLink!),
-                ],
+                // TODO: Uncomment sau này sẽ bỏ comment dùng lại
+                // if (product.hasLink) ...[
+                //   const SizedBox(height: 6),
+                //   _buildLinkRow(product.shortLink!),
+                // ],
               ],
             ),
           ),
@@ -910,7 +912,10 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
 
   void _shareToOther(AffiliateProduct product) async {
     final shareText = _buildShareText(product);
-    final shareUrl = _buildAffiliateUrl(product);
+    // Ưu tiên dùng link rút gọn nếu có, nếu không thì dùng link gốc
+    final shareUrl = (product.hasLink && product.shortLink != null && product.shortLink!.isNotEmpty) 
+        ? product.shortLink! 
+        : _buildAffiliateUrl(product);
     
     
     try {
@@ -925,7 +930,7 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
           try {
             await Share.shareXFiles(
               [XFile(imageFile.path)],
-              text: '$shareText\n\n$shareUrl',
+              text: '$shareText\n\nMua ngay: $shareUrl',
               subject: product.title,
             );
             return;
@@ -936,7 +941,7 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
           try {
             // Share text first
             await Share.share(
-              '$shareText\n\n$shareUrl',
+              '$shareText\n\nMua ngay: $shareUrl',
               subject: product.title,
             );
             
@@ -958,13 +963,13 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
       
       // Fallback to text-only sharing
       Share.share(
-        '$shareText\n\n$shareUrl',
+        '$shareText\n\nMua ngay: $shareUrl',
         subject: product.title,
       );
     } catch (e) {
       // If image sharing fails, fallback to text-only
       Share.share(
-        '$shareText\n\n$shareUrl',
+        '$shareText\n\nMua ngay: $shareUrl',
         subject: product.title,
       );
     }
@@ -1016,10 +1021,15 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
         : '';
     
     final oldPriceText = product.oldPrice > product.price 
-        ? '\n💸 Giá gốc: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}'
+        ? '\n💸Giá Bán:  ${FormatUtils.formatCurrency(product.price.toInt())} 🔥🔥'
         : '';
     
-    return '🔥 ${product.title}$discountPercent\n💰 Giá: ${FormatUtils.formatCurrency(product.price.toInt())}$oldPriceText\n💎 Hoa hồng: ${product.mainCommission}\n🏪 Thương hiệu: ${product.brandName}\n\n👉 Mua ngay để nhận ưu đãi tốt nhất!\n\n📱 Tải app Socdo để mua hàng với giá tốt nhất!';
+    // Sử dụng ký tự gạch ngang cho "Giá Niêm Yết" (text-decoration: line-through)
+    final giaNiemYet = product.oldPrice > product.price 
+        ? '💰 Giá Niêm Yết: ̶${FormatUtils.formatCurrency(product.oldPrice.toInt())}̶'
+        : '💰 Giá Niêm Yết: ${FormatUtils.formatCurrency(product.oldPrice.toInt())}';
+    
+    return '🔥 ${product.title}$discountPercent\n$giaNiemYet$oldPriceText\n📱 Sóc Đỏ : Hàng chính hãng - Giá siêu hấp dẫn';
   }
 
 

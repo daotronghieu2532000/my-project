@@ -82,7 +82,13 @@ class _VoucherSectionState extends State<VoucherSection> {
           // ✅ Header row
           Row(
             children: [
-              const Icon(Icons.confirmation_number, color: Colors.red),
+               Image.asset(
+                'assets/images/icons/coupon.png',
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+                
+              ),
               const SizedBox(width: 8),
               const Text('Voucher sàn'),
               const Spacer(),
@@ -223,8 +229,8 @@ class _VoucherSectionState extends State<VoucherSection> {
       return (false, 'Voucher đã hết hạn hoặc tạm dừng.');
     }
 
-    // 2) Min order
-    final subtotal = items.fold<int>(0, (s, i) => s + i.price * i.quantity);
+    // 2) Min order - ✅ Dùng originalPrice (giá gốc) để tính toán đúng trong checkout
+    final subtotal = items.fold<int>(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
  
   
     if (v.minOrderValue != null && subtotal < v.minOrderValue!.round()) {

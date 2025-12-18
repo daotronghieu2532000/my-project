@@ -11,8 +11,9 @@ class CartItem {
   final int id;
   final String name;
   final String image;
-  final int price;
+  final int price; // Giá hiển thị (final_price)
   final int? oldPrice;
+  final int? originalPrice; // Giá gốc chưa trừ ưu đãi (để dùng trong checkout)
   final int quantity;
   final String? variant;
   final int shopId;
@@ -26,6 +27,7 @@ class CartItem {
     required this.image,
     required this.price,
     this.oldPrice,
+    this.originalPrice, // Giá gốc chưa trừ ưu đãi
     required this.quantity,
     this.variant,
     required this.shopId,
@@ -40,6 +42,7 @@ class CartItem {
     String? image,
     int? price,
     int? oldPrice,
+    int? originalPrice,
     int? quantity,
     String? variant,
     int? shopId,
@@ -53,6 +56,7 @@ class CartItem {
       image: image ?? this.image,
       price: price ?? this.price,
       oldPrice: oldPrice ?? this.oldPrice,
+      originalPrice: originalPrice ?? this.originalPrice,
       quantity: quantity ?? this.quantity,
       variant: variant ?? this.variant,
       shopId: shopId ?? this.shopId,
@@ -69,6 +73,7 @@ class CartItem {
       'image': image,
       'price': price,
       'oldPrice': oldPrice,
+      'originalPrice': originalPrice,
       'quantity': quantity,
       'variant': variant,
       'shopId': shopId,
@@ -85,6 +90,7 @@ class CartItem {
       image: json['image'],
       price: json['price'],
       oldPrice: json['oldPrice'],
+      originalPrice: json['originalPrice'],
       quantity: json['quantity'],
       variant: json['variant'],
       shopId: json['shopId'],
@@ -93,6 +99,7 @@ class CartItem {
       isSelected: json['isSelected'] ?? true, // Default true nếu không có
     );
   }
+  
 }
 
 class CartService extends ChangeNotifier {
@@ -522,6 +529,21 @@ class CartService extends ChangeNotifier {
       _items[index] = _items[index].copyWith(
         price: newPrice,
         oldPrice: newOldPrice,
+      );
+      notifyListeners();
+      _saveCart(); // Lưu giỏ hàng sau khi thay đổi
+    }
+  }
+  
+  /// ✅ Update originalPrice cho CartItem (để checkout dùng giá gốc)
+  void updateItemOriginalPrice(int itemId, int originalPrice, {String? variant}) {
+    final index = _items.indexWhere(
+      (item) => item.id == itemId && item.variant == variant,
+    );
+
+    if (index != -1) {
+      _items[index] = _items[index].copyWith(
+        originalPrice: originalPrice,
       );
       notifyListeners();
       _saveCart(); // Lưu giỏ hàng sau khi thay đổi

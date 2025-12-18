@@ -116,7 +116,7 @@ class WelcomeBonusDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // Mô tả (từ config - hiển thị danh sách shop)
+            
             Builder(
               builder: (context) {
                 // Format danh sách shop (lấy tất cả shop, join bằng dấu phẩy)
@@ -127,7 +127,8 @@ class WelcomeBonusDialog extends StatelessWidget {
                 final discountPercentText = config.discountPercent.toStringAsFixed(0);
                 
                 return Text(
-                  'Số tiền này sẽ tự động được áp dụng: $discountPercentText% trên tổng đơn hàng thuộc các Nhà bán: " $shopNamesText ". Xin trân trọng cảm ơn! 💝',
+                  // 'Số tiền này sẽ tự động được áp dụng: $discountPercentText% trên tổng đơn hàng thuộc các Nhà bán: " $shopNamesText ". Xin trân trọng cảm ơn! 💝',
+                   '🎁 Chúc mừng! Bạn đã nhận Voucher thưởng của Socdo – Dùng ngay trong 30 ngày Thanh tiến trình: "Hoàn tất đơn đầu tiên – Mở khóa ưu đãi tiếp theo"',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -138,7 +139,6 @@ class WelcomeBonusDialog extends StatelessWidget {
               },
             ),
             const SizedBox(height: 24),
-            
             // Nút đóng (từ config)
             SizedBox(
               width: double.infinity,

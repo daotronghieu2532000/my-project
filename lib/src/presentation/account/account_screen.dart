@@ -44,11 +44,11 @@ class AccountScreen extends StatelessWidget {
           const SectionHeader(title: 'Danh mục '),
           ActionList(
             items: const [
-            ActionItem(Icons.receipt_long_outlined, 'Lịch sử mua hàng'),
-            ActionItem(Icons.shopping_bag_outlined, 'Mua lại'),
-            ActionItem(Icons.favorite_border, 'Sản phẩm yêu thích'),
-            ActionItem(Icons.sell_outlined, 'Mã giảm giá'),
-            ActionItem(Icons.star_border, 'Lịch sử đánh giá'),
+            ActionItem.withImage('assets/images/icons/all_order.png', 'Lịch sử mua hàng'),
+            ActionItem.withImage('assets/images/icons/rebuy.png', 'Mua lại'),
+            ActionItem.withImage('assets/images/icons/heart.png', 'Sản phẩm yêu thích'),
+            ActionItem.withImage('assets/images/icons/voucher2.png', 'Mã giảm giá'),
+            ActionItem.withImage('assets/images/icons/rating.png', 'Lịch sử đánh giá'),
             // ActionItem(Icons.cancel_outlined, 'Đã huỷ & Trả lại'),
             ],
           ),

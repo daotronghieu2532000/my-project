@@ -145,6 +145,12 @@ class LocalNotificationService {
         color: const Color(0xFFDC143C),
         // Dùng product image nếu có, nếu không thì dùng logo
         largeIcon: imagePath != null ? FilePathAndroidBitmap(imagePath) : null,
+        // ✅ THÊM STYLE ĐỂ HIỂN THỊ NỘI DUNG DÀI VỚI NÚT "XEM THÊM"
+        styleInformation: BigTextStyleInformation(
+          body,
+          contentTitle: title,
+          summaryText: 'Nhấn để xem chi tiết',
+        ),
     );
 
     const iosDetails = DarwinNotificationDetails(

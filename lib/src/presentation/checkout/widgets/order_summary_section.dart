@@ -103,7 +103,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         .map((i) => {
               'product_id': i.id,
               'quantity': i.quantity,
-              'price': i.price, // ✅ Thêm giá để fallback tính chính xác hơn
+              'price': i.originalPrice ?? i.price, // ✅ Dùng originalPrice (giá gốc) để tính toán đúng
             })
         .toList();
     
@@ -751,7 +751,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     if (selectedShopItems.isEmpty) return const SizedBox.shrink();
     
     final shopName = selectedShopItems.first.shopName;
-    final shopTotal = selectedShopItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+    // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+    final shopTotal = selectedShopItems.fold(0, (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity));
     final appliedVoucher = voucherService.getAppliedVoucher(shopId);
     
     return Column(
@@ -835,7 +836,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     List<cart_service.CartItem> items,
     VoucherService voucherService,
   ) {
-    final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+    // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+    final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
     return _buildPlatformVoucherCardDialog(platformVoucher, items, totalGoods);
   }
   
@@ -1154,7 +1156,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     if (allowIds.isNotEmpty) {
       for (final item in items) {
         if (allowIds.contains(item.id)) {
-          applicableSubtotal += item.price * item.quantity;
+          // ✅ Dùng originalPrice (giá gốc) để tính toán đúng trong checkout
+          applicableSubtotal += (item.originalPrice ?? item.price) * item.quantity;
         }
       }
     } else {
@@ -1622,7 +1625,15 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.where_to_vote_outlined, color: Color.fromARGB(255, 19, 129, 255)),
+              Image.asset(
+                'assets/images/icons/shipping_fee.png',
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.where_to_vote_outlined, color: Color.fromARGB(255, 19, 129, 255), size: 24);
+                },
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -1653,7 +1664,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
                         Text(
                           _originalShipFee != null 
                             ? 'Phí vận chuyển: ${_formatCurrency(_originalShipFee!)}'
-                            : 'Phí vận chuyển: Vui lòng đăng nhập để tính phí ship',
+                            : 'Phí vận chuyển: Vui lòng đăng nhập!',
                           style: TextStyle(
                             color: _originalShipFee == null ? Colors.orange : null,
                           ),
@@ -1733,7 +1744,15 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Icon(Icons.access_time, color: Color.fromARGB(255, 128, 128, 128)),
+              Image.asset(
+                'assets/images/icons/du_kien.png',
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.access_time, color: Color.fromARGB(255, 128, 128, 128), size: 24);
+                },
+              ),
               const SizedBox(width: 8),
               Text(
                 _etaText != null 
@@ -1749,7 +1768,15 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           if (_provider != null)
             Row(
               children: [
-                const Icon(Icons.local_shipping_outlined, color: Color.fromARGB(255, 112, 112, 112)),
+                Image.asset(
+                  'assets/images/icons/warehouse.png',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.local_shipping_outlined, color: Color.fromARGB(255, 112, 112, 112), size: 24);
+                  },
+                ),
                 const SizedBox(width: 8),
                 Text(_provider!),
               ],
@@ -1877,7 +1904,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       if (shopItems.isEmpty) continue;
       
       final shopName = shopItems.first.shopName;
-      final shopTotal = shopItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+      // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+      final shopTotal = shopItems.fold(0, (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity));
       final appliedVoucher = voucherService.getAppliedVoucher(shopId);
       
       if (appliedVoucher != null) {
@@ -1902,7 +1930,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     final platformVoucher = voucherService.platformVoucher;
     if (platformVoucher != null) {
       final items = cart.items.where((i) => i.isSelected).toList();
-      final totalGoods = items.fold(0, (s, i) => s + i.price * i.quantity);
+      // ✅ Tính tổng dựa trên originalPrice (giá gốc) để tính toán đúng trong checkout
+    final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
       widgets.add(_buildPlatformVoucherCard(platformVoucher, items, totalGoods));
       widgets.add(const SizedBox(height: 8));
     }
@@ -2219,7 +2248,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
     if (allowIds.isNotEmpty) {
       for (final item in items) {
         if (allowIds.contains(item.id)) {
-          applicableSubtotal += item.price * item.quantity;
+          // ✅ Dùng originalPrice (giá gốc) để tính toán đúng trong checkout
+          applicableSubtotal += (item.originalPrice ?? item.price) * item.quantity;
         }
       }
     } else {

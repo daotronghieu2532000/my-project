@@ -1,0 +1,21 @@
+[Unit]
+Description=Cron Check Orders (10 seconds interval)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/www/wwwroot/api.socdo.vn/home/themes/socdo/action/process
+ExecStart=/bin/bash -c 'while true; do /usr/bin/php cron_check_orders.php socdo_cron_2025; sleep 10; done'
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Giới hạn tài nguyên (tùy chọn)
+MemoryLimit=512M
+CPUQuota=50%
+
+[Install]
+WantedBy=multi-user.target
+

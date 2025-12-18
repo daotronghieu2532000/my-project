@@ -45,12 +45,12 @@ class BonusConfig {
       maxDiscountAmount: 200000,
       dialogTitle: 'Cảm ơn bạn đã tin tưởng!',
       dialogMessage:
-          'Chúc mừng bạn đã tải ứng dụng và đăng nhập thành công! Chúng tôi xin gửi tặng bạn',
+          '🎁 Chúc mừng! Bạn đã nhận Voucher thưởng của Socdo – Dùng ngay trong 30 ngày Thanh tiến trình: "Hoàn tất đơn đầu tiên – Mở khóa ưu đãi tiếp theo"',
       dialogButtonText: 'Bắt đầu mua sắm',
       eligibleShops: [
         BonusShop(shopId: 32373, shopName: 'Công ty Cổ phần Sóc Đỏ', displayOrder: 1),
         BonusShop(shopId: 23933, shopName: 'Socdo Choice', displayOrder: 2),
-        BonusShop(shopId: 36893, shopName: 'JUDYDOOL', displayOrder: 3),
+        BonusShop(shopId: 36893, shopName: 'JUDYDOLL', displayOrder: 3),
         BonusShop(shopId: 35683, shopName: 'Công ty cổ phần Sóc Đỏ', displayOrder: 4),
         BonusShop(shopId: 35681, shopName: 'Công ty Cổ phần Sóc Đỏ', displayOrder: 5),
       ],

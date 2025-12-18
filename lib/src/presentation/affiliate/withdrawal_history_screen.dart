@@ -84,7 +84,11 @@ class _WithdrawalHistoryScreenState extends State<WithdrawalHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Lịch sử rút tiền'),
+        title: const Text('Lịch sử rút tiền',
+        style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.w600,
+            ),),
         centerTitle: true,
         actions: [
           IconButton(
@@ -232,6 +236,7 @@ class _WithdrawalHistoryScreenState extends State<WithdrawalHistoryScreen> {
                       'Rút tiền',
                       style: TextStyle(
                         fontSize: 16,
+                        color: Colors.black,
                         fontWeight: FontWeight.w600,
                       ),
                     ),

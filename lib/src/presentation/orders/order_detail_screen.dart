@@ -643,7 +643,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             _buildPaymentRow('Voucher', '-${_detail!['giam_formatted'] ?? ''}', isTotal: false),
           // ✅ Bonus lần đầu tải app
           if ((int.tryParse((_detail!['bonus_used'] ?? 0).toString()) ?? 0) > 0)
-            _buildPaymentRow('🎁 Quà tặng lần đầu tải ứng dụng', '-${_detail!['bonus_used_formatted'] ?? ''}', isTotal: false),
+            _buildPaymentRow('🎁 Mã giới thiệu', '-${_detail!['bonus_used_formatted'] ?? ''}', isTotal: false),
           
           const Divider(height: 24),
           _buildPaymentRow('Tổng thanh toán', _detail!['tongtien_formatted'] ?? '', isTotal: true),
