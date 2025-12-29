@@ -332,6 +332,13 @@ class AuthService {
       cleanPath = '/$cleanPath';
     }
 
+    // ✅ Map /uploads/avatar/ → /uploads/avatars/ để tương thích với symlink mới
+    // File thực tế ở /www/wwwroot/api.socdo.vn/uploads/avatar/
+    // Symlink: /www/wwwroot/socdo.vn/uploads/avatars/ → api.socdo.vn/uploads/avatar/
+    if (cleanPath.startsWith('/uploads/avatar/') && !cleanPath.startsWith('/uploads/avatars/')) {
+      cleanPath = cleanPath.replaceFirst('/uploads/avatar/', '/uploads/avatars/');
+    }
+
     // Nếu avatar là path relative, thêm tiền tố https://socdo.vn/
     return 'https://socdo.vn$cleanPath';
   }
@@ -381,11 +388,11 @@ class AuthService {
         );
 
         if (success) {
-          print('✅ Đã đăng ký FCM token thành công cho user ${user.userId}');
+          // print('✅ Đã đăng ký FCM token thành công cho user ${user.userId}');
         }
       }
      } catch (e) {
-       print('❌ Lỗi khi đăng ký FCM token: $e');
+      //  print('❌ Lỗi khi đăng ký FCM token: $e');
      }
   }
 

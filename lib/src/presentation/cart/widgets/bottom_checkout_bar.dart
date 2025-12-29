@@ -32,31 +32,37 @@ class BottomCheckoutBar extends StatelessWidget {
     // ✅ Lấy items đã chọn để tính voucher đúng (theo shop)
     final items = cart.items.where((i) => i.isSelected).toList();
     
-    // ✅ Tính tổng dựa trên originalPrice (giá gốc) để đồng bộ với checkout
-    final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
+    // ✅ Tính tổng dựa trên price (giá hiển thị) - giá này đã bao gồm voucher discount rồi
+    // Vì giá hiển thị ở sản phẩm là price và đã được trừ voucher trước khi vào giỏ hàng,
+    // nên trong giỏ hàng không trừ voucher nữa để tránh trừ 2 lần
+    final totalGoods = items.fold(0, (s, i) => s + (i.price * i.quantity));
     
-    // ✅ Tính voucher discount đúng như checkout (theo shop và theo sản phẩm áp dụng)
-    // ✅ QUAN TRỌNG: Dùng originalPrice khi tính voucher discount
+    // ✅ Tính voucher discount chỉ để hiển thị thông tin (không trừ vào tổng)
+    // Vẫn cho phép auto áp dụng voucher để người dùng biết voucher nào đang được dùng
+    final totalGoodsForVoucher = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
     final shopDiscount = voucherService.calculateTotalDiscount(
-      totalGoods,
+      totalGoodsForVoucher,
       items: items.map((e) => {'shopId': e.shopId, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
-      totalGoods,
+      totalGoodsForVoucher,
       items.map((e) => e.id).toList(),
       items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
     );
-    final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
+    final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoodsForVoucher);
     
-    // ✅ Tính giá cuối cùng (chỉ trừ voucher, không có ship fee/support vì chưa có địa chỉ)
-    final finalPrice = totalGoods - voucherDiscount;
+    // ✅ Giá cuối cùng = tổng giá hiển thị (KHÔNG trừ voucher vì đã trừ rồi)
+    final finalPrice = totalGoods;
+    
+    // ✅ Tính tổng originalPrice để hiển thị "Giá gốc" nếu có
+    final totalOriginalPrice = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
     
     // ✅ DEBUG: Print tính toán giá tiền trong giỏ hàng
     // print('🛒 [CART - BottomCheckoutBar] ==========================================');
     // print('   📦 Items: ${items.length} sản phẩm');
-    for (final item in items) {
-      // print('      - ${item.name} (shop: ${item.shopId}): ${FormatUtils.formatCurrency(item.price)} x ${item.quantity} = ${FormatUtils.formatCurrency(item.price * item.quantity)}');
-    }
+    // for (final item in items) {
+    //   print('      - ${item.name} (shop: ${item.shopId}): ${FormatUtils.formatCurrency(item.price)} x ${item.quantity} = ${FormatUtils.formatCurrency(item.price * item.quantity)}');
+    // }
     // print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalPrice)}');
     // print('   🎫 Voucher shop discount: ${FormatUtils.formatCurrency(shopDiscount)}');
     // print('   🎫 Voucher platform discount: ${FormatUtils.formatCurrency(platformDiscount)}');
@@ -190,8 +196,8 @@ class BottomCheckoutBar extends StatelessWidget {
                           ],
                         ),
                         
-                        // Original price (if voucher applied)
-                        if (voucherDiscount > 0) ...[
+                        // Original price (if voucher applied and has originalPrice)
+                        if (voucherDiscount > 0 && totalOriginalPrice != totalGoods) ...[
                           const SizedBox(height: 2),
                           Row(
                             children: [
@@ -204,7 +210,7 @@ class BottomCheckoutBar extends StatelessWidget {
                               ),
                               Flexible(
                                 child: Text(
-                                  FormatUtils.formatCurrency(totalGoods),
+                                  FormatUtils.formatCurrency(totalOriginalPrice),
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey[500],

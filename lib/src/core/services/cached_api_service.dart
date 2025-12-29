@@ -475,7 +475,7 @@ class CachedApiService {
   Future<Map<String, dynamic>?> getCategoryProductsWithPagination({
     required int categoryId,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
     String sort = 'relevance',
     bool forceRefresh = false,
     Duration? cacheDuration,
@@ -528,7 +528,7 @@ class CachedApiService {
   Future<Map<String, dynamic>?> getProductsByParentCategoryCached({
     required int parentCategoryId,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
     String sort = 'newest',
     bool forceRefresh = false,
     Duration? cacheDuration,
@@ -623,7 +623,7 @@ class CachedApiService {
   Future<Map<String, dynamic>?> getAffiliateLinks({
     required int? userId,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
     String? search,
     String sortBy = 'newest',
     bool onlyHasLink = false,
@@ -679,7 +679,7 @@ class CachedApiService {
   Future<Map<String, dynamic>?> getAffiliateProducts({
     required int? userId,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
     String? search,
     String sortBy = 'newest',
     bool onlyFollowing = false,
@@ -1117,7 +1117,7 @@ class CachedApiService {
   Future<Map<String, dynamic>?> searchProductsCached({
     required String keyword,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
     bool forceRefresh = false,
     Duration? cacheDuration,
     int? userId, // Thêm userId để lưu search behavior
@@ -1444,7 +1444,7 @@ class CachedApiService {
   Future<Map<String, dynamic>?> getFavoriteProductsCached({
     required int userId,
     int page = 1,
-    int limit = 50,
+    int limit = 1150,
     bool getAll = false,
     bool forceRefresh = false,
     Duration? cacheDuration,

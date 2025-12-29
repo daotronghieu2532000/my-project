@@ -368,6 +368,52 @@ class _AffiliateWithdrawScreenState extends State<AffiliateWithdrawScreen> {
                             ],
                           ],
                         ),
+                        // ✅ Thông báo về số dư đang chờ
+                        if (_balanceInfo != null && _balanceInfo!.pendingBalance > 0) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Số dư đang chờ',
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.blue[900],
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _claimInfo != null && 
+                                        _claimInfo!.daysRemaining != null && 
+                                        _claimInfo!.daysRemaining! >= 0 &&
+                                        _claimInfo!.formattedTimeRemaining.isNotEmpty
+                                            ? 'Hoa hồng sẽ tự động chuyển vào số dư có thể rút sau \n ${_claimInfo!.formattedTimeRemaining}'
+                                            : 'Hoa hồng sẽ tự động chuyển vào số dư có thể rút sau 7 ngày kể từ khi đơn hàng thành công',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.blue[800],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ],
                       const SizedBox(height: 24),
 

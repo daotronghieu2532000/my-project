@@ -48,6 +48,7 @@ class FlashSaleProduct {
   final double? rating;
   final int? totalReviews;
   final int? sold;
+  final String? freeshipIcon;
 
   const FlashSaleProduct({
     required this.id,
@@ -69,6 +70,7 @@ class FlashSaleProduct {
     this.rating,
     this.totalReviews,
     this.sold,
+    this.freeshipIcon,
   });
 
   factory FlashSaleProduct.fromJson(Map<String, dynamic> json) {
@@ -138,6 +140,7 @@ class FlashSaleProduct {
       rating: safeParseDouble(json['rating']) ?? safeParseDouble(json['average_rating']),
       totalReviews: safeParseInt(json['total_reviews']) ?? safeParseInt(json['reviews_count']),
       sold: safeParseInt(json['sold']) ?? safeParseInt(json['sold_count']) ?? safeParseInt(json['ban']) ?? safeParseInt(json['quantity_sold']),
+      freeshipIcon: json['freeship_icon'] as String? ?? json['freeshipIcon'] as String?,
     );
   }
 
@@ -162,6 +165,7 @@ class FlashSaleProduct {
       'rating': rating,
       'total_reviews': totalReviews,
       'sold': sold,
+      'freeship_icon': freeshipIcon,
     };
   }
 
@@ -185,6 +189,7 @@ class FlashSaleProduct {
     double? rating,
     int? totalReviews,
     int? sold,
+    String? freeshipIcon,
   }) {
     return FlashSaleProduct(
       id: id ?? this.id,
@@ -206,6 +211,7 @@ class FlashSaleProduct {
       rating: rating ?? this.rating,
       totalReviews: totalReviews ?? this.totalReviews,
       sold: sold ?? this.sold,
+      freeshipIcon: freeshipIcon ?? this.freeshipIcon,
     );
   }
 

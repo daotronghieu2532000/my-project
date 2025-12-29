@@ -21,14 +21,18 @@ class AffiliateTrackingService {
       final prefs = await SharedPreferences.getInstance();
       final now = DateTime.now().millisecondsSinceEpoch;
       
+      // print('📝 [AffiliateTracking] Lưu affiliate click: affiliateId=$affiliateId, productId=$productId');
+      
       await prefs.setString(_keyAffiliateId, affiliateId);
       await prefs.setInt(_keyAffiliateTimestamp, now);
       
       if (productId != null) {
         await prefs.setInt(_keyAffiliateProductId, productId);
       }
+      
+      // print('✅ [AffiliateTracking] Đã lưu affiliate tracking thành công');
     } catch (e) {
-      print('❌ [AffiliateTracking] Lỗi lưu affiliate: $e');
+      // print('❌ [AffiliateTracking] Lỗi lưu affiliate: $e');
     }
   }
 
@@ -39,7 +43,10 @@ class AffiliateTrackingService {
       final affiliateId = prefs.getString(_keyAffiliateId);
       final timestamp = prefs.getInt(_keyAffiliateTimestamp);
       
+      // print('🔍 [AffiliateTracking] Lấy affiliate ID: affiliateId=$affiliateId, timestamp=$timestamp');
+      
       if (affiliateId == null || timestamp == null) {
+        // print('⚠️ [AffiliateTracking] Không có affiliate tracking');
         return null;
       }
       
@@ -48,14 +55,16 @@ class AffiliateTrackingService {
       final isValid = (now - timestamp) < _affiliateCookieDuration;
       
       if (!isValid) {
+        // print('⚠️ [AffiliateTracking] Affiliate tracking đã hết hạn (30 ngày)');
         // Clear expired affiliate tracking
         await clearAffiliateTracking();
         return null;
       }
       
+      // print('✅ [AffiliateTracking] Affiliate ID hợp lệ: $affiliateId');
       return affiliateId;
     } catch (e) {
-      print('❌ [AffiliateTracking] Lỗi lấy affiliate_id: $e');
+      // print('❌ [AffiliateTracking] Lỗi lấy affiliate_id: $e');
       return null;
     }
   }
@@ -85,7 +94,7 @@ class AffiliateTrackingService {
       await prefs.remove(_keyAffiliateProductId);
       
     } catch (e) {
-      print('❌ [AffiliateTracking] Lỗi clear affiliate: $e');
+      // print('❌ [AffiliateTracking] Lỗi clear affiliate: $e');
     }
   }
 
@@ -101,7 +110,7 @@ class AffiliateTrackingService {
         await prefs.setInt(_keyAffiliateTimestamp, DateTime.now().millisecondsSinceEpoch);
       }
     } catch (e) {
-      print('❌ [AffiliateTracking] Lỗi track view: $e');
+      // print('❌ [AffiliateTracking] Lỗi track view: $e');
     }
   }
 }

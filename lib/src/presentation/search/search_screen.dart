@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/services/api_service.dart';
@@ -29,7 +30,8 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _isSearching = false;
   String _currentKeyword = '';
   int _currentPage = 1;
-  final int _itemsPerPage = 500; // Tăng từ 10 lên 50
+  static const int _itemsPerPage = 20; // ✅ Giảm từ 500 xuống 20 để tối ưu hiệu suất
+  static const int _maxProductsLimit = 200; // ✅ Giới hạn tối đa số sản phẩm hiển thị
 
   // Lọc & sắp xếp
   String _sort = 'relevance'; // relevance | price-asc | price-desc | rating-desc | sold-desc
@@ -59,6 +61,13 @@ class _SearchScreenState extends State<SearchScreen> {
   
   // Debounce timer cho search suggestions
   Timer? _debounceTimer;
+  
+  // ✅ Tối ưu hiệu suất: Flags và timers để tránh gọi API nhiều lần
+  bool _isLoadingMore = false; // Flag để tránh gọi loadMore nhiều lần
+  Timer? _loadMoreDebounceTimer; // Debounce timer cho loadMore
+  int _lastLoadTriggerIndex = -1; // Track index cuối cùng đã trigger load
+  double? _cachedScreenWidth; // Cache screenWidth để tránh tính toán lại
+  double? _cachedCardWidth; // Cache cardWidth để tránh tính toán lại
 
   @override
   void initState() { 
@@ -83,6 +92,7 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _loadMoreDebounceTimer?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     _searchFocusNode.dispose();
@@ -114,11 +124,8 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _onScroll() {
-    // Infinite scroll logic
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
-      _loadMore();
-    }
+    // ✅ Tối ưu: Không cần scroll listener nữa vì dùng lazy loading trong itemBuilder
+    // Logic load more được xử lý trong MasonryGridView.itemBuilder
   }
 
   Future<void> _performSearch(String keyword, {bool isLoadMore = false}) async {
@@ -127,15 +134,24 @@ class _SearchScreenState extends State<SearchScreen> {
         _searchResult = null;
         _currentKeyword = '';
         _currentPage = 1;
+        _lastLoadTriggerIndex = -1; // ✅ Reset trigger index
       });
       return;
     }
 
+    // ✅ Tránh gọi API nhiều lần cùng lúc
+    if (isLoadMore && (_isLoadingMore || _isSearching)) {
+      return;
+    }
+
     setState(() {
-      _isSearching = true;
-      if (!isLoadMore) {
+      if (isLoadMore) {
+        _isLoadingMore = true;
+      } else {
+        _isSearching = true;
         _currentKeyword = keyword;
         _currentPage = 1;
+        _lastLoadTriggerIndex = -1; // ✅ Reset trigger index khi search mới
         // Reset scroll position khi search mới
         if (_scrollController.hasClients) {
           _scrollController.animateTo(
@@ -186,11 +202,31 @@ class _SearchScreenState extends State<SearchScreen> {
 
         setState(() {
           if (isLoadMore && _searchResult != null) {
+            // ✅ GIỚI HẠN: Chỉ thêm đến max limit
+            final currentCount = _searchResult!.products.length;
+            if (currentCount >= _maxProductsLimit) {
+              // Đã đạt max limit, không thêm nữa
+              _isLoadingMore = false;
+              return;
+            }
+            
             // Thêm sản phẩm mới vào danh sách hiện tại
             final existingProducts = List<SearchProduct>.from(
               _searchResult!.products,
             );
-            existingProducts.addAll(searchResultObj.products);
+            
+            // Chỉ thêm sản phẩm mới (bỏ qua các sản phẩm đã có)
+            final existingIds = existingProducts.map((p) => p.id).toSet();
+            final additionalProducts = searchResultObj.products
+                .where((p) => !existingIds.contains(p.id))
+                .toList();
+            
+            // ✅ GIỚI HẠN: Chỉ thêm đến max limit
+            final productsToAdd = additionalProducts
+                .take(_maxProductsLimit - currentCount)
+                .toList();
+            
+            existingProducts.addAll(productsToAdd);
 
             _searchResult = SearchResult(
               success: searchResultObj.success,
@@ -200,15 +236,27 @@ class _SearchScreenState extends State<SearchScreen> {
               searchTime: searchResultObj.searchTime,
             );
             _currentPage = page;
+            _isLoadingMore = false;
           } else {
-            _searchResult = searchResultObj;
+            // ✅ GIỚI HẠN: Chỉ lấy số lượng giới hạn cho lần đầu
+            final limitedProducts = searchResultObj.products
+                .take(_maxProductsLimit)
+                .toList();
+            
+            _searchResult = SearchResult(
+              success: searchResultObj.success,
+              products: limitedProducts,
+              pagination: searchResultObj.pagination,
+              keyword: searchResultObj.keyword,
+              searchTime: searchResultObj.searchTime,
+            );
             _currentPage = page;
+            _isSearching = false;
           }
-          _isSearching = false;
         });
 
         // Thêm vào lịch sử tìm kiếm nếu có kết quả
-        if (searchResultObj.products.isNotEmpty) {
+        if (searchResultObj.products.isNotEmpty && !isLoadMore) {
           await _addToSearchHistory(keyword);
         }
       }
@@ -216,6 +264,7 @@ class _SearchScreenState extends State<SearchScreen> {
       if (mounted) {
         setState(() {
           _isSearching = false;
+          _isLoadingMore = false;
         });
         ScaffoldMessenger.of(
           context,
@@ -237,13 +286,22 @@ class _SearchScreenState extends State<SearchScreen> {
     _performSearch(keyword);
   }
 
+  /// ✅ Load thêm sản phẩm từ API trong background (được gọi từ itemBuilder)
   void _loadMore() {
-    if (_searchResult != null &&
-        _searchResult!.pagination.hasNext &&
-        !_isSearching &&
-        _currentKeyword.isNotEmpty) {
-      _performSearch(_currentKeyword, isLoadMore: true);
+    if (_searchResult == null ||
+        !_searchResult!.pagination.hasNext ||
+        _isSearching ||
+        _isLoadingMore ||
+        _currentKeyword.isEmpty) {
+      return;
     }
+    
+    // ✅ GIỚI HẠN: Không load thêm nếu đã đạt max limit
+    if (_searchResult!.products.length >= _maxProductsLimit) {
+      return;
+    }
+    
+    _performSearch(_currentKeyword, isLoadMore: true);
   }
 
   // Load lịch sử tìm kiếm từ SharedPreferences
@@ -961,32 +1019,63 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildProductsGrid() {
     final displayedProducts = _getDisplayedProducts();
+    
+    // ✅ Cache screenWidth để tránh tính toán lại mỗi lần build
     final screenWidth = MediaQuery.of(context).size.width;
-    // Tính toán width: (screenWidth - padding left/right - spacing giữa 2 cột) / 2
-    // Padding: 4px mỗi bên = 8px, spacing: 8px giữa 2 cột
-    final cardWidth = (screenWidth - 16) / 2; // 16 = 8 (padding) + 8 (spacing)
+    if (_cachedScreenWidth != screenWidth) {
+      _cachedScreenWidth = screenWidth;
+      _cachedCardWidth = (screenWidth - 16) / 2; // 2 cột với spacing
+    }
+    
+    final cardWidth = _cachedCardWidth ?? (screenWidth - 16) / 2;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start, // Căn trái toàn bộ nội dung
-      children: [
-        Wrap(
-          alignment: WrapAlignment.start, // Căn trái khi chỉ có 1 sản phẩm
-          spacing: 8, // Khoảng cách ngang giữa các card
-          runSpacing: 8, // Khoảng cách dọc giữa các hàng
-          children: displayedProducts.map((product) {
-            return SizedBox(
-              width: cardWidth, // Width cố định cho 2 cột, height tự co giãn
-              child: SearchProductCardHorizontal(product: product),
-            );
-          }).toList(),
-        ),
-        // Loading indicator khi đang search
-        if (_isSearching)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator()),
+    // ✅ Sử dụng MasonryGridView với lazy loading thay vì Wrap
+    // Pinterest-style grid - cards tự động căn chỉnh theo chiều cao
+    return MasonryGridView.count(
+      crossAxisCount: 2, // 2 cột
+      mainAxisSpacing: 8, // Khoảng cách dọc
+      crossAxisSpacing: 8, // Khoảng cách ngang
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      itemCount: displayedProducts.length + (_isLoadingMore ? 1 : 0),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(), // Parent ScrollView scroll
+      itemBuilder: (context, index) {
+        // ✅ Tự động load thêm khi render item gần cuối (còn <= 20 items)
+        if (index >= displayedProducts.length - 20 &&
+            index > _lastLoadTriggerIndex &&
+            !_isLoadingMore &&
+            !_isSearching &&
+            _searchResult != null &&
+            _searchResult!.pagination.hasNext &&
+            displayedProducts.length < _maxProductsLimit) {
+          _lastLoadTriggerIndex = index;
+          _loadMoreDebounceTimer?.cancel();
+          _loadMoreDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted && !_isLoadingMore && !_isSearching) {
+              _loadMore();
+            }
+          });
+        }
+        
+        // Loading indicator ở cuối
+        if (index == displayedProducts.length) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        final product = displayedProducts[index];
+        // ✅ Sử dụng RepaintBoundary để tối ưu repaint
+        return RepaintBoundary(
+          child: SizedBox(
+            width: cardWidth,
+            child: SearchProductCardHorizontal(product: product),
           ),
-      ],
+        );
+      },
     );
   }
 

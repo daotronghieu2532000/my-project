@@ -406,3 +406,66 @@ class ProductIconsRow extends StatelessWidget {
     );
   }
 }
+
+/// Badge hiển thị "Free Ship" với icon từ asset
+class FreeShipBadge extends StatelessWidget {
+  final double? iconSize;
+  final EdgeInsets? padding;
+  final Color backgroundColor;
+  final Color textColor;
+  final String text;
+
+  const FreeShipBadge({
+    super.key,
+    this.iconSize,
+    this.padding,
+    this.backgroundColor = Colors.green,
+    this.textColor = Colors.white,
+    this.text = 'FREE SHIP',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding ?? const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Image.asset(
+            'assets/images/icons/free-shipping.png',
+            width: iconSize ?? 16,
+            height: iconSize ?? 16,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback to icon nếu không load được asset
+              return Icon(
+                Icons.local_shipping,
+                size: iconSize ?? 16,
+                color: textColor,
+              );
+            },
+          ),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

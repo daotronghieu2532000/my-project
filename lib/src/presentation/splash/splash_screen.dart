@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/api_service.dart';
 import '../../core/models/splash_screen.dart';
 import '../root_shell.dart';
+import '../../core/services/deep_link_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -75,21 +76,27 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _navigateToHome() {
     Future.delayed(const Duration(milliseconds: 3000), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const RootShell(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
-            },
-            transitionDuration: const Duration(milliseconds: 500),
-          ),
-        );
+      if (!mounted) return;
+
+      // Nếu app được mở từ deeplink (affiliate / product link), KHÔNG auto điều hướng về RootShell
+      // để tránh trường hợp đang xem ProductDetailScreen bị tự chuyển về trang chủ sau 1–2 giây.
+      if (DeepLinkService.hasInitialDeepLink) {
+        return;
       }
+
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const RootShell(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
     });
   }
 

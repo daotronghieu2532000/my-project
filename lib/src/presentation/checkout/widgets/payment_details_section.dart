@@ -50,21 +50,106 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
 
   Future<void> _calculateBonus() async {
     final cart = cart_service.CartService();
+    final voucherService = VoucherService();
     final items = cart.items.where((i) => i.isSelected).toList();
-    final eligibleItems = items.map((i) => {
-      'shopId': i.shopId,
-      'price': i.price,
-      'quantity': i.quantity,
-    }).toList();
-
+    
     if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
-      final eligibleTotal = await _bonusService.calculateEligibleTotal(eligibleItems);
+      // ✅ Lấy config để biết eligible shop IDs
+      final config = await _bonusService.getBonusConfig();
+      if (config == null || !config.status) {
+        if (mounted) {
+          setState(() {
+            _cachedEligibleTotal = 0;
+            _cachedBonusDiscount = 0;
+          });
+        }
+        return;
+      }
+      
+      final eligibleShopIds = config.eligibleShops.map((s) => s.shopId).toSet();
+      
+      // ✅ DEBUG: Log eligible shops và items
+      // print('   🔍 [Bonus Debug] Eligible shop IDs from config: ${eligibleShopIds.toList()}');
+      // print('   🔍 [Bonus Debug] All selected items: ${items.map((i) => 'shopId=${i.shopId}, price=${i.originalPrice ?? i.price}, qty=${i.quantity}').join('; ')}');
+      
+      // ✅ Lọc items chỉ lấy từ eligible shops
+      final eligibleItems = items.where((i) => eligibleShopIds.contains(i.shopId)).toList();
+      
+      // print('   🔍 [Bonus Debug] Eligible items: ${eligibleItems.map((i) => 'shopId=${i.shopId}, price=${i.originalPrice ?? i.price}, qty=${i.quantity}').join('; ')}');
+      
+      if (eligibleItems.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _cachedEligibleTotal = 0;
+            _cachedBonusDiscount = 0;
+          });
+        }
+        return;
+      }
+      
+      // ✅ Tính tổng dựa trên originalPrice (giá gốc) CHỈ cho eligible shops
+      final eligibleTotal = eligibleItems.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
+      final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
+      
+      // ✅ Tính voucher discount CHỈ cho eligible shops
+      final eligibleItemsForVoucher = eligibleItems.map((e) => {'shopId': e.shopId, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList();
+      final eligibleShopDiscount = voucherService.calculateTotalDiscount(
+        eligibleTotal,
+        items: eligibleItemsForVoucher,
+      );
+      final eligiblePlatformDiscount = voucherService.calculatePlatformDiscountWithItems(
+        eligibleTotal,
+        eligibleItems.map((e) => e.id).toList(),
+        items: eligibleItems.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity, 'shopId': e.shopId}).toList(),
+      );
+      final eligibleVoucherDiscount = (eligibleShopDiscount + eligiblePlatformDiscount).clamp(0, eligibleTotal);
+      
+      // ✅ Lấy ship support TRỰC TIẾP từ eligible shops (giống API), KHÔNG phân bổ theo tỷ lệ
+      final shopShipSupportMap = ShippingQuoteStore().shopShipSupport;
+      int eligibleShipSupport = 0;
+      final Set<int> processedShops = {}; // Để đảm bảo mỗi shop chỉ tính 1 lần
+      for (final item in eligibleItems) {
+        final shopId = item.shopId;
+        if (!processedShops.contains(shopId) && shopShipSupportMap.containsKey(shopId)) {
+          // ✅ Lấy ship support từ map (mỗi shop chỉ lấy 1 lần, giống API logic)
+          eligibleShipSupport += shopShipSupportMap[shopId]!;
+          processedShops.add(shopId);
+        }
+      }
+      // ✅ Nếu không có trong map, fallback về phân bổ theo tỷ lệ (tạm thời)
+      if (eligibleShipSupport == 0) {
+        final shipSupport = ShippingQuoteStore().shipSupport;
+        eligibleShipSupport = totalGoods > 0 
+            ? ((shipSupport * eligibleTotal / totalGoods).round())
+            : 0;
+      }
+      
+      // ✅ Tính base amount: eligibleTotal - eligibleVoucherDiscount - eligibleShipSupport
+      final baseAmount = (eligibleTotal - eligibleVoucherDiscount - eligibleShipSupport).clamp(0, 1 << 31);
+      
+      // ✅ Lấy discount percent từ config
+      final discountPercent = config.discountPercent;
+      
+      // ✅ Tính bonus discount: baseAmount * discountPercent / 100
+      final rawBonus = (baseAmount * discountPercent / 100).floor();
+      
+      // ✅ Lấy min của: rawBonus, remainingAmount, maxDiscountAmount
       final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-      final bonusDiscount = await _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
+      final maxDiscountAmount = config.maxDiscountAmount;
+      final bonusDiscount = rawBonus < remainingAmount 
+          ? (rawBonus < maxDiscountAmount ? rawBonus : maxDiscountAmount)
+          : (remainingAmount < maxDiscountAmount ? remainingAmount : maxDiscountAmount);
+      
+      // ✅ DEBUG: Print chi tiết tính toán bonus
+      final totalShipSupport = ShippingQuoteStore().shipSupport;
+      // print('   🔍 [Bonus Calculation] totalGoods=${FormatUtils.formatCurrency(totalGoods)}, shipSupport=${FormatUtils.formatCurrency(totalShipSupport)}');
+      // print('   🔍 [Bonus Calculation] eligibleTotal=${FormatUtils.formatCurrency(eligibleTotal)}, eligibleVoucherDiscount=${FormatUtils.formatCurrency(eligibleVoucherDiscount)}, eligibleShipSupport=${FormatUtils.formatCurrency(eligibleShipSupport)} (${totalShipSupport > 0 ? (eligibleShipSupport * 100 / totalShipSupport).toStringAsFixed(1) : 0}% của shipSupport)');
+      // print('   🔍 [Bonus Calculation] baseAmount=${FormatUtils.formatCurrency(baseAmount)}, discountPercent=$discountPercent%, rawBonus=${FormatUtils.formatCurrency(rawBonus)}');
+      // print('   🔍 [Bonus Calculation] remainingAmount=${FormatUtils.formatCurrency(remainingAmount)}, maxDiscountAmount=${FormatUtils.formatCurrency(maxDiscountAmount)}, finalBonus=${FormatUtils.formatCurrency(bonusDiscount)}');
       
       if (mounted) {
         setState(() {
-          _cachedEligibleTotal = eligibleTotal;
+          _cachedEligibleTotal = baseAmount;
           _cachedBonusDiscount = bonusDiscount;
         });
       }
@@ -83,7 +168,9 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
   }
 
   void _onShippingChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _calculateBonus(); // Recalculate khi shipping thay đổi
+    }
   }
 
   Future<void> _loadBonusInfo() async {
@@ -168,7 +255,7 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e.id).toList(),
-      items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
+      items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity, 'shopId': e.shopId}).toList(),
     );
   
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
@@ -195,7 +282,7 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
       // print('      Shop $shopId: ${shopItems.length} sản phẩm = ${FormatUtils.formatCurrency(shopTotal)}');
       for (final item in shopItems) {
         final basePrice = item.originalPrice ?? item.price;
-        print('         - ${item.name}: ${FormatUtils.formatCurrency(basePrice)} x ${item.quantity} = ${FormatUtils.formatCurrency(basePrice * item.quantity)}');
+        // print('         - ${item.name}: ${FormatUtils.formatCurrency(basePrice)} x ${item.quantity} = ${FormatUtils.formatCurrency(basePrice * item.quantity)}');
       }
     }
     // print('   💰 Tổng tiền hàng: ${FormatUtils.formatCurrency(totalGoods)}');
@@ -219,11 +306,11 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
     // print('   💵 Tổng thanh toán cuối cùng: ${FormatUtils.formatCurrency(grandTotal)}');
     // print('   ✅ Applied vouchers: ${voucherService.appliedVouchers.length} shop vouchers');
     for (final entry in voucherService.appliedVouchers.entries) {
-      print('      - Shop ${entry.key}: ${entry.value.code} (${entry.value.discountType == 'percentage' ? '${entry.value.discountValue}%' : FormatUtils.formatCurrency(entry.value.discountValue?.round() ?? 0)})');
+      // print('      - Shop ${entry.key}: ${entry.value.code} (${entry.value.discountType == 'percentage' ? '${entry.value.discountValue}%' : FormatUtils.formatCurrency(entry.value.discountValue?.round() ?? 0)})');
     }
-    print('   ✅ Platform vouchers: ${voucherService.platformVouchers.length} vouchers');
+    // print('   ✅ Platform vouchers: ${voucherService.platformVouchers.length} vouchers');
     for (final entry in voucherService.platformVouchers.entries) {
-      print('      - ${entry.key}: ${entry.value.discountType == 'percentage' ? '${entry.value.discountValue}%' : FormatUtils.formatCurrency(entry.value.discountValue?.round() ?? 0)}}');
+      // print('      - ${entry.key}: ${entry.value.discountType == 'percentage' ? '${entry.value.discountValue}%' : FormatUtils.formatCurrency(entry.value.discountValue?.round() ?? 0)}}');
     }
   
     return Container(
@@ -255,7 +342,7 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
                   return Column(
                     children: [
                       PaymentDetailRow('Tổng phí vận chuyển', FormatUtils.formatCurrency(shipFee)),
-                      PaymentDetailRow('Hỗ trợ ship', '-${FormatUtils.formatCurrency(shipSupport)}', isRed: true),
+                      PaymentDetailRow('Hỗ trợ vận chuyển', '-${FormatUtils.formatCurrency(shipSupport)}', isRed: true),
                     ],
                   );
                 } else {
@@ -272,7 +359,7 @@ class _PaymentDetailsSectionState extends State<PaymentDetailsSection> {
           PaymentDetailRow('Tổng Voucher giảm giá', '${FormatUtils.formatCurrency(voucherDiscount)}', isRed: true),
           // ✅ Hiển thị bonus discount nếu có
           if (bonusDiscount > 0)
-            PaymentDetailRow('🎁 Mã giới thiệu', '-${FormatUtils.formatCurrency(bonusDiscount)}', isRed: true),
+            PaymentDetailRow('🎁 Voucher giảm giá', '-${FormatUtils.formatCurrency(bonusDiscount)}', isRed: true),
           const Divider(height: 20),
           PaymentDetailRow('Tổng thanh toán', FormatUtils.formatCurrency(grandTotal), isBold: true),
         ],

@@ -52,7 +52,7 @@ class FirstTimeBonusService {
           return data['data'] as Map<String, dynamic>?;
         } else {
           // ❌ API trả về success = false hoặc không có data
-          print('❌ [BONUS] API trả về success = false hoặc không có data: ${response.body}');
+          // print('❌ [BONUS] API trả về success = false hoặc không có data: ${response.body}');
           return {
             'has_bonus': false,
             'message': data['message'] ?? data['data']?['message'] ?? 'Không thể tạo bonus'
@@ -60,7 +60,7 @@ class FirstTimeBonusService {
         }
       } else {
         // ❌ HTTP status code không phải 200
-        print('❌ [BONUS] HTTP ${response.statusCode}: ${response.body}');
+        // print('❌ [BONUS] HTTP ${response.statusCode}: ${response.body}');
         return {
           'has_bonus': false,
           'message': 'Lỗi kết nối API (${response.statusCode})'
@@ -137,16 +137,29 @@ class FirstTimeBonusService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['data'] != null) {
-          _cachedConfig = BonusConfig.fromJson(data['data']);
-          _configCacheTime = DateTime.now();
-          return _cachedConfig;
+        // ✅ Kiểm tra response body có hợp lệ không trước khi parse
+        if (response.body.isEmpty || response.body.trim().isEmpty) {
+          // print('⚠️ [FirstTimeBonusService] Empty response body');
+          return BonusConfig.defaultConfig();
+        }
+        
+        try {
+          final data = jsonDecode(response.body);
+          if (data['success'] == true && data['data'] != null) {
+            _cachedConfig = BonusConfig.fromJson(data['data']);
+            _configCacheTime = DateTime.now();
+            return _cachedConfig;
+          }
+        } catch (e) {
+          // Lỗi parse JSON
+          // print('⚠️ [FirstTimeBonusService] Error parsing JSON: $e');
+          // print('⚠️ [FirstTimeBonusService] Response body: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}');
+          return BonusConfig.defaultConfig();
         }
       }
     } catch (e) {
       // Fallback: dùng config mặc định nếu API fail
-      print('⚠️ [FirstTimeBonusService] Error getting config: $e');
+      // print('⚠️ [FirstTimeBonusService] Error getting config: $e');
     }
 
     // Fallback về config mặc định

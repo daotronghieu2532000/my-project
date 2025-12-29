@@ -16,7 +16,9 @@ class DeepLinkService {
   final ApiService _apiService = ApiService();
   static final GlobalKey<NavigatorState> navigatorKey =
       NotificationHandler.navigatorKey;
-  
+  // Đánh dấu app được mở lần đầu từ deeplink (để SplashScreen biết và không auto về RootShell)
+  static bool hasInitialDeepLink = false;
+
   // Debounce để tránh xử lý duplicate deep links
   String? _lastHandledUrl;
   DateTime? _lastHandledTime;
@@ -28,6 +30,8 @@ class DeepLinkService {
       // Check initial link (app opened via link when closed)
       final initialUri = await _appLinks.getInitialLink();
       if (initialUri != null) {
+        // Đánh dấu app được mở từ deeplink để SplashScreen không auto điều hướng về RootShell
+        hasInitialDeepLink = true;
         _handleDeepLink(initialUri.toString());
       }
 
@@ -39,11 +43,11 @@ class DeepLinkService {
           }
         },
         onError: (err) {
-          print('❌ [DeepLink] Error listening to links: $err');
+          // print('❌ [DeepLink] Error listening to links: $err');
         },
       );
     } catch (e) {
-      print('❌ [DeepLink] Error initializing: $e');
+      // print('❌ [DeepLink] Error initializing: $e');
     }
   }
 
@@ -64,12 +68,17 @@ class DeepLinkService {
       _lastHandledTime = now;
       
       final uri = Uri.parse(url);
+      
+      // print('🔗 [DeepLink] Handling URL: $url');
+      // print('🔗 [DeepLink] Query parameters: ${uri.queryParameters}');
 
       // Extract affiliate info from URL
       final affiliateId =
           uri.queryParameters['utm_source_shop'] ??
           uri.queryParameters['aff'] ??
           uri.queryParameters['ref'];
+      
+      // print('🔗 [DeepLink] Extracted affiliate ID: $affiliateId');
 
       // Handle custom URL scheme: socdo://product/123?aff=8050
       if (uri.scheme == 'socdo') {
@@ -84,7 +93,7 @@ class DeepLinkService {
         _handleShortLink(uri, affiliateId);
       }
     } catch (e) {
-      print('❌ [DeepLink] Error handling deep link: $e');
+      // print('❌ [DeepLink] Error handling deep link: $e');
     }
   }
 
@@ -133,7 +142,7 @@ class DeepLinkService {
         }
 
         if (productIdentifier == null || productIdentifier.isEmpty) {
-          print('⚠️ [DeepLink] Invalid custom scheme: no product identifier');
+          // print('⚠️ [DeepLink] Invalid custom scheme: no product identifier');
           return;
         }
 
@@ -175,7 +184,7 @@ class DeepLinkService {
         _openWeb(webUrl);
       }
     } catch (e) {
-      print('❌ [DeepLink] Error handling custom scheme: $e');
+      // print('❌ [DeepLink] Error handling custom scheme: $e');
     }
   }
 
@@ -247,17 +256,26 @@ class DeepLinkService {
       // Example: https://socdo.xyz/x/ktgNV9
       // Short link sẽ redirect về product URL thật trên web
       // User có thể click lại link từ web để mở app
-
+      
+      // print('🔗 [DeepLink] Short link: ${uri.toString()}');
+      // print('🔗 [DeepLink] Query params: ${uri.queryParameters}');
+      // print('🔗 [DeepLink] Extracted affiliate ID: $affiliateId');
+// 
       // Nếu có affiliate_id trong query params, lưu lại
       if (affiliateId != null && affiliateId.isNotEmpty) {
+        // print('✅ [DeepLink] Lưu affiliate ID từ short link: $affiliateId');
         await _affiliateTracking.trackAffiliateClick(
           affiliateId: affiliateId,
           productId: null,
         );
+      } else {
+        // print('⚠️ [DeepLink] Short link KHÔNG có affiliate ID trong query params!');
+        // print('⚠️ [DeepLink] Có thể server redirect không preserve utm_source_shop');
       }
 
       _openWeb(uri.toString());
     } catch (e) {
+      // print('❌ [DeepLink] Error handling short link: $e');
       _openWeb(uri.toString());
     }
   }
@@ -272,7 +290,7 @@ class DeepLinkService {
       final productId = await _apiService.resolveProductIdBySlug(slug);
       
       if (productId != null && productId > 0) {
-        print('✅ [DeepLink] Resolved slug to product ID: $productId');
+        // print('✅ [DeepLink] Resolved slug to product ID: $productId');
         return productId;
       }
       
@@ -360,10 +378,10 @@ class DeepLinkService {
         }
       }
 
-      print('❌ [DeepLink] Cannot resolve slug: $slug');
+      // print('❌ [DeepLink] Cannot resolve slug: $slug');
       return null;
     } catch (e) {
-      print('❌ [DeepLink] Error resolving slug: $e');
+      // print('❌ [DeepLink] Error resolving slug: $e');
       return null;
     }
   }
@@ -379,12 +397,14 @@ class DeepLinkService {
       
       // Track affiliate click (chỉ track 1 lần, không track khi retry)
       if (retryCount == 0 && affiliateId != null && affiliateId.isNotEmpty) {
-        // print('📝 [DeepLink] Tracking affiliate: $affiliateId for product: $productId');
+        // print('📝 [DeepLink] Tracking affiliate: affiliateId=$affiliateId, productId=$productId');
         await _affiliateTracking.trackAffiliateClick(
           affiliateId: affiliateId,
           productId: productId,
         );
-        print('✅ [DeepLink] Affiliate tracking saved');
+        // print('✅ [DeepLink] Affiliate tracking saved');
+      } else if (affiliateId == null || affiliateId.isEmpty) {
+        // print('⚠️ [DeepLink] Không có affiliate ID để track');
       }
 
       // Kiểm tra xem context đã sẵn sàng chưa
@@ -423,12 +443,12 @@ class DeepLinkService {
             retryCount: retryCount + 1,
           );
         } else {
-          print('❌ [DeepLink] Navigation failed - context not available');
+          // print('❌ [DeepLink] Navigation failed - context not available');
         }
       }
     } catch (e, stackTrace) {
-      print('❌ [DeepLink] Error navigating to product: $e');
-      print('❌ [DeepLink] Stack trace: $stackTrace');
+      // print('❌ [DeepLink] Error navigating to product: $e');
+      // print('❌ [DeepLink] Stack trace: $stackTrace');
     }
   }
 
@@ -440,7 +460,7 @@ class DeepLinkService {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
     } catch (e) {
-      print('❌ [DeepLink] Error opening web: $e');
+      // print('❌ [DeepLink] Error opening web: $e');
     }
   }
 

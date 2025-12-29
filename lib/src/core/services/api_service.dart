@@ -843,25 +843,27 @@ class ApiService {
     String filename = 'avatar.jpg',
     String contentType = 'image/jpeg',
   }) async {
+    // Trả về String? - null nếu lỗi, String nếu thành công
+    // Nếu cần thông báo lỗi chi tiết, có thể throw exception hoặc trả về object phức tạp hơn
     try {
-      print('[ApiService] uploadAvatar START - userId: $userId, filename: $filename, contentType: $contentType, bytes: ${bytes.length}');
+      // print('[ApiService] uploadAvatar START - userId: $userId, filename: $filename, contentType: $contentType, bytes: ${bytes.length}');
       
       final token = await getValidToken();
       if (token == null) {
-        print('[ApiService] uploadAvatar ERROR: No token');
+        // print('[ApiService] uploadAvatar ERROR: No token');
         return null;
       }
-      print('[ApiService] uploadAvatar - Token obtained');
+     
 
       final uri = Uri.parse('$baseUrl/user_profile');
-      print('[ApiService] uploadAvatar - URI: $uri');
+ 
       
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['action'] = 'upload_avatar';
       request.fields['user_id'] = userId.toString();
       
-      print('[ApiService] uploadAvatar - Request fields: ${request.fields}');
+      // print('[ApiService] uploadAvatar - Request fields: ${request.fields}');
       
       request.files.add(http.MultipartFile.fromBytes(
         'avatar',
@@ -870,33 +872,44 @@ class ApiService {
         contentType: MediaType.parse(contentType),
       ));
 
-      print('[ApiService] uploadAvatar - Sending request...');
+     
       final streamed = await request.send();
-      print('[ApiService] uploadAvatar - Request sent, statusCode: ${streamed.statusCode}');
-      
+       
       final response = await http.Response.fromStream(streamed);
-      print('[ApiService] uploadAvatar - Response received, statusCode: ${response.statusCode}');
-      print('[ApiService] uploadAvatar - Response body: ${response.body}');
-      
+     
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('[ApiService] uploadAvatar - Parsed data: $data');
-        
-        if (data['success'] == true) {
-          final avatarPath = (data['data']?['avatar'] as String?) ?? '';
-          print('[ApiService] uploadAvatar SUCCESS - avatarPath: $avatarPath');
-          return avatarPath;
-        } else {
-          print('[ApiService] uploadAvatar ERROR - success is false: ${data['message']}');
-          print('[ApiService] uploadAvatar ERROR - debug info: ${data['debug'] ?? 'No debug info'}');
+          
+          if (data['success'] == true) {
+            final avatarPath = (data['data']?['avatar'] as String?) ?? '';
+          //  / print('[ApiService] uploadAvatar SUCCESS - avatarPath: $avatarPath');
+            return avatarPath;
+          } else {
+          final errorMessage = data['message'] ?? 'Lỗi không xác định';
+          final debugInfo = data['debug'] ?? {};
+             // Log chi tiết để debug
+          if (debugInfo is Map) {
+            debugInfo.forEach((key, value) {
+              // print('[ApiService] uploadAvatar DEBUG - $key: $value');
+            });
+          }
         }
       } else {
-        print('[ApiService] uploadAvatar ERROR - statusCode: ${response.statusCode}, body: ${response.body}');
+         // Thử parse response body để lấy thông báo lỗi chi tiết
+        try {
+          final errorData = jsonDecode(response.body);
+          final errorMessage = errorData['message'] ?? 'Lỗi không xác định';
+          final debugInfo = errorData['debug'] ?? {};
+          // print('[ApiService] uploadAvatar ERROR - message: $errorMessage');
+          // print('[ApiService] uploadAvatar ERROR - debug: $debugInfo');
+        } catch (e) {
+          // print('[ApiService] uploadAvatar ERROR - Cannot parse error response: $e');
+        }
       }
       return null;
     } catch (e, stackTrace) {
-      print('[ApiService] uploadAvatar EXCEPTION: $e');
-      print('[ApiService] uploadAvatar STACKTRACE: $stackTrace');
+      // print('[ApiService] uploadAvatar EXCEPTION: $e');
+      // print('[ApiService] uploadAvatar STACKTRACE: $stackTrace');
       return null;
     }
   }
@@ -916,7 +929,7 @@ class ApiService {
     } catch (e) {
       return false;
     }
-  }
+  } 
 
   // Shipping quote via server wrapper that uses existing carrier classes
   // ⚠️ Lưu ý: Nên sử dụng ShippingQuoteService thay vì gọi trực tiếp method này
@@ -1497,30 +1510,123 @@ class ApiService {
           if (vouchersData != null && vouchersData.isNotEmpty) {
             // Tạo map để group voucher theo shop
             final Map<int, Map<String, dynamic>> shopMap = {};
+            // Map để lưu shop_info từ các voucher (để dùng cho shop từ socdo_choice_shops)
+            final Map<int, Map<String, dynamic>> shopInfoMap = {};
             
+            // ✅ Bước 1: Thu thập shop_info từ tất cả voucher
             for (final voucherJson in vouchersData) {
               final voucher = voucherJson as Map<String, dynamic>;
               final shopId = voucher['shop'];
               final shopInfo = voucher['shop_info'] as Map<String, dynamic>?;
               
+              if (shopId != null && shopInfo != null) {
+                final shopIdInt = int.tryParse(shopId.toString());
+                if (shopIdInt != null && shopIdInt > 0) {
+                  // Lưu shop_info để dùng sau
+                  if (!shopInfoMap.containsKey(shopIdInt)) {
+                    shopInfoMap[shopIdInt] = shopInfo;
+                  }
+                }
+              }
+            }
+            
+            // ✅ Bước 2: Xử lý voucher shop thực sự và platform voucher
+            for (final voucherJson in vouchersData) {
+              final voucher = voucherJson as Map<String, dynamic>;
+              final shopId = voucher['shop'];
+              final shopInfo = voucher['shop_info'] as Map<String, dynamic>?;
+              
+              // ✅ Lấy shop từ voucher shop thực sự (shop > 0)
               if (shopId != null) {
                 final shopIdInt = int.tryParse(shopId.toString());
-                if (shopIdInt != null) {
+                if (shopIdInt != null && shopIdInt > 0) {
                   if (!shopMap.containsKey(shopIdInt)) {
                     shopMap[shopIdInt] = {
                       'id': shopIdInt,
-                      'name': shopInfo?['name'] ?? 'Shop $shopIdInt',
+                      'name': shopInfo?['name'] ?? shopInfoMap[shopIdInt]?['name'] ?? 'Shop $shopIdInt',
                       'voucher_count': 0,
-                      'avatar': shopInfo?['avatar'],
+                      'avatar': shopInfo?['avatar'] ?? shopInfoMap[shopIdInt]?['avatar'],
+                      'logo': shopInfo?['logo'] ?? shopInfoMap[shopIdInt]?['logo'],
                     };
                   }
                   shopMap[shopIdInt]!['voucher_count']++;
                 }
               }
+              
+              // ✅ Lấy shop từ socdo_choice_shops của platform voucher (shop = 0)
+              if (shopId == 0 || shopId == '0') {
+                final socdoChoiceShops = voucher['socdo_choice_shops'];
+                if (socdoChoiceShops != null) {
+                  try {
+                    Map<String, dynamic>? choiceShops;
+                    if (socdoChoiceShops is String) {
+                      choiceShops = jsonDecode(socdoChoiceShops) as Map<String, dynamic>?;
+                    } else if (socdoChoiceShops is Map) {
+                      choiceShops = socdoChoiceShops as Map<String, dynamic>?;
+                    }
+                    
+                    if (choiceShops != null) {
+                      final shops = choiceShops['shops'] as List?;
+                      if (shops != null && shops.isNotEmpty) {
+                        for (final shopIdValue in shops) {
+                          final shopIdInt = int.tryParse(shopIdValue.toString());
+                          if (shopIdInt != null && shopIdInt > 0) {
+                            if (!shopMap.containsKey(shopIdInt)) {
+                              // ✅ Lấy thông tin shop từ shopInfoMap (đã thu thập từ voucher khác)
+                              // hoặc từ shop_info của voucher hiện tại (nếu có)
+                              final shopInfoForShop = shopInfoMap[shopIdInt] ?? shopInfo;
+                              
+                              shopMap[shopIdInt] = {
+                                'id': shopIdInt,
+                                'name': shopInfoForShop?['name'] ?? 'Shop $shopIdInt',
+                                'voucher_count': 0,
+                                'avatar': shopInfoForShop?['avatar'],
+                                'logo': shopInfoForShop?['logo'],
+                              };
+                            }
+                            // Đếm platform voucher cho shop này
+                            shopMap[shopIdInt]!['voucher_count'] = (shopMap[shopIdInt]!['voucher_count'] as int) + 1;
+                          }
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    // Bỏ qua nếu parse JSON lỗi
+                    // print('⚠️ [ApiService.getShopsWithVouchers] Lỗi parse socdo_choice_shops: $e');
+                  }
+                }
+              }
             }
             
+            // ✅ Bước 3: Gọi API để lấy tên shop cho các shop chưa có tên (từ socdo_choice_shops)
             final shops = shopMap.values.toList();
-            return shops;
+            final List<Map<String, dynamic>> shopsWithNames = [];
+            
+            for (final shop in shops) {
+              final shopId = shop['id'] as int;
+              final shopName = shop['name'] as String?;
+              
+              // Nếu shop chưa có tên (hiển thị dạng "Shop 23933"), gọi API để lấy tên
+              if (shopName != null && shopName.startsWith('Shop ')) {
+                try {
+                  final shopDetail = await getShopDetail(shopId: shopId, includeProducts: 0, includeFlashSale: 0, includeVouchers: 0, includeWarehouses: 0, includeCategories: 0);
+                  if (shopDetail != null && shopDetail.shopInfo.name.isNotEmpty) {
+                    shop['name'] = shopDetail.shopInfo.name;
+                    if (shopDetail.shopInfo.avatarUrl.isNotEmpty) {
+                      shop['avatar'] = shopDetail.shopInfo.avatarUrl;
+                      shop['logo'] = shopDetail.shopInfo.avatarUrl;
+                    }
+                  }
+                } catch (e) {
+                  // Bỏ qua nếu gọi API lỗi, giữ nguyên tên "Shop XXX"
+                  // print('⚠️ [ApiService.getShopsWithVouchers] Không thể lấy tên shop $shopId: $e');
+                }
+              }
+              
+              shopsWithNames.add(shop);
+            }
+            
+            return shopsWithNames;
           }
         }
       }
@@ -1857,7 +1963,7 @@ class ApiService {
     String? status = 'active',
     String? shop,
     int page = 1,
-    int limit = 50, // Tăng từ 20 lên 50
+    int limit = 150, // Tăng từ 20 lên 50
   }) async {
     try {
       String endpoint = '/flash_sale?page=$page&limit=$limit';
@@ -2695,7 +2801,7 @@ class ApiService {
       // (Nếu API resolve_product_slug chưa có, dùng search nhưng tìm exact match)
       return await _resolveProductIdBySlugFallback(slug);
     } catch (e) {
-      print('❌ [ApiService] Error resolving slug: $e');
+      // print('❌ [ApiService] Error resolving slug: $e');
       // Fallback
       return await _resolveProductIdBySlugFallback(slug);
     }
@@ -2707,7 +2813,7 @@ class ApiService {
       final searchResult = await searchProducts(
         keyword: slug,
         page: 1,
-        limit: 50, // Tăng limit để có nhiều kết quả hơn
+        limit: 500, // Tăng limit để có nhiều kết quả hơn
       );
 
       if (searchResult != null && searchResult['success'] == true) {
@@ -2745,7 +2851,7 @@ class ApiService {
 
       return null;
     } catch (e) {
-      print('❌ [ApiService] Error in fallback resolve slug: $e');
+      // print('❌ [ApiService] Error in fallback resolve slug: $e');
       return null;
     }
   }
@@ -2753,7 +2859,7 @@ class ApiService {
   /// Tìm kiếm sản phẩm
   Future<Map<String, dynamic>?> searchProducts({
     required String keyword,
-    int page = 1,
+    int page = 1, 
     int limit = 50, // Tăng từ 10 lên 50
     int? userId, // Thêm userId để lưu search behavior
   }) async {
@@ -3141,7 +3247,7 @@ class ApiService {
   Future<Map<String, dynamic>?> getProductsByParentCategory({
     required int parentCategoryId,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
     String sort = 'newest', // 'newest', 'price_asc', 'price_desc', 'popular'
   }) async {
     try {
@@ -3327,7 +3433,7 @@ class ApiService {
   Future<Map<String, dynamic>?> getProductsByCategory({
     required int categoryId,
     int page = 1,
-    int limit = 50, // Tăng từ 20 lên 50
+    int limit = 150, // Tăng từ 20 lên 50
     String sort = 'newest', // 'newest', 'price_asc', 'price_desc', 'popular'
   }) async {
     try {
@@ -3403,7 +3509,7 @@ class ApiService {
     bool includeChildren = true,
     bool includeProductsCount = false,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
   }) async {
     try {
       String url = '/categories_list?type=$type&include_children=${includeChildren ? 1 : 0}&include_products_count=${includeProductsCount ? 1 : 0}&page=$page&limit=$limit';
@@ -4538,7 +4644,7 @@ class ApiService {
   Future<Map<String, dynamic>?> getShopProductsPaginated({
     required int shopId,
     int page = 1,
-    int limit = 50,
+    int limit = 150,
     String? sortBy,
     String? categoryId,
     String? searchQuery,
@@ -4666,6 +4772,40 @@ class ApiService {
       return false;
     } catch (e) {
       return false;
+    }
+  }
+
+  // =============== APP VERSION CHECK ===============
+  
+  /// Check if app needs update
+  /// Returns: {need_update: bool, current_version: string, latest_version: string, update_url: string}
+  Future<Map<String, dynamic>?> checkVersion({
+    required String platform,
+    required String appVersion,
+    int? userId,
+  }) async {
+    try {
+      // Build query parameters
+      final queryParams = {
+        'platform': platform,
+        'app_version': appVersion,
+      };
+      if (userId != null && userId > 0) {
+        queryParams['user_id'] = userId.toString();
+      }
+      
+      final queryString = Uri(queryParameters: queryParams).query;
+      final response = await get('/check_version?$queryString');
+
+      if (response != null && response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (data['success'] == true && data['data'] != null) {
+          return data['data'] as Map<String, dynamic>;
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 }

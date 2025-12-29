@@ -17,7 +17,7 @@ class ShippingEvents {
       shippingQuoteService.clearCache();
    
     } catch (e) {
-      print('❌ [ShippingEvents.refresh] Lỗi khi clear cache: $e');
+      // print('❌ [ShippingEvents.refresh] Lỗi khi clear cache: $e');
     }
     if (!_controller.isClosed) _controller.add(null);
   }

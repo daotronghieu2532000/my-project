@@ -14,12 +14,12 @@ class ShippingQuoteService {
   static const String _cachePrefix = 'shipping_quote_cache_';
   static const Duration _cacheExpiry = Duration(minutes: 10); // Cache 10 phút
   static const Duration _requestTimeout = Duration(
-    seconds: 15,
-  ); // Timeout 15 giây
-  static const int _maxRetries = 3; // Retry tối đa 3 lần
+    seconds: 8,
+  ); // Timeout 8 giây (giảm từ 15s để nhanh hơn)
+  static const int _maxRetries = 2; // Retry tối đa 2 lần (giảm từ 3)
   static const Duration _retryDelay = Duration(
-    seconds: 1,
-  ); // Delay giữa các lần retry
+    milliseconds: 500,
+  ); // Delay giữa các lần retry (giảm từ 1s xuống 500ms)
 
   /// Lấy shipping quote với retry và fallback
   ///
@@ -67,7 +67,7 @@ class ShippingQuoteService {
         tenXa = addr['ten_xa']?.toString();
       }
     } catch (e) {
-      print('   - ⚠️ Không lấy được địa chỉ: $e');
+      // print('   - ⚠️ Không lấy được địa chỉ: $e');
     }
 
     // ✅ 1. Kiểm tra cache trước
@@ -122,6 +122,12 @@ class ShippingQuoteService {
     required Duration timeout,
   }) async {
     try {
+      // ✅ DEBUG: Print items gửi lên API
+      // print('📦 [ShippingQuoteService] Gửi request với ${items.length} items:');
+      for (final item in items) {
+        // print('   - Product ID: ${item['product_id']}, Quantity: ${item['quantity']}, Price: ${item['price']}');
+      }
+      
       final response = await _api
           .getShippingQuote(userId: userId, items: items)
           .timeout(
@@ -130,6 +136,27 @@ class ShippingQuoteService {
               throw TimeoutException('Shipping quote request timeout', timeout);
             },
           );
+      
+      // ✅ DEBUG: Print response từ API
+      if (response != null && response['success'] == true) {
+        final data = response['data'];
+        final best = data?['best'];
+        final weightBreakdown = data?['debug']?['weight_breakdown'];
+        if (weightBreakdown != null) {
+          // print('⚖️ [ShippingQuoteService] Response - Tổng cân nặng: ${weightBreakdown['total_weight_grams']} gram = ${weightBreakdown['total_weight_kg']} kg');
+          // print('⚖️ [ShippingQuoteService] Response - Chi tiết items:');
+          final itemsDetail = weightBreakdown['items_detail'] as List?;
+          if (itemsDetail != null) {
+            for (final item in itemsDetail) {
+              // print('   - Product ${item['product_id']}: ${item['w_gram_per_item']}g/item x ${item['qty']} = ${item['line_weight']}g');
+            }
+          }
+        }
+        // if (best != null) {
+        //   print('🚚 [ShippingQuoteService] Response - Phí ship: ${best['fee']} VND, Provider: ${best['provider']}');
+        // }
+      }
+      
       return response;
     } on TimeoutException {
       rethrow;

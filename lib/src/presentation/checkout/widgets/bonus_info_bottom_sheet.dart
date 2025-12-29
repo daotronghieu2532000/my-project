@@ -173,7 +173,7 @@ class _BonusInfoBottomSheetState extends State<BonusInfoBottomSheet> {
                 const SizedBox(height: 12),
                 _buildInfoRow('Số dư', '${_formatPrice(widget.remainingAmount)}'),
                 const SizedBox(height: 8),
-                _buildInfoRow('Bạn được giảm', '${_formatPrice(widget.bonusAmount)} (${widget.discountPercent.toStringAsFixed(0)}%)'),
+                _buildInfoRow('Giảm', '${_formatPrice(widget.bonusAmount)} (${widget.discountPercent.toStringAsFixed(0)}%)'),
                  const SizedBox(height: 8),
                 _buildInfoRow('Điều kiện', 'Đơn hàng tối thiểu >= 100.000 đ'),
                 const SizedBox(height: 8),

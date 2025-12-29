@@ -37,7 +37,7 @@ class _DeliveryInfoSectionState extends State<DeliveryInfoSection> {
   }
 
   Future<void> _openAddressBook() async {
-    print('📖 [DeliveryInfoSection._openAddressBook] Mở address book...');
+    // print('📖 [DeliveryInfoSection._openAddressBook] Mở address book...');
     // Kiểm tra đăng nhập trước
     final u = await _auth.getCurrentUser();
     if (u == null) {

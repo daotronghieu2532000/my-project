@@ -30,6 +30,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
   bool _isFallback = false; // ✅ Đánh dấu đang dùng fallback
   List<Map<String, dynamic>>? _warehouseDetails; // Chi tiết phí ship từng kho
   Map<String, dynamic>? _shopFreeshipDetails; // Chi tiết freeship theo shop
+  Map<int, int> _shopShipSupportMap = {}; // Map shop_id => ship_support (để lưu vào store)
   StreamSubscription<void>? _shipSub;
   final VoucherService _voucherService = VoucherService();
 
@@ -92,7 +93,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
             (profile?['addresses'] as List?)?.cast<Map<String, dynamic>?>().firstOrNull;
      
       } catch (e) {
-        print('❌ [OrderSummarySection._loadShippingQuote] Lỗi khi lấy địa chỉ: $e');
+        // print('❌ [OrderSummarySection._loadShippingQuote] Lỗi khi lấy địa chỉ: $e');
       }
     }
     
@@ -133,6 +134,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         _etaText = null;
         _provider = null;
         _warehouseDetails = null;
+        _shopShipSupportMap = {}; // Reset shop ship support map
         _isLoading = false;
       });
       return;
@@ -153,11 +155,11 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
       items: items,
         useCache: !hasOnlyShop0, // ✅ Không dùng cache cho shop 0 để tránh cache cũ
       enableFallback: true,
-        maxRetries: 2, // ✅ Tăng retry cho shop 0
-        timeout: const Duration(seconds: 15), // ✅ Tăng timeout lên 15s cho shop 0
+        maxRetries: 1, // ✅ Giảm retry xuống 1 để nhanh hơn
+        timeout: const Duration(seconds: 6), // ✅ Giảm timeout xuống 6s để fallback sớm hơn
       );
     } catch (e) {
-      print('❌ [OrderSummarySection] Lỗi khi lấy shipping quote: $e');
+      // print('❌ [OrderSummarySection] Lỗi khi lấy shipping quote: $e');
       // ✅ Nếu có lỗi, dùng fallback hoặc giá trị mặc định
       rawQuote = null;
     }
@@ -391,6 +393,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           
           // ✅ Tổng hợp ship_support từ tất cả các shop
           calculatedShipSupport = shopShipSupport.values.fold(0, (sum, support) => sum + support);
+          // ✅ Lưu shop ship support map vào biến instance để truyền vào store
+          _shopShipSupportMap = shopShipSupport;
         }
         
         // ✅ Fallback: Thử tính từ warehouse_details nếu shop_freeship_details không có
@@ -409,6 +413,8 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
           }
           
           calculatedShipSupport = shopShipSupport.values.fold(0, (sum, support) => sum + support);
+          // ✅ Lưu shop ship support map vào biến instance để truyền vào store
+          _shopShipSupportMap = shopShipSupport;
         }
         
         // ✅ Ưu tiên dùng ship_support tính từ shop_freeship_details hoặc warehouse_details (đúng)
@@ -428,7 +434,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         final finalOriginalShipFee = _originalShipFee ?? finalShipFee;
         
         // ✅ Debug log để kiểm tra giá trị
-        print('💰 [OrderSummarySection] Final values: shipFee=$finalShipFee, originalShipFee=$finalOriginalShipFee, shipSupport=${_shipSupport ?? 0}');
+        // print('💰 [OrderSummarySection] Final values: shipFee=$finalShipFee, originalShipFee=$finalOriginalShipFee, shipSupport=${_shipSupport ?? 0}');
     
       // Lưu vào store dùng chung cho các section khác (PaymentDetails, Bottom bar)
       ShippingQuoteStore().setQuote(
@@ -436,6 +442,7 @@ class _OrderSummarySectionState extends State<OrderSummarySection> {
         etaText: _etaText,
         provider: _provider,
         shipSupport: _shipSupport ?? 0,
+        shopShipSupport: _shopShipSupportMap,
       );
         
         // ✅ Đảm bảo _originalShipFee được set đúng

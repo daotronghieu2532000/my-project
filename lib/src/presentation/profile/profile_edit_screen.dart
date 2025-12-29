@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/models/user.dart';
@@ -75,13 +76,63 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       }
       
       // ✅ User ID matches - use API data
+      // ✅ Cập nhật _user state với avatar từ API để hiển thị đúng
+      final updatedUser = current.copyWith(
+        name: user['name']?.toString() ?? current.name,
+        email: user['email']?.toString() ?? current.email,
+        mobile: user['mobile']?.toString() ?? current.mobile,
+        avatar: (user['avatar']?.toString().isNotEmpty == true ? user['avatar'].toString() : current.avatar),
+      );
+      
       _nameCtrl.text = user['name']?.toString() ?? current.name;
       _emailCtrl.text = user['email']?.toString() ?? current.email;
       _mobileCtrl.text = user['mobile']?.toString() ?? current.mobile;
-      _ngaysinhCtrl.text = user['ngaysinh']?.toString() ?? '';
+      
+      // ✅ Parse ngày sinh từ API (có thể là yyyy-mm-dd, timestamp, hoặc dd/MM/yyyy)
+      final ngaysinhStr = user['ngaysinh']?.toString() ?? '';
+      if (ngaysinhStr.isNotEmpty) {
+        try {
+          DateTime? parsedDate;
+          // Thử parse timestamp (nếu là số)
+          if (RegExp(r'^\d+$').hasMatch(ngaysinhStr)) {
+            final timestamp = int.tryParse(ngaysinhStr);
+            if (timestamp != null) {
+              parsedDate = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+            }
+          } else {
+            // Thử parse các định dạng ngày thường gặp
+            final formats = ['yyyy-MM-dd', 'dd/MM/yyyy', 'dd-MM-yyyy', 'yyyy/MM/dd'];
+            for (var format in formats) {
+              try {
+                parsedDate = DateFormat(format).parse(ngaysinhStr);
+                break;
+              } catch (e) {
+                continue;
+              }
+            }
+          }
+          
+          if (parsedDate != null) {
+            _ngaysinhCtrl.text = DateFormat('dd/MM/yyyy').format(parsedDate);
+          } else {
+            _ngaysinhCtrl.text = ngaysinhStr; // Giữ nguyên nếu không parse được
+          }
+        } catch (e) {
+          _ngaysinhCtrl.text = ngaysinhStr; // Giữ nguyên nếu có lỗi
+        }
+      } else {
+        _ngaysinhCtrl.text = '';
+      }
+      
       _gioiTinhCtrl.text = user['gioi_tinh']?.toString() ?? '';
       _diaChiCtrl.text = user['dia_chi']?.toString() ?? '';
       
+      // ✅ Cập nhật _user state với avatar mới
+      if (mounted) setState(() { 
+        _user = updatedUser;
+        _loading = false; 
+      });
+      return;
     
     } else {
       // Fallback to current user data if API fails
@@ -97,12 +148,27 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate() || _user == null) return;
     setState(() { _saving = true; });
+    
+    // ✅ Format ngày sinh từ dd/MM/yyyy sang yyyy-MM-dd để gửi lên API
+    String? ngaysinhFormatted;
+    if (_ngaysinhCtrl.text.trim().isNotEmpty) {
+      try {
+        // Parse từ dd/MM/yyyy
+        final parsedDate = DateFormat('dd/MM/yyyy').parse(_ngaysinhCtrl.text.trim());
+        // Format thành yyyy-MM-dd (format chuẩn cho database)
+        ngaysinhFormatted = DateFormat('yyyy-MM-dd').format(parsedDate);
+      } catch (e) {
+        // Nếu không parse được, giữ nguyên (có thể đã là yyyy-MM-dd)
+        ngaysinhFormatted = _ngaysinhCtrl.text.trim();
+      }
+    }
+    
     final ok = await _api.updateUserProfile(
       userId: _user!.userId,
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
       mobile: _mobileCtrl.text.trim(),
-      ngaysinh: _ngaysinhCtrl.text.trim(),
+      ngaysinh: ngaysinhFormatted,
       gioiTinh: _gioiTinhCtrl.text.trim(),
       diaChi: _diaChiCtrl.text.trim(),
     );
@@ -126,16 +192,16 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
     super.dispose();
   }
 
-  // Widget mới: Thẻ Avatar nhỏ gọn, hiện đại (thu hẹp)
+  // Widget mới: Thẻ Avatar lớn hơn, dễ click
   Widget _buildAvatarSection() {
     final avatarUrl = _user?.avatar;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16.0), // Giảm chiều cao khu vực
+        padding: const EdgeInsets.symmetric(vertical: 10.0),
         child: Stack(
           children: [
             CircleAvatar(
-              radius: 32, // Giảm kích thước
+              radius: 50, // Tăng kích thước từ 32 lên 50
               backgroundColor: AppColors.border,
               backgroundImage: (avatarUrl != null && avatarUrl.isNotEmpty)
                   ? NetworkImage(_auth.getAvatarUrl(avatarUrl))
@@ -146,15 +212,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
               right: 0,
               child: GestureDetector(
                 onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                // Tăng diện tích click bằng cách thêm padding và hitTestBehavior
+                behavior: HitTestBehavior.opaque,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.all(8), // Tăng padding từ 4 lên 8
                   decoration: const BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                   child: _uploadingAvatar
-                      ? const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.camera_alt, color: Colors.white, size: 14), // Giảm kích thước icon
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.camera_alt, color: Colors.white, size: 20), // Tăng kích thước icon từ 14 lên 20
                 ),
               ),
             ),
@@ -198,7 +266,7 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           Row(
             children: [
               Expanded(
-                child: _buildLabeledField('Ngày sinh', _ngaysinhCtrl, hint: 'dd/mm/yyyy'),
+                child: _buildDatePickerField('Ngày sinh', _ngaysinhCtrl),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -267,7 +335,14 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật avatar thành công'), backgroundColor: Colors.green));
       } else {
         print('[ProfileEditScreen] _pickAndUploadAvatar FAILED - uploadedPath is null or empty');
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật avatar thất bại'), backgroundColor: Colors.red));
+        // Hiển thị thông báo lỗi chi tiết hơn
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cập nhật avatar thất bại. Vui lòng thử sau hoặc báo lỗi với chúng tôi ngay nhé'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
       }
     } catch (e, stackTrace) {
       print('[ProfileEditScreen] _pickAndUploadAvatar EXCEPTION: $e');
@@ -276,6 +351,119 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
       setState(() { _uploadingAvatar = false; });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lỗi: $e'), backgroundColor: Colors.red));
     }
+  }
+
+  // Widget DatePicker cho ngày sinh
+  Widget _buildDatePickerField(String label, TextEditingController c) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onTap: () async {
+            // Parse ngày hiện tại từ controller nếu có
+            DateTime? initialDate;
+            if (c.text.isNotEmpty) {
+              try {
+                // Thử parse các định dạng phổ biến
+                final formats = [
+                  'dd/MM/yyyy',
+                  'yyyy-MM-dd',
+                  'dd-MM-yyyy',
+                  'yyyy/MM/dd',
+                ];
+                
+                for (var format in formats) {
+                  try {
+                    initialDate = DateFormat(format).parse(c.text);
+                    break;
+                  } catch (e) {
+                    continue;
+                  }
+                }
+              } catch (e) {
+                // Nếu không parse được, dùng ngày hiện tại
+              }
+            }
+            
+            // Nếu không có ngày, dùng ngày hiện tại trừ 18 năm (giả sử user 18 tuổi)
+            initialDate ??= DateTime.now().subtract(const Duration(days: 365 * 18));
+            
+            // Giới hạn: không được chọn ngày trong tương lai, và không quá 100 năm trước
+            final firstDate = DateTime.now().subtract(const Duration(days: 365 * 100));
+            final lastDate = DateTime.now();
+            
+            final pickedDate = await showDatePicker(
+              context: context,
+              initialDate: initialDate,
+              firstDate: firstDate,
+              lastDate: lastDate,
+              // ✅ Sử dụng locale tiếng Việt nếu có
+              locale: const Locale('vi', 'VN'),
+              // ✅ Cải thiện UI DatePicker với các tham số được hỗ trợ
+              helpText: 'Chọn ngày sinh',
+              cancelText: 'Hủy',
+              confirmText: 'Xác nhận',
+              builder: (context, child) {
+                return Theme(
+                  data: Theme.of(context).copyWith(
+                    colorScheme: const ColorScheme.light(
+                      primary: AppColors.primary,
+                      onPrimary: Colors.white,
+                      surface: Colors.white,
+                      onSurface: AppColors.textPrimary,
+                    ),
+                  ),
+                  child: child!,
+                );
+              },
+            );
+            
+            if (pickedDate != null) {
+              // Format ngày theo dd/MM/yyyy
+              c.text = DateFormat('dd/MM/yyyy').format(pickedDate);
+            }
+          },
+          child: AbsorbPointer(
+            child: TextFormField(
+              controller: c,
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 15),
+              decoration: InputDecoration(
+                hintText: 'Chọn ngày sinh',
+                hintStyle: const TextStyle(color: AppColors.textSecondary),
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                filled: true,
+                fillColor: AppColors.background,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.border, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.red, width: 1),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                ),
+                suffixIcon: const Icon(
+                  Icons.calendar_today,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              readOnly: true,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   // Widget trường nhập liệu được tinh chỉnh

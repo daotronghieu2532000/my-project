@@ -10,6 +10,7 @@ import '../../checkout/checkout_screen.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/services/cart_service.dart';
 import '../../../core/services/cached_api_service.dart';
+import '../../../core/services/api_service.dart';
 import '../../shared/widgets/product_badges.dart';
 import 'shop_section_wrapper.dart';
 
@@ -530,6 +531,19 @@ class _ShopFlashSalesSectionState extends State<ShopFlashSalesSection> {
                           ),
                         ),
                       ),
+                        ),
+                      // Free Ship badge (góc trái dưới)
+                      if (freeshipIcon.isNotEmpty)
+                        Positioned(
+                          bottom: 4,
+                          left: 4,
+                          child: FreeShipBadge(
+                            iconSize: 18,
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            backgroundColor: const Color.fromARGB(255, 254, 254, 254),
+                            textColor: const Color.fromARGB(255, 0, 0, 0),
+                            text: 'Miễn phí vận chuyển',
+                          ),
                         ),
                       // Cart icon (góc dưới bên phải)
                       Positioned(

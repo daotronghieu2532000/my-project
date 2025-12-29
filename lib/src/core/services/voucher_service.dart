@@ -44,8 +44,40 @@ class VoucherService extends ChangeNotifier {
   /// Áp dụng voucher (confirm)
   void applyVoucher(int shopId, Voucher voucher) {
     // Validate shopId
-  
+    // print('🔍 [VoucherService.applyVoucher] Áp dụng voucher ${voucher.code} cho shop $shopId');
+    // print('   - Voucher shopId: ${voucher.shopId}');
+    // print('   - Voucher type: ${voucher.type}');
+    // print('   - Voucher socdo_choice_shops: ${voucher.socdoChoiceShops}');
     
+    final voucherShopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+    
+    // ✅ QUAN TRỌNG: Nếu apply từ shop voucher tab (shopId > 0),
+    // apply vào _appliedVouchers[shopId] để hiển thị như voucher shop
+    // Ngay cả khi voucher là platform voucher có socdo_choice_shops
+    if (shopId > 0) {
+      // Apply vào shop vouchers để hiển thị đúng ở mục "voucher shop"
+      // print('   ✅ Apply vào shop vouchers (shopId=$shopId) để hiển thị như voucher shop');
+      _appliedVouchers[shopId] = voucher;
+      _selectedVouchers.remove(shopId); // Xóa khỏi selected sau khi apply
+      notifyListeners();
+      _logAppliedVouchers();
+      return;
+    }
+    
+    // ✅ Nếu shopId <= 0 (apply từ platform voucher tab hoặc không có shop cụ thể),
+    // và voucher là platform voucher (shop = 0) có socdo_choice_shops,
+    // apply vào _platformVouchers
+    if (voucherShopId == 0 && voucher.socdoChoiceShops != null) {
+      // Platform voucher có socdo_choice_shops - apply vào platform vouchers
+      // print('   ✅ Platform voucher với socdo_choice_shops, apply vào platform vouchers');
+      if (voucher.code != null && voucher.code!.isNotEmpty) {
+        _platformVouchers[voucher.code!] = voucher;
+        notifyListeners();
+      }
+      return;
+    }
+    
+    // Voucher shop thực sự (shop > 0) - apply vào applied vouchers
     _appliedVouchers[shopId] = voucher;
     _selectedVouchers.remove(shopId); // Xóa khỏi selected sau khi apply
     notifyListeners();
@@ -143,6 +175,9 @@ class VoucherService extends ChangeNotifier {
   int calculateTotalDiscount(int totalPrice, {List<Map<String, dynamic>>? items}) {
     int totalDiscount = 0;
     
+    // print('🔍 [VoucherService.calculateTotalDiscount] Tính shop discount');
+    // print('   - Applied vouchers: ${_appliedVouchers.length}');
+    
     // ✅ Tính subtotal theo từng shop từ items (nếu có)
     final shopSubtotals = <int, int>{};
     if (items != null && items.isNotEmpty) {
@@ -158,17 +193,30 @@ class VoucherService extends ChangeNotifier {
       }
     }
     
- 
+    // print('   - Shop subtotals: $shopSubtotals');
     for (final entry in _appliedVouchers.entries) {
-      print('      - Shop ${entry.key}: ${entry.value.code}');
+      // print('      - Shop ${entry.key}: ${entry.value.code}');
     }
     
     for (final entry in _appliedVouchers.entries) {
       final shopId = entry.key;
+      final voucher = entry.value;
+      
+      // print('      🔍 Tính discount cho shop $shopId, voucher ${voucher.code}');
+      // print('         - Voucher shopId: ${voucher.shopId}');
+      // print('         - Voucher socdo_choice_shops: ${voucher.socdoChoiceShops}');
       
       // ✅ Bỏ qua shop 0 (Sàn TMĐT) - không có voucher shop
       if (shopId <= 0) {
-        print('      ⏭️ Shop $shopId: Skipping (shop 0)');
+        // print('      ⏭️ Shop $shopId: Skipping (shop 0)');
+        continue;
+      }
+      
+      // ✅ QUAN TRỌNG: Nếu voucher là platform voucher (shop = 0) có socdo_choice_shops,
+      // bỏ qua, không tính vào shop discount (sẽ được tính trong calculatePlatformDiscountWithItems)
+      final voucherShopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+      if (voucherShopId == 0 && voucher.socdoChoiceShops != null) {
+        // print('      ⏭️ Shop $shopId: Skipping platform voucher ${voucher.code} (sẽ tính trong platform discount)');
         continue;
       }
       
@@ -176,7 +224,7 @@ class VoucherService extends ChangeNotifier {
       // Nếu shop không có trong shopSubtotals, nghĩa là không còn sản phẩm, bỏ qua
       if (!shopSubtotals.containsKey(shopId)) {
         // Shop không còn sản phẩm trong items, bỏ qua voucher này
-        print('      ❌ Shop $shopId: No products in items, skipping voucher ${entry.value.code}');
+        // print('      ❌ Shop $shopId: No products in items, skipping voucher ${entry.value.code}');
         continue;
       }
       
@@ -186,12 +234,14 @@ class VoucherService extends ChangeNotifier {
       // ✅ Tính discount trên shopSubtotal (subtotal của shop đó), không phải totalPrice tổng
       final discount = calculateShopDiscount(shopId, shopSubtotal);
       
-   
+      // print('      ✅ Shop $shopId: discount=$discount (subtotal=$shopSubtotal)');
       
       if (discount > 0) {
         totalDiscount += discount;
       }
     }
+    
+    // print('🔍 [VoucherService.calculateTotalDiscount] Tổng shop discount: $totalDiscount');
     
     return totalDiscount;
   }
@@ -199,10 +249,24 @@ class VoucherService extends ChangeNotifier {
   /// ✅ Tính giảm giá của TẤT CẢ voucher sàn dựa trên danh sách sản phẩm trong giỏ
   /// - subtotal: tổng tiền hàng của các item đang thanh toán (tổng tất cả, để check min order)
   /// - cartProductIds: danh sách product id trong giỏ (để kiểm tra applicable_products)
-  /// - items: danh sách items với giá (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int}]
+  /// - items: danh sách items với giá (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int, 'shopId': int}]
   int calculatePlatformDiscountWithItems(int subtotal, List<int> cartProductIds, {List<Map<String, dynamic>>? items}) {
-    if (_platformVouchers.isEmpty) {
-     
+    // ✅ QUAN TRỌNG: Cũng cần tính platform voucher có socdo_choice_shops từ appliedVouchers
+    // (khi được apply từ shop voucher tab, nó nằm trong appliedVouchers nhưng vẫn là platform voucher)
+    final platformVouchersFromApplied = <String, Voucher>{};
+    for (final entry in _appliedVouchers.entries) {
+      final voucher = entry.value;
+      final voucherShopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+      // Nếu là platform voucher (shop = 0) có socdo_choice_shops
+      if (voucherShopId == 0 && voucher.socdoChoiceShops != null && voucher.code != null) {
+        platformVouchersFromApplied[voucher.code!] = voucher;
+      }
+    }
+    
+    // ✅ Merge platform vouchers từ cả platformVouchers và appliedVouchers
+    final allPlatformVouchers = <String, Voucher>{..._platformVouchers, ...platformVouchersFromApplied};
+    
+    if (allPlatformVouchers.isEmpty) {
       return 0;
     }
 
@@ -212,8 +276,8 @@ class VoucherService extends ChangeNotifier {
     // Key: productId, Value: discount amount
     final Map<int, int> productDiscounts = {};
     
-    // ✅ Duyệt qua từng voucher platform
-    for (final entry in _platformVouchers.entries) {
+    // ✅ Duyệt qua từng voucher platform (bao gồm cả từ appliedVouchers)
+    for (final entry in allPlatformVouchers.entries) {
       final voucherCode = entry.key;
       final voucher = entry.value;
       
@@ -236,15 +300,36 @@ class VoucherService extends ChangeNotifier {
         }
       }
 
+      // ✅ Kiểm tra socdo_choice_shops: nếu voucher có socdo_choice_shops, chỉ áp dụng cho shop trong danh sách
+      final voucherShops = voucher.socdoChoiceShops?['shops'] as List?;
+      final allowedShopIds = <int>{};
+      if (voucherShops != null && voucherShops.isNotEmpty) {
+        allowedShopIds.addAll(voucherShops.map((s) => int.tryParse(s.toString()) ?? 0).where((id) => id > 0));
+      }
+      
       // ✅ Tính subtotal chỉ của các sản phẩm trong danh sách áp dụng (và chưa được áp dụng voucher khác)
       int applicableSubtotal = 0;
       final List<int> applicableProductIds = [];
       
+      // print('🔍 [VoucherService] Tính discount cho voucher platform ${voucher.code}');
+      // print('   - socdo_choice_shops: ${voucher.socdoChoiceShops}');
+      // print('   - allowedShopIds: $allowedShopIds');
+      
       if (items != null && items.isNotEmpty) {
+        // print('   - Có ${items.length} items để kiểm tra');
         for (final item in items) {
           final productId = (item['id'] as int?) ?? 0;
           final price = (item['price'] as int?) ?? 0;
           final quantity = (item['quantity'] as int?) ?? 1;
+          final shopId = (item['shopId'] as int?) ?? 0;
+          
+          // print('     - Item productId=$productId, shopId=$shopId, price=$price, quantity=$quantity');
+          
+          // ✅ Kiểm tra shop có được phép sử dụng voucher này không (nếu có socdo_choice_shops)
+          if (allowedShopIds.isNotEmpty && shopId > 0 && !allowedShopIds.contains(shopId)) {
+            // print('       ❌ Shop $shopId không nằm trong danh sách được phép, bỏ qua');
+            continue; // Bỏ qua item này nếu shop không nằm trong danh sách được phép
+          }
           
           // Kiểm tra sản phẩm có áp dụng được voucher này không
           bool canApply = false;
@@ -259,15 +344,25 @@ class VoucherService extends ChangeNotifier {
             final itemTotal = price * quantity;
             applicableSubtotal += itemTotal;
             applicableProductIds.add(productId);
+            // print('       ✅ Áp dụng được: itemTotal=$itemTotal, tổng subtotal=$applicableSubtotal');
+          } else {
+            // print('       ❌ Không áp dụng được (sản phẩm không trong danh sách)');
           }
         }
       } else if (isAllProducts) {
-        // Nếu không có items detail, dùng subtotal tổng
-        applicableSubtotal = subtotal;
+        // Nếu không có items detail, dùng subtotal tổng (chỉ khi voucher không có socdo_choice_shops)
+        if (allowedShopIds.isEmpty) {
+          applicableSubtotal = subtotal;
+          // print('   - Áp dụng cho tất cả sản phẩm, subtotal=$applicableSubtotal');
+        } else {
+          // print('   - Voucher có socdo_choice_shops nhưng không có items detail, không thể tính');
+        }
       }
 
+      // print('   - Final applicableSubtotal: $applicableSubtotal');
+
       if (applicableSubtotal == 0) {
-      
+        // print('   ❌ applicableSubtotal = 0, bỏ qua voucher này');
         continue;
       }
 
@@ -282,11 +377,13 @@ class VoucherService extends ChangeNotifier {
               ? voucher.maxDiscountValue!.round() 
               : discount;
         }
+        // print('   - Discount (percentage): ${voucher.discountValue}% của $applicableSubtotal = $discount');
       } else {
         discount = voucher.discountValue!.round();
+        // print('   - Discount (fixed): $discount');
       }
 
-     
+      // print('   ✅ Voucher ${voucher.code}: discount=$discount, totalDiscount=${totalDiscount + discount}');
       
       // ✅ Cộng discount vào tổng
       totalDiscount += discount;
@@ -297,7 +394,7 @@ class VoucherService extends ChangeNotifier {
       }
     }
     
-  
+    // print('🔍 [VoucherService.calculatePlatformDiscountWithItems] Tổng platform discount: $totalDiscount');
     return totalDiscount;
   }
 
@@ -407,13 +504,16 @@ class VoucherService extends ChangeNotifier {
     
     // Nếu đã có voucher được áp dụng, không tự động áp dụng
     if (_appliedVouchers.containsKey(shopId)) {
+      // print('🔍 [VoucherService.autoApplyBestVoucher] Shop $shopId đã có voucher, bỏ qua');
       return;
     }
 
     try {
       final apiService = ApiService();
       
-      // Lấy danh sách voucher của shop
+      // print('🔍 [VoucherService.autoApplyBestVoucher] Tìm voucher cho shop $shopId, shopTotal=$shopTotal');
+      
+      // Lấy danh sách voucher của shop (bao gồm cả voucher platform có socdo_choice_shops)
       final vouchers = await apiService.getVouchers(
         type: 'shop',
         shopId: shopId,
@@ -421,11 +521,29 @@ class VoucherService extends ChangeNotifier {
       );
 
       if (vouchers == null || vouchers.isEmpty) {
+        // print('🔍 [VoucherService.autoApplyBestVoucher] Không có voucher nào cho shop $shopId');
         return;
       }
 
-      // Lọc voucher khả dụng (đủ điều kiện)
-      final eligibleVouchers = vouchers.where((voucher) {
+      // print('🔍 [VoucherService.autoApplyBestVoucher] Nhận được ${vouchers.length} voucher từ API');
+      
+      // ✅ Tách voucher shop (shop > 0) và voucher platform (shop = 0)
+      final shopVouchers = <Voucher>[];
+      final platformVouchers = <Voucher>[];
+      
+      for (final voucher in vouchers) {
+        final voucherShopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+        if (voucherShopId > 0) {
+          shopVouchers.add(voucher);
+          // print('   - Shop voucher: ${voucher.code}, shopId=$voucherShopId');
+        } else if (voucherShopId == 0 && voucher.socdoChoiceShops != null) {
+          platformVouchers.add(voucher);
+          // print('   - Platform voucher: ${voucher.code}, socdo_choice_shops=${voucher.socdoChoiceShops}');
+        }
+      }
+
+      // Lọc voucher shop khả dụng (đủ điều kiện)
+      final eligibleShopVouchers = shopVouchers.where((voucher) {
         // Kiểm tra điều kiện cơ bản
         if (!canApplyVoucher(voucher, shopTotal, productIds: cartProductIds)) {
           return false;
@@ -438,37 +556,45 @@ class VoucherService extends ChangeNotifier {
         
         return true;
       }).toList();
+      
+      // print('🔍 [VoucherService.autoApplyBestVoucher] Có ${eligibleShopVouchers.length} shop voucher khả dụng');
 
-      if (eligibleVouchers.isEmpty) {
-        return;
-      }
+      // ✅ Ưu tiên áp dụng voucher shop trước (nếu có)
+      if (eligibleShopVouchers.isNotEmpty) {
+        // Tìm voucher shop có giá trị giảm giá cao nhất
+        Voucher? bestShopVoucher;
+        int maxDiscount = 0;
 
-      // Tìm voucher có giá trị giảm giá cao nhất
-      Voucher? bestVoucher;
-      int maxDiscount = 0;
+        for (final voucher in eligibleShopVouchers) {
+          final discount = _calculateDiscountValue(voucher, shopTotal);
+          if (discount > maxDiscount) {
+            maxDiscount = discount;
+            bestShopVoucher = voucher;
+          }
+        }
 
-      for (final voucher in eligibleVouchers) {
-        final discount = _calculateDiscountValue(voucher, shopTotal);
-        if (discount > maxDiscount) {
-          maxDiscount = discount;
-          bestVoucher = voucher;
+        // Tự động áp dụng voucher shop tốt nhất
+        if (bestShopVoucher != null && maxDiscount > 0) {
+          // print('🔍 [VoucherService.autoApplyBestVoucher] Áp dụng shop voucher ${bestShopVoucher.code} cho shop $shopId, discount=$maxDiscount');
+          applyVoucher(shopId, bestShopVoucher);
+          return; // Đã áp dụng voucher shop, không cần áp dụng platform voucher
         }
       }
-
-      // Tự động áp dụng voucher tốt nhất
-      if (bestVoucher != null && maxDiscount > 0) {
-        applyVoucher(shopId, bestVoucher);
-      }
+      
+      // ✅ Nếu không có voucher shop, thử áp dụng platform voucher có socdo_choice_shops
+      // (Platform voucher sẽ được xử lý trong autoApplyBestPlatformVoucher)
+      // print('🔍 [VoucherService.autoApplyBestVoucher] Không có shop voucher khả dụng cho shop $shopId');
     } catch (e) {
-      print('❌ [VoucherService] Lỗi khi tự động áp dụng voucher cho shop $shopId: $e');
+      // print('❌ [VoucherService] Lỗi khi tự động áp dụng voucher cho shop $shopId: $e');
     }
   }
 
   /// ✅ Tự động áp dụng NHIỀU voucher sàn tốt nhất nếu đủ điều kiện
   /// - totalGoods: Tổng tiền hàng
   /// - cartProductIds: Danh sách product ID trong giỏ hàng
-  /// - items: Danh sách items với giá (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int}]
-  Future<void> autoApplyBestPlatformVoucher(int totalGoods, List<int> cartProductIds, {List<Map<String, dynamic>>? items}) async {
+  /// - items: Danh sách items với giá và shopId (để tính subtotal chỉ của sản phẩm áp dụng) - format: [{'id': int, 'price': int, 'quantity': int, 'shopId': int}]
+  /// - shopIds: Danh sách shop ID trong giỏ hàng (để lọc voucher platform có socdo_choice_shops)
+  Future<void> autoApplyBestPlatformVoucher(int totalGoods, List<int> cartProductIds, {List<Map<String, dynamic>>? items, List<int>? shopIds}) async {
     // ✅ Cho phép tự động áp dụng nhiều voucher (không return nếu đã có voucher)
     
     try {
@@ -494,6 +620,19 @@ class VoucherService extends ChangeNotifier {
         // Kiểm tra áp dụng cho sản phẩm trong giỏ hàng
         if (cartProductIds.isNotEmpty && !voucher.appliesToProducts(cartProductIds)) {
           return false;
+        }
+        
+        // ✅ Kiểm tra socdo_choice_shops: nếu voucher có socdo_choice_shops, chỉ áp dụng cho shop trong danh sách
+        if (voucher.socdoChoiceShops != null && shopIds != null && shopIds.isNotEmpty) {
+          final shops = voucher.socdoChoiceShops!['shops'] as List?;
+          if (shops != null && shops.isNotEmpty) {
+            final allowedShopIds = shops.map((s) => int.tryParse(s.toString()) ?? 0).where((id) => id > 0).toSet();
+            // Kiểm tra xem có ít nhất một shop trong giỏ hàng nằm trong danh sách được phép không
+            final hasAllowedShop = shopIds.any((shopId) => allowedShopIds.contains(shopId));
+            if (!hasAllowedShop) {
+              return false; // Không có shop nào trong giỏ hàng được phép sử dụng voucher này
+            }
+          }
         }
         
         return true;
@@ -585,7 +724,7 @@ class VoucherService extends ChangeNotifier {
       
       }
     } catch (e) {
-      print('❌ [VoucherService] Lỗi khi tự động áp dụng voucher platform: $e');
+      // print('❌ [VoucherService] Lỗi khi tự động áp dụng voucher platform: $e');
     }
   }
 }

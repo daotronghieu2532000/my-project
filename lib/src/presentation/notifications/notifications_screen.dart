@@ -1082,18 +1082,18 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
     String? productImage;
     if (widget.data != null) {
       // ✅ DEBUG: Log toàn bộ data nhận được
-      print('📸 [DEBUG NotificationsScreen] Notification ID: ${widget.id}');
-      print('📸 [DEBUG NotificationsScreen] Data keys: ${widget.data!.keys.toList()}');
-      print('📸 [DEBUG NotificationsScreen] product_image: ${widget.data!['product_image']}');
-      print('📸 [DEBUG NotificationsScreen] image: ${widget.data!['image']}');
-      print('📸 [DEBUG NotificationsScreen] Full data: ${widget.data}');
+      // print('📸 [DEBUG NotificationsScreen] Notification ID: ${widget.id}');
+      // print('📸 [DEBUG NotificationsScreen] Data keys: ${widget.data!.keys.toList()}');
+      // print('📸 [DEBUG NotificationsScreen] product_image: ${widget.data!['product_image']}');
+      // print('📸 [DEBUG NotificationsScreen] image: ${widget.data!['image']}');
+      // print('📸 [DEBUG NotificationsScreen] Full data: ${widget.data}');
       
       // Ưu tiên product_image, nếu không có thì dùng image
       productImage =
           widget.data!['product_image']?.toString() ??
           widget.data!['image']?.toString();
       
-      print('📸 [DEBUG NotificationsScreen] productImage sau khi lấy: $productImage');
+      // print('📸 [DEBUG NotificationsScreen] productImage sau khi lấy: $productImage');
 
       // Sửa URL ảnh nếu bắt đầu bằng /uploads/
       if (productImage != null && productImage.isNotEmpty && productImage.trim().isNotEmpty) {
@@ -1103,15 +1103,15 @@ class _NotificationItemWidgetState extends State<_NotificationItemWidget> {
         } else if (!productImage.startsWith('http')) {
           productImage = 'https://socdo.vn/uploads/$productImage';
         }
-        print('📸 [DEBUG NotificationsScreen] productImage sau khi sửa URL: $originalImage -> $productImage');
+        // print('📸 [DEBUG NotificationsScreen] productImage sau khi sửa URL: $originalImage -> $productImage');
       } else {
-        print('⚠️ [DEBUG NotificationsScreen] productImage RỖNG hoặc NULL!');
+         ('⚠️ [DEBUG NotificationsScreen] productImage RỖNG hoặc NULL!');
         // ✅ Fallback ảnh nếu rỗng
         productImage = 'https://socdo.vn/uploads/logo/logo.png';
-        print('📸 [DEBUG NotificationsScreen] Dùng fallback ảnh: $productImage');
+        // print('📸 [DEBUG NotificationsScreen] Dùng fallback ảnh: $productImage');
       }
     } else {
-      print('⚠️ [DEBUG NotificationsScreen] widget.data là NULL!');
+      // print('⚠️ [DEBUG NotificationsScreen] widget.data là NULL!');
       // ✅ Fallback ảnh nếu data null
       productImage = 'https://socdo.vn/uploads/logo/logo.png';
     }

@@ -256,19 +256,19 @@ class _EulaDialogState extends State<EulaDialog> {
   }
 
   Future<void> _handleAgree() async {
-    print('✅ [EulaDialog._handleAgree] Người dùng đã đồng ý điều khoản, userId: ${widget.userId}');
+    // print('✅ [EulaDialog._handleAgree] Người dùng đã đồng ý điều khoản, userId: ${widget.userId}');
     // ✅ Lưu trạng thái đã đồng ý theo user ID để mỗi tài khoản phải đồng ý riêng
     try {
       final prefs = await SharedPreferences.getInstance();
       final key = widget.userId != null ? 'eula_agreed_user_${widget.userId}' : 'eula_agreed';
       await prefs.setBool(key, true);
-      print('💾 [EulaDialog._handleAgree] Đã lưu key: $key = true vào SharedPreferences');
+      // print('💾 [EulaDialog._handleAgree] Đã lưu key: $key = true vào SharedPreferences');
     } catch (e) {
-      print('❌ [EulaDialog._handleAgree] Lỗi khi lưu SharedPreferences: $e');
+      // print('❌ [EulaDialog._handleAgree] Lỗi khi lưu SharedPreferences: $e');
     }
 
     Navigator.pop(context);
-    print('🚪 [EulaDialog._handleAgree] Đã đóng dialog');
+    // print('🚪 [EulaDialog._handleAgree] Đã đóng dialog');
     
     // Hiển thị thông báo thành công
     ScaffoldMessenger.of(context).showSnackBar(
@@ -280,9 +280,9 @@ class _EulaDialogState extends State<EulaDialog> {
     );
 
     // Gọi callback để hiển thị list chat
-    print('📞 [EulaDialog._handleAgree] Gọi onAgree callback...');
+    // print('📞 [EulaDialog._handleAgree] Gọi onAgree callback...');
     widget.onAgree();
-    print('✅ [EulaDialog._handleAgree] Đã gọi onAgree callback');
+    // print('✅ [EulaDialog._handleAgree] Đã gọi onAgree callback');
   }
 }
 
@@ -293,17 +293,17 @@ Future<bool> hasAgreedToEula({int? userId}) async {
     // ✅ Lưu EULA theo user ID để mỗi tài khoản phải đồng ý riêng
     final key = userId != null ? 'eula_agreed_user_$userId' : 'eula_agreed';
     final agreed = prefs.getBool(key) ?? false;
-    print('📋 [hasAgreedToEula] userId: $userId, key: $key, value: $agreed');
+    // print('📋 [hasAgreedToEula] userId: $userId, key: $key, value: $agreed');
     return agreed;
   } catch (e) {
-    print('❌ [hasAgreedToEula] Lỗi: $e');
+    // print('❌ [hasAgreedToEula] Lỗi: $e');
     return false;
   }
 }
 
 // Helper function để hiển thị dialog từ dưới lên
 void showEulaDialog(BuildContext context, VoidCallback onAgree, {int? userId}) {
-  print('🎬 [showEulaDialog] Bắt đầu hiển thị dialog EULA, userId: $userId');
+  // print('🎬 [showEulaDialog] Bắt đầu hiển thị dialog EULA, userId: $userId');
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -311,13 +311,13 @@ void showEulaDialog(BuildContext context, VoidCallback onAgree, {int? userId}) {
     isDismissible: false, // Không cho phép đóng bằng cách tap ra ngoài
     enableDrag: false, // Không cho phép kéo xuống
     builder: (context) {
-      print('🎨 [showEulaDialog] Builder được gọi, tạo EulaDialog widget với userId: $userId');
+      // print('🎨 [showEulaDialog] Builder được gọi, tạo EulaDialog widget với userId: $userId');
       return EulaDialog(onAgree: onAgree, userId: userId);
     },
   ).then((_) {
-    print('✅ [showEulaDialog] Dialog đã đóng');
+    // print('✅ [showEulaDialog] Dialog đã đóng');
   }).catchError((error) {
-    print('❌ [showEulaDialog] Lỗi khi hiển thị dialog: $error');
+    // print('❌ [showEulaDialog] Lỗi khi hiển thị dialog: $error');
   });
 }
 

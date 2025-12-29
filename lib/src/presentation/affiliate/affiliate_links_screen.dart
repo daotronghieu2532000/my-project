@@ -444,6 +444,19 @@ class _AffiliateLinksScreenState extends State<AffiliateLinksScreen> {
                               final affiliateUrl = (link.shortLink.isNotEmpty) 
                                   ? link.shortLink 
                                   : link.fullLink;
+                              
+                              // ✅ DEBUG: Print link chia sẻ để kiểm tra
+                              // print('🔗 [AffiliateLinks] Chia sẻ link: $affiliateUrl');
+                              // print('🔗 [AffiliateLinks] Short link: ${link.shortLink}');
+                              // print('🔗 [AffiliateLinks] Full link: ${link.fullLink}');
+                              
+                              // ✅ Kiểm tra xem link có chứa utm_source_shop không
+                              if (!affiliateUrl.contains('utm_source_shop') && !affiliateUrl.contains('aff=')) {
+                                // print('⚠️ [AffiliateLinks] Link chia sẻ KHÔNG có utm_source_shop hoặc aff!');
+                              } else {
+                                // print('✅ [AffiliateLinks] Link chia sẻ có affiliate parameter');
+                              }
+                              
                               final shareText = _buildShareTextForLink(link);
                               _shareWithImage(link, shareText, affiliateUrl);
                             },

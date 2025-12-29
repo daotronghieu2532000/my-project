@@ -140,7 +140,7 @@ class _AffiliateProductsScreenState extends State<AffiliateProductsScreen> {
       // Sử dụng cached API service cho products
       
       // Không dùng cache, gọi API trực tiếp để đảm bảo data luôn mới nhất
-      print('🌐 [AFFILIATE PRODUCTS] Calling API - page: $_currentPage, limit: 300, search: "${_searchQuery}", sortBy: $_sortBy, onlyFollowing: $_onlyFollowed');
+      // print('🌐 [AFFILIATE PRODUCTS] Calling API - page: $_currentPage, limit: 300, search: "${_searchQuery}", sortBy: $_sortBy, onlyFollowing: $_onlyFollowed');
       final apiStartTime = DateTime.now();
       final result = await _affiliateService.getProducts(
         userId: _currentUserId,

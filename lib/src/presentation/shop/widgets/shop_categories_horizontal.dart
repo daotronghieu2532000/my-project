@@ -42,6 +42,23 @@ class _ShopCategoriesHorizontalState extends State<ShopCategoriesHorizontal> {
       if (mounted) {
         final categories = categoriesData.map((data) => ShopCategory.fromJson(data)).toList();
         
+        // Debug: Kiểm tra xem có categories nào có cùng image URL không
+        // (Có thể uncomment để debug nếu cần)
+        // final imageUrlMap = <String, List<String>>{};
+        // for (var cat in categories) {
+        //   final imageUrl = cat.image.isNotEmpty ? cat.image : (cat.icon.isNotEmpty ? cat.icon : '');
+        //   if (imageUrl.isNotEmpty) {
+        //     imageUrlMap.putIfAbsent(imageUrl, () => []).add('${cat.id}:${cat.title}');
+        //   }
+        // }
+        // final duplicates = imageUrlMap.entries.where((e) => e.value.length > 1).toList();
+        // if (duplicates.isNotEmpty) {
+        //   print('⚠️ [ShopCategories] Phát hiện ${duplicates.length} ảnh bị lặp lại:');
+        //   for (var dup in duplicates) {
+        //     print('  - URL: ${dup.key} -> Categories: ${dup.value.join(", ")}');
+        //   }
+        // }
+        
         setState(() {
           _categories = categories;
           _isLoading = false;
@@ -71,7 +88,9 @@ class _ShopCategoriesHorizontalState extends State<ShopCategoriesHorizontal> {
     }
 
     return SizedBox(
-      height: 120, // Tăng chiều cao để chứa ảnh + tên + số lượng sản phẩm
+
+
+       height: 120, // Tăng chiều cao để chứa ảnh + tên + số lượng sản phẩm
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -88,7 +107,27 @@ class _ShopCategoriesHorizontalState extends State<ShopCategoriesHorizontal> {
     );
   }
 
+  /// Lấy URL ảnh cho category với logic fallback
+  /// Ưu tiên: image > icon > bannerImage > leftImage
+  String? _getCategoryImageUrl(ShopCategory category) {
+    if (category.image.isNotEmpty) {
+      return category.image;
+    }
+    if (category.icon.isNotEmpty) {
+      return category.icon;
+    }
+    if (category.bannerImage.isNotEmpty) {
+      return category.bannerImage;
+    }
+    if (category.leftImage.isNotEmpty) {
+      return category.leftImage;
+    }
+    return null;
+  }
+
   Widget _buildCategoryCard(ShopCategory category) {
+    final imageUrl = _getCategoryImageUrl(category);
+    
     return InkWell(
       onTap: () => _navigateToCategoryProducts(category),
       borderRadius: BorderRadius.circular(8),
@@ -113,11 +152,11 @@ class _ShopCategoriesHorizontalState extends State<ShopCategoriesHorizontal> {
                   ),
                 ],
               ),
-              child: category.image.isNotEmpty
+              child: imageUrl != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        category.image,
+                        imageUrl,
                         width: 70,
                         height: 70,
                         fit: BoxFit.cover,

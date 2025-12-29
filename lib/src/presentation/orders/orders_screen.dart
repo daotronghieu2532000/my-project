@@ -552,7 +552,7 @@ class _OrdersListState extends State<_OrdersList> {
                 Row(
                   children: [
                     Text(
-                      '🎁 Quà tặng: -${_formatPrice(o['bonus_used_formatted'] ?? '')}',
+                      '🎁 Voucher giảm giá: -${_formatPrice(o['bonus_used_formatted'] ?? '')}',
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.green.shade700,

@@ -16,7 +16,9 @@ import '../../core/services/shipping_quote_store.dart';
 import '../../core/services/voucher_service.dart';
 import '../../core/services/shipping_events.dart';
 import '../../core/services/shipping_quote_service.dart';
+import '../../core/services/affiliate_tracking_service.dart';
 import '../../core/models/user.dart';
+import '../../core/models/voucher.dart';
 import 'dart:async';
 
 class CheckoutScreen extends StatefulWidget {
@@ -35,6 +37,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
   final VoucherService _voucherService = VoucherService();
   final ShippingQuoteService _shippingQuoteService =
       ShippingQuoteService(); // ✅ Service chuyên nghiệp
+  final AffiliateTrackingService _affiliateTracking = AffiliateTrackingService();
   
   // ✅ State cho sticky header
   final ScrollController _scrollController = ScrollController();
@@ -127,7 +130,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         }
       } catch (e) {
         // Nếu lỗi, bỏ qua item này
-        print('⚠️ [Checkout] Không thể load originalPrice cho item ${item.id}: $e');
+        // print('⚠️ [Checkout] Không thể load originalPrice cho item ${item.id}: $e');
       }
     }
     
@@ -266,12 +269,15 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     }
     
     // Tự động áp dụng voucher sàn tốt nhất (sau khi đã áp dụng voucher shop)
+    // Lấy danh sách shop ID từ giỏ hàng để kiểm tra socdo_choice_shops
+    final shopIds = selectedItems.map((item) => item.shopId).where((id) => id > 0).toSet().toList();
     await _voucherService.autoApplyBestPlatformVoucher(
       totalGoods,
       cartProductIds,
       items: selectedItems
-          .map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity})
+          .map((e) => {'id': e.id, 'price': e.price, 'quantity': e.quantity, 'shopId': e.shopId})
           .toList(),
+      shopIds: shopIds,
     );
   }
 
@@ -577,23 +583,53 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           0,
           (s, i) => s + (i['_gia_moi_number'] as int? ?? 0) * (i['quantity'] as int? ?? 1),
         );
-        final shopDiscount = voucherService.calculateShopDiscount(
-          shopId,
-          shopTotal,
-        );
-      if (shopDiscount > 0) {
-        shopDiscounts[shopId] = shopDiscount;
-      }
+        
+        // ✅ Kiểm tra voucher trong appliedVouchers
+        final appliedVoucher = voucherService.getAppliedVoucher(shopId);
+        if (appliedVoucher != null) {
+          // ✅ Kiểm tra xem voucher có phải là platform voucher (shop = 0) có socdo_choice_shops không
+          final voucherShopId = int.tryParse(appliedVoucher.shopId ?? '0') ?? 0;
+          if (voucherShopId == 0 && appliedVoucher.socdoChoiceShops != null) {
+            // ✅ Platform voucher có socdo_choice_shops - sẽ tính vào platformDiscounts sau
+            // Bỏ qua, không tính vào shopDiscounts
+            continue;
+          } else {
+            // ✅ Voucher shop thực sự (shop > 0) - tính vào shopDiscounts
+            final shopDiscount = voucherService.calculateShopDiscount(
+              shopId,
+              shopTotal,
+            );
+            if (shopDiscount > 0) {
+              shopDiscounts[shopId] = shopDiscount;
+            }
+          }
+        }
     }
     
       // ✅ Tính platform discount cho từng shop (dựa trên TẤT CẢ platform vouchers, giống như UI)
       // ✅ Sử dụng logic tương tự VoucherService.calculatePlatformDiscountWithItems nhưng phân bổ theo shop
     final Map<int, int> platformDiscounts = {}; // shopId => discount
       final platformVouchers = voucherService.platformVouchers;
+      
+      // ✅ QUAN TRỌNG: Cũng cần tính platform voucher có socdo_choice_shops từ appliedVouchers
+      // (khi được apply từ shop voucher tab, nó nằm trong appliedVouchers nhưng vẫn là platform voucher)
+      final appliedVouchers = voucherService.appliedVouchers;
+      final platformVouchersFromApplied = <String, Voucher>{};
+      for (final entry in appliedVouchers.entries) {
+        final voucher = entry.value;
+        final voucherShopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+        // Nếu là platform voucher (shop = 0) có socdo_choice_shops
+        if (voucherShopId == 0 && voucher.socdoChoiceShops != null && voucher.code != null) {
+          platformVouchersFromApplied[voucher.code!] = voucher;
+        }
+      }
+      
+      // ✅ Merge platform vouchers từ cả platformVouchers và appliedVouchers
+      final allPlatformVouchers = <String, Voucher>{...platformVouchers, ...platformVouchersFromApplied};
 
-      if (platformVouchers.isNotEmpty) {
+      if (allPlatformVouchers.isNotEmpty) {
         // ✅ Duyệt qua TẤT CẢ platform vouchers (giống như UI)
-        for (final entry in platformVouchers.entries) {
+        for (final entry in allPlatformVouchers.entries) {
           final voucherCode = entry.key;
           final voucher = entry.value;
 
@@ -618,9 +654,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             }
       }
       
+          // ✅ Kiểm tra socdo_choice_shops: nếu voucher có socdo_choice_shops, chỉ áp dụng cho shop trong danh sách
+          final voucherShops = voucher.socdoChoiceShops?['shops'] as List?;
+          final allowedShopIds = <int>{};
+          if (voucherShops != null && voucherShops.isNotEmpty) {
+            allowedShopIds.addAll(voucherShops.map((s) => int.tryParse(s.toString()) ?? 0).where((id) => id > 0));
+          }
+          
           // ✅ Tính discount cho từng shop dựa trên sản phẩm áp dụng trong shop đó
           for (final shopEntry in itemsByShop.entries) {
             final shopId = shopEntry.key;
+            
+            // ✅ Kiểm tra shop có được phép sử dụng voucher này không (nếu có socdo_choice_shops)
+            if (allowedShopIds.isNotEmpty && !allowedShopIds.contains(shopId)) {
+              continue; // Bỏ qua shop này nếu không nằm trong danh sách được phép
+            }
+            
             final shopItems = shopEntry.value;
         
         // Tính subtotal của sản phẩm áp dụng trong shop này
@@ -742,13 +791,22 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
               },
             )
             .toList();
+        
+        // ✅ DEBUG: Print thông tin items gửi lên shipping_quote API
+        // print('📦 [Checkout] Shipping items gửi lên API:');
+        // for (final item in shippingItems) {
+        //   print('   - Product ID: ${item['product_id']}, Quantity: ${item['quantity']}, Price: ${item['price']}');
+        // }
       
       // ✅ Sử dụng ShippingQuoteService với retry, timeout, fallback, và cache
+      // ✅ Tối ưu: Giảm timeout và retry để nhanh hơn, fallback sớm hơn
       final shippingQuote = await _shippingQuoteService.getShippingQuote(
         userId: user.userId,
         items: shippingItems.cast<Map<String, dynamic>>(),
         useCache: true,
         enableFallback: true, // ✅ Cho phép fallback nếu API fail
+        maxRetries: 1, // ✅ Chỉ retry 1 lần để nhanh hơn
+        timeout: const Duration(seconds: 6), // ✅ Timeout 6s thay vì 8s để fallback sớm hơn
       );
       
       if (shippingQuote != null && shippingQuote['success'] == true) {
@@ -807,14 +865,19 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
             if (detailMap != null) {
                 final shopId =
                     int.tryParse('${detailMap['shop_id'] ?? 0}') ?? 0;
+              // ✅ QUAN TRỌNG: Lấy provider_code (format: SUPERAI-6-BEST Express) thay vì provider (tên hiển thị)
+              // ✅ Format: SUPERAI-{carrier_id}-{carrier_name} (giống checkout.php)
+              final providerCode = detailMap['provider_code']?.toString() ?? '';
               final provider = detailMap['provider']?.toString() ?? '';
+              // ✅ Ưu tiên dùng provider_code, nếu không có thì dùng provider
+              final finalProvider = providerCode.isNotEmpty ? providerCode : provider;
                 final shippingFee =
                     (detailMap['shipping_fee'] as num?)?.toInt() ?? 0;
               
               // ✅ Xử lý cả shop_id = 0 (nếu có) và shop_id > 0
-              if (provider.isNotEmpty) {
-                // ✅ Nếu shop đã có provider, ghi đè (không nên xảy ra trong thực tế)
-                shopShippingProviders[shopId] = provider;
+              if (finalProvider.isNotEmpty) {
+                // ✅ Lưu provider_code (format đúng) vào shopShippingProviders
+                shopShippingProviders[shopId] = finalProvider;
               }
               
                 // ✅ Lưu shipping_fee theo shop_id (chỉ shop có warehouse)
@@ -971,6 +1034,28 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     // ✅ Chuyển map thành list để gửi (backend sẽ group lại theo shop)
     final finalItemsList = finalItemsMap.values.toList();
     
+    // ✅ DEBUG: Print để kiểm tra dữ liệu items được gửi lên API
+    print('🔍 [Checkout] Items được gửi lên create_order API:');
+    for (final item in finalItemsList) {
+      final spId = item['sp_id'] ?? item['id'] ?? 'NULL';
+      final shopId = item['shop'] ?? 'NULL';
+      print('   - sp_id: $spId, shop: $shopId');
+    }
+    
+    // ✅ Lấy affiliate ID từ AffiliateTrackingService (nếu có)
+    final affiliateId = await _affiliateTracking.getAffiliateId();
+    // print('🔍 [Checkout] Affiliate ID từ tracking: $affiliateId');
+    
+    // ✅ Lấy product ID đã track (nếu có) để làm utm_campaign
+    final trackedProductId = await _affiliateTracking.getTrackedProductId();
+    final utmCampaign = trackedProductId != null ? 'product_$trackedProductId' : null;
+    
+    if (affiliateId != null) {
+      // print('✅ [Checkout] Có affiliate tracking: utm_source=$affiliateId, utm_campaign=$utmCampaign');
+    } else {
+      // print('⚠️ [Checkout] KHÔNG có affiliate tracking');
+    }
+    
     final res = await _api.createOrder(
       userId: user.userId,
       hoTen: addr['ho_ten']?.toString() ?? user.name,
@@ -991,6 +1076,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         shipSupport: shipSupport, // ✅ Hỗ trợ ship từ freeship
         shippingProvider: ship
             .provider, // ✅ Vẫn giữ để tương thích, nhưng sẽ bị override bởi provider trong items
+      utmSource: affiliateId, // ✅ Gửi affiliate ID lên API
+      utmCampaign: utmCampaign, // ✅ Gửi campaign (product ID) lên API
     );
     
 
@@ -999,6 +1086,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       final maDon = data?['ma_don'] ?? '';
       final orders = data?['orders'] as List<dynamic>?;
       final totalOrders = orders?.length ?? (maDon.isNotEmpty ? 1 : 0);
+      
+      // ✅ Clear affiliate tracking sau khi đặt hàng thành công
+      if (affiliateId != null) {
+        // print('✅ [Checkout] Clear affiliate tracking sau khi đặt hàng thành công');
+        await _affiliateTracking.clearAffiliateTracking();
+      }
       
       // Clear cart sau khi đặt hàng thành công
       _cartService.clearCart();

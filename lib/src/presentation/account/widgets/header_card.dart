@@ -116,7 +116,7 @@ class _HeaderCardState extends State<HeaderCard> {
             return;
           }
         } catch (e) {
-          print('❌ [HeaderCard] Error loading profile: $e');
+          // print('❌ [HeaderCard] Error loading profile: $e');
         }
       }
       if (mounted) {
@@ -128,7 +128,7 @@ class _HeaderCardState extends State<HeaderCard> {
       _loadCounts();
       _startPolling();
     } catch (e) {
-      print('❌ [HeaderCard] Error in _loadUserInfo: $e');
+      // print('❌ [HeaderCard] Error in _loadUserInfo: $e');
       if (mounted) {
         setState(() {
           _currentUser = null;
@@ -197,8 +197,10 @@ class _HeaderCardState extends State<HeaderCard> {
                         // Điều hướng tới màn hình sửa avatar (sẽ thêm sau)
                         Navigator.of(context).pushNamed('/profile/edit');
                       },
+                      // Tăng diện tích click bằng cách thêm hitTestBehavior và padding lớn hơn
+                      behavior: HitTestBehavior.opaque,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(4), // Tăng padding từ 4 lên 8
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -206,7 +208,7 @@ class _HeaderCardState extends State<HeaderCard> {
                             BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4),
                           ],
                         ),
-                        child: const Icon(Icons.edit, size: 16, color: Colors.red),
+                        child: const Icon(Icons.edit, size: 20, color: Colors.red), // Tăng kích thước icon từ 16 lên 20
                       ),
                     ),
                   ),

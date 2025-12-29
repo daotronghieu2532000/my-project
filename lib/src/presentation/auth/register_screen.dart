@@ -419,17 +419,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
           if (result['data'] != null) {
             final data = result['data'] as Map<String, dynamic>?;
             if (data != null && data['promo_code_id'] != null) {
-              print('✅ [REGISTER] Lưu promo_code_id: ${data['promo_code_id']}');
+              // print('✅ [REGISTER] Lưu promo_code_id: ${data['promo_code_id']}');
               final prefs = await SharedPreferences.getInstance();
               await prefs.setInt('pending_promo_code_id', data['promo_code_id'] as int);
               if (data['promo_code_expires_at'] != null) {
                 await prefs.setInt('pending_promo_code_expires_at', data['promo_code_expires_at'] as int);
               }
             } else {
-              print('⚠️ [REGISTER] Không có promo_code_id trong response: $data');
+              // print('⚠️ [REGISTER] Không có promo_code_id trong response: $data');
             }
           } else {
-            print('⚠️ [REGISTER] result[data] is null');
+            // print('⚠️ [REGISTER] result[data] is null');
           }
           
           // Tự động đăng nhập với thông tin vừa đăng ký
@@ -445,28 +445,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
               final promoCodeId = prefs.getInt('pending_promo_code_id');
               
               if (promoCodeId != null) {
-                print('✅ [BONUS] Bắt đầu tạo bonus với promoCodeId: $promoCodeId');
+                // print('✅ [BONUS] Bắt đầu tạo bonus với promoCodeId: $promoCodeId');
                 // Gọi API tạo bonus với promo code
                 final bonusService = FirstTimeBonusService();
                 final user = await _authService.getCurrentUser();
                 if (user != null) {
-                  print('✅ [BONUS] User ID: ${user.userId}');
+                  // print('✅ [BONUS] User ID: ${user.userId}');
                   // ✅ Gọi API và kiểm tra kết quả
                   final bonusResult = await bonusService.checkAndGrantBonus(user.userId, promoCodeId: promoCodeId);
-                  print('📊 [BONUS] Kết quả từ API: $bonusResult');
+                  // print('📊 [BONUS] Kết quả từ API: $bonusResult');
                   
                   // ✅ Kiểm tra bonus có được tạo thành công không
                   if (bonusResult != null && bonusResult['has_bonus'] == true) {
                     if (bonusResult['is_new_bonus'] == true) {
-                      print('✅ [BONUS] Bonus đã được tạo thành công!');
+                      // print('✅ [BONUS] Bonus đã được tạo thành công!');
                       // Set flag để hiển thị dialog
                       await prefs.setBool('show_bonus_dialog', true);
                     } else {
-                      print('⚠️ [BONUS] Bonus đã tồn tại từ trước');
+                      // print('⚠️ [BONUS] Bonus đã tồn tại từ trước');
                     }
                   } else {
                     // ❌ Bonus không được tạo, log lỗi
-                    print('❌ [BONUS] Không tạo được bonus: $bonusResult');
+                    // print('❌ [BONUS] Không tạo được bonus: $bonusResult');
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -482,10 +482,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   await prefs.remove('pending_promo_code_id');
                   await prefs.remove('pending_promo_code_expires_at');
                 } else {
-                  print('❌ [BONUS] User is null');
+                  // print('❌ [BONUS] User is null');
                 }
               } else {
-                print('⚠️ [BONUS] promoCodeId is null - User đăng ký không có mã thưởng');
+                // print('⚠️ [BONUS] promoCodeId is null - User đăng ký không có mã thưởng');
               }
               
               // Đăng nhập thành công, chuyển vào trang chủ
@@ -1086,6 +1086,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                           ),
                                   ),
                                 ),
+                                
+                                // Thông báo Zalo - chỉ hiển thị khi chưa gửi OTP
+                                if (!_otpSent) ...[
+                                  const SizedBox(height: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[50],
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: Colors.grey[300]!,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Image.asset(
+                                          'assets/images/icons/zalo_icon.webp',
+                                          width: 20,
+                                          height: 20,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return Icon(
+                                              Icons.info_outline,
+                                              size: 18,
+                                              color: Colors.grey[600],
+                                            );
+                                          },
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            '! Lưu ý: sử dụng số điện thoại đã kích hoạt Zalo nhận mã OTP',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey[700],
+                                              height: 1.3,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                                 
                                 const SizedBox(height: 20),
                                 

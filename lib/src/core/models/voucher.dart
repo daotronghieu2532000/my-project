@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 // Image URL normalizer
 String? _fixImageUrl(String? rawUrl) {
   if (rawUrl == null) return null;
@@ -49,6 +51,9 @@ class Voucher {
   final String? voucherType;
   // Cho biết voucher áp dụng cho tất cả sản phẩm hay không
   final bool isAllProducts;
+  // Danh sách shop được phép sử dụng voucher platform (socdo_choice_shops)
+  // Format: {"main_shop": 23933, "shops": [23933, 39046]}
+  final Map<String, dynamic>? socdoChoiceShops;
 
   const Voucher({
     required this.id,
@@ -77,6 +82,7 @@ class Voucher {
     this.applicableProductsDetail,
     this.voucherType,
     this.isAllProducts = false,
+    this.socdoChoiceShops,
   });
 
   /// Helper method để parse int an toàn từ String hoặc int
@@ -183,7 +189,30 @@ class Voucher {
       applicableProductsDetail: _parseProductDetailList(json['applicable_products']),
       voucherType: json['voucher_type'] as String? ?? json['kieu'] as String?,
       isAllProducts: json['is_all_products'] as bool? ?? (json['kieu'] as String?) == 'all',
+      socdoChoiceShops: _parseSocdoChoiceShops(json['socdo_choice_shops']),
     );
+  }
+  
+  /// Parse socdo_choice_shops từ JSON (có thể là String hoặc Map)
+  static Map<String, dynamic>? _parseSocdoChoiceShops(dynamic value) {
+    if (value == null) return null;
+    
+    if (value is Map) {
+      return value as Map<String, dynamic>;
+    }
+    
+    if (value is String && value.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map) {
+          return decoded as Map<String, dynamic>;
+        }
+      } catch (e) {
+        // Bỏ qua nếu parse lỗi
+      }
+    }
+    
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -214,6 +243,7 @@ class Voucher {
       'applicable_products_detail': applicableProductsDetail,
       'voucher_type': voucherType,
       'is_all_products': isAllProducts,
+      'socdo_choice_shops': socdoChoiceShops,
     };
   }
 
@@ -244,6 +274,7 @@ class Voucher {
     List<Map<String, String>>? applicableProductsDetail,
     String? voucherType,
     bool? isAllProducts,
+    Map<String, dynamic>? socdoChoiceShops,
   }) {
     return Voucher(
       id: id ?? this.id,
@@ -272,6 +303,7 @@ class Voucher {
       applicableProductsDetail: applicableProductsDetail ?? this.applicableProductsDetail,
       voucherType: voucherType ?? this.voucherType,
       isAllProducts: isAllProducts ?? this.isAllProducts,
+      socdoChoiceShops: socdoChoiceShops ?? this.socdoChoiceShops,
     );
   }
 

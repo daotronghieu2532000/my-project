@@ -96,11 +96,6 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _onCartChanged() {
-    // ✅ DEBUG: Print thông tin cart khi thay đổi
-    final selectedItems = _cartService.items.where((i) => i.isSelected).toList();
-    final totalPrice = selectedItems.fold(0, (sum, i) => sum + i.price * i.quantity);
-  
-    
     setState(() {});
     // Tự động áp dụng voucher tốt nhất cho từng shop
     _autoApplyBestVouchers();
@@ -118,7 +113,7 @@ class _CartScreenState extends State<CartScreen> {
     final itemsByShop = _cartService.itemsByShop;
     
     if (itemsByShop.isEmpty) {
-      print('🛒 [CART - _autoApplyBestVouchers] Cart is empty, skipping');
+      // print('🛒 [CART - _autoApplyBestVouchers] Cart is empty, skipping');
       return;
     }
     
@@ -131,12 +126,12 @@ class _CartScreenState extends State<CartScreen> {
       // Chỉ tính cho các item đã chọn
       final selectedItems = items.where((item) => item.isSelected).toList();
       if (selectedItems.isEmpty) {
-        print('   ⏭️ Shop $shopId: No selected items, skipping');
+        // print('   ⏭️ Shop $shopId: No selected items, skipping');
         continue;
       }
       
-      // Tính tổng tiền của shop
-      final shopTotal = selectedItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+      // Tính tổng tiền của shop (dùng originalPrice nếu có để tính voucher đúng trên giá gốc)
+      final shopTotal = selectedItems.fold(0, (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity));
       
       // Lấy danh sách product ID trong giỏ hàng của shop
       final cartProductIds = selectedItems.map((item) => item.id).toList();
@@ -148,16 +143,41 @@ class _CartScreenState extends State<CartScreen> {
       
       final appliedVoucher = _voucherService.getAppliedVoucher(shopId);
       if (appliedVoucher != null) {
-        print('      ✅ Applied voucher: ${appliedVoucher.code} (${appliedVoucher.discountType == 'percentage' ? '${appliedVoucher.discountValue}%' : FormatUtils.formatCurrency(appliedVoucher.discountValue?.round() ?? 0)})');
+        // print('      ✅ Applied voucher: ${appliedVoucher.code} (${appliedVoucher.discountType == 'percentage' ? '${appliedVoucher.discountValue}%' : FormatUtils.formatCurrency(appliedVoucher.discountValue?.round() ?? 0)})');
       } else {
-        print('      ❌ No voucher applied');
+        // print('      ❌ No voucher applied');
       }
     }
     
-    // ✅ DEBUG: Print tổng hợp voucher sau khi auto apply
-    final appliedVouchers = _voucherService.appliedVouchers;
-    final platformVouchers = _voucherService.platformVouchers;
- 
+    // ✅ Tự động áp dụng voucher sàn (platform voucher)
+    final allSelectedItems = _cartService.items.where((i) => i.isSelected).toList();
+    if (allSelectedItems.isNotEmpty) {
+      // Tính tổng tiền từ originalPrice nếu có (để voucher tính đúng trên giá gốc)
+      final totalGoods = allSelectedItems.fold(0, (sum, item) => sum + ((item.originalPrice ?? item.price) * item.quantity));
+      final allProductIds = allSelectedItems.map((item) => item.id).toList();
+      
+      // ✅ Chuẩn bị items data cho platform voucher (dùng originalPrice nếu có)
+      final itemsForVoucher = allSelectedItems.map((e) => {
+        'id': e.id,
+        'price': e.originalPrice ?? e.price,
+        'quantity': e.quantity,
+      }).toList();
+      
+      await _voucherService.autoApplyBestPlatformVoucher(
+        totalGoods,
+        allProductIds,
+        items: itemsForVoucher,
+      );
+      
+      final appliedPlatformVouchers = _voucherService.platformVouchers;
+      if (appliedPlatformVouchers.isNotEmpty) {
+        // print('      ✅ Applied ${appliedPlatformVouchers.length} platform voucher(s)');
+        for (final entry in appliedPlatformVouchers.entries) {
+          final voucher = entry.value;
+          // print('         - ${voucher.code} (${voucher.discountType == 'percentage' ? '${voucher.discountValue}%' : FormatUtils.formatCurrency(voucher.discountValue?.round() ?? 0)})');
+        }
+      }
+    }
     
     // Cập nhật UI sau khi áp dụng voucher
     if (mounted) {

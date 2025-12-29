@@ -2,6 +2,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../presentation/product/product_detail_screen.dart';
 import '../../presentation/affiliate/affiliate_screen.dart';
+import '../../presentation/orders/order_detail_screen.dart';
+import '../../presentation/voucher/voucher_screen.dart';
+import '../../presentation/orders/orders_screen.dart';
+import '../../presentation/notifications/notifications_screen.dart';
+import 'auth_service.dart';
 
 /// Xử lý deep linking khi user tap vào notification
 class NotificationHandler {
@@ -9,30 +14,79 @@ class NotificationHandler {
 
   /// Handle notification data và navigate đến màn hình phù hợp
   void handleNotificationData(Map<String, dynamic> data) {
-   
-    try {
-      final type = data['type'] as String?;
-      final relatedId = data['related_id'] as String?;
+    // print('🔔 [NOTIFICATION] Handling notification data: $data');
     
+    try {
+      // Parse data nếu là JSON string
+      Map<String, dynamic> parsedData = data;
+      if (data.containsKey('data') && data['data'] is String) {
+        try {
+          final dataString = data['data'] as String;
+          final parsed = jsonDecode(dataString) as Map<String, dynamic>;
+          parsedData = {...data, ...parsed};
+        } catch (e) {
+          // Không phải JSON, giữ nguyên
+        }
+      }
+      
+      final type = parsedData['type'] as String?;
+      final relatedId = parsedData['related_id'];
+      final dataPayload = parsedData['data'];
+      
+      // Parse data payload nếu là JSON string
+      Map<String, dynamic>? dataMap;
+      if (dataPayload != null) {
+        if (dataPayload is Map) {
+          dataMap = Map<String, dynamic>.from(dataPayload);
+        } else if (dataPayload is String) {
+          try {
+            dataMap = jsonDecode(dataPayload) as Map<String, dynamic>;
+          } catch (e) {
+            // Không phải JSON
+          }
+        }
+      }
+      
       if (type == null) {
+        // print('⚠️ [NOTIFICATION] Type is null, navigating to notifications list');
+        _navigateToNotifications();
         return;
       }
+
+      // print('🔔 [NOTIFICATION] Type: $type, relatedId: $relatedId');
 
       switch (type) {
         case 'order':
         case 'affiliate_order':
           // Navigate đến order detail
+          int? orderId;
+          String? orderCode;
+          
+          // Lấy order_id từ related_id hoặc data
           if (relatedId != null) {
-            final orderId = int.tryParse(relatedId);
-            if (orderId != null) {
-              _navigateToOrderDetail(orderId);
+            orderId = relatedId is int ? relatedId : int.tryParse(relatedId.toString());
+          }
+          if (dataMap != null) {
+            final orderIdFromData = dataMap['order_id'];
+            if (orderIdFromData != null) {
+              orderId = orderIdFromData is int ? orderIdFromData : int.tryParse(orderIdFromData.toString());
             }
+            orderCode = dataMap['order_code']?.toString();
+          }
+          
+          if (orderId != null && orderId > 0) {
+            _navigateToOrderDetail(orderId, orderCode);
+          } else {
+            // Nếu không có order_id, navigate đến danh sách đơn hàng
+            _navigateToOrders();
           }
           break;
 
         case 'deposit':
         case 'withdrawal':
-          _navigateToBalance();
+        case 'transaction':
+          // Navigate đến affiliate screen (có phần giao dịch)
+          _navigateToAffiliate();
           break;
 
         case 'voucher_new':
@@ -40,77 +94,38 @@ class NotificationHandler {
           _navigateToVouchers();
           break;
 
+        case 'bonus_expiring':
+        case 'promo_code_expired':
+          // Navigate đến voucher screen (nơi hiển thị bonus)
+          _navigateToVouchers();
+          break;
+
+        case 'birthday':
+          // Navigate đến notifications screen để xem thông báo chúc mừng sinh nhật
+          _navigateToNotifications();
+          break;
+
         case 'affiliate_daily':
         case 'affiliate_product':
+          final productId = _parseProductId(dataMap ?? parsedData);
           
-          // Navigate đến affiliate screen hoặc product detail nếu có product_id
-          final affiliateId = data['affiliate_id'];
-          final productId = data['product_id'];
-          
-          
-          // Parse product_id (có thể là int, string, hoặc JSON string)
-          int? productIdInt;
-          if (productId != null) {
-            if (productId is int) {
-              productIdInt = productId;
-            } else if (productId is String) {
-              // Thử parse JSON string trước
-              try {
-                final parsed = jsonDecode(productId);
-                if (parsed is int) {
-                  productIdInt = parsed;
-                } else if (parsed is String) {
-                  productIdInt = int.tryParse(parsed);
-                }
-              } catch (e) {
-                // Không phải JSON, parse trực tiếp
-                productIdInt = int.tryParse(productId);
-              }
-            }
+          if (productId != null && productId > 0) {
+            _navigateToProductDetail(productId);
+          } else {
+            _navigateToAffiliate();
           }
-          
-          
-          // Nếu có product_id, navigate đến product detail
-          if (productIdInt != null && productIdInt > 0) {
-            _navigateToProductDetail(productIdInt);
-            return;
-          }
-          
-          // Fallback: navigate đến affiliate screen
-          _navigateToAffiliate();
           break;
 
         case 'admin_manual':
-         
           // Xử lý notification từ admin manual
-          final action = data['action'] as String?;
-          final productId = data['product_id'];
+          final action = dataMap?['action'] as String? ?? parsedData['action'] as String?;
+          final productId = _parseProductId(dataMap ?? parsedData);
 
-          if (action == 'open_product') {
-           
-            if (productId != null) {
-              final productIdInt = productId is int 
-                  ? productId 
-                  : (productId is String ? int.tryParse(productId) : null);
-              
-           
-              
-              if (productIdInt != null && productIdInt > 0) {
-             
-                _navigateToProductDetail(productIdInt);
-                return;
-              } else {
-                print('⚠️ [NOTIFICATION] Invalid product_id: $productIdInt');
-              }
-            } else {
-              print('⚠️ [NOTIFICATION] product_id is null');
-            }
+          if (action == 'open_product' && productId != null && productId > 0) {
+            _navigateToProductDetail(productId);
           } else {
-            print('⚠️ [NOTIFICATION] Action is not open_product: $action');
+            _navigateToNotifications();
           }
-          // Fallback: navigate to notifications list
-         
-          _navigateToNotifications();
           break;
 
         default:
@@ -119,56 +134,153 @@ class NotificationHandler {
           break;
       }
     } catch (e, stackTrace) {
+      // print('❌ [NOTIFICATION] Error handling notification: $e');
+      // print('❌ [NOTIFICATION] Stack trace: $stackTrace');
       // Fallback: navigate to notifications list
       _navigateToNotifications();
     }
   }
 
-  void _navigateToOrderDetail(int orderId) {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      // Import và navigate đến OrderDetailScreen
-      // Navigator.pushNamed(context, '/order-detail', arguments: orderId);
-      // TODO: Implement navigation khi có OrderDetailScreen route
+  /// Parse product_id từ data (hỗ trợ nhiều format)
+  int? _parseProductId(Map<String, dynamic> data) {
+    final productId = data['product_id'];
+    if (productId == null) return null;
+    
+    if (productId is int) {
+      return productId;
+    } else if (productId is String) {
+      // Thử parse JSON string trước
+      try {
+        final parsed = jsonDecode(productId);
+        if (parsed is int) {
+          return parsed;
+        } else if (parsed is String) {
+          return int.tryParse(parsed);
+        }
+      } catch (e) {
+        // Không phải JSON, parse trực tiếp
+        return int.tryParse(productId);
+      }
     }
+    return null;
   }
 
-  void _navigateToBalance() {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      // Navigate đến balance/transaction screen
-      // TODO: Implement navigation
-    }
+  void _navigateToOrderDetail(int orderId, String? orderCode) {
+    _tryNavigateWithRetry(
+      maxRetries: 30,
+      delayMs: 100,
+      action: () async {
+        final context = navigatorKey.currentContext;
+        if (context == null) return false;
+        
+        // Lấy userId từ AuthService
+        final authService = AuthService();
+        final user = await authService.getCurrentUser();
+        if (user == null) {
+          // print('⚠️ [NOTIFICATION] User not logged in, cannot navigate to order detail');
+          return false;
+        }
+        
+        try {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderDetailScreen(
+                userId: user.userId,
+                orderId: orderId,
+                maDon: orderCode,
+              ),
+            ),
+          );
+          return true;
+        } catch (e) {
+          // print('❌ [NOTIFICATION] Error navigating to order detail: $e');
+          return false;
+        }
+      },
+    );
+  }
+
+  void _navigateToOrders() {
+    _tryNavigateWithRetry(
+      maxRetries: 30,
+      delayMs: 100,
+      action: () async {
+        final context = navigatorKey.currentContext;
+        if (context == null) return false;
+        
+        try {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const OrdersScreen(),
+            ),
+          );
+          return true;
+        } catch (e) {
+          // print('❌ [NOTIFICATION] Error navigating to orders: $e');
+          return false;
+        }
+      },
+    );
   }
 
   void _navigateToVouchers() {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      // Navigate đến voucher list
-      // TODO: Implement navigation
-    }
+    _tryNavigateWithRetry(
+      maxRetries: 30,
+      delayMs: 100,
+      action: () async {
+        final context = navigatorKey.currentContext;
+        if (context == null) return false;
+        
+        try {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const VoucherScreen(),
+            ),
+          );
+          return true;
+        } catch (e) {
+          // print('❌ [NOTIFICATION] Error navigating to vouchers: $e');
+          return false;
+        }
+      },
+    );
   }
 
   void _navigateToNotifications() {
-    final context = navigatorKey.currentContext;
-    if (context != null) {
-      // Navigate đến notifications list
-      // TODO: Implement navigation khi có route
-      // Navigator.pushNamed(context, '/notifications');
-    }
+    _tryNavigateWithRetry(
+      maxRetries: 30,
+      delayMs: 100,
+      action: () async {
+        final context = navigatorKey.currentContext;
+        if (context == null) return false;
+        
+        try {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const NotificationsScreen(),
+            ),
+          );
+          return true;
+        } catch (e) {
+          // print('❌ [NOTIFICATION] Error navigating to notifications: $e');
+          return false;
+        }
+      },
+    );
   }
 
   void _navigateToAffiliate() {
-    
-    // Retry logic: Đợi context sẵn sàng (tối đa 3 giây)
-    _tryNavigateAffiliateWithRetry(maxRetries: 30, delayMs: 100);
-  }
-
-  void _tryNavigateAffiliateWithRetry({int maxRetries = 30, int delayMs = 100}) async {
-    for (int i = 0; i < maxRetries; i++) {
-      final context = navigatorKey.currentContext;
-      
-      if (context != null) {
+    _tryNavigateWithRetry(
+      maxRetries: 30,
+      delayMs: 100,
+      action: () async {
+        final context = navigatorKey.currentContext;
+        if (context == null) return false;
+        
         try {
           Navigator.push(
             context,
@@ -176,30 +288,23 @@ class NotificationHandler {
               builder: (context) => const AffiliateScreen(),
             ),
           );
-          return;
-        } catch (e, stackTrace) {
-          return;
+          return true;
+        } catch (e) {
+          // print('❌ [NOTIFICATION] Error navigating to affiliate: $e');
+          return false;
         }
-      } else {
-        if (i == 0) {
-        }
-        await Future.delayed(Duration(milliseconds: delayMs));
-      }
-    }
-    
+      },
+    );
   }
 
   void _navigateToProductDetail(int productId) {
-    
-    // Retry logic: Đợi context sẵn sàng (tối đa 3 giây)
-    _tryNavigateWithRetry(productId, maxRetries: 30, delayMs: 100);
-  }
-
-  void _tryNavigateWithRetry(int productId, {int maxRetries = 30, int delayMs = 100}) async {
-    for (int i = 0; i < maxRetries; i++) {
-      final context = navigatorKey.currentContext;
-      
-      if (context != null) {
+    _tryNavigateWithRetry(
+      maxRetries: 30,
+      delayMs: 100,
+      action: () async {
+        final context = navigatorKey.currentContext;
+        if (context == null) return false;
+        
         try {
           Navigator.push(
             context,
@@ -209,17 +314,33 @@ class NotificationHandler {
               ),
             ),
           );
-          return;
-        } catch (e, stackTrace) {
-          return;
+          return true;
+        } catch (e) {
+          // print('❌ [NOTIFICATION] Error navigating to product detail: $e');
+          return false;
         }
-      } else {
-        if (i == 0) {
-        }
+      },
+    );
+  }
+
+  /// Helper function để retry navigation với delay
+  void _tryNavigateWithRetry({
+    required int maxRetries,
+    required int delayMs,
+    required Future<bool> Function() action,
+  }) async {
+    for (int i = 0; i < maxRetries; i++) {
+      final success = await action();
+      if (success) {
+        return;
+      }
+      
+      if (i < maxRetries - 1) {
         await Future.delayed(Duration(milliseconds: delayMs));
       }
     }
     
+    // print('⚠️ [NOTIFICATION] Failed to navigate after $maxRetries retries');
   }
 }
 

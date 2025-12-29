@@ -3,7 +3,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../product/product_detail_screen.dart';
 import '../../product/widgets/variant_selection_dialog.dart';
 import '../../product/widgets/simple_purchase_dialog.dart';
-import '../../cart/cart_screen.dart';
 import '../../checkout/checkout_screen.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/utils/image_optimizer.dart';
@@ -155,6 +154,19 @@ class ProductCardHorizontal extends StatelessWidget {
                               ),
                             ),
                           ),
+                  // Free Ship badge (góc trái dưới)
+                  if (product.freeshipIcon != null && product.freeshipIcon!.isNotEmpty)
+                    Positioned(
+                      bottom: 4,
+                      left: 4,
+                      child: FreeShipBadge(
+                        iconSize: 18,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        backgroundColor: const Color.fromARGB(255, 254, 254, 254),
+                        textColor: const Color.fromARGB(255, 0, 0, 0),
+                        text: 'Miễn phí vận chuyển',
+                      ),
+                    ),
                   // Icon giỏ hàng position nổi trên ảnh (góc dưới bên phải)
                   Positioned(
                     bottom: 4,

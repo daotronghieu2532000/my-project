@@ -46,13 +46,16 @@ class _ShopVouchersTabState extends State<ShopVouchersTab> {
       final shops = await _cachedApiService.getVoucherShopsCached();
       
       if (mounted && shops != null) {
+        // print('🔍 [ShopVouchersTab._loadShops] Nhận được ${shops.length} shop');
+        for (final shop in shops) {
+          // print('   - Shop ID: ${shop['id']}, Name: ${shop['name']}, Voucher count: ${shop['voucher_count']}');
+        }
         setState(() {
           _shops = shops;
         });
-      
       }
     } catch (e) {
-    
+      // print('❌ [ShopVouchersTab._loadShops] Lỗi: $e');
     }
   }
 
@@ -92,10 +95,60 @@ class _ShopVouchersTabState extends State<ShopVouchersTab> {
         setState(() {
           _isLoading = false;
           if (vouchers != null && vouchers.isNotEmpty) {
-            if (isRefresh) {
-              _vouchers = vouchers;
+            // print('🔍 [ShopVouchersTab] Nhận được ${vouchers.length} voucher từ API');
+            // print('🔍 [ShopVouchersTab] Selected shop ID: $_selectedShopId');
+            
+            // Debug: In ra thông tin từng voucher
+            for (final voucher in vouchers) {
+              final shopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+              // print('   - Voucher ${voucher.code}: shopId=$shopId, socdo_choice_shops=${voucher.socdoChoiceShops}');
+            }
+            
+            // ✅ Lọc voucher: nếu có shop được chọn, chỉ hiển thị voucher shop thực sự (shop > 0) 
+            // hoặc voucher platform có socdo_choice_shops chứa shop được chọn
+            List<Voucher> filteredVouchers = vouchers;
+            if (_selectedShopId != null) {
+              final selectedShopIdInt = int.tryParse(_selectedShopId!) ?? 0;
+              // print('🔍 [ShopVouchersTab] Lọc voucher cho shop $selectedShopIdInt');
+              if (selectedShopIdInt > 0) {
+                filteredVouchers = vouchers.where((voucher) {
+                  // Voucher shop thực sự (shop > 0)
+                  final shopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+                  if (shopId > 0) {
+                    final match = shopId == selectedShopIdInt;
+                    // print('   - Voucher ${voucher.code}: shopId=$shopId ${match ? "✅ MATCH" : "❌ NO MATCH"}');
+                    return match;
+                  }
+                  
+                  // Voucher platform (shop = 0) có socdo_choice_shops chứa shop được chọn
+                  if (shopId == 0 && voucher.socdoChoiceShops != null) {
+                    final shops = voucher.socdoChoiceShops!['shops'] as List?;
+                    if (shops != null && shops.isNotEmpty) {
+                      final allowedShopIds = shops.map((s) => int.tryParse(s.toString()) ?? 0).where((id) => id > 0).toSet();
+                      final match = allowedShopIds.contains(selectedShopIdInt);
+                      // print('   - Voucher ${voucher.code}: platform voucher, allowedShops=$allowedShopIds ${match ? "✅ MATCH" : "❌ NO MATCH"}');
+                      return match;
+                    }
+                  }
+                  
+                  // print('   - Voucher ${voucher.code}: shopId=$shopId ❌ FILTERED OUT');
+                  return false;
+                }).toList();
+                // print('🔍 [ShopVouchersTab] Sau khi lọc: ${filteredVouchers.length} voucher');
+              }
             } else {
-              _vouchers.addAll(vouchers);
+              // ✅ Khi không chọn shop, chỉ hiển thị voucher shop thực sự (shop > 0), KHÔNG hiển thị platform voucher
+              filteredVouchers = vouchers.where((voucher) {
+                final shopId = int.tryParse(voucher.shopId ?? '0') ?? 0;
+                return shopId > 0; // Chỉ voucher shop thực sự
+              }).toList();
+              // print('🔍 [ShopVouchersTab] Không có shop được chọn, hiển thị ${filteredVouchers.length} voucher shop (đã lọc bỏ platform voucher)');
+            }
+            
+            if (isRefresh) {
+              _vouchers = filteredVouchers;
+            } else {
+              _vouchers.addAll(filteredVouchers);
             }
             _hasMore = vouchers.length == _limit;
           } else {
@@ -137,28 +190,29 @@ class _ShopVouchersTabState extends State<ShopVouchersTab> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: _shops.length + 1, // +1 for "Tất cả" option
+              itemCount: _shops.length, // Đã bỏ "Tất cả" option
               itemBuilder: (context, index) {
-                if (index == 0) {
-                  // "Tất cả" option
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: const Text('Tất cả'),
-                      selected: _selectedShopId == null,
-                      onSelected: (selected) {
-                        setState(() {
-                          _selectedShopId = null;
-                        });
-                        _loadVouchers(isRefresh: true);
-                      },
-                      selectedColor: Colors.blue.shade100,
-                      checkmarkColor: Colors.blue,
-                    ),
-                  );
-                }
+                // ✅ Đã comment mục "Tất cả"
+                // if (index == 0) {
+                //   // "Tất cả" option
+                //   return Padding(
+                //     padding: const EdgeInsets.only(right: 8),
+                //     child: FilterChip(
+                //       label: const Text('Tất cả'),
+                //       selected: _selectedShopId == null,
+                //       onSelected: (selected) {
+                //         setState(() {
+                //           _selectedShopId = null;
+                //         });
+                //         _loadVouchers(isRefresh: true);
+                //       },
+                //       selectedColor: Colors.blue.shade100,
+                //       checkmarkColor: Colors.blue,
+                //     ),
+                //   );
+                // }
                 
-                final shop = _shops[index - 1];
+                final shop = _shops[index];
                 final shopId = shop['id'].toString();
                 final shopName = shop['name']?.toString() ?? 'Unknown Shop';
                 final shopLogo = shop['logo']?.toString() ?? 'lib/src/core/assets/images/shop_1.png';
@@ -296,7 +350,7 @@ class _ShopVouchersTabState extends State<ShopVouchersTab> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'Voucher từ các shop',
+                      'Voucher khả dụng',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 18,

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 // import removed (not used while actions hidden)
 import '../../core/services/affiliate_service.dart';
@@ -18,11 +19,54 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
   String? _error;
   List<dynamic> _orders = [];
   int? _currentUserId;
+  
+  // ✅ State để track mã đơn hàng nào đang hiển thị đầy đủ
+  final Set<String> _expandedOrderIds = {};
+  Timer? _hideTimer;
 
   @override
   void initState() {
     super.initState();
     _initUser();
+  }
+  
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+  
+  // ✅ Helper function để format mã đơn hàng (rút ngắn nếu dài)
+  String _formatOrderCode(String orderCode, {required bool isExpanded}) {
+    if (orderCode.isEmpty) return '';
+    
+    // Nếu đang expanded hoặc mã đơn ngắn (<= 15 ký tự), hiển thị đầy đủ
+    if (isExpanded || orderCode.length <= 15) {
+      return orderCode;
+    }
+    
+    // Rút ngắn: lấy 12 ký tự đầu + "..."
+    return '${orderCode.substring(0, 12)}...';
+  }
+  
+  // ✅ Hiển thị đầy đủ mã đơn hàng khi tap, tự động ẩn sau 4 giây
+  void _showFullOrderCode(String orderCode) {
+    // ✅ Hủy timer cũ nếu có
+    _hideTimer?.cancel();
+    
+    setState(() {
+      // ✅ Luôn hiển thị đầy đủ khi tap
+      _expandedOrderIds.add(orderCode);
+    });
+    
+    // ✅ Tự động ẩn sau 4 giây
+    _hideTimer = Timer(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _expandedOrderIds.remove(orderCode);
+        });
+      }
+    });
   }
 
   Future<void> _initUser() async {
@@ -41,11 +85,13 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
 
     try {
       final result = await _affiliateService.getOrders(userId: _currentUserId);
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
-          if (result != null && result['data'] != null && result['data']['orders'] != null) {
+          if (result != null &&
+              result['data'] != null &&
+              result['data']['orders'] != null) {
             _orders = result['data']['orders'] ?? [];
           } else {
             _orders = [];
@@ -67,73 +113,62 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Đơn hàng Affiliate',
-        style: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-            ),),
+        title: const Text(
+          'Đơn hàng Affiliate',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
+        ),
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: _loadOrders,
-            icon: const Icon(Icons.refresh),
-          ),
+          IconButton(onPressed: _loadOrders, icon: const Icon(Icons.refresh)),
         ],
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: _loadOrders,
-                        child: const Text('Thử lại'),
-                      ),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(_error!),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadOrders,
+                    child: const Text('Thử lại'),
                   ),
-                )
-              : _orders.isEmpty
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.receipt_long,
-                            size: 64,
-                            color: Colors.grey,
-                          ),
-                          SizedBox(height: 16),
-                          Text(
-                            'Chưa có đơn hàng nào',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                            'Khi có đơn hàng qua link affiliate sẽ hiển thị ở đây',
-                            style: TextStyle(color: Colors.grey),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    )
-                  : RefreshIndicator(
-                      onRefresh: _loadOrders,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: _orders.length,
-                        itemBuilder: (context, index) {
-                          final order = _orders[index];
-                          return _buildOrderCard(order);
-                        },
-                      ),
-                    ),
+                ],
+              ),
+            )
+          : _orders.isEmpty
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.receipt_long, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text(
+                    'Chưa có đơn hàng nào',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Khi có đơn hàng qua link affiliate sẽ hiển thị ở đây',
+                    style: TextStyle(color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadOrders,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _orders.length,
+                itemBuilder: (context, index) {
+                  final order = _orders[index];
+                  return _buildOrderCard(order);
+                },
+              ),
+            ),
     );
   }
 
@@ -143,7 +178,7 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
     final status = (order['status'] ?? {}) as Map<String, dynamic>;
     final statusText = status['text'] ?? 'Chờ xử lý';
     final statusColor = _parseColor(status['color'] ?? '#FFA500');
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -166,16 +201,48 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Mã: ${order['ma_don'] ?? ''}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
+                // ✅ Mã đơn hàng có thể tap để xem đầy đủ, tự động ẩn sau 4 giây
+                GestureDetector(
+                  onTap: () {
+                    final maDon = (order['ma_don'] ?? '').toString();
+                    if (maDon.isNotEmpty && maDon.length > 15) {
+                      _showFullOrderCode(maDon);
+                    }
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _formatOrderCode(
+                          (order['ma_don'] ?? '').toString(),
+                          isExpanded: _expandedOrderIds.contains(
+                            (order['ma_don'] ?? '').toString(),
+                          ),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF333333),
+                        ),
+                      ),
+                      // ✅ Icon để hint rằng có thể tap
+                      if ((order['ma_don'] ?? '').toString().length > 15)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4),
+                          child: Icon(
+                            Icons.info_outline,
+                            size: 14,
+                            color: Color(0xFF999999),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(4),
@@ -191,9 +258,9 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Product Info
             if (firstProduct != null) ...[
               Row(
@@ -206,7 +273,8 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                       color: const Color(0xFFF5F5F5),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: (firstProduct != null &&
+                    child:
+                        (firstProduct != null &&
                             firstProduct['image'] != null &&
                             firstProduct['image'].toString().isNotEmpty)
                         ? ClipRRect(
@@ -221,16 +289,19 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                                   size: 24,
                                 );
                               },
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
-                                );
-                              },
+                              loadingBuilder:
+                                  (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  },
                             ),
                           )
                         : const Icon(
@@ -257,17 +328,27 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            if ((firstProduct['size'] ?? '').toString().isNotEmpty) ...[
+                            if ((firstProduct['size'] ?? '')
+                                .toString()
+                                .isNotEmpty) ...[
                               Text(
                                 'Size: ${firstProduct['size']}',
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF666666),
+                                ),
                               ),
                               const SizedBox(width: 8),
                             ],
-                            if ((firstProduct['color'] ?? '').toString().isNotEmpty)
+                            if ((firstProduct['color'] ?? '')
+                                .toString()
+                                .isNotEmpty)
                               Text(
                                 'Màu: ${firstProduct['color']}',
-                                style: const TextStyle(fontSize: 11, color: Color(0xFF666666)),
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF666666),
+                                ),
                               ),
                           ],
                         ),
@@ -288,7 +369,7 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
               ),
               const SizedBox(height: 12),
             ],
-            
+
             // Order Summary
             Container(
               padding: const EdgeInsets.all(12),
@@ -309,7 +390,9 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                         ),
                       ),
                       Text(
-                        FormatUtils.formatCurrency((order['subtotal'] ?? 0).toInt()),
+                        FormatUtils.formatCurrency(
+                          (order['subtotal'] ?? 0).toInt(),
+                        ),
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -332,11 +415,45 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                         ),
                       ),
                       Text(
-                        FormatUtils.formatCurrency((order['total_amount'] ?? 0).toInt()),
+                        FormatUtils.formatCurrency(
+                          (order['total_amount'] ?? 0).toInt(),
+                        ),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Color(0xFF333333),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Tỉ lệ hoa hồng:',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF666666),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF3E0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          (order['commission_rate_formatted'] ??
+                                  '${order['commission_rate'] ?? 0}%')
+                              .toString(),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFFF6B35),
+                          ),
                         ),
                       ),
                     ],
@@ -353,7 +470,12 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                         ),
                       ),
                       Text(
-                        FormatUtils.formatCurrency(((order['commission'] ?? order['total_commission'] ?? 0)).toInt()),
+                        FormatUtils.formatCurrency(
+                          ((order['commission'] ??
+                                  order['total_commission'] ??
+                                  0))
+                              .toInt(),
+                        ),
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -362,33 +484,12 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Tỉ lệ hoa hồng:',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF666666)),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF3E0),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          (order['commission_rate_formatted'] ?? '${order['commission_rate'] ?? 0}%').toString(),
-                          style: const TextStyle(fontSize: 11, color: Color(0xFFFF6B35)),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 12),
-            
+
             // Payment, shipping, dates and actions
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -399,43 +500,73 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
                     children: [
                       Row(
                         children: [
-                          const Icon(Icons.local_shipping, size: 14, color: Color(0xFF999999)),
+                          const Icon(
+                            Icons.local_shipping,
+                            size: 14,
+                            color: Color(0xFF999999),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             (order['shipping_provider'] ?? '').toString(),
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF999999)),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF999999),
+                            ),
                           ),
                           const SizedBox(width: 8),
-                          const Icon(Icons.payment, size: 14, color: Color(0xFF999999)),
+                          const Icon(
+                            Icons.payment,
+                            size: 14,
+                            color: Color(0xFF999999),
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            (order['payment_method'] ?? '').toString().toUpperCase(),
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF999999)),
+                            (order['payment_method'] ?? '')
+                                .toString()
+                                .toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF999999),
+                            ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Ngày: ${order['date_post_formatted'] ?? order['created_at'] ?? ''}',
-                        style: const TextStyle(fontSize: 11, color: Color(0xFF999999)),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF999999),
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
-                    color: (order['commission_status'] == 'completed' || order['commission_paid'] == true)
+                    color:
+                        (order['commission_status'] == 'completed' ||
+                            order['commission_paid'] == true)
                         ? Colors.green.withOpacity(0.1)
                         : Colors.orange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(3),
                   ),
                   child: Text(
-                    (order['commission_status_text'] ?? ((order['commission_paid'] == true) ? 'Đã thanh toán' : 'Chờ thanh toán')).toString(),
+                    (order['commission_status_text'] ??
+                            ((order['commission_paid'] == true)
+                                ? 'Đã thanh toán'
+                                : 'Chờ thanh toán'))
+                        .toString(),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
-                      color: (order['commission_status'] == 'completed' || order['commission_paid'] == true)
+                      color:
+                          (order['commission_status'] == 'completed' ||
+                              order['commission_paid'] == true)
                           ? Colors.green
                           : Colors.orange,
                     ),
@@ -459,4 +590,3 @@ class _AffiliateOrdersScreenState extends State<AffiliateOrdersScreen> {
     }
   }
 }
-

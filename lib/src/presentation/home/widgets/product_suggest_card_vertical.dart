@@ -11,6 +11,7 @@ import '../../../core/models/product_suggest.dart';
 import '../../../core/models/product_detail.dart';
 import '../../../core/services/cart_service.dart';
 import '../../../core/services/api_service.dart';
+import '../../shared/widgets/product_badges.dart';
 
 class ProductSuggestCardVertical extends StatelessWidget {
   final ProductSuggest product;
@@ -128,6 +129,19 @@ class ProductSuggestCardVertical extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                    ),
+                  ),
+                // Free Ship badge (góc trái dưới)
+                if (product.freeshipIcon != null && product.freeshipIcon!.isNotEmpty)
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    child: FreeShipBadge(
+                      iconSize: 18,
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                      backgroundColor: const Color.fromARGB(255, 254, 254, 254),
+                      textColor: const Color.fromARGB(255, 0, 0, 0),
+                      text: 'Miễn phí vận chuyển',
                     ),
                   ),
                 // Cart icon (góc phải dưới)

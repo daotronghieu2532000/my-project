@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import '../cart/cart_screen.dart';
+import '../orders/orders_screen.dart'; // Giả định có OrdersScreen
 
 class OrderSuccessScreen extends StatefulWidget {
   final String maDon;
   final List<dynamic>? orders;
   final Map<String, dynamic>? summary;
+  
   const OrderSuccessScreen({
     super.key, 
     required this.maDon,
@@ -54,89 +57,194 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     super.dispose();
   }
 
-  Widget _buildOrderCodes() {
-    // Nếu có nhiều đơn hàng, hiển thị danh sách
-    if (widget.orders != null && widget.orders!.isNotEmpty) {
-      if (widget.orders!.length == 1) {
-        // Chỉ có 1 đơn hàng, hiển thị mã đơn đó
-        final order = widget.orders![0] as Map<String, dynamic>;
-        final maDon = order['ma_don']?.toString() ?? widget.maDon;
-        return Text(
-          maDon,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Colors.black87,
-            letterSpacing: 1.0,
+  // Hàm tiện ích để định dạng tiền tệ (giả định)
+  String _formatCurrency(int amount) {
+    // Thay thế bằng hàm format tiền tệ thực tế của bạn
+    return '${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}₫';
+  }
+
+  // Widget hiển thị thông tin chi tiết đơn hàng (Mã đơn, Tổng tiền)
+  Widget _buildSummaryCard() {
+    final totalAmount = widget.summary?['tongtien'] as int? ?? 0;
+    final maDon = widget.maDon;
+    final isMultiOrder = widget.orders != null && widget.orders!.length > 1;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
-        );
-      } else {
-        // Có nhiều đơn hàng, hiển thị danh sách
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Base order code
-            Text(
-              widget.maDon,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
-                letterSpacing: 1.0,
-              ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Tiêu đề
+          const Text(
+            'Chi tiết đơn hàng',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1A1A),
             ),
+          ),
+          const Divider(height: 24, thickness: 1, color: Color(0xFFF1F5F9)),
+          
+          // Mã đơn hàng
+          if (isMultiOrder)
+            _buildMultiOrderCodes('Mã đơn hàng', widget.orders!)
+          else
+            _buildInfoRow(
+              'Mã đơn hàng',
+              maDon,
+              isHighlight: true,
+            ),
+         
             const SizedBox(height: 8),
-            // Danh sách các đơn hàng con
-            ...widget.orders!.map((order) {
-              final orderMap = order as Map<String, dynamic>;
-              final maDon = orderMap['ma_don']?.toString() ?? '';
-              return Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.arrow_right_alt,
-                      size: 16,
-                      color: Colors.grey,
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        maDon,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-            const SizedBox(height: 4),
-            Text(
-              'Tổng cộng: ${widget.orders!.length} đơn hàng',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
+            _buildInfoRow(
+              'Số lượng đơn',
+              '${widget.orders!.length} đơn hàng',
+              isHighlight: false,
             ),
-          ],
-        );
+          
+          // const SizedBox(height: 16),
+          
+          // // Tổng tiền
+          // _buildInfoRow(
+          //   'Tổng thanh toán',
+          //   _formatCurrency(totalAmount),
+          //   isHighlight: true,
+          //   valueColor: const Color(0xFFEF4444),
+          //   valueWeight: FontWeight.w800,
+          // ),
+        ],
+      ),
+    );
+  }
+
+  // Widget hiển thị một dòng thông tin
+  Widget _buildInfoRow(String label, String value, {bool isHighlight = false, Color? valueColor, FontWeight? valueWeight}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: isHighlight ? const Color(0xFF1A1A1A) : const Color(0xFF64748B),
+            fontWeight: isHighlight ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              color: valueColor ?? const Color(0xFF1A1A1A),
+              fontWeight: valueWeight ?? FontWeight.w600,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget hiển thị danh sách mã đơn hàng (nhiều đơn)
+  Widget _buildMultiOrderCodes(String label, List<dynamic> orders) {
+    // Extract order codes from orders list
+    final orderCodes = <String>[];
+    for (var order in orders) {
+      if (order is Map<String, dynamic>) {
+        final maDon = order['ma_don']?.toString() ?? '';
+        if (maDon.isNotEmpty) {
+          orderCodes.add(maDon);
+        }
       }
     }
     
-    // Fallback: hiển thị base code
-    return Text(
-      widget.maDon,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w700,
-        color: Colors.black87,
-        letterSpacing: 1.0,
+    // If no order codes found in orders list, try to split maDon string
+    if (orderCodes.isEmpty && widget.maDon.isNotEmpty) {
+      // Try splitting by common separators (comma, space, underscore)
+      final parts = widget.maDon.split(RegExp(r'[,;\s_]+')).where((s) => s.isNotEmpty).toList();
+      orderCodes.addAll(parts);
+    }
+    
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: orderCodes.map((code) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                code,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF1A1A1A),
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.right,
+              ),
+            )).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Widget hiển thị thông báo bổ sung
+  Widget _buildAdditionalInfo() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF), // Màu xanh nhạt
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: const Color(0xFFBFDBFE),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            color: const Color(0xFF2563EB),
+            size: 20,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Đơn hàng của bạn đã được tiếp nhận. Chúng tôi sẽ gửi thông báo cập nhật trạng thái đơn hàng sớm nhất.',
+              style: TextStyle(
+                fontSize: 13,
+                color: const Color(0xFF1E40AF),
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -147,321 +255,193 @@ class _OrderSuccessScreenState extends State<OrderSuccessScreen>
     final colorScheme = theme.colorScheme;
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
+      backgroundColor: const Color(0xFFF8FAFC), // Nền trắng xám nhẹ
       appBar: AppBar(
         title: const Text(
           'Đặt hàng thành công',
           style: TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w700,
           ),
         ),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: const Color(0xFF1A1A1A),
         elevation: 0,
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () {
+            // Đóng màn hình và về trang chủ (hoặc màn hình trước đó)
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          },
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const CartScreen()),
+              );
+            },
+            icon: Icon(
+              Icons.shopping_cart_outlined,
+              color: colorScheme.primary,
+              size: 24,
+            ),
+            tooltip: 'Giỏ hàng',
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            children: [
-              const SizedBox(height: 20),
-              
-              // Success Animation Container
-              AnimatedBuilder(
-                animation: _animationController,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _scaleAnimation.value,
-                    child: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Colors.green.shade400,
-                              Colors.green.shade600,
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.green.withOpacity(0.3),
-                              blurRadius: 15,
-                              spreadRadius: 3,
-                              offset: const Offset(0, 6),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 50,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Order Code Card
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                child: Icon(
-                                  Icons.receipt_long,
-                                  color: colorScheme.primary,
-                                  size: 16,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Mã đơn hàng',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          // Hiển thị danh sách mã đơn nếu có nhiều đơn hàng
-                          _buildOrderCodes(),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 16),
-              
-              // Thank you message
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.green.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.favorite,
-                            color: Colors.red.shade400,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Cảm ơn bạn đã tin tưởng và mua sắm tại Socdo!',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey.shade700,
-                                height: 1.3,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-              
-              const Spacer(),
-              
-              // Action Buttons
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Column(
-                      children: [
-                        // View Order Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-                              context, 
-                              '/orders', 
-                              (route) => route.isFirst
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: colorScheme.primary,
-                                width: 2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              backgroundColor: Colors.white,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.shopping_bag_outlined,
-                                  color: colorScheme.primary,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Xem đơn hàng',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
-                                    color: colorScheme.primary,
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                  child: Column(
+                    children: [
+                      // 1. Success Icon & Message
+                      AnimatedBuilder(
+                        animation: _animationController,
+                        builder: (context, child) {
+                          return Transform.scale(
+                            scale: _scaleAnimation.value,
+                            child: FadeTransition(
+                              opacity: _fadeAnimation,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFF10B981), // Màu xanh lá cây hiện đại
+                                    ),
+                                    child: const Icon(
+                                      Icons.check_rounded,
+                                      color: Colors.white,
+                                      size: 48,
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 12),
-                        
-                        // Home Button
-                        SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.popUntil(
-                              context, 
-                              (route) => route.isFirst
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              shadowColor: colorScheme.primary.withOpacity(0.3),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.home_outlined,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 6),
-                                const Text(
-                                  'Về trang chủ',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w600,
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Đặt hàng thành công!',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF1A1A1A),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              
-              const SizedBox(height: 12),
-              
-              // Additional Info
-              AnimatedBuilder(
-                animation: _fadeAnimation,
-                builder: (context, child) {
-                  return FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.blue.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: Colors.blue.shade600,
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Chúng tôi sẽ gửi thông tin đơn hàng trạng thái ở thông báo , vui lòng chú ý',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue.shade700,
-                                fontWeight: FontWeight.w500,
-                                height: 1.3,
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Cảm ơn bạn đã tin tưởng và mua sắm tại Sóc Đỏ.',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: const Color(0xFF64748B),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                        ],
+                          );
+                        },
+                      ),
+                      
+                      const SizedBox(height: 32),
+                    
+                      // 2. Summary Card (Chi tiết đơn hàng)
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: _buildSummaryCard(),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                      
+                      // 3. Additional Info
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: _buildAdditionalInfo(),
+                      ),
+                      
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // 4. Action Buttons (Sticky Footer)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade200, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Nút 1: Xem đơn hàng
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        // Giả định OrdersScreen có thể nhận mã đơn hàng
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const OrdersScreen()),
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colorScheme.primary,
+                        side: BorderSide(color: colorScheme.primary, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Xem đơn hàng',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(width: 12),
+                  // Nút 2: Tiếp tục mua sắm (Về trang chủ)
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).popUntil((route) => route.isFirst);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Tiếp tục mua sắm',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              
-              const SizedBox(height: 16),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
-

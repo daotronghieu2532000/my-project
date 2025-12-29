@@ -20,7 +20,7 @@ class AffiliateOrderProduct {
   factory AffiliateOrderProduct.fromJson(Map<String, dynamic> json) {
     return AffiliateOrderProduct(
       spId: json['sp_id'] ?? 0,
-      title: json['title'] ?? '',
+      title: json['name'] ?? json['title'] ?? '',
       quantity: json['quantity'] ?? 0,
       price: (json['price'] ?? 0).toDouble(),
       commission: (json['commission'] ?? 0).toDouble(),
@@ -88,10 +88,10 @@ class AffiliateOrder {
           .map((item) => AffiliateOrderProduct.fromJson(item as Map<String, dynamic>))
           .toList(),
       totalAmount: (json['total_amount'] ?? 0).toDouble(),
-      totalCommission: (json['total_commission'] ?? 0).toDouble(),
+      totalCommission: (json['commission'] ?? json['total_commission'] ?? 0).toDouble(),
       status: OrderStatus.fromJson(json['status'] ?? {}),
-      createdAt: json['created_at'] ?? '',
-      commissionPaid: json['commission_paid'] ?? false,
+      createdAt: json['date_post_formatted'] ?? json['created_at'] ?? '',
+      commissionPaid: json['commission_status'] == 'completed' || (json['commission_paid'] ?? false),
     );
   }
 }

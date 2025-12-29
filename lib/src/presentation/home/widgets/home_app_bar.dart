@@ -69,6 +69,41 @@ class _HomeAppBarState extends State<HomeAppBar> {
       final isLoggedIn = await _authService.isLoggedIn();
       if (isLoggedIn) {
         final user = await _authService.getCurrentUser();
+        if (user != null) {
+          // ✅ Thử lấy thông tin mới nhất từ API user_profile để có avatar mới nhất
+          try {
+            final profile = await _api.getUserProfile(userId: user.userId);
+            if (profile != null && profile['user'] != null) {
+              final u = profile['user'] as Map<String, dynamic>;
+              
+              // ✅ CRITICAL: Verify user_id matches before updating
+              final apiUserId = u['user_id'];
+              if (apiUserId != null) {
+                final apiUserIdInt = apiUserId is int ? apiUserId : int.tryParse(apiUserId.toString());
+                if (apiUserIdInt != null && apiUserIdInt == user.userId) {
+                  // ✅ User ID matches - update avatar from API
+                  final updated = user.copyWith(
+                    avatar: (u['avatar']?.toString().isNotEmpty == true ? u['avatar'].toString() : user.avatar),
+                  );
+                  if (mounted) {
+                    setState(() {
+                      _currentUser = updated;
+                      _isLoading = false;
+                    });
+                  }
+                  _loadUnread();
+                  _setupSocketIO();
+                  return;
+                }
+              }
+            }
+          } catch (e) {
+            // Nếu API fail, vẫn dùng user từ cache
+            // print('⚠️ [HomeAppBar] Error loading profile: $e');
+          }
+        }
+        
+        // Fallback: dùng user từ cache nếu API fail hoặc user_id không match
         setState(() {
           _currentUser = user;
           _isLoading = false;

@@ -130,8 +130,8 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
         children: [
                   // Box ảnh bên trái
                   Container(
-                    width: 120,
-                    height: 120,
+                    width: 140,
+                    height: 140,
               decoration: BoxDecoration(
                       color: const Color(0xFFF4F6FB),
                 borderRadius: BorderRadius.circular(8),
@@ -142,8 +142,8 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
                 borderRadius: BorderRadius.circular(8),
                           child: Image.network(
                             _buildImageUrl(widget.product.imageUrl),
-                            width: 120,
-                            height: 120,
+                            width: 140,
+                            height: 140,
                         fit: BoxFit.cover,
                             errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
                           ),
@@ -206,6 +206,19 @@ class _FavoriteProductCardState extends State<FavoriteProductCard> {
                             ),
                           ),
                         ),
+                        // Free Ship badge (góc trái dưới)
+                        if (widget.product.freeshipIcon != null && widget.product.freeshipIcon!.isNotEmpty)
+                          Positioned(
+                            bottom: 4,
+                            left: 4,
+                            child: FreeShipBadge(
+                              iconSize: 18,
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              backgroundColor: const Color.fromARGB(255, 254, 254, 254),
+                              textColor: const Color.fromARGB(255, 0, 0, 0),
+                              text: 'Miễn phí vận chuyển',
+                            ),
+                          ),
                         // Flash sale icon (góc trái, dưới icon yêu thích)
                         if (_isFlashSale())
                           Positioned(

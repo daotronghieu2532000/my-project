@@ -57,17 +57,87 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
 
   Future<void> _calculateBonus() async {
     final cart = cart_service.CartService();
+    final voucherService = VoucherService();
     final items = cart.items.where((i) => i.isSelected).toList();
-    final eligibleItems = items.map((e) => {
-      'shopId': e.shopId,
-      'price': e.price,
-      'quantity': e.quantity,
-    }).toList();
-
+    
     if (!_bonusLoading && _bonusService.canUseBonus(_bonusInfo)) {
-      final eligibleTotal = await _bonusService.calculateEligibleTotal(eligibleItems);
+      // ✅ Lấy config để biết eligible shop IDs
+      final config = await _bonusService.getBonusConfig();
+      if (config == null || !config.status) {
+        if (mounted) {
+          setState(() {
+            _cachedBonusDiscount = 0;
+          });
+        }
+        return;
+      }
+      
+      final eligibleShopIds = config.eligibleShops.map((s) => s.shopId).toSet();
+      
+      // ✅ Lọc items chỉ lấy từ eligible shops
+      final eligibleItems = items.where((i) => eligibleShopIds.contains(i.shopId)).toList();
+      
+      if (eligibleItems.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _cachedBonusDiscount = 0;
+          });
+        }
+        return;
+      }
+      
+      // ✅ Tính tổng dựa trên originalPrice (giá gốc) CHỈ cho eligible shops
+      final eligibleTotal = eligibleItems.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
+      final totalGoods = items.fold(0, (s, i) => s + ((i.originalPrice ?? i.price) * i.quantity));
+      
+      // ✅ Tính voucher discount CHỈ cho eligible shops
+      final eligibleItemsForVoucher = eligibleItems.map((e) => {'shopId': e.shopId, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList();
+      final eligibleShopDiscount = voucherService.calculateTotalDiscount(
+        eligibleTotal,
+        items: eligibleItemsForVoucher,
+      );
+      final eligiblePlatformDiscount = voucherService.calculatePlatformDiscountWithItems(
+        eligibleTotal,
+        eligibleItems.map((e) => e.id).toList(),
+        items: eligibleItems.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity, 'shopId': e.shopId}).toList(),
+      );
+      final eligibleVoucherDiscount = (eligibleShopDiscount + eligiblePlatformDiscount).clamp(0, eligibleTotal);
+      
+      // ✅ Lấy ship support TRỰC TIẾP từ eligible shops (giống API), KHÔNG phân bổ theo tỷ lệ
+      final shopShipSupportMap = ShippingQuoteStore().shopShipSupport;
+      int eligibleShipSupport = 0;
+      final Set<int> processedShops = {}; // Để đảm bảo mỗi shop chỉ tính 1 lần
+      for (final item in eligibleItems) {
+        final shopId = item.shopId;
+        if (!processedShops.contains(shopId) && shopShipSupportMap.containsKey(shopId)) {
+          // ✅ Lấy ship support từ map (mỗi shop chỉ lấy 1 lần, giống API logic)
+          eligibleShipSupport += shopShipSupportMap[shopId]!;
+          processedShops.add(shopId);
+        }
+      }
+      // ✅ Nếu không có trong map, fallback về phân bổ theo tỷ lệ (tạm thời)
+      if (eligibleShipSupport == 0) {
+        final shipSupport = ShippingQuoteStore().shipSupport;
+        eligibleShipSupport = totalGoods > 0 
+            ? ((shipSupport * eligibleTotal / totalGoods).round())
+            : 0;
+      }
+      
+      // ✅ Tính base amount: eligibleTotal - eligibleVoucherDiscount - eligibleShipSupport
+      final baseAmount = (eligibleTotal - eligibleVoucherDiscount - eligibleShipSupport).clamp(0, 1 << 31);
+      
+      // ✅ Lấy discount percent từ config
+      final discountPercent = config.discountPercent;
+      
+      // ✅ Tính bonus discount: baseAmount * discountPercent / 100
+      final rawBonus = (baseAmount * discountPercent / 100).floor();
+      
+      // ✅ Lấy min của: rawBonus, remainingAmount, maxDiscountAmount
       final remainingAmount = _bonusInfo!['remaining_amount'] as int? ?? 0;
-      final bonusDiscount = await _bonusService.calculateBonusAmount(eligibleTotal, remainingAmount);
+      final maxDiscountAmount = config.maxDiscountAmount;
+      final bonusDiscount = rawBonus < remainingAmount 
+          ? (rawBonus < maxDiscountAmount ? rawBonus : maxDiscountAmount)
+          : (remainingAmount < maxDiscountAmount ? remainingAmount : maxDiscountAmount);
       
       if (mounted) {
         setState(() {
@@ -84,11 +154,15 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
   }
 
   void _onVoucherChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _calculateBonus(); // Recalculate khi voucher thay đổi
+    }
   }
 
   void _onShippingChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      _calculateBonus(); // Recalculate khi shipping thay đổi
+    }
   }
 
   Future<void> _loadBonusInfo() async {
@@ -160,7 +234,7 @@ class _BottomOrderBarState extends State<BottomOrderBar> {
     final platformDiscount = voucherService.calculatePlatformDiscountWithItems(
       totalGoods,
       items.map((e) => e.id).toList(),
-      items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity}).toList(),
+      items: items.map((e) => {'id': e.id, 'price': e.originalPrice ?? e.price, 'quantity': e.quantity, 'shopId': e.shopId}).toList(),
     );
     final voucherDiscount = (shopDiscount + platformDiscount).clamp(0, totalGoods);
     final shipFee = ShippingQuoteStore().lastFee;

@@ -132,8 +132,21 @@ class FreeShipProductCardHorizontal extends StatelessWidget {
                               ),
                             ),
                         ),
-                      // Badge hoa hồng affiliate (góc trái bên dưới)
-                      if (product.isAffiliate && product.commissionFormatted != null)
+                      // Free Ship badge (góc trái dưới)
+                      if (product.freeshipIcon != null && product.freeshipIcon!.isNotEmpty)
+                        Positioned(
+                          bottom: 4,
+                          left: 4,
+                          child: FreeShipBadge(
+                            iconSize: 18,
+                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            backgroundColor: const Color.fromARGB(255, 254, 254, 254),
+                            textColor: const Color.fromARGB(255, 0, 0, 0),
+                            text: 'Miễn phí vận chuyển',
+                          ),
+                        ),
+                      // Badge hoa hồng affiliate (góc trái bên dưới, nếu không có Free Ship)
+                      if (product.isAffiliate && product.commissionFormatted != null && (product.freeshipIcon == null || product.freeshipIcon!.isEmpty))
                         Positioned(
                           bottom: 4,
                           left: 4,

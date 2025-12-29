@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'core/theme/app_theme.dart';
 import 'core/services/notification_handler.dart';
@@ -31,6 +32,17 @@ class SocdoApp extends StatelessWidget {
       title: 'Socdo',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      // ✅ Thêm localizations để hỗ trợ DatePicker với locale tiếng Việt
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('vi', 'VN'), // Tiếng Việt
+        Locale('en', 'US'), // Tiếng Anh (fallback)
+      ],
+      locale: const Locale('vi', 'VN'), // Mặc định tiếng Việt
       home: const SplashScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),

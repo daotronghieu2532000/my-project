@@ -97,10 +97,10 @@ class LocalNotificationService {
      
         return imageFile.path;
       } else {
-        print('❌ [LOCAL_NOTIFICATION] Failed to download image: HTTP ${response.statusCode}');
+        // print('❌ [LOCAL_NOTIFICATION] Failed to download image: HTTP ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ [LOCAL_NOTIFICATION] Error downloading image: $e');
+      // print('❌ [LOCAL_NOTIFICATION] Error downloading image: $e');
       // Silent fail - không ảnh hưởng đến notification
     }
     return null;
@@ -130,7 +130,7 @@ class LocalNotificationService {
       try {
         imagePath = await _downloadImageForNotification(imageUrl);
       } catch (e) {
-        print('❌ [LOCAL_NOTIFICATION] Failed to download image: $e');
+        // print('❌ [LOCAL_NOTIFICATION] Failed to download image: $e');
         // Silent fail - không ảnh hưởng đến notification
       }
 

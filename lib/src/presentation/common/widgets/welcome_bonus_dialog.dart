@@ -64,17 +64,72 @@ class WelcomeBonusDialog extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             
-            // Nội dung (từ config)
-            Text(
-              config.dialogMessage,
-              style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade700,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
+            // Nội dung (từ config) - Format đẹp hơn với RichText
+            Builder(
+              builder: (context) {
+                final message = config.dialogMessage;
+                // Parse text để format đẹp hơn: tách theo dấu " – " và "Thanh tiến trình:"
+                final parts = message.split(' – ');
+                final firstPart = parts.isNotEmpty ? parts[0] : message;
+                final restOfText = parts.length > 1 ? parts.sublist(1).join(' – ') : '';
+                
+                // Tìm phần tiến trình
+                String middleText = '';
+                String progressText = '';
+                
+                if (restOfText.contains('Thanh tiến trình:')) {
+                  final progressIndex = restOfText.indexOf('Thanh tiến trình:');
+                  middleText = restOfText.substring(0, progressIndex).trim();
+                  progressText = restOfText.substring(progressIndex + 'Thanh tiến trình:'.length).trim();
+                } else if (restOfText.contains('Tiến trình:')) {
+                  final progressIndex = restOfText.indexOf('Tiến trình:');
+                  middleText = restOfText.substring(0, progressIndex).trim();
+                  progressText = restOfText.substring(progressIndex + 'Tiến trình:'.length).trim();
+                } else {
+                  middleText = restOfText;
+                }
+                
+                return RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey.shade700,
+                      height: 1.6,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '$firstPart\n',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      if (middleText.isNotEmpty) ...[
+                        TextSpan(
+                          text: '$middleText\n\n',
+                        ),
+                      ],
+                      if (progressText.isNotEmpty) ...[
+                        const TextSpan(
+                          text: 'Tiến trình: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        TextSpan(
+                          text: progressText,
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.orange.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             
             // Số tiền bonus (từ config)
             Container(
@@ -113,30 +168,6 @@ class WelcomeBonusDialog extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            
-            
-            Builder(
-              builder: (context) {
-                // Format danh sách shop (lấy tất cả shop, join bằng dấu phẩy)
-                final shopNames = config.eligibleShops
-                    .map((s) => s.shopName)
-                    .toList();
-                final shopNamesText = shopNames.join(', ');
-                final discountPercentText = config.discountPercent.toStringAsFixed(0);
-                
-                return Text(
-                  // 'Số tiền này sẽ tự động được áp dụng: $discountPercentText% trên tổng đơn hàng thuộc các Nhà bán: " $shopNamesText ". Xin trân trọng cảm ơn! 💝',
-                   '🎁 Chúc mừng! Bạn đã nhận Voucher thưởng của Socdo – Dùng ngay trong 30 ngày Thanh tiến trình: "Hoàn tất đơn đầu tiên – Mở khóa ưu đãi tiếp theo"',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                );
-              },
             ),
             const SizedBox(height: 24),
             // Nút đóng (từ config)

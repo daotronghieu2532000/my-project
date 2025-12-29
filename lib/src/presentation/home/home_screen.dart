@@ -16,11 +16,15 @@ import 'widgets/banner_products_widget.dart';
 // import 'widgets/dedication_section.dart'; // Tận tâm - Tận tình - Tận tụy
 import '../common/widgets/go_top_button.dart';
 import '../common/widgets/welcome_bonus_dialog.dart';
+import '../../common/widgets/update_version_dialog.dart';
 import '../../core/services/cached_api_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/first_time_bonus_service.dart';
 import '../../core/models/popup_banner.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io' show Platform;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,6 +48,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   bool _showPopup = false;
   Timer? _scrollSaveTimer; // Timer để debounce việc lưu scroll position (không dùng nữa)
   bool _isShowingWelcomeDialog = false; // Flag để tránh hiển thị dialog nhiều lần đồng thời
+  bool _hasCheckedVersion = false; // Flag để tránh check version nhiều lần
+  bool _isShowingUpdateDialog = false; // Flag để tránh hiển thị update dialog nhiều lần đồng thời
 
   @override
   void initState() {
@@ -71,7 +77,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         // Delay một chút để đảm bảo auth_service đã hoàn thành việc set flag
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
-            print('🔍 [HomeScreen] initState: Calling _showWelcomeBonusDialogIfNeeded() after postFrameCallback');
+            // print('🔍 [HomeScreen] initState: Calling _showWelcomeBonusDialogIfNeeded() after postFrameCallback');
             _showWelcomeBonusDialogIfNeeded();
           }
         });
@@ -81,8 +87,15 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     // ✅ Kiểm tra lại sau 2 giây để đảm bảo không bỏ sót (nếu có delay từ API)
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
-        print('🔍 [HomeScreen] initState: Calling _showWelcomeBonusDialogIfNeeded() after 2000ms (retry)');
+        // print('🔍 [HomeScreen] initState: Calling _showWelcomeBonusDialogIfNeeded() after 2000ms (retry)');
         _showWelcomeBonusDialogIfNeeded();
+      }
+    });
+    
+    // ✅ Kiểm tra version update sau khi vào home
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        _checkVersionUpdate();
       }
     });
     
@@ -92,18 +105,99 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   
   /// Callback khi auth state thay đổi (đăng nhập/đăng xuất)
   void _onAuthStateChanged() {
-    print('🔍 [HomeScreen] _onAuthStateChanged() called');
+    // print('🔍 [HomeScreen] _onAuthStateChanged() called');
     // ✅ Khi user đăng nhập thành công, kiểm tra lại flag bonus dialog
     // Delay một chút để đảm bảo flag đã được set từ auth_service
     // Tăng delay lên 1000ms để đảm bảo bonus check API đã hoàn thành
     Future.delayed(const Duration(milliseconds: 1000), () {
       if (mounted) {
-        print('🔍 [HomeScreen] Calling _showWelcomeBonusDialogIfNeeded() after auth state changed');
+        // print('🔍 [HomeScreen] Calling _showWelcomeBonusDialogIfNeeded() after auth state changed');
         _showWelcomeBonusDialogIfNeeded();
+        // ✅ Kiểm tra version update khi user đăng nhập
+        _checkVersionUpdate();
       } else {
-        print('⚠️ [HomeScreen] Widget not mounted, skipping dialog check');
+        // print('⚠️ [HomeScreen] Widget not mounted, skipping dialog check');
       }
     });
+  }
+  
+  /// Kiểm tra version update
+  Future<void> _checkVersionUpdate() async {
+    try {
+      // ✅ Tránh check nhiều lần
+      if (_hasCheckedVersion || _isShowingUpdateDialog) {
+        return;
+      }
+      
+      // ✅ Lấy thông tin app version và platform
+      String? appVersion;
+      String platform = 'android';
+      
+      try {
+        final packageInfo = await PackageInfo.fromPlatform();
+        appVersion = packageInfo.version;
+        
+        if (Platform.isIOS) {
+          platform = 'ios';
+        } else if (Platform.isAndroid) {
+          platform = 'android';
+        }
+      } catch (e) {
+        return;
+      }
+      
+      if (appVersion == null || appVersion.isEmpty) {
+        return;
+      }
+      
+      // ✅ Lấy user_id nếu đã đăng nhập
+      final user = await _authService.getCurrentUser();
+      final userId = user?.userId;
+      
+      // ✅ Gọi API check version
+      final versionData = await _apiService.checkVersion(
+        platform: platform,
+        appVersion: appVersion,
+        userId: userId,
+      );
+      
+      if (!mounted) {
+        return;
+      }
+      
+      // ✅ Đánh dấu đã check
+      _hasCheckedVersion = true;
+      
+      // ✅ Kiểm tra xem có cần update không
+      if (versionData != null && 
+          versionData['need_update'] == true && 
+          versionData['update_url'] != null &&
+          versionData['update_url'].toString().isNotEmpty) {
+        
+        // ✅ Delay một chút để tránh conflict với các dialog khác
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        if (!mounted || _isShowingUpdateDialog) {
+          return;
+        }
+        
+        // ✅ Hiển thị dialog update
+        _isShowingUpdateDialog = true;
+        
+        showDialog(
+          context: context,
+          barrierDismissible: false, // Không cho đóng bằng cách tap outside
+          builder: (context) => UpdateVersionDialog(
+            updateUrl: versionData['update_url'].toString(),
+          ),
+        ).then((_) {
+          // ✅ Reset flag khi dialog đóng (nếu có thể đóng)
+          _isShowingUpdateDialog = false;
+        });
+      }
+    } catch (e) {
+      // Ignore error, không block UI
+    }
   }
   
   // KHÔNG restore scroll position - luôn bắt đầu từ đầu
@@ -371,19 +465,19 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   /// Hiển thị dialog cảm ơn nếu user vừa nhận bonus mới
   Future<void> _showWelcomeBonusDialogIfNeeded() async {
     try {
-      print('🔍 [HomeScreen] _showWelcomeBonusDialogIfNeeded() called');
+      // print('🔍 [HomeScreen] _showWelcomeBonusDialogIfNeeded() called');
       
       // ✅ Tránh hiển thị dialog nhiều lần đồng thời
       if (_isShowingWelcomeDialog) {
-        print('⚠️ [HomeScreen] Dialog is already being shown, skipping');
+        // print('⚠️ [HomeScreen] Dialog is already being shown, skipping');
         return;
       }
       
       // ✅ Chỉ hiển thị dialog nếu user đã đăng nhập
       final isLoggedIn = await _authService.isLoggedIn();
-      print('🔍 [HomeScreen] isLoggedIn: $isLoggedIn');
+      // print('🔍 [HomeScreen] isLoggedIn: $isLoggedIn');
       if (!isLoggedIn) {
-        print('⚠️ [HomeScreen] User not logged in, skipping dialog');
+        // print('⚠️ [HomeScreen] User not logged in, skipping dialog');
         return;
       }
       
@@ -394,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       bool shouldShow = false;
       for (int i = 0; i < 5; i++) {
         shouldShow = prefs.getBool('show_bonus_dialog') ?? false;
-        print('🔍 [HomeScreen] Check attempt ${i + 1}/5: show_bonus_dialog = $shouldShow');
+        // print('🔍 [HomeScreen] Check attempt ${i + 1}/5: show_bonus_dialog = $shouldShow');
         if (shouldShow) {
           break;
         }
@@ -408,42 +502,42 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         // ✅ Nếu flag = false, kiểm tra xem dialog đã được hiển thị chưa
         final alreadyShown = prefs.getBool('welcome_bonus_dialog_shown') ?? false;
         if (alreadyShown) {
-          print('⚠️ [HomeScreen] Dialog already shown before, skipping');
+          // print('⚠️ [HomeScreen] Dialog already shown before, skipping');
           return;
         }
-        print('⚠️ [HomeScreen] Flag is false after all retries, not showing dialog');
+        // print('⚠️ [HomeScreen] Flag is false after all retries, not showing dialog');
         // Debug: Kiểm tra xem có bonus info không
         final bonusInfoString = prefs.getString('first_time_bonus_info');
         if (bonusInfoString != null) {
-          print('🔍 [HomeScreen] Found first_time_bonus_info in SharedPreferences');
+          // print('🔍 [HomeScreen] Found first_time_bonus_info in SharedPreferences');
           try {
             final bonusInfo = jsonDecode(bonusInfoString);
-            print('🔍 [HomeScreen] Bonus info: is_new_bonus = ${bonusInfo['is_new_bonus']}');
+            // print('🔍 [HomeScreen] Bonus info: is_new_bonus = ${bonusInfo['is_new_bonus']}');
           } catch (e) {
-            print('⚠️ [HomeScreen] Error parsing bonus info: $e');
+            // print('⚠️ [HomeScreen] Error parsing bonus info: $e');
           }
         } else {
-          print('⚠️ [HomeScreen] No first_time_bonus_info found in SharedPreferences');
+          // print('⚠️ [HomeScreen] No first_time_bonus_info found in SharedPreferences');
         }
         return;
       }
       
       // ✅ Flag = true, tiến hành hiển thị dialog
-      print('✅ [HomeScreen] Flag is true, proceeding to show dialog');
+      // print('✅ [HomeScreen] Flag is true, proceeding to show dialog');
       
       // Clear flag ngay để tránh hiển thị lại nhiều lần
       await prefs.setBool('show_bonus_dialog', false);
-      print('✅ [HomeScreen] Flag cleared, getting config...');
+      // print('✅ [HomeScreen] Flag cleared, getting config...');
       
       // Lấy config từ API
       final config = await _bonusService.getBonusConfig();
-      print('🔍 [HomeScreen] Config received: ${config != null ? "not null" : "null"}');
+      // print('🔍 [HomeScreen] Config received: ${config != null ? "not null" : "null"}');
       if (config != null) {
-        print('🔍 [HomeScreen] Config status: ${config.status}');
+        // print('🔍 [HomeScreen] Config status: ${config.status}');
       }
       
       if (config == null || !config.status) {
-        print('⚠️ [HomeScreen] Config is null or status is false, not showing dialog');
+        // print('⚠️ [HomeScreen] Config is null or status is false, not showing dialog');
         return; // Tính năng đã tắt, không hiển thị dialog
       }
       
@@ -451,13 +545,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       await Future.delayed(const Duration(milliseconds: 300));
       
       if (!mounted) {
-        print('⚠️ [HomeScreen] Widget not mounted, cannot show dialog');
+        // print('⚠️ [HomeScreen] Widget not mounted, cannot show dialog');
         // ✅ Nếu widget unmount, restore flag để thử lại lần sau
         await prefs.setBool('show_bonus_dialog', true);
         return;
       }
       
-      print('✅ [HomeScreen] Showing WelcomeBonusDialog');
+      // print('✅ [HomeScreen] Showing WelcomeBonusDialog');
       // ✅ Đánh dấu đang hiển thị dialog để tránh gọi lại
       _isShowingWelcomeDialog = true;
       
@@ -468,7 +562,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         barrierDismissible: false, // Không cho đóng bằng cách tap outside
         builder: (context) => WelcomeBonusDialog(
           onClose: () {
-            print('✅ [HomeScreen] WelcomeBonusDialog closed');
+            // print('✅ [HomeScreen] WelcomeBonusDialog closed');
             Navigator.of(context).pop();
             // ✅ Đánh dấu đã hiển thị SAU KHI dialog đã được đóng (đảm bảo user đã thấy dialog)
             SharedPreferences.getInstance().then((prefs) {
@@ -481,7 +575,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         ),
       );
     } catch (e) {
-      print('❌ [HomeScreen] Error in _showWelcomeBonusDialogIfNeeded: $e');
+      // print('❌ [HomeScreen] Error in _showWelcomeBonusDialogIfNeeded: $e');
     }
   }
   
