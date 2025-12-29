@@ -5,7 +5,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>Socdo</string>
+    <string>Sóc Đỏ</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>
-    <string>socdo</string>
+    <string>Sóc Đỏ</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
@@ -86,6 +86,16 @@
     <string>Ứng dụng cần truy cập thư viện ảnh để bạn có thể chọn và tải ảnh lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
     <key>NSCameraUsageDescription</key>
     <string>Ứng dụng cần truy cập camera để bạn có thể chụp ảnh và tải lên khi báo lỗi hoặc cập nhật hồ sơ.</string>
+    
+    <!-- ✅ Push Notifications Background Mode - BẮT BUỘC để nhận notifications khi app ở background -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>remote-notification</string>
+    </array>
+    
+    <!-- ✅ Firebase Messaging Configuration -->
+    <key>FirebaseAppDelegateProxyEnabled</key>
+    <true/>
     
     <key>ITSAppUsesNonExemptEncryption</key>
     <false/>
